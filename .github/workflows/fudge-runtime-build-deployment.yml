@@ -1,0 +1,68 @@
+name: FUDGE runtime build and deployment
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Compile code
+        run: cmd /c CompileAll.bat
+
+      - name: Bundle files
+        run: |
+          mkdir -p FUDGE_Runtime/Editor/Build
+          mkdir -p FUDGE_Runtime/Editor/Electron
+          mkdir -p FUDGE_Runtime/Editor/GoldenLayout
+          mkdir -p FUDGE_Runtime/Editor/Html
+          mkdir -p FUDGE_Runtime/Editor/Source/Template
+          mkdir -p FUDGE_Runtime/Editor/Themes
+          cp -R Editor/Build/* FUDGE_Runtime/Editor/Build
+          cp -R Editor/Electron/* FUDGE_Runtime/Editor/Electron
+          cp -R Editor/GoldenLayout/* FUDGE_Runtime/Editor/GoldenLayout
+          cp -R Editor/Html/* FUDGE_Runtime/Editor/Html
+          cp -R Editor/Source/Template/* FUDGE_Runtime/Editor/Source/Template
+          cp -R Editor/Themes/* FUDGE_Runtime/Editor/Themes
+
+          mkdir -p FUDGE_Runtime/Library/
+          cp Distribution/* FUDGE_Runtime/Library
+
+          cp FUDGE.bat FUDGE_Runtime
+          cp package.json FUDGE_Runtime
+      
+      - name: Replace source paths in fudge.html
+        run: |
+          $filePath = "FUDGE_Runtime/Editor/Html/Fudge.html"
+          $content = Get-Content -Path $filePath
+      
+          $content = $content -replace "../../Distribution/OimoPhysics.js", "../../Library/OimoPhysics.js"
+          $content = $content -replace "../../Distribution/FudgeCore.js", "../../Library/FudgeCore.js"
+          $content = $content -replace "../../Distribution/FudgeAid.js", "../../Library/FudgeAid.js"
+          $content = $content -replace "../../Distribution/FudgeUserInterface.js", "../../Library/FudgeUserInterface.js"
+      
+          $content | Set-Content -Path $filePath
+
+      - name: Create Install.bat file
+        run: |
+          echo "npm install --omit=dev" > FUDGE_Runtime/Install.bat
+          echo "pause" >> FUDGE_Runtime/Install.bat
+          
+      - name: Create zip file
+        run: Compress-Archive -Path FUDGE_Runtime/* -DestinationPath fudge.zip
+
+      - name: Attach zip file to release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: fudge.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
