@@ -22,6 +22,10 @@ jobs:
       - name: Compile code
         run: cmd /c CompileAll.bat
 
+      - name: Remove .tsbuildinfo files 
+        run: |
+          find Distribution/ -name "*.tsbuildinfo" -type f -delete
+
       - name: Bundle files
         run: |
           mkdir -p FUDGE_Runtime/Editor/Build
