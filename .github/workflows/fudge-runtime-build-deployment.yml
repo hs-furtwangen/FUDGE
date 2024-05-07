@@ -20,9 +20,11 @@ jobs:
         run: npm install
 
       - name: Compile code
-        run: cmd /c CompileAll.bat
+        shell: cmd
+        run: CompileAll.bat
 
       - name: Remove .tsbuildinfo files 
+        shell: cmd
         run: |
           del /S /Q Distribution\*.tsbuildinfo
 
