@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'"> -->
+  <title>FUDGE</title>
+
+  <!-- Stylesheets -->
+  <link type="text/css" rel="stylesheet" href="../GoldenLayout/goldenlayout-base.css" />
+  <link type="text/css" rel="stylesheet" href="Base.css" />
+  <link type="text/css" rel="stylesheet" href="Icons.css" />
+  <link type="text/css" rel="stylesheet" href="Animation.css" />
+  <link type="text/css" rel="stylesheet" href="ParticleSystem.css" />
+  <!-- Themes -->
+  <link type="text/css" rel="stylesheet" href="../Themes/LightGray/Colors.css" />
+  <!-- <link type="text/css" rel="stylesheet" href="../Themes/DarkGray/Colors.css" /> -->
+  <!-- <link type="text/css" rel="stylesheet" href="../Themes/Black/Colors.css" /> -->
+  <!-- <link type="text/css" rel="stylesheet" href="../Themes/Espresso/Colors.css" /> -->
+  <script>
+    // TODO: make themes changeable from editor? maybe use localStorage?
+    let theme = /* localStorage.getItem("Theme") || */ "LightGray";
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) 
+      theme = "Black";
+    document.write(`<link type="text/css" rel="stylesheet" href="../Themes/${theme}/Colors.css" />`);
+  </script>
+
+  <!-- GoldenLayout -->
+  <script src="../GoldenLayout/golden-layout.js"></script>
+  
+  <!-- Fudge -->
+  <script type="text/javascript" src="../../Distribution/OimoPhysics.js"></script>
+  <script type="text/javascript" src="../../Distribution/FudgeCore.js"></script>
+  <script type="text/javascript" src="../../Distribution/FudgeAid.js"></script>
+  <script type="text/javascript" src="../../Distribution/FudgeUserInterface.js"></script>
+  
+  
+  <!-- Editor -->
+  <script type="text/javascript" src="../Build/Fudge/Fudge.js"></script>
+  <script>window.addEventListener("load", Fudge.Page.start);</script>
+</head>
+
+<body>
+  <template>
+    <custom-vector2>
+      <span>
+        <label>label</label>
+      </span>
+      <fudge-stepper key="x" label="x"></fudge-stepper>
+      <fudge-stepper key="y" label="y"></fudge-stepper>
+    </custom-vector2>
+  </template>
+  <script>
+    FudgeUserInterface.CustomElementTemplate.register("custom-vector2");
+    FudgeUserInterface.CustomElement.register("custom-vector2", class CustomVector2 extends FudgeUserInterface.CustomElementTemplate { });
+    FudgeUserInterface.CustomElement.map("Vector2", "custom-vector2");
+  </script>
+
+  <template>
+    <custom-vector3>
+      <span>
+        <label>label</label>
+      </span>
+      <fudge-stepper key="x" label="x"></fudge-stepper>
+      <fudge-stepper key="y" label="y"></fudge-stepper>
+      <fudge-stepper key="z" label="z"></fudge-stepper>
+    </custom-vector3>
+  </template>
+  <script>
+    FudgeUserInterface.CustomElementTemplate.register("custom-vector3");
+    FudgeUserInterface.CustomElement.register("custom-vector3", class CustomVector3 extends FudgeUserInterface.CustomElementTemplate { });
+    FudgeUserInterface.CustomElement.map("Vector3", "custom-vector3");
+  </script>
+
+  <template>
+    <custom-matrix4x4>
+      <span>
+        <label>label</label>
+      </span>
+      <span>x</span>
+      <span>y</span>
+      <span>z</span>
+      <span class="rowVector">translation</span>
+      <fudge-stepper key="tx"></fudge-stepper>
+      <fudge-stepper key="ty"></fudge-stepper>
+      <fudge-stepper key="tz"></fudge-stepper>
+      <span class="rowVector">rotation</span>
+      <fudge-stepper key="rx"></fudge-stepper>
+      <fudge-stepper key="ry"></fudge-stepper>
+      <fudge-stepper key="rz"></fudge-stepper>
+      <span class="rowVector">scaling</span>
+      <fudge-stepper key="sx"></fudge-stepper>
+      <fudge-stepper key="sy"></fudge-stepper>
+      <fudge-stepper key="sz"></fudge-stepper>
+    </custom-matrix4x4>
+  </template>
+  <script>
+    FudgeUserInterface.CustomElementTemplate.register("custom-matrix4x4");
+    FudgeUserInterface.CustomElement.register("custom-matrix4x4", FudgeUserInterface.CustomElementMatrix4x4);
+    FudgeUserInterface.CustomElement.map("Matrix4x4", "custom-matrix4x4");
+  </script>
+
+  <template>
+    <custom-matrix3x3>
+      <span>
+        <label>label</label>
+      </span>
+      <span>x</span>
+      <span>y</span>
+      <span class="rowVector">translation</span>
+      <fudge-stepper key="tx"></fudge-stepper>
+      <fudge-stepper key="ty"></fudge-stepper>
+      <span class="rowVector">scaling</span>
+      <fudge-stepper key="sx"></fudge-stepper>
+      <fudge-stepper key="sy"></fudge-stepper>
+      <span class="rowVector">rotation</span>
+      <fudge-stepper key="r"></fudge-stepper>
+    </custom-matrix3x3>
+  </template>
+  <script>
+    FudgeUserInterface.CustomElementTemplate.register("custom-matrix3x3");
+    FudgeUserInterface.CustomElement.register("custom-matrix3x3", FudgeUserInterface.CustomElementMatrix3x3);
+    FudgeUserInterface.CustomElement.map("Matrix3x3", "custom-matrix3x3");
+  </script>
+</body>
+
+</html>

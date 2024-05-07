@@ -1,0 +1,74 @@
+canvas {
+  touch-action: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  text-size-adjust: none;
+  overflow: auto;
+}
+
+dialog.dialog {
+  font-family: Arial, Helvetica, sans-serif;
+  overflow: auto;
+}
+
+.dialog {
+  max-height: 100%;
+  box-sizing: border-box; /* Add this line */
+}
+
+fieldset.dialog {
+  border: 2px #dddddd solid;
+  margin: 0;
+}
+
+legend.dialog {
+  color: gray;
+}
+
+ul.dialog {
+  /* padding: 0;  */
+  padding-inline-start: 1rem;
+  margin: 0;
+}
+
+div.dialog-button {
+  --size: 2.5rem;
+  position: absolute;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: var(--size);
+  height: var(--size);
+  cursor: pointer;
+  background-color: rgba(255, 255, 0, 0.5);
+  border-bottom-right-radius: 10%;
+}
+
+div.dialog-button > div {
+  width: 80%;
+  height: calc(100% / 7);
+  background: black;
+  /* box-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;; */
+  display: block;
+  margin: auto;
+  margin-top: calc(100% / 7);
+  transition: all 0.3s;
+  border-radius: 10%;
+}
+
+div.dialog-button > div:last-child {
+  margin-bottom: calc(100% / 7);
+}
+
+div.dialog-button.open > div.a {
+  transform: translateY(200%) rotate(45deg);
+}
+div.dialog-button.open > div.b {
+  opacity: 0;
+}
+div.dialog-button.open > div.c {
+  transform: translateY(-200%) rotate(-45deg);
+}

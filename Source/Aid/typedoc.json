@@ -1,0 +1,13 @@
+{
+  "entryPoints": [
+    "."
+  ],
+  "entryPointStrategy": "expand",
+  "out": "../../Documentation/Reference/Aid/",
+  "name": "Fudge Aid",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "plugin": ["typedoc-plugin-merge-modules"]
+}

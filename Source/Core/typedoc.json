@@ -1,0 +1,41 @@
+{
+    "entryPoints": [
+        "."
+    ],
+    "entryPointStrategy": "expand",
+    "out": "../../Documentation/Reference/Core/",
+    "name": "Fudge Core",
+    "readme": "none",
+    "validation": {
+        // "notExported": false,
+        "notDocumented": true,
+    },
+    "requiredToBeDocumented": [
+        "Class",
+        // "Accessor",
+        // "Method",
+    ],
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "excludeExternals": true,
+    "exclude": [
+        "Serialization/GLTF/GLTF.ts",
+        "Serialization/FBX/inflate.d.ts",
+        "Serialization/FBX/FBX.ts"
+    ],
+    "intentionallyNotExported": [
+        "GraphInstancesToResync",
+        "ImageSource",
+        "OIMO.DebugDraw",
+        "OIMO.DebugDrawStyle",
+        "OIMO.Joint",
+        "OIMO.RigidBody",
+        "OIMO.World",
+        "FBX.FBX",
+        "FBX.Node",
+        "FBX.Model"
+    ],
+    "plugin": [
+        "typedoc-plugin-merge-modules"
+    ]
+}

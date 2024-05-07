@@ -1,0 +1,24 @@
+{
+  /* Sole purpose of this file is to act as entry point for TypeDoc */
+  /* To compile Fudge Net, envoke "CustomTask: Compile All"*/
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true
+  },
+  "typedocOptions": {
+    "entryPoints": [
+      "."
+    ],
+    "entryPointStrategy": "expand",
+    "out": "../../Documentation/Reference/Net/",
+    "name": "Fudge Net",
+    "readme": "none",
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "excludeExternals": true,
+    "plugin": [
+      "typedoc-plugin-merge-modules"
+    ]
+  }
+}

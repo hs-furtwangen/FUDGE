@@ -1,0 +1,354 @@
+* {
+  margin: 0px;
+  padding: 0px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+:root {
+  --color-error: red; /* default error color */
+  --color-warning: yellow; /* default warning color */
+}
+
+object {
+  width: 100%;
+  height: 100%;
+}
+
+.lm_goldenlayout, body {
+  background-color: var(--color-background-main);
+  color: var(--color-text);
+}
+
+.lm_content {
+  background-color: var(--color-background-content);
+}
+
+div[panel] .lm_close {
+  display: none;
+}
+
+*[view] {
+  padding: 0.5em;
+  padding-bottom: 0em;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+*[view="ViewRender"], *[view="ViewPreview"] {
+  padding: 0em;
+  overflow: hidden;
+}
+
+img {
+  border: 1px dashed var(--color-text);
+}
+
+.lm_splitter:hover {
+  background: var(--color-background-content);
+}
+
+.lm_splitter.lm_dragging {
+  background: var(--color-background-main);
+}
+
+.lm_selected .lm_header {
+  background-color: var(--color-background-content);
+}
+
+.lm_tab:hover, .lm_tab .lm_active, .lm_dragProxy .lm_tab {
+  background-color: var(--color-background-content);
+}
+
+.lm_header {
+  background-color: var(--color-background-main);
+}
+
+/* Controls */
+
+.lm_header .lm_controls .lm_tabdropdown:before {
+  color: var(--color-text);
+}
+
+/* Drag & Drop */
+
+.lm_dropTargetIndicator {
+  outline: 1px dashed var(--color-dragdrop-outline);
+  background-color: var(--color-background-main);
+}
+
+
+/* Tree Control */
+
+ul.tree {
+  list-style: none;
+}
+
+ul.tree fieldset {
+  display: inline;
+  border: none;
+}
+
+ul.tree li {
+  white-space: nowrap;
+}
+
+ul.tree li[attributes~="inactive"]>input,
+ul.tree li[attributes~="inactive"]>fieldset>input {
+  text-decoration: line-through;
+}
+
+ul.tree li[attributes~="GraphInstance"]>fieldset>input {
+  font-style: italic;
+}
+
+ul.tree ul {
+  padding-left: 1em;
+}
+
+ul.tree input[type=checkbox] {
+  appearance: none;
+}
+
+ul.tree input[type=checkbox]:checked::before {
+  content: "▼";
+}
+
+ul.tree input[type=checkbox]::before {
+  content: "►";
+}
+
+ul.tree input[type="checkbox"]:checked~ul {
+  display: block;
+}
+
+ul.tree input[type="checkbox"]~ul {
+  display: none;
+}
+
+ul.tree input[type="checkbox"]:has(+ fieldset[icon]) {
+  display: none;
+}
+
+/* Table */
+
+table.sortable {
+  width: 100%;
+}
+
+table.sortable th {
+  text-align: left;
+}
+
+table.sortable th>span {
+  display: inline-block;
+  width: 50px;
+  text-align: center;
+}
+
+table.sortable th>span>input {
+  height: 0px;
+  top: -1em;
+  display: inline-block;
+  position: relative;
+  color: var(--color-text);
+}
+
+table.sortable th>span>input[value="up"]::before {
+  content: "▲";
+}
+
+table.sortable th>span>input[value="down"]::before {
+  content: "▼";
+}
+
+table.sortable input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  cursor: text;
+}
+
+table.sortable .selected input {
+  color: var(--color-highlight);
+  font-weight: bold;
+}
+
+table.sortable td {
+  vertical-align: bottom;
+}
+
+table.sortable td>input:disabled {
+  /* TODO: indicate tha]t enabled (not disabled) fields can be doubleclicked to alter content */
+  cursor: default;
+}
+
+.table.error {
+  outline: 1px outset var(--color-error);
+}
+
+/* Text input */
+
+ul.tree .selected>input {
+  color: var(--color-highlight);
+  font-weight: bold;
+}
+
+ul.tree .selected>:not(ul.tree) * {
+  color: var(--color-highlight);
+  font-weight: bold;
+}
+
+/* Components */
+
+input {
+  background-color: var(--color-background-content);
+  color: var(--color-text);
+  border: none;
+  flex: 2;
+}
+
+*:focus {
+  outline: 1px outset var(--color-focus);
+  /* background-color: var(--color-focus); */
+}
+
+ul.tree li:has(>fieldset.error) {
+  outline: 1px outset var(--color-error);
+}
+
+input[type="number"] {
+  background-color: var(--color-background-content);
+  color: var(--color-text);
+  /* border-bottom: 1px solid var(--color-text); */
+  text-align: center;
+  width: 6em;
+}
+
+label {
+  padding-right: 0.5em;
+  /* text-decoration: wavy; */
+  /* text-shadow: 1px 1px var(--color-background-main) ; */
+}
+
+/* set (details) */
+
+/* details details {
+  padding-left: 1em;
+} */
+details div {
+  padding-left: 1em;
+}
+
+details.selected>summary {
+  color: var(--color-highlight);
+  font-weight: bold;
+}
+
+details[key=ComponentLight] fudge-color input[type=range] {
+  display: none;
+}
+
+/* Dialog */
+
+dialog {
+  background-color: var(--color-background-main);
+  border: 1px solid var(--color-bright);
+  color: var(--color-text);
+  box-shadow: 0px 0px 10px 5px var(--color-background-main);
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  z-index: 1000;
+  padding: 2em;
+}
+
+dialog>div#content {
+  background-color: var(--color-background-content);
+}
+
+dialog>h1 {
+  color: var(--color-signal);
+  height: 2em;
+}
+
+dialog>footer>p {
+  padding-top: 2em;
+  padding-bottom: 1em;
+}
+
+/* Select */
+
+select {
+  border-width: 0px;
+  background-color: #00000000;
+  color: var(--color-text);
+}
+
+option {
+  background-color: var(--color-background-content);
+  color: var(--color-text);
+}
+
+/* Button */
+
+.buttonIcon {
+  border: none;
+  /* border-right: 2px solid var(--color-background-content); */
+  background-color: var(--color-background-main);
+  /* padding: 2px; */
+  min-width: 30px;
+  width: 60px;
+  height: 25px;
+  cursor: pointer;
+}
+
+.buttonIcon:focus {
+  outline: none;
+}
+
+/* standard fudge elements */
+
+fudge-boolean, fudge-color, fudge-stepper, fudge-select {
+  display: block;
+}
+fudge-textinput {
+  display: flex;
+}
+
+fudge-digit {
+  font-family: monospace;
+}
+
+/* custom elements */
+
+custom-vector2 {
+  text-align: right;
+  display: grid;
+  grid-template-columns: max-content 8em 8em;
+}
+
+custom-vector3 {
+  text-align: right;
+  display: grid;
+  grid-template-columns: max-content 8em 8em 8em;
+}
+
+custom-matrix4x4 {
+  text-align: center;
+  display: grid;
+  column-gap: 1em;
+  grid-template-columns: min-content min-content min-content min-content;
+  grid-template-rows: min-content min-content min-content min-content;
+}
+
+custom-matrix3x3 {
+  text-align: center;
+  display: grid;
+  column-gap: 1em;
+  grid-template-columns: min-content min-content min-content;
+  grid-template-rows: min-content min-content min-content min-content
+}
+
+custom-matrix4x4 span.rowVector, custom-matrix3x3 span.rowVector {
+  text-align: right
+}

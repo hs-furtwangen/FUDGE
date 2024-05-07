@@ -1,0 +1,161 @@
+{
+  "MeshRotation|2021-04-06T08:46:49.731Z|14387": {
+    "ƒ.MeshRotation": {
+      "idResource": "MeshRotation|2021-04-06T08:46:49.731Z|14387",
+      "name": "meshSword",
+      "type": "MeshRotation",
+      "shape": {
+        "ƒ.Vector2": [
+          "[0, 4.899999618530273]",
+          "[0.5, 4.5]",
+          "[0.4000000059604645, -0.5]",
+          "[0.9000000953674316, -0.5]",
+          "[0.9000000953674316, -0.7000000476837158]",
+          "[0.40000012516975403, -0.7000000476837158]",
+          "[0.40000012516975403, -2.5999999046325684]",
+          "[0.6000001430511475, -2.799999713897705]",
+          "[0, -3.3999991416931152]"
+        ]
+      },
+      "longitudes": 4
+    }
+  },
+  "Material|2021-04-06T08:51:49.620Z|35129": {
+    "ƒ.Material": {
+      "name": "mtrFlat",
+      "idResource": "Material|2021-04-06T08:51:49.620Z|35129",
+      "shader": "ShaderFlat",
+      "coat": {
+        "ƒ.CoatRemissive": {
+          "color": "[1, 1, 1, 1]",
+          "diffuse": 1,
+          "specular": 1
+        }
+      }
+    }
+  },
+  "Graph|2022-03-27T16:21:44.893Z|68999": {
+    "ƒ.Graph": {
+      "name": "Sword",
+      "active": true,
+      "components": {
+        "ComponentMaterial": [
+          {
+            "ƒ.ComponentMaterial": {
+              "sortForAlpha": false,
+              "clrPrimary": "[1, 1, 1, 1]",
+              "clrSecondary": "[1, 1, 1, 1]",
+              "pivot": {
+                "translation": "[0, 0]",
+                "rotation": 0,
+                "scaling": "[1, 1]"
+              },
+              "Component": {
+                "active": true
+              },
+              "idMaterial": "Material|2021-04-06T08:51:49.620Z|35129"
+            }
+          }
+        ],
+        "ComponentMesh": [
+          {
+            "ƒ.ComponentMesh": {
+              "idMesh": "MeshRotation|2021-04-06T08:46:49.731Z|14387",
+              "pivot": {
+                "translation": "[0, 0, 0]",
+                "rotation": "[0, 0, 0]",
+                "scaling": "[1, 1, 0.30000001192092896]"
+              },
+              "Component": {
+                "active": true
+              }
+            }
+          }
+        ],
+        "ComponentLight": [
+          {
+            "ƒ.ComponentLight": {
+              "pivot": {
+                "translation": "[0, 0, 0]",
+                "rotation": "[0, 0, 0]",
+                "scaling": "[1, 1, 1]"
+              },
+              "light": {
+                "ƒ.LightAmbient": {
+                  "color": "[0.34901960784313724, 0.34901960784313724, 0.34901960784313724, 1]"
+                }
+              },
+              "Component": {
+                "active": true
+              }
+            }
+          },
+          {
+            "ƒ.ComponentLight": {
+              "pivot": {
+                "translation": "[0, 0, 0]",
+                "rotation": "[70, 17, 0]",
+                "scaling": "[1, 1, 1]"
+              },
+              "light": {
+                "ƒ.LightDirectional": {
+                  "color": "[0.9254901960784314, 0.09411764705882353, 0.09411764705882353, 1]"
+                }
+              },
+              "Component": {
+                "active": true
+              }
+            }
+          }
+        ]
+      },
+      "children": [],
+      "idResource": "Graph|2022-03-27T16:21:44.893Z|68999",
+      "type": "Graph"
+    }
+  },
+  "Graph|2022-03-27T16:22:20.626Z|56686": {
+    "ƒ.Graph": {
+      "name": "SwordDark",
+      "active": true,
+      "components": {
+        "ComponentMesh": [
+          {
+            "ƒ.ComponentMesh": {
+              "idMesh": "MeshRotation|2021-04-06T08:46:49.731Z|14387",
+              "pivot": {
+                "translation": "[0, 0, 0]",
+                "rotation": "[0, 0, 0]",
+                "scaling": "[1, 1, 0.2999999225139618]"
+              },
+              "Component": {
+                "active": true
+              }
+            }
+          }
+        ],
+        "ComponentMaterial": [
+          {
+            "ƒ.ComponentMaterial": {
+              "sortForAlpha": false,
+              "clrPrimary": "[1, 1, 1, 1]",
+              "clrSecondary": "[1, 1, 1, 1]",
+              "pivot": {
+                "translation": "[0, 0]",
+                "rotation": 0,
+                "scaling": "[1, 1]"
+              },
+              "Component": {
+                "active": true
+              },
+              "idMaterial": "Material|2021-04-06T08:51:49.620Z|35129"
+            }
+          }
+        ]
+      },
+      "children": [],
+      "idResource": "Graph|2022-03-27T16:22:20.626Z|56686",
+      "type": "Graph"
+    }
+  }
+}
