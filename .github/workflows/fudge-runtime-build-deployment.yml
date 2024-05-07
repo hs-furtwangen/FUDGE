@@ -24,7 +24,7 @@ jobs:
 
       - name: Remove .tsbuildinfo files 
         run: |
-          find Distribution/ -name "*.tsbuildinfo" -type f -delete
+          del /S /Q Distribution\*.tsbuildinfo
 
       - name: Bundle files
         run: |
