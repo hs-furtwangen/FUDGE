@@ -26,7 +26,7 @@ jobs:
       - name: Remove .tsbuildinfo files 
         shell: cmd
         run: |
-          del /S /Q Distribution\*.tsbuildinfo
+          del /s /q *.tsbuildinfo
 
       - name: Bundle files
         run: |

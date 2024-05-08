@@ -42,11 +42,11 @@ export declare class FudgeServer {
      */
     closeDown: () => void;
     /**
-     * Dispatch a FudgeNet.Message to the client with the id given as `idTarget`
+     * Dispatch a {@link FudgeNet.Message} to the client with the id given as `idTarget`
      */
     dispatch(_message: FudgeNet.Message): void;
     /**
-     * Broadcast a FudgeMet.Message to all clients known to the server.
+     * Broadcast a {@link FudgeNet.Message} to all clients known to the server.
      */
     broadcast(_message: FudgeNet.Message): void;
     /**

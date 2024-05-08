@@ -37,7 +37,7 @@ class FudgeServer {
         this.socket.close();
     };
     /**
-     * Dispatch a FudgeNet.Message to the client with the id given as `idTarget`
+     * Dispatch a {@link FudgeNet.Message} to the client with the id given as `idTarget`
      */
     dispatch(_message) {
         _message.timeServer = Date.now();
@@ -47,7 +47,7 @@ class FudgeServer {
             clients[_message.idTarget].socket?.send(message);
     }
     /**
-     * Broadcast a FudgeMet.Message to all clients known to the server.
+     * Broadcast a {@link FudgeNet.Message} to all clients known to the server.
      */
     broadcast(_message) {
         _message.timeServer = Date.now();

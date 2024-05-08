@@ -26,7 +26,7 @@ Before installing and running FUDGE, make sure you have the following prerequisi
 
 Once you have the prerequisites set up, follow these steps to install FUDGE:
 
-1. Head over to [Releases](https://github.com/JirkaDellOro/FUDGE/releases) and download the latest version of `fudge.zip`.
+1. Head over to [Releases](../../releases) and download the latest version of `fudge.zip`.
 2. Unpack the `fudge.zip` file to a location of your choice on your computer.
 3. Install the required node modules to run FUDGE by running `npm install --omit=dev` in a terminal within the folder containing FUDGE or by invoking `install.bat` (on Windows).
 
@@ -55,7 +55,7 @@ To learn more about FUDGE, explore the following resources:
 
 ## Wiki
 
-Browse through the [Wiki](https://github.com/JirkaDellOro/FUDGE/wiki) to gain an intuitive understanding of FUDGE's core concepts and inner workings.
+Browse through the [Wiki](../../wiki) to gain an intuitive understanding of FUDGE's core concepts and inner workings.
 
 ## Test
 

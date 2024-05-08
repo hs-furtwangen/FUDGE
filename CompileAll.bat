@@ -11,8 +11,7 @@ echo --- Compile Core Minimal
 call npx tsc -p tsconfig-minimal.json
 echo --- Generate Documentation
 call npx typedoc
-cd ..
-cd ..
+cd ../..
 
 :Aid
 echo --- Compile Aid
@@ -20,8 +19,7 @@ cd Source/Aid/
 call npx tsc -p tsconfig.json
 echo --- Generate Documentation
 call npx typedoc
-cd ..
-cd ..
+cd ../..
 
 :UserInterface
 echo --- Compile UserInterface
@@ -29,8 +27,7 @@ cd Source/UserInterface/
 call npx tsc -p tsconfig.json
 echo --- Generate Documentation
 call npx typedoc
-cd ..
-cd ..
+cd ../..
 
 :Net
 echo --- Compile Net
@@ -44,9 +41,15 @@ cd ..
 cd Client
 call npx tsc -p tsconfig.json
 cd ..
+echo --- Generate Documentation
 call npx typedoc --tsconfig tsconfig.typedoc.json
-cd ..
-cd ..
+cd ../..
+
+:Editor
+echo --- Compile Editor
+cd Editor/Source
+call npx tsc -p tsconfig.json
+cd ../..
 
 :Test
 echo --- Compile Test
