@@ -80,7 +80,7 @@ The FUDGE repository consists of the following folders, which contain different 
 
 Contains the core functionality of FUDGE needed to create games. It implements an entity component system to build scene graphs, prepares its content for rendering with WebGL2 and WebAudio, manages game loops and time, offers some standard meshes, shaders, a lighting system, handles user input and keyframe animation, serialization, and more. For many games, working with this module is sufficient.
 
-Refer to the [FUDGECoreClassdiagram.svg](Documentation/Design/FUDGECoreClassdiagram.svg) diagram for an overview of its structure.
+Refer to the [FUDGECoreClassdiagram.svg](Documentation/Design/FUDGECoreClassdiagram.svg?raw=1) diagram for an overview of its structure.
 
 ## Physics
 
