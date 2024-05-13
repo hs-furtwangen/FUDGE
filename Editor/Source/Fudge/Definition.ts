@@ -80,7 +80,6 @@ namespace Fudge {
   }
 
   export enum GIZMOS {
-    TRANSFORM = "Transform",
-    WIRE_MESH = "WireMesh"
+    TRANSFORM = "Transform"
   }
 }

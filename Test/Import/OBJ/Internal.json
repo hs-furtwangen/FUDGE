@@ -83,6 +83,22 @@
       }
     }
   },
+  "Material|2024-04-18T15:00:10.955Z|78959": {
+    "ƒ.Material": {
+      "name": "ShaderPhong",
+      "idResource": "Material|2024-04-18T15:00:10.955Z|78959",
+      "shader": "ShaderPhong",
+      "coat": {
+        "ƒ.CoatRemissive": {
+          "color": "[1, 1, 1, 1]",
+          "diffuse": 1,
+          "specular": 0.5,
+          "intensity": 0.7,
+          "metallic": 0
+        }
+      }
+    }
+  },
   "Graph|2023-07-25T08:47:48.755Z|05108": {
     "ƒ.Graph": {
       "name": "Scene",
@@ -633,22 +649,6 @@
       ],
       "idResource": "Graph|2023-07-25T08:47:48.755Z|05108",
       "type": "Graph"
-    }
-  },
-  "Material|2024-04-18T15:00:10.955Z|78959": {
-    "ƒ.Material": {
-      "name": "ShaderPhong",
-      "idResource": "Material|2024-04-18T15:00:10.955Z|78959",
-      "shader": "ShaderPhong",
-      "coat": {
-        "ƒ.CoatRemissive": {
-          "color": "[1, 1, 1, 1]",
-          "diffuse": 1,
-          "specular": 0.5,
-          "intensity": 0.7,
-          "metallic": 0
-        }
-      }
     }
   }
 }

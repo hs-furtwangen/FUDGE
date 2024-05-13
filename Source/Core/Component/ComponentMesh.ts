@@ -116,5 +116,14 @@ namespace FudgeCore {
       return mutator;
     }
     //#endregion
+
+    public drawGizmosSelected(): void {
+      if (!this.mesh)
+        return;
+      let color: Color = Color.CSS("salmon");
+      Gizmos.drawWireMesh(this.mesh, this.mtxWorld, color, 0.1);
+      Recycler.store(color);
+    }
   }
+
 }

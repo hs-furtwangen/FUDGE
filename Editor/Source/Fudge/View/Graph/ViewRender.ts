@@ -40,6 +40,17 @@ namespace Fudge {
       this.dom.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener("pointermove", this.hndPointer);
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
+
+      if (_state["gizmosFilter"]) {
+        let gizmosFilter: Map<string, boolean> = new Map(_state["gizmosFilter"]);
+        for (const [key, value] of gizmosFilter)
+          if (this.gizmosFilter.has(key))
+            this.gizmosFilter.set(key, value);
+      }
+    }
+
+    private get gizmosFilter(): Map<string, boolean> {
+      return this.viewport?.gizmosFilter;
     }
 
     //#region  ContextMenu
@@ -71,15 +82,6 @@ namespace Fudge {
       item = new remote.MenuItem({ label: "Render Continuously", id: String(CONTEXTMENU.RENDER_CONTINUOUSLY), type: "checkbox", click: _callback });
       menu.append(item);
 
-      let submenu: Electron.MenuItemConstructorOptions[] = [];
-      for (const [filter] of ƒ.Gizmos.filter)
-        submenu.push({ label: filter, id: filter, type: "checkbox", click: _callback });
-
-      item = new remote.MenuItem({
-        label: "Gizmos", submenu: submenu
-      });
-      menu.append(item);
-
       return menu;
     }
 
@@ -108,10 +110,10 @@ namespace Fudge {
           this.setRenderContinously(_item.checked);
           break;
         default:
-          if (!ƒ.Gizmos.filter.has(_item.id))
+          if (!this.gizmosFilter.has(_item.id))
             break;
 
-          ƒ.Gizmos.filter.set(_item.id, _item.checked);
+          this.gizmosFilter.set(_item.id, _item.checked);
           this.redraw();
           break;
       }
@@ -119,7 +121,7 @@ namespace Fudge {
 
     protected openContextMenu = (_event: Event): void => {
       if (!this.#pointerMoved) {
-        for (const [filter, active] of ƒ.Gizmos.filter)
+        for (const [filter, active] of this.gizmosFilter)
           this.contextMenu.getMenuItemById(filter).checked = active;
         this.contextMenu.popup();
       }
@@ -165,7 +167,9 @@ namespace Fudge {
       document.body.appendChild(this.canvas);
 
       this.viewport = new ƒ.Viewport();
-      this.viewport.renderingGizmos = true;
+      this.viewport.gizmosEnabled = true;
+      // add default values for view render gizmos
+      this.gizmosFilter.set(GIZMOS.TRANSFORM, true);
       this.viewport.initialize("ViewNode_Viewport", this.graph, cmpCamera, this.canvas);
       try {
         this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false);
@@ -173,12 +177,19 @@ namespace Fudge {
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.addEventListener(ƒ.EVENT.RENDER_PREPARE_START, this.hndPrepare);
       this.viewport.addEventListener(ƒ.EVENT.RENDER_END, this.drawTranslation);
-      this.viewport.addEventListener(ƒ.EVENT.RENDER_END, this.drawMesh);
 
       this.setGraph(null);
 
       this.canvas.addEventListener("pointerdown", this.activeViewport);
       this.canvas.addEventListener("pick", this.hndPick);
+
+      let submenu: Electron.MenuItemConstructorOptions[] = [];
+      for (const [filter] of this.gizmosFilter)
+        submenu.push({ label: filter, id: filter, type: "checkbox", click: this.contextMenuCallback.bind(this) });
+
+      this.contextMenu.append(new remote.MenuItem({
+        label: "Gizmos", submenu: submenu
+      }));
     }
 
     private setGraph(_node: ƒ.Graph): void {
@@ -242,7 +253,7 @@ namespace Fudge {
           }
           if (detail.node) {
             this.node = detail.node;
-            ƒ.Gizmos.selected = this.node;
+            this.viewport.gizmosSelected = [this.node];
           }
           break;
         case EVENT_EDITOR.FOCUS:
@@ -252,8 +263,7 @@ namespace Fudge {
         case EVENT_EDITOR.CLOSE:
           this.setRenderContinously(false);
           this.viewport.removeEventListener(ƒ.EVENT.RENDER_END, this.drawTranslation);
-          this.viewport.removeEventListener(ƒ.EVENT.RENDER_END, this.drawMesh);
-          ƒ.Gizmos.selected = null;
+          this.viewport.gizmosSelected = null;
           break;
         case EVENT_EDITOR.UPDATE:
           if (!this.viewport.camera.isActive)
@@ -332,7 +342,7 @@ namespace Fudge {
     }
 
     private drawTranslation = (): void => {
-      if (!this.node || !ƒ.Gizmos.filter.get(GIZMOS.TRANSFORM))
+      if (!this.node || !this.gizmosFilter.get(GIZMOS.TRANSFORM))
         return;
 
       const scaling: ƒ.Vector3 = ƒ.Vector3.ONE(ƒ.Vector3.DIFFERENCE(ƒ.Gizmos.camera.mtxWorld.translation, this.node.mtxWorld.translation).magnitude * 0.1);
@@ -352,12 +362,10 @@ namespace Fudge {
       ƒ.Recycler.storeMultiple(vctX, vctY, vctZ, origin, mtxWorld, color, scaling);
     };
 
-    private drawMesh = (): void => {
-      const cmpMesh: ƒ.ComponentMesh = this.node?.getComponent(ƒ.ComponentMesh);
-      if (!cmpMesh?.mesh || !ƒ.Gizmos.filter.get(GIZMOS.WIRE_MESH))
-        return;
-
-      ƒ.Gizmos.drawWireMesh(cmpMesh.mesh, cmpMesh.mtxWorld, ƒ.Color.CSS("salmon"), 0.1);
-    };
+    protected getState(): ViewState {
+      let state: ViewState = super.getState();
+      state["gizmosFilter"] = Array.from(this.gizmosFilter.entries());
+      return state;
+    }
   }
 }

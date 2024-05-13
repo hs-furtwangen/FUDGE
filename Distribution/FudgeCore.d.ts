@@ -683,6 +683,14 @@ declare namespace FudgeCore {
          * Tries to attach the component to the given node, removing it from the node it was attached to if applicable
          */
         attachToNode(_container: Node | null): void;
+        /**
+         * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
+         */
+        drawGizmos?(): void;
+        /**
+         * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
+         */
+        drawGizmosSelected?(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
@@ -1234,7 +1242,7 @@ declare namespace FudgeCore {
         * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
         */
         protected static pick(_node: Node, _cmpCamera: ComponentCamera): void;
-        protected static pickGizmos(_gizmos: Gizmo[], _cmpCamera: ComponentCamera): void;
+        protected static pickGizmos(_gizmos: Component[], _cmpCamera: ComponentCamera): void;
         /**
          * Buffer the fog parameters into the fog ubo
          */
@@ -2138,7 +2146,7 @@ declare namespace FudgeCore {
      * ```
      * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
      */
-    class ComponentAudio extends Component implements Gizmo {
+    class ComponentAudio extends Component {
         static readonly iSubclass: number;
         /** places and directs the panner relative to the world transform of the {@link Node}  */
         mtxPivot: Matrix4x4;
@@ -2289,7 +2297,7 @@ declare namespace FudgeCore {
      * The camera component holds the projection-matrix and other data needed to render a scene from the perspective of the node it is attached to.
      * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
      */
-    class ComponentCamera extends Component implements Gizmo {
+    class ComponentCamera extends Component {
         #private;
         static readonly iSubclass: number;
         mtxPivot: Matrix4x4;
@@ -2508,7 +2516,7 @@ declare namespace FudgeCore {
       * The pivot matrix has different effects depending on the type of the {@link Light}. See there for details.
       * @authors Jirka Dell'Oro-Friedl, HFU, 2019
       */
-    class ComponentLight extends Component implements Gizmo {
+    class ComponentLight extends Component {
         static readonly iSubclass: number;
         mtxPivot: Matrix4x4;
         light: Light;
@@ -2565,6 +2573,7 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutatorForUserInterface(): MutatorForUserInterface;
+        drawGizmosSelected(): void;
     }
 }
 declare namespace FudgeCore {
@@ -2580,7 +2589,7 @@ declare namespace FudgeCore {
      * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
      * @author Jonas Plotzky, HFU, 2022
      */
-    class ComponentParticleSystem extends Component implements Gizmo {
+    class ComponentParticleSystem extends Component {
         #private;
         static readonly iSubclass: number;
         particleSystem: ParticleSystem;
@@ -5309,7 +5318,7 @@ declare namespace FudgeCore {
      * Registers itself to a static list of all available waypoints
      * @author Lukas Scheuerle, HFU, 2024
      */
-    class ComponentWaypoint extends Component implements Waypoint, Gizmo {
+    class ComponentWaypoint extends Component implements Waypoint {
         #private;
         static readonly iSubclass: number;
         mtxLocal: Matrix4x4;
@@ -6272,7 +6281,7 @@ declare namespace FudgeCore {
         zBuffer: number;
         color: Color;
         textureUV: Vector2;
-        gizmo?: Gizmo;
+        gizmo?: Component;
         constructor(_node: Node);
         /**
          * Accessor to calculate and store world position of intersection of {@link Ray} and {@link Mesh} only when used.
@@ -6302,12 +6311,12 @@ declare namespace FudgeCore {
          * Takes a ray plus min and max values for the near and far planes to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos?: boolean): Pick[];
+        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos?: boolean, _gizmosFilter?: Map<string, boolean>): Pick[];
         /**
          * Takes a camera and a point on its virtual normed projection plane (distance 1) to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos?: boolean): Pick[];
+        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos?: boolean, _gizmosFilter?: Map<string, boolean>): Pick[];
         /**
          * Takes the camera of the given viewport and a point the client surface to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
@@ -6354,26 +6363,10 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * See {@link Gizmos}.
-     */
-    interface Gizmo {
-        node?: Node;
-        /**
-         * Draws a gizmo. Use {@link Gizmos} inside this method to draw stuff.
-         */
-        drawGizmos?(): void;
-        /**
-         * Draws the selected gizmo. Use {@link Gizmos} inside this method to draw stuff.
-         */
-        drawGizmosSelected?(): void;
-    }
-    /**
      * The gizmos drawing interface. Custom {@link ComponentScript}s that implement {@link Gizmo} can use this to draw gizmos inside the respective methods.
      */
     abstract class Gizmos {
         #private;
-        static selected: Node;
-        static readonly filter: Map<string, boolean>;
         /**
          * The default opacity of occluded gizmo parts. Use this to control the visibility of gizmos behind objects.
          * Set to 0 to make occluded gizmo parts disappear. Set to 1 to make occluded gizmo parts fully visible.
@@ -6456,7 +6449,8 @@ declare namespace FudgeCore {
     type MapLightTypeToLightList = Map<TypeOfLight, RecycableArray<ComponentLight>>;
     interface RenderPrepareOptions {
         ignorePhysics?: boolean;
-        collectGizmos?: boolean;
+        gizmosEnabled?: boolean;
+        gizmosFilter?: Map<string, boolean>;
     }
     /**
      * The main interface to the render engine, here WebGL (see superclass {@link RenderWebGL} and the RenderInjectors
@@ -6467,7 +6461,7 @@ declare namespace FudgeCore {
         static readonly nodesPhysics: RecycableArray<Node>;
         static readonly componentsPick: RecycableArray<ComponentPick>;
         static readonly lights: MapLightTypeToLightList;
-        static readonly gizmos: RecycableArray<Gizmo>;
+        static readonly gizmos: RecycableArray<Component>;
         private static readonly nodesSimple;
         private static readonly nodesAlpha;
         private static readonly componentsSkeleton;
@@ -6483,7 +6477,7 @@ declare namespace FudgeCore {
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
          * for each node in the line of sight and return that as an unsorted {@link Pick}-array
          */
-        static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pickGizmos?: boolean): Pick[];
+        static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pickGizmos?: boolean, _gizmosFilter?: Map<string, boolean>): Pick[];
         /**
          * Draws the scene from the point of view of the given camera
          */
@@ -6556,7 +6550,9 @@ declare namespace FudgeCore {
         adjustingFrames: boolean;
         adjustingCamera: boolean;
         physicsDebugMode: PHYSICS_DEBUGMODE;
-        renderingGizmos: boolean;
+        gizmosEnabled: boolean;
+        gizmosSelected: Node[];
+        gizmosFilter: Map<string, boolean>;
         componentsPick: RecycableArray<ComponentPick>;
         /**
          * Returns true if this viewport currently has focus and thus receives keyboard events

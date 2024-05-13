@@ -16,7 +16,7 @@ namespace FudgeCore {
    * Registers itself to a static list of all available waypoints
    * @author Lukas Scheuerle, HFU, 2024
    */
-  export class ComponentWaypoint extends Component implements Waypoint, Gizmo {
+  export class ComponentWaypoint extends Component implements Waypoint {
     public static readonly iSubclass: number = Component.registerSubclass(this);
     static readonly #waypoints: ComponentWaypoint[] = [];
 

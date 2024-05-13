@@ -19,7 +19,7 @@ namespace FudgeCore {
    * The camera component holds the projection-matrix and other data needed to render a scene from the perspective of the node it is attached to.
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
    */
-  export class ComponentCamera extends Component implements Gizmo {
+  export class ComponentCamera extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentCamera);
 
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();

@@ -16,7 +16,7 @@ namespace FudgeCore {
     * The pivot matrix has different effects depending on the type of the {@link Light}. See there for details.
     * @authors Jirka Dell'Oro-Friedl, HFU, 2019
     */
-  export class ComponentLight extends Component implements Gizmo {
+  export class ComponentLight extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentLight);
 
     // private static constructors: { [type: string]: General } = { [LIGHT_TYPE.AMBIENT]: LightAmbient, [LIGHT_TYPE.DIRECTIONAL]: LightDirectional, [LIGHT_TYPE.POINT]: LightPoint, [LIGHT_TYPE.SPOT]: LightSpot };

@@ -14,7 +14,7 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2022
    */
   @RenderInjectorComponentParticleSystem.decorate
-  export class ComponentParticleSystem extends Component implements Gizmo {
+  export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
     public particleSystem: ParticleSystem;
     /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */

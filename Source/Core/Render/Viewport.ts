@@ -26,7 +26,13 @@ namespace FudgeCore {
     public adjustingFrames: boolean = true; // TODO: maybe only adjust frames when anything changes instead of every drawn frame?
     public adjustingCamera: boolean = true;
     public physicsDebugMode: PHYSICS_DEBUGMODE = PHYSICS_DEBUGMODE.NONE;
-    public renderingGizmos: boolean = false;
+
+    public gizmosEnabled: boolean = false;
+    public gizmosSelected: Node[];
+    public gizmosFilter: Map<string, boolean> = new Map(Component.subclasses // TODO: maybe make this lazy
+      .filter((_class: typeof Component) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
+      .map((_class: typeof Component) => [_class.name, true])
+    );
 
     public componentsPick: RecycableArray<ComponentPick> = new RecycableArray();
 
@@ -90,7 +96,7 @@ namespace FudgeCore {
      * Set the branch to be drawn in the viewport.
      */
     public setBranch(_branch: Node): void {
-      if (_branch){
+      if (_branch) {
         _branch.broadcastEvent(new Event(EVENT.ATTACH_BRANCH));
       }
       this.#branch = _branch;
@@ -114,8 +120,8 @@ namespace FudgeCore {
       if (this.physicsDebugMode != PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY) {
         Render.draw(this.camera);
 
-        if (this.renderingGizmos)
-          Gizmos.draw(this.camera);
+        if (this.gizmosEnabled)
+          Gizmos.draw(this);
       }
 
       if (this.physicsDebugMode != PHYSICS_DEBUGMODE.NONE) {
@@ -152,12 +158,12 @@ namespace FudgeCore {
     /**
      * Prepares all nodes in the branch for rendering by updating their world transforms etc.
      */
-    public prepareBranch(): void { // TODO: Render.prepare does far more than just calculating transforms, so rename?
+    public prepareBranch(): void {
       let mtxRoot: Matrix4x4 = Matrix4x4.IDENTITY();
       if (this.#branch.getParent())
         mtxRoot = this.#branch.getParent().mtxWorld;
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      Render.prepare(this.#branch, { collectGizmos: this.renderingGizmos }, mtxRoot);
+      Render.prepare(this.#branch, { gizmosEnabled: this.gizmosEnabled, gizmosFilter: this.gizmosFilter }, mtxRoot);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
     }
@@ -183,7 +189,7 @@ namespace FudgeCore {
 
 
       if (cameraPicks.length) {
-        let picks: Pick[] = Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient), this.renderingGizmos);
+        let picks: Pick[] = Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient), this.gizmosEnabled, this.gizmosFilter);
         for (let pick of picks) {
           Reflect.set(_event, "pick", pick);
           pick.node.dispatchEvent(_event);

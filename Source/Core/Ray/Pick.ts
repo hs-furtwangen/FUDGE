@@ -9,7 +9,7 @@ namespace FudgeCore {
     public zBuffer: number;
     public color: Color;
     public textureUV: Vector2;
-    public gizmo?: Gizmo;
+    public gizmo?: Component;
     #mtxViewToWorld: Matrix4x4;
     #posWorld: Vector3;
     #posMesh: Vector3;

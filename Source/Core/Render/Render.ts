@@ -3,7 +3,8 @@ namespace FudgeCore {
 
   export interface RenderPrepareOptions {
     ignorePhysics?: boolean;
-    collectGizmos?: boolean;
+    gizmosEnabled?: boolean;
+    gizmosFilter?: Map<string, boolean>;
   }
 
   /**
@@ -15,7 +16,7 @@ namespace FudgeCore {
     public static readonly nodesPhysics: RecycableArray<Node> = new RecycableArray();
     public static readonly componentsPick: RecycableArray<ComponentPick> = new RecycableArray();
     public static readonly lights: MapLightTypeToLightList = new Map();
-    public static readonly gizmos: RecycableArray<Gizmo> = new RecycableArray();
+    public static readonly gizmos: RecycableArray<Component> = new RecycableArray();
     private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
@@ -38,7 +39,7 @@ namespace FudgeCore {
         Render.componentsPick.reset();
         Render.componentsSkeleton.reset();
         Render.lights.forEach(_array => _array.reset());
-        if (_options?.collectGizmos)
+        if (_options?.gizmosEnabled)
           Render.gizmos.reset();
         _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
       }
@@ -99,9 +100,9 @@ namespace FudgeCore {
         if (cmpSkeleton && cmpSkeleton.isActive)
           Render.componentsSkeleton.push(cmpSkeleton);
 
-      if (_options?.collectGizmos) {
+      if (_options?.gizmosEnabled && _options?.gizmosFilter) {
         for (const component of _branch.getAllComponents())
-          if (component.isActive && Gizmos.filter.get(component.type))
+          if (component.isActive && _options.gizmosFilter.get(component.type))
             Render.gizmos.push(component);
       }
 
@@ -147,7 +148,7 @@ namespace FudgeCore {
      * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
      * for each node in the line of sight and return that as an unsorted {@link Pick}-array
      */
-    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pickGizmos: boolean = false): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
+    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pickGizmos: boolean = false, _gizmosFilter?: Map<string, boolean>): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
       /**
        * TODO: maybe move this whole function to RenderWebGL? 
        * It seems to mostly rely on RenderWebGL e.g.: ƒpicked, createPickTexture(), setBlendMode(), pick(), pickGizmos(), getPicks(), resetFramebuffer()
@@ -164,7 +165,7 @@ namespace FudgeCore {
       Render.createPickTexture(size);
       Render.setBlendMode(BLEND.OPAQUE);
 
-      let gizmos: Gizmo[] = [];
+      let gizmos: Component[] = [];
 
       for (let node of _nodes) {
         let cmpMesh: ComponentMesh = node.getComponent(ComponentMesh);
@@ -172,9 +173,9 @@ namespace FudgeCore {
         if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive)
           Render.pick(node, _cmpCamera);
 
-        if (_pickGizmos) {
+        if (_pickGizmos && _gizmosFilter) {
           for (let gizmo of node.getAllComponents()) {
-            if (!gizmo.isActive || !Gizmos.filter.get(gizmo.type) || !(<Gizmo>gizmo).drawGizmos)
+            if (!gizmo.isActive || !_gizmosFilter.get(gizmo.type) || !gizmo.drawGizmos)
               continue;
       
             gizmos.push(gizmo);

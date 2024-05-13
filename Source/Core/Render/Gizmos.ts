@@ -1,33 +1,9 @@
 namespace FudgeCore {
 
-  // TODO: move this into base component class?
-  /**
-   * See {@link Gizmos}.
-   */
-  export interface Gizmo {
-    node?: Node;
-
-    /**
-     * Draws a gizmo. Use {@link Gizmos} inside this method to draw stuff.
-     */
-    drawGizmos?(): void;
-
-    /**
-     * Draws the selected gizmo. Use {@link Gizmos} inside this method to draw stuff.
-     */
-    drawGizmosSelected?(): void;
-  }
-
   /**
    * The gizmos drawing interface. Custom {@link ComponentScript}s that implement {@link Gizmo} can use this to draw gizmos inside the respective methods.
    */
   export abstract class Gizmos {
-    public static selected: Node;
-    public static readonly filter: Map<string, boolean> = new Map(Component.subclasses
-      .filter((_class: typeof Component) => (<Gizmo>_class.prototype).drawGizmos || (<Gizmo>_class.prototype).drawGizmosSelected)
-      .map((_class: typeof Component) => [_class.name, true])
-    );
-
     /** 
      * The default opacity of occluded gizmo parts. Use this to control the visibility of gizmos behind objects.
      * Set to 0 to make occluded gizmo parts disappear. Set to 1 to make occluded gizmo parts fully visible.
@@ -147,20 +123,20 @@ namespace FudgeCore {
     }
 
     /**
-     * Draws the scene's gizmos from the point of view of the given camera
+     * Draws the scene's gizmos from the point of view of the given viewports camera.
      * @internal
      */
-    public static draw(_cmpCamera: ComponentCamera): void {
-      Gizmos.#camera = _cmpCamera;
+    public static draw(_viewport: Viewport): void {
+      Gizmos.#camera = _viewport.camera;
       Gizmos.posIcons.clear();
 
       for (const gizmo of Render.gizmos)
-        Reflect.set(gizmo.node, "zCamera", _cmpCamera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
-      
-      const sorted: Gizmo[] = Render.gizmos.getSorted((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
+        Reflect.set(gizmo.node, "zCamera", _viewport.camera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
+
+      const sorted: Component[] = Render.gizmos.getSorted((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
       for (const gizmo of sorted) {
         gizmo.drawGizmos?.();
-        if (gizmo.node == Gizmos.selected)
+        if (_viewport.gizmosSelected?.includes(gizmo.node))
           gizmo.drawGizmosSelected?.();
       }
     }
@@ -168,10 +144,10 @@ namespace FudgeCore {
     /**
      * @internal
      */
-    public static pick(_gizmos: Gizmo[], _cmpCamera: ComponentCamera, _picked: Pick[]): void {
+    public static pick(_gizmos: Component[], _cmpCamera: ComponentCamera, _picked: Pick[]): void {
       Gizmos.#camera = _cmpCamera;
       Gizmos.posIcons.clear();
-      
+
       for (let gizmo of _gizmos) {
         Gizmos.pickId = _picked.length;
         gizmo.drawGizmos();
@@ -247,7 +223,7 @@ namespace FudgeCore {
       let mtxWorld: Matrix4x4 = _mtxWorld.clone;
 
       Gizmos.drawLines(Gizmos.wireSphere, mtxWorld, _color, _alphaOccluded);
-      mtxWorld.lookAt(Gizmos.camera.mtxWorld.translation);
+      mtxWorld.lookAt(Gizmos.#camera.mtxWorld.translation);
       Gizmos.drawWireCircle(mtxWorld, _color, _alphaOccluded);
 
       Recycler.store(mtxWorld);
@@ -339,7 +315,7 @@ namespace FudgeCore {
       const shader: ShaderInterface = Gizmos.picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
-      let renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Matrix4x4.MULTIPLICATION(Gizmos.camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
+      let renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Matrix4x4.MULTIPLICATION(Gizmos.#camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
 
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
     }
@@ -361,19 +337,19 @@ namespace FudgeCore {
       let mtxWorld: Matrix4x4 = _mtxWorld.clone;
       let color: Color = _color.clone;
 
-      let back: Vector3 = Gizmos.camera.mtxWorld.forward.negate();
-      let up: Vector3 = Gizmos.camera.mtxWorld.up;
+      let back: Vector3 = Gizmos.#camera.mtxWorld.forward.negate();
+      let up: Vector3 = Gizmos.#camera.mtxWorld.up;
       mtxWorld.lookIn(back, up);
 
-      let distance: number = Vector3.DIFFERENCE(Gizmos.camera.mtxWorld.translation, mtxWorld.translation).magnitude;
+      let distance: number = Vector3.DIFFERENCE(Gizmos.#camera.mtxWorld.translation, mtxWorld.translation).magnitude;
       let fadeFar: number = 4;
       let fadeNear: number = 1.5;
       if (distance > 0 && distance < fadeFar) {
         distance = (distance - fadeNear) / (fadeFar - fadeNear);
         color.a = Calc.lerp(0, color.a, distance);
       }
-      
-      let renderBuffers: RenderBuffers = Gizmos.quad.useRenderBuffers(shader, mtxWorld, Matrix4x4.MULTIPLICATION(Gizmos.camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
+
+      let renderBuffers: RenderBuffers = Gizmos.quad.useRenderBuffers(shader, mtxWorld, Matrix4x4.MULTIPLICATION(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
       _texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
       crc3.uniform1i(shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
 
@@ -396,7 +372,7 @@ namespace FudgeCore {
     }
 
     private static bufferMatrix(_shader: ShaderInterface, _mtxWorld: Matrix4x4): void {
-      const mtxMeshToView: Matrix4x4 = Matrix4x4.MULTIPLICATION(Gizmos.camera.mtxWorldToView, _mtxWorld);
+      const mtxMeshToView: Matrix4x4 = Matrix4x4.MULTIPLICATION(Gizmos.#camera.mtxWorldToView, _mtxWorld);
       RenderWebGL.getRenderingContext().uniformMatrix4fv(_shader.uniforms["u_mtxMeshToView"], false, mtxMeshToView.get());
       Recycler.store(mtxMeshToView);
     }

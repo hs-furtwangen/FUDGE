@@ -463,7 +463,7 @@ namespace FudgeCore {
       }
     }
 
-    protected static pickGizmos(_gizmos: Gizmo[], _cmpCamera: ComponentCamera): void {
+    protected static pickGizmos(_gizmos: Component[], _cmpCamera: ComponentCamera): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       // buffer these into both shaders as we don't know which one will be used for the gizmo

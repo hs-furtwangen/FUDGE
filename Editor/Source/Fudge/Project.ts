@@ -108,20 +108,7 @@ namespace Fudge {
       try {
         const settingsContent: string = await (await fetch(new URL(this.fileSettings, this.base).toString())).text();
         const panelSettings: ƒ.Serialization = ƒ.Serializer.parse(settingsContent);
-
-        // TODO: maybe move gizmos filter to the view state of ViewRender
-        let gizmosFilter: Map<string, boolean> = new Map(panelSettings.gizmosFilter);
-
-        // add default values for view render gizmos
-        ƒ.Gizmos.filter.set(GIZMOS.TRANSFORM, true);
-        ƒ.Gizmos.filter.set(GIZMOS.WIRE_MESH, false);
-
-        for (const [key, value] of gizmosFilter)
-          if (ƒ.Gizmos.filter.has(key))
-            ƒ.Gizmos.filter.set(key, value);
-
         config = Page.goldenLayoutModule.LayoutConfig.fromResolved(panelSettings.layout);
-
       } catch (_error) {
         ƒ.Debug.warn(`Failed to load '${this.fileSettings}'. A new settings file was created and will be saved.`, _error);
       }
@@ -141,7 +128,6 @@ namespace Fudge {
 
     public getSettingsJSON(): string {
       let settings: ƒ.Serialization = {};
-      settings.gizmosFilter = Array.from(ƒ.Gizmos.filter.entries());
       settings.layout = Page.getLayout();
 
       return ƒ.Serializer.stringify(settings);

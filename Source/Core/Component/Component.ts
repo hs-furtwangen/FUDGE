@@ -78,6 +78,16 @@ namespace FudgeCore {
       }
     }
 
+    /**
+     * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
+     */
+    public drawGizmos?(): void;
+
+    /**
+     * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
+     */
+    public drawGizmosSelected?(): void;
+
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = {

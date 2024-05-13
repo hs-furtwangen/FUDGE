@@ -1,8 +1,8 @@
 /// <reference types="../../../node_modules/electron/electron" />
 /// <reference types="node" />
-/// <reference types="../../../Distribution/FudgeAid" />
+/// <reference types="../../../distribution/fudgeaid" />
 /// <reference types="../../GoldenLayout/golden-layout" />
-/// <reference types="../../../Distribution/FudgeUserInterface" />
+/// <reference types="../../../distribution/fudgeuserinterface" />
 declare namespace Fudge {
     export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
     type Subclass<T> = {
@@ -87,8 +87,7 @@ declare namespace Fudge {
         SCALE = "scale"
     }
     enum GIZMOS {
-        TRANSFORM = "Transform",
-        WIRE_MESH = "WireMesh"
+        TRANSFORM = "Transform"
     }
 }
 declare namespace Fudge {
@@ -765,6 +764,7 @@ declare namespace Fudge {
         private nodeLight;
         private redrawId;
         constructor(_container: ComponentContainer, _state: ViewState);
+        private get gizmosFilter();
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected openContextMenu: (_event: Event) => void;
@@ -781,7 +781,7 @@ declare namespace Fudge {
         private redraw;
         private setRenderContinously;
         private drawTranslation;
-        private drawMesh;
+        protected getState(): ViewState;
     }
 }
 declare namespace Fudge {
