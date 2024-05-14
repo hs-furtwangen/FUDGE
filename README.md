@@ -1,4 +1,4 @@
-<a href="https://github.com/JirkaDellOro/FUDGE"><img src="https://jirkadelloro.github.io/FUDGE/Miscellaneous/Logo/FudgeLogoText.png" onload="document.querySelector('h1').style.visibility='hidden'"/></a>
+<a href="https://github.com/JirkaDellOro/FUDGE"><img src="https://hs-furtwangen.github.io/FUDGE/Miscellaneous/Logo/FudgeLogoText.png" onload="document.querySelector('h1').style.visibility='hidden'"/></a>
 
 # Welcome!
 
@@ -8,7 +8,7 @@ Check out these examples to see what can be achieved with FUDGE:
 
 - [GameZone](https://games.dm.hs-furtwangen.de/GameZone/): Visit the GameZone to explore a selection of applications created by students using FUDGE. You can filter for "FUDGE" in the technology dropdown to see FUDGE-powered projects.
 - [Prima-Lectures](https://github.com/JirkaDellOro/Prima#examples): The Prima-Lectures repository contains material from the Prototyping Interactive Media-Applications and Games lectures. You can find examples and resources related to FUDGE there.
-- [UfoUndLost](https://jirkadelloro.github.io/UfoundLost/UfoundLost.html): UfoUndLost is a project created at the GlobalGameJam 2021 using FUDGE. Take a look to see how FUDGE was utilized in this game jam submission.
+- [UfoUndLost](https://hs-furtwangen.github.io/UfoundLost/UfoundLost.html): UfoUndLost is a project created at the GlobalGameJam 2021 using FUDGE. Take a look to see how FUDGE was utilized in this game jam submission.
 
 # Get Started
 
@@ -43,7 +43,7 @@ To start the FUDGE editor, you have multiple options:
 - Run `npm start` in the terminal.
 - Double-click the `FUDGE.bat` file (on Windows).
 
-![FUDGE Editor](https://JirkaDellOro.github.io/FUDGE/Miscellaneous/Screenshots/Editor.png)
+![FUDGE Editor](https://hs-furtwangen.github.io/FUDGE/Miscellaneous/Screenshots/Editor.png)
 
 Once you have the editor up and running, you can start creating assets in the project panel and build graphs in the graph panel. The editor is fully controlled by the menu bar, and you can right-click in various views for context menus and use drag-and-drop between the views. Take advantage of the hints in the views to guide you.
 
@@ -59,18 +59,18 @@ Browse through the [Wiki](../../wiki) to gain an intuitive understanding of FUDG
 
 ## Test
 
-Explore the tests to examine isolated functionalities of FUDGE and see code in action. Run your local clone with a local server or visit the [Test](https://JirkaDellOro.github.io/FUDGE/Test) page.
+Explore the tests to examine isolated functionalities of FUDGE and see code in action. Run your local clone with a local server or visit the [Test](https://hs-furtwangen.github.io/FUDGE/Test) page.
 
 ## Documentation
 
 Refer to the following documentation and references for in-depth information about different modules of FUDGE:
 
-- [Core](https://JirkaDellOro.github.io/FUDGE/Documentation/Reference/Core/modules/FudgeCore.html)
-- [UserInterface](https://JirkaDellOro.github.io/FUDGE/Documentation/Reference/UserInterface/modules/FudgeUserInterface.html)
-- [Aid](https://JirkaDellOro.github.io/FUDGE/Documentation/Reference/Aid/modules/FudgeAid.html)
+- [Core](https://hs-furtwangen.github.io/FUDGE/Documentation/Reference/Core/modules/FudgeCore.html)
+- [UserInterface](https://hs-furtwangen.github.io/FUDGE/Documentation/Reference/UserInterface/modules/FudgeUserInterface.html)
+- [Aid](https://hs-furtwangen.github.io/FUDGE/Documentation/Reference/Aid/modules/FudgeAid.html)
 - [OIMO.js](https://github.com/lo-th/Oimo.js)
-- [FudgeServer](https://jirkadelloro.github.io/FUDGE/Documentation/Reference/Net/index.html)
-- [FudgeClient](https://JirkaDellOro.github.io/FUDGE/Documentation/Reference/Net/modules/FudgeNet.html)
+- [FudgeServer](https://hs-furtwangen.github.io/FUDGE/Documentation/Reference/Net/index.html)
+- [FudgeClient](https://hs-furtwangen.github.io/FUDGE/Documentation/Reference/Net/modules/FudgeNet.html)
 
 # Repository Overview
 
