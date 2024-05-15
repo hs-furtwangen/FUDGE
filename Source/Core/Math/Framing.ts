@@ -10,7 +10,7 @@ namespace FudgeCore {
    * Framing describes how to map a rectangle into a given frame
    * and how points in the frame correspond to points in the resulting rectangle and vice versa
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019  
-   * @link https://github.com/JirkaDellOro/FUDGE/wiki/Framing
+   * @link https://github.com/hs-furtwangen/FUDGE/wiki/Framing
    */
   export abstract class Framing extends Mutable {
     protected reduceMutator(_mutator: Mutator): void {/** */ }

@@ -8,7 +8,7 @@ namespace FudgeCore {
    * An instance of a {@link Graph}.  
    * This node keeps a reference to its resource an can thus optimize serialization
    * @author Jirka Dell'Oro-Friedl, HFU, 2019
-   * @link https://github.com/JirkaDellOro/FUDGE/wiki/Resource
+   * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
    */
   export class GraphInstance extends Node {
     /** id of the resource that instance was created from */

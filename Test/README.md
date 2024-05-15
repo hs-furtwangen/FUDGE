@@ -1,7 +1,7 @@
 # FUDGE Tests
 
 - Open the console (F12 or Ctrl+Shift+I), since many test also or solely show output to the console!
-- Testing online on jirkadelloro.github.io/FUDGE only tests the development branch. Test other branches locally using a local server.
+- Testing online on hs-furtwangen.github.io/FUDGE only tests the development branch. Test other branches locally using a local server.
 - Use of markdown viewer is recommended when testing locally to use this README.md
 - Here is only a selection of test that are already enhanced with explanation and user guidelines
 - Find more tests in the folder "Miscellaneous"

@@ -6,7 +6,7 @@ namespace FudgeCore {
   /**
    * Represents a node in the scenetree.
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
-   * @link https://github.com/JirkaDellOro/FUDGE/wiki/Graph
+   * @link https://github.com/hs-furtwangen/FUDGE/wiki/Graph
    */
   export class Node extends EventTargetUnified implements Serializable {
     public name: string; // The name to call this node by.

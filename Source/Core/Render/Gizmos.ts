@@ -1,7 +1,7 @@
 namespace FudgeCore {
 
   /**
-   * The gizmos drawing interface. Custom {@link ComponentScript}s that implement {@link Gizmo} can use this to draw gizmos inside the respective methods.
+   * The gizmos drawing interface. {@link Component}s can use this to draw visual aids inside {@link Component.drawGizmos} and {@link Component.drawGizmosSelected}.
    */
   export abstract class Gizmos {
     /** 

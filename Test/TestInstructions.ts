@@ -1,5 +1,5 @@
 namespace TestInstructions {
-  // TODO: extend with form for comment. POST with automatically collected data to https://api.github.com/repos/JirkaDellOro/FUDGE/issues
+  // TODO: extend with form for comment. POST with automatically collected data to https://api.github.com/repos/JirkaDellOro/FUDGE/issues https://api.github.com/repos/hs-furtwangen/FUDGE/issues
   // see: https://developer.github.com/v3/issues/#create-an-issue
 
   declare namespace dialogPolyfill {

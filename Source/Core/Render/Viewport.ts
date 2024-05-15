@@ -5,7 +5,7 @@ namespace FudgeCore {
    * through a series of {@link Framing} objects. The stages involved are in order of rendering
    * {@link Render}.viewport -> {@link Viewport}.source -> {@link Viewport}.destination -> DOM-Canvas -> Client(CSS)
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
-   * @link https://github.com/JirkaDellOro/FUDGE/wiki/Viewport
+   * @link https://github.com/hs-furtwangen/FUDGE/wiki/Viewport
    */
   export class Viewport extends EventTargetUnified {
     private static focus: Viewport;
