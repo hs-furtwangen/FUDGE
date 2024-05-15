@@ -348,7 +348,7 @@ namespace FudgeCore {
         case BODY_INIT.TO_PIVOT:
           break;
       }
-      let mtxWorld: Matrix4x4 = Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+      let mtxWorld: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
 
       let position: Vector3 = mtxWorld.translation; //Adding the offsets from the pivot
       let rotation: Vector3 = mtxWorld.rotation;
@@ -361,8 +361,8 @@ namespace FudgeCore {
       this.setRotation(rotation);
 
       let scalingInverse: Vector3 = this.node.mtxWorld.scaling.map(_i => 1 / _i);
-      this.#mtxPivotUnscaled = Matrix4x4.CONSTRUCTION(this.mtxPivot.translation, this.mtxPivot.rotation, scalingInverse);
-      this.#mtxPivotInverse = Matrix4x4.INVERSION(this.#mtxPivotUnscaled);
+      this.#mtxPivotUnscaled = Matrix4x4.COMPOSITION(this.mtxPivot.translation, this.mtxPivot.rotation, scalingInverse);
+      this.#mtxPivotInverse = Matrix4x4.INVERSE(this.#mtxPivotUnscaled);
 
       this.addRigidbodyToWorld();
       this.isInitialized = true;

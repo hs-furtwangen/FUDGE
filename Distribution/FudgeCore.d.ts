@@ -3868,13 +3868,13 @@ declare namespace FudgeCore {
         /**
          * Composes a new matrix according to the given translation, rotation and scaling.
          */
-        static CONSTRUCTION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3): Matrix4x4;
+        static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3): Matrix4x4;
         /**
          * Computes and returns the product of two passed matrices.
          * @param _mtxLeft The matrix to multiply.
          * @param _mtxRight The matrix to multiply by.
          */
-        static MULTIPLICATION(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4;
+        static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4;
         /**
          * Computes and returns the transpose of a passed matrix.
          */
@@ -3883,7 +3883,7 @@ declare namespace FudgeCore {
          * Computes and returns the inverse of a passed matrix.
          * @param _mtx The matrix to compute the inverse of.
          */
-        static INVERSION(_mtx: Matrix4x4): Matrix4x4;
+        static INVERSE(_mtx: Matrix4x4): Matrix4x4;
         /**
          * Computes and returns a matrix with the given translation, its z-axis pointing directly at the given target,
          * and a minimal angle between its y-axis and the given up-{@link Vector3}, respetively calculating yaw and pitch.
@@ -3951,7 +3951,7 @@ declare namespace FudgeCore {
         /**
          * Set the rotation part of the given matrixes data array to the given rotation.
          */
-        private static SET_ROTATION;
+        private static setRotation;
         /**
          * - get: return a vector representation of the translation {@link Vector3}.
          * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
@@ -4016,7 +4016,7 @@ declare namespace FudgeCore {
         /**
          * Invert this matrix
          */
-        inverse(): Matrix4x4;
+        invert(): Matrix4x4;
         /**
          * Adds a rotation around the x-axis to this matrix
          */

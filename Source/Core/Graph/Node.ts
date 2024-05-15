@@ -113,7 +113,7 @@ namespace FudgeCore {
 
     public get mtxWorldInverse(): Matrix4x4 {
       if (this.#mtxWorldInverseUpdated != this.timestampUpdate)
-        this.#mtxWorldInverse = Matrix4x4.INVERSION(this.mtxWorld);
+        this.#mtxWorldInverse = Matrix4x4.INVERSE(this.mtxWorld);
 
       this.#mtxWorldInverseUpdated = this.timestampUpdate;
       return this.#mtxWorldInverse;

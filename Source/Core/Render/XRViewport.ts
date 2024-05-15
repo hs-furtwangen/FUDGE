@@ -142,7 +142,7 @@ namespace FudgeCore {
 
       mtxWorld = mtxWorld.clone;
       mtxWorld.rotateY(180); // rotate because the XR Rig is looking in the direction of negative z
-      let invMtxTransfom: Matrix4x4 = mtxWorld.inverse(); // inverse because we are moving the reference space
+      let invMtxTransfom: Matrix4x4 = Matrix4x4.INVERSE(mtxWorld); // inverse because we are moving the reference space
       XRViewport.default.referenceSpace = XRViewport.default.referenceSpace.getOffsetReferenceSpace(new XRRigidTransform(invMtxTransfom.translation, invMtxTransfom.quaternion));
     }
 

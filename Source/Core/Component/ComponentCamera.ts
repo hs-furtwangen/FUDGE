@@ -44,7 +44,7 @@ namespace FudgeCore {
     public get mtxWorld(): Matrix4x4 {
       let mtxCamera: Matrix4x4 = this.mtxPivot.clone;
       try {
-        mtxCamera = Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+        mtxCamera = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       } catch (_error) {
         // no container node or no world transformation found -> continue with pivot only
         // TODO: maybe use if () then instead of try catch
@@ -61,7 +61,7 @@ namespace FudgeCore {
         return this.#mtxWorldToView;
 
       //TODO: optimize, no need to recalculate if neither mtxWorld nor pivot have changed
-      this.#mtxWorldToView = Matrix4x4.MULTIPLICATION(this.#mtxProjection, this.mtxCameraInverse);
+      this.#mtxWorldToView = Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxCameraInverse);
       return this.#mtxWorldToView;
     }
 
@@ -73,7 +73,7 @@ namespace FudgeCore {
         return this.#mtxCameraInverse;
 
       //TODO: optimize, no need to recalculate if neither mtxWorld nor pivot have changed
-      this.#mtxCameraInverse = Matrix4x4.INVERSION(this.mtxWorld);
+      this.#mtxCameraInverse = Matrix4x4.INVERSE(this.mtxWorld);
       return this.#mtxCameraInverse;
     }
 
@@ -216,7 +216,7 @@ namespace FudgeCore {
      * Transforms the given point from clip space to world space
      */
     public pointClipToWorld(_pointInClipSpace: Vector3): Vector3 {
-      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSION(this.mtxWorldToView);
+      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(this.mtxWorldToView);
       let m: Float32Array = mtxViewToWorld.get();
       let rayWorld: Vector3 = Vector3.TRANSFORMATION(_pointInClipSpace, mtxViewToWorld, true);
       let w: number = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];

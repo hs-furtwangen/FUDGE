@@ -103,7 +103,7 @@ namespace FudgeCore {
      */
     public getTerrainInfo(_position: Vector3, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _mtxInverse?: Matrix4x4): TerrainInfo {
       if (!_mtxInverse)
-        _mtxInverse = Matrix4x4.INVERSION(_mtxWorld);
+        _mtxInverse = Matrix4x4.INVERSE(_mtxWorld);
 
       let terrainInfo: TerrainInfo = new TerrainInfo;
 

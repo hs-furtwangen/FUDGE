@@ -216,10 +216,10 @@ namespace FudgeCore {
             if (parent)
               node.mtxWorld.set(
                 node.cmpTransform ?
-                  Matrix4x4.MULTIPLICATION(parent.mtxWorld, node.mtxLocal) :
+                  Matrix4x4.PRODUCT(parent.mtxWorld, node.mtxLocal) :
                   parent.mtxWorld
               );
-            node.mtxWorldInverse.set(Matrix4x4.INVERSION(node.mtxWorld));
+            node.mtxWorldInverse.set(Matrix4x4.INVERSE(node.mtxWorld));
             skeleton.addBone(node);
           }
         }
@@ -309,7 +309,7 @@ namespace FudgeCore {
       }
       if (_modelFBX.PostRotation) {
         let mtxPostRotationInverse: Matrix4x4 = Matrix4x4.ROTATION(this.getOrdered(_modelFBX.PostRotation, _modelFBX));
-        mtxPostRotationInverse = Matrix4x4.INVERSION(mtxPostRotationInverse);
+        mtxPostRotationInverse = Matrix4x4.INVERSE(mtxPostRotationInverse);
         mtxLocalRotation.multiply(mtxPostRotationInverse);
       }
 
@@ -320,7 +320,7 @@ namespace FudgeCore {
       const mtxParentWorldRotation: Matrix4x4 = parent ? Matrix4x4.ROTATION(parent.mtxWorld.rotation) : undefined;
 
       const mtxParentWorldScale: Matrix4x4 = parent ? (() => {
-        const mtxParentWorldScale: Matrix4x4 = Matrix4x4.INVERSION(mtxParentWorldRotation);
+        const mtxParentWorldScale: Matrix4x4 = Matrix4x4.INVERSE(mtxParentWorldRotation);
         mtxParentWorldScale.translate(Vector3.SCALE(parent.mtxWorld.translation, -1));
         mtxParentWorldScale.multiply(parent.mtxWorld);
         return mtxParentWorldScale;
@@ -355,7 +355,7 @@ namespace FudgeCore {
           if (parent) {
             mtxWorldRotationScale.multiply(mtxParentWorldScale);
             let mtxParentLocalScalingInverse: Matrix4x4 = Matrix4x4.SCALING(parent.mtxLocal.scaling);
-            mtxParentLocalScalingInverse = Matrix4x4.INVERSION(mtxParentLocalScalingInverse);
+            mtxParentLocalScalingInverse = Matrix4x4.INVERSE(mtxParentLocalScalingInverse);
             mtxWorldRotationScale.multiply(mtxParentLocalScalingInverse);
           }
           if (mtxLocalScaling)
@@ -392,7 +392,7 @@ namespace FudgeCore {
         mtxTransform.translate(Vector3.SCALE(_modelFBX.ScalingPivot, -1));
 
       const mtxWorldTranslation: Matrix4x4 = parent ?
-        Matrix4x4.TRANSLATION(Matrix4x4.MULTIPLICATION(
+        Matrix4x4.TRANSLATION(Matrix4x4.PRODUCT(
           parent.mtxWorld,
           Matrix4x4.TRANSLATION(mtxTransform.translation)
         ).translation) :
@@ -403,7 +403,7 @@ namespace FudgeCore {
       _node.mtxWorld.set(mtxTransform);
 
       if (parent)
-        mtxTransform.multiply(Matrix4x4.INVERSION(parent.mtxWorld), true);
+        mtxTransform.multiply(Matrix4x4.INVERSE(parent.mtxWorld), true);
       _node.addComponent(new ComponentTransform(mtxTransform));
     }
 

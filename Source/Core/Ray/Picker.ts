@@ -27,7 +27,7 @@ namespace FudgeCore {
       let length: number = ray.direction.magnitude;
 
       if (_cmpCamera.node) {
-        let mtxCamera: Matrix4x4 = Matrix4x4.MULTIPLICATION(_cmpCamera.node.mtxWorld, _cmpCamera.mtxPivot);
+        let mtxCamera: Matrix4x4 = Matrix4x4.PRODUCT(_cmpCamera.node.mtxWorld, _cmpCamera.mtxPivot);
         ray.transform(mtxCamera);
         Recycler.store(mtxCamera);
       } else

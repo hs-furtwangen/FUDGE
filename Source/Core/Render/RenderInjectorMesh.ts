@@ -66,7 +66,7 @@ namespace FudgeCore {
 
       uniform = _shader.uniforms["u_mtxNormalMeshToWorld"];
       if (uniform) {
-        let normalMatrix: Matrix4x4 = Matrix4x4.TRANSPOSE(Matrix4x4.INVERSION(_mtxMeshToWorld));
+        let normalMatrix: Matrix4x4 = Matrix4x4.TRANSPOSE(Matrix4x4.INVERSE(_mtxMeshToWorld));
         crc3.uniformMatrix4fv(uniform, false, normalMatrix.get());
       }
 

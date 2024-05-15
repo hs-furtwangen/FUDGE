@@ -42,7 +42,7 @@ namespace FudgeCore {
     /**
      * Composes a new matrix according to the given translation, rotation and scaling.
      */
-    public static CONSTRUCTION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3): Matrix4x4 {
+    public static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3): Matrix4x4 {
       let result: Matrix4x4 = Matrix4x4.IDENTITY();
       result.mutate({ "translation": _translation, "rotation": _rotation, "scaling": _scaling });
       return result;
@@ -53,7 +53,7 @@ namespace FudgeCore {
      * @param _mtxLeft The matrix to multiply.
      * @param _mtxRight The matrix to multiply by.
      */
-    public static MULTIPLICATION(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4 {
+    public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4 {
       let a: Float32Array = _mtxLeft.data;
       let b: Float32Array = _mtxRight.data;
       const mtxResult: Matrix4x4 = Recycler.get(Matrix4x4);
@@ -130,81 +130,8 @@ namespace FudgeCore {
      * Computes and returns the inverse of a passed matrix.
      * @param _mtx The matrix to compute the inverse of.
      */
-    public static INVERSION(_mtx: Matrix4x4): Matrix4x4 {
-      let m: Float32Array = _mtx.data;
-      let m00: number = m[0 * 4 + 0];
-      let m01: number = m[0 * 4 + 1];
-      let m02: number = m[0 * 4 + 2];
-      let m03: number = m[0 * 4 + 3];
-      let m10: number = m[1 * 4 + 0];
-      let m11: number = m[1 * 4 + 1];
-      let m12: number = m[1 * 4 + 2];
-      let m13: number = m[1 * 4 + 3];
-      let m20: number = m[2 * 4 + 0];
-      let m21: number = m[2 * 4 + 1];
-      let m22: number = m[2 * 4 + 2];
-      let m23: number = m[2 * 4 + 3];
-      let m30: number = m[3 * 4 + 0];
-      let m31: number = m[3 * 4 + 1];
-      let m32: number = m[3 * 4 + 2];
-      let m33: number = m[3 * 4 + 3];
-      let tmp0: number = m22 * m33;
-      let tmp1: number = m32 * m23;
-      let tmp2: number = m12 * m33;
-      let tmp3: number = m32 * m13;
-      let tmp4: number = m12 * m23;
-      let tmp5: number = m22 * m13;
-      let tmp6: number = m02 * m33;
-      let tmp7: number = m32 * m03;
-      let tmp8: number = m02 * m23;
-      let tmp9: number = m22 * m03;
-      let tmp10: number = m02 * m13;
-      let tmp11: number = m12 * m03;
-      let tmp12: number = m20 * m31;
-      let tmp13: number = m30 * m21;
-      let tmp14: number = m10 * m31;
-      let tmp15: number = m30 * m11;
-      let tmp16: number = m10 * m21;
-      let tmp17: number = m20 * m11;
-      let tmp18: number = m00 * m31;
-      let tmp19: number = m30 * m01;
-      let tmp20: number = m00 * m21;
-      let tmp21: number = m20 * m01;
-      let tmp22: number = m00 * m11;
-      let tmp23: number = m10 * m01;
-
-      let t0: number = (tmp0 * m11 + tmp3 * m21 + tmp4 * m31) -
-        (tmp1 * m11 + tmp2 * m21 + tmp5 * m31);
-
-      let t1: number = (tmp1 * m01 + tmp6 * m21 + tmp9 * m31) -
-        (tmp0 * m01 + tmp7 * m21 + tmp8 * m31);
-      let t2: number = (tmp2 * m01 + tmp7 * m11 + tmp10 * m31) -
-        (tmp3 * m01 + tmp6 * m11 + tmp11 * m31);
-      let t3: number = (tmp5 * m01 + tmp8 * m11 + tmp11 * m21) -
-        (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
-
-      let d: number = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
-
-      const mtxResult: Matrix4x4 = Recycler.get(Matrix4x4);
-      mtxResult.data.set([
-        d * t0, // [0]
-        d * t1, // [1]
-        d * t2, // [2]
-        d * t3, // [3]
-        d * ((tmp1 * m10 + tmp2 * m20 + tmp5 * m30) - (tmp0 * m10 + tmp3 * m20 + tmp4 * m30)),        // [4]
-        d * ((tmp0 * m00 + tmp7 * m20 + tmp8 * m30) - (tmp1 * m00 + tmp6 * m20 + tmp9 * m30)),        // [5]
-        d * ((tmp3 * m00 + tmp6 * m10 + tmp11 * m30) - (tmp2 * m00 + tmp7 * m10 + tmp10 * m30)),      // [6]
-        d * ((tmp4 * m00 + tmp9 * m10 + tmp10 * m20) - (tmp5 * m00 + tmp8 * m10 + tmp11 * m20)),      // [7]
-        d * ((tmp12 * m13 + tmp15 * m23 + tmp16 * m33) - (tmp13 * m13 + tmp14 * m23 + tmp17 * m33)),  // [8]
-        d * ((tmp13 * m03 + tmp18 * m23 + tmp21 * m33) - (tmp12 * m03 + tmp19 * m23 + tmp20 * m33)),  // [9]
-        d * ((tmp14 * m03 + tmp19 * m13 + tmp22 * m33) - (tmp15 * m03 + tmp18 * m13 + tmp23 * m33)),  // [10]
-        d * ((tmp17 * m03 + tmp20 * m13 + tmp23 * m23) - (tmp16 * m03 + tmp21 * m13 + tmp22 * m23)),  // [11]
-        d * ((tmp14 * m22 + tmp17 * m32 + tmp13 * m12) - (tmp16 * m32 + tmp12 * m12 + tmp15 * m22)),  // [12]
-        d * ((tmp20 * m32 + tmp12 * m02 + tmp19 * m22) - (tmp18 * m22 + tmp21 * m32 + tmp13 * m02)),  // [13]
-        d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),  // [14]
-        d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))  // [15]
-      ]);
-      return mtxResult;
+    public static INVERSE(_mtx: Matrix4x4): Matrix4x4 {
+      return _mtx.clone.invert();
     }
 
     /**
@@ -348,7 +275,7 @@ namespace FudgeCore {
      */
     public static ROTATION(_rotation: Vector3 | Quaternion): Matrix4x4 {
       const mtxResult: Matrix4x4 = Recycler.get(Matrix4x4);
-      Matrix4x4.SET_ROTATION(mtxResult.data, _rotation);
+      Matrix4x4.setRotation(mtxResult.data, _rotation);
       return mtxResult;
     }
 
@@ -372,10 +299,10 @@ namespace FudgeCore {
      */
     public static RELATIVE(_mtx: Matrix4x4, _mtxBase: Matrix4x4, _mtxInverse?: Matrix4x4): Matrix4x4 {
       if (_mtxInverse)
-        return Matrix4x4.MULTIPLICATION(_mtxInverse, _mtx);
+        return Matrix4x4.PRODUCT(_mtxInverse, _mtx);
 
-      let mtxInverse: Matrix4x4 = Matrix4x4.INVERSION(_mtxBase);
-      let mtxResult: Matrix4x4 = Matrix4x4.MULTIPLICATION(mtxInverse, _mtx);
+      let mtxInverse: Matrix4x4 = Matrix4x4.INVERSE(_mtxBase);
+      let mtxResult: Matrix4x4 = Matrix4x4.PRODUCT(mtxInverse, _mtx);
       Recycler.store(mtxInverse);
       return mtxResult;
     }
@@ -444,7 +371,7 @@ namespace FudgeCore {
     /**
      * Set the rotation part of the given matrixes data array to the given rotation.
      */
-    private static SET_ROTATION(_m: Float32Array, _rotation: Vector3 | Quaternion): void {
+    private static setRotation(_m: Float32Array, _rotation: Vector3 | Quaternion): void {
       if (_rotation instanceof Vector3) {
         const anglesInRadians: Vector3 = Vector3.SCALE(_rotation, Calc.deg2rad);
         const sinX: number = Math.sin(anglesInRadians.x);
@@ -685,7 +612,7 @@ namespace FudgeCore {
     /**
      * Invert this matrix
      */
-    public inverse(): Matrix4x4 {
+    public invert(): Matrix4x4 {
       let m: Float32Array = this.data;
       let m00: number = m[0 * 4 + 0];
       let m01: number = m[0 * 4 + 1];
@@ -740,8 +667,7 @@ namespace FudgeCore {
 
       let d: number = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
 
-      const matrix: Matrix4x4 = Recycler.get(Matrix4x4);
-      matrix.data.set([
+      m.set([
         d * t0, // [0]
         d * t1, // [1]
         d * t2, // [2]
@@ -759,7 +685,7 @@ namespace FudgeCore {
         d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),  // [14]
         d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))  // [15]
       ]);
-      return matrix;
+      return this;
     }
 
     /**
@@ -908,7 +834,7 @@ namespace FudgeCore {
      * Add a scaling by the given {@link Vector3} to this matrix 
      */
     public scale(_by: Vector3): void {
-      const mtxResult: Matrix4x4 = Matrix4x4.MULTIPLICATION(this, Matrix4x4.SCALING(_by));
+      const mtxResult: Matrix4x4 = Matrix4x4.PRODUCT(this, Matrix4x4.SCALING(_by));
       this.set(mtxResult);
       Recycler.store(mtxResult);
     }
@@ -947,7 +873,7 @@ namespace FudgeCore {
      * Multiply this matrix with the given matrix
      */
     public multiply(_matrix: Matrix4x4, _fromLeft: boolean = false): void {
-      const mtxResult: Matrix4x4 = _fromLeft ? Matrix4x4.MULTIPLICATION(_matrix, this) : Matrix4x4.MULTIPLICATION(this, _matrix);
+      const mtxResult: Matrix4x4 = _fromLeft ? Matrix4x4.PRODUCT(_matrix, this) : Matrix4x4.PRODUCT(this, _matrix);
       this.set(mtxResult);
       Recycler.store(mtxResult);
     }
@@ -1132,7 +1058,7 @@ namespace FudgeCore {
         if (_mutator.scaling)
           scaling.mutate(_mutator.scaling);
 
-        Matrix4x4.SET_ROTATION(m, rotation);
+        Matrix4x4.setRotation(m, rotation);
         const isEulerRotation: boolean = rotation instanceof Vector3;
         this.#rotationDirty = !isEulerRotation;
         this.#quaternionDirty = isEulerRotation;

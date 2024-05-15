@@ -66,7 +66,7 @@ namespace FudgeCore {
 
     /** The current world position of the Waypoint. Returns a new Matrix without connection to the Waypoint */
     public get mtxWorld(): Matrix4x4 {
-      return Matrix4x4.MULTIPLICATION(this.mtxLocal, this.node.mtxWorld);
+      return Matrix4x4.PRODUCT(this.mtxLocal, this.node.mtxWorld);
     }
 
     /** Adds a new {@link Connection} to this waypoint */
@@ -113,7 +113,7 @@ namespace FudgeCore {
     public drawGizmos(): void {
       let scaleVector: Vector3 = Vector3.SCALE(Vector3.ONE(), 0.1);
       let mtx: Matrix4x4 = this.mtxWorld;
-      Gizmos.drawSphere(Matrix4x4.CONSTRUCTION(mtx.translation, Vector3.ZERO(), scaleVector), Color.CSS("orange"));
+      Gizmos.drawSphere(Matrix4x4.COMPOSITION(mtx.translation, Vector3.ZERO(), scaleVector), Color.CSS("orange"));
       // return;
       let lines: Vector3[] = [];
       for (let connection of this.connections) {

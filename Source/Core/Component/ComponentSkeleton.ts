@@ -78,7 +78,7 @@ namespace FudgeCore {
       this.mtxBones.length = 0;
 
       for (let i: number = 0; i < this.bones.length; i++) {
-        let mtxBone: Matrix4x4 = Matrix4x4.MULTIPLICATION(this.bones[i].mtxWorld, this.mtxBindInverses[i]);
+        let mtxBone: Matrix4x4 = Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i]);
         this.mtxBones.push(mtxBone);
       }
     }
@@ -88,7 +88,7 @@ namespace FudgeCore {
      */
     public resetPose(): void { // TODO: test this
       for (let i: number = 0; i < this.bones.length; i++)
-        this.bones[i].mtxLocal.set(Matrix4x4.INVERSION(this.mtxBindInverses[i]));
+        this.bones[i].mtxLocal.set(Matrix4x4.INVERSE(this.mtxBindInverses[i]));
     }
 
     public serialize(): Serialization {

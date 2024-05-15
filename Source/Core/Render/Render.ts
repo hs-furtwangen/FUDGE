@@ -54,7 +54,7 @@ namespace FudgeCore {
       _branch.timestampUpdate = Render.timestampUpdate;
 
       if (_branch.cmpTransform && _branch.cmpTransform.isActive) {
-        let mtxWorldBranch: Matrix4x4 = Matrix4x4.MULTIPLICATION(_mtxWorld, _branch.cmpTransform.mtxLocal);
+        let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
         _branch.mtxWorld.set(mtxWorldBranch);
         Recycler.store(mtxWorldBranch);
       } else
@@ -79,7 +79,7 @@ namespace FudgeCore {
       let cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
 
       if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
-        let mtxWorldMesh: Matrix4x4 = Matrix4x4.MULTIPLICATION(_branch.mtxWorld, cmpMesh.mtxPivot);
+        let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
         cmpMesh.mtxWorld.set(mtxWorldMesh);
         Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
         let shader: ShaderInterface = cmpMaterial.material.getShader();
@@ -223,14 +223,14 @@ namespace FudgeCore {
       _cmpRigidbody.checkCollisionEvents();
 
       if (_cmpRigidbody.typeBody == BODY_TYPE.KINEMATIC || Project.mode == MODE.EDITOR) { //Case of Kinematic Rigidbody
-        let mtxPivotWorld: Matrix4x4 = Matrix4x4.MULTIPLICATION(_node.mtxWorld, _cmpRigidbody.mtxPivotUnscaled);
+        let mtxPivotWorld: Matrix4x4 = Matrix4x4.PRODUCT(_node.mtxWorld, _cmpRigidbody.mtxPivotUnscaled);
         _cmpRigidbody.setPosition(mtxPivotWorld.translation);
         _cmpRigidbody.setRotation(mtxPivotWorld.rotation);
         Recycler.store(mtxPivotWorld);
         return;
       }
 
-      let mtxWorld: Matrix4x4 = Matrix4x4.CONSTRUCTION(
+      let mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(
         _cmpRigidbody.getPosition(), _cmpRigidbody.getRotation(), null);
       mtxWorld.multiply(_cmpRigidbody.mtxPivotInverse);
       _node.mtxWorld.translation = mtxWorld.translation;

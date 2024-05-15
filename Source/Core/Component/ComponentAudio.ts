@@ -198,7 +198,7 @@ namespace FudgeCore {
     }
 
     public drawGizmos(): void {
-      let mtxShape: Matrix4x4 = Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+      let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);
       let color: Color = Color.CSS("cornflowerblue");
       Gizmos.drawIcon(TextureDefault.iconAudio, mtxShape, color);
@@ -330,7 +330,7 @@ namespace FudgeCore {
     private update = (_event: Event): void => {
       let mtxResult: Matrix4x4 = this.mtxPivot;
       if (this.node)
-        mtxResult = Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+        mtxResult = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
 
       // Debug.log(mtxResult.toString());
       let position: Vector3 = mtxResult.translation;

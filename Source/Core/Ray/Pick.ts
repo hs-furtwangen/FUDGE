@@ -40,7 +40,7 @@ namespace FudgeCore {
     public get posMesh(): Vector3 {
       if (this.#posMesh)
         return this.#posMesh;
-      let mtxWorldToMesh: Matrix4x4 = Matrix4x4.INVERSION(this.node.getComponent(ComponentMesh).mtxWorld);
+      let mtxWorldToMesh: Matrix4x4 = Matrix4x4.INVERSE(this.node.getComponent(ComponentMesh).mtxWorld);
       let posMesh: Vector3 = Vector3.TRANSFORMATION(this.posWorld, mtxWorldToMesh);
       this.#posMesh = posMesh;
       return posMesh;

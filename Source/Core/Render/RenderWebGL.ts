@@ -399,7 +399,7 @@ namespace FudgeCore {
       let data: Int32Array = new Int32Array(_size * _size * 4);
       Render.crc3.readPixels(0, 0, _size, _size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
 
-      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSION(_cmpCamera.mtxWorldToView);
+      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
       let picked: Pick[] = [];
       for (let i: number = 0; i < Render.ƒpicked.length; i++) {
         let zBuffer: number = data[4 * i + 0] + data[4 * i + 1] / 256;
@@ -554,7 +554,7 @@ namespace FudgeCore {
           lightsData.set(cmpLight.light.color.getArray(), lightDataOffset + 0);
 
           // set mtxShape
-          let mtxTotal: Matrix4x4 = Matrix4x4.MULTIPLICATION(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
+          let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
           if (_type == LightDirectional) {
             let zero: Vector3 = Vector3.ZERO();
             mtxTotal.translation = zero;
@@ -565,7 +565,7 @@ namespace FudgeCore {
 
           // set mtxShapeInverse
           if (_type != LightDirectional) {
-            let mtxInverse: Matrix4x4 = mtxTotal.inverse();
+            let mtxInverse: Matrix4x4 = Matrix4x4.INVERSE(mtxTotal);
             lightsData.set(mtxInverse.get(), lightDataOffset + 4 + 16); // offset + vctColor + mtxShape
             Recycler.store(mtxInverse);
           }
@@ -805,10 +805,10 @@ namespace FudgeCore {
         let mtxMeshToView: Matrix4x4; // mesh to world?
         mtxMeshToView = _mtxMeshToWorld.clone;
         mtxMeshToView.lookAt(_target, cmpFaceCamera.upLocal ? null : cmpFaceCamera.up, cmpFaceCamera.restrict);
-        return Matrix4x4.MULTIPLICATION(_mtxWorldToView, mtxMeshToView);
+        return Matrix4x4.PRODUCT(_mtxWorldToView, mtxMeshToView);
       }
 
-      return Matrix4x4.MULTIPLICATION(_mtxWorldToView, _mtxMeshToWorld);
+      return Matrix4x4.PRODUCT(_mtxWorldToView, _mtxMeshToWorld);
     }
 
     private static bindTexture(_shader: ShaderInterface, _texture: WebGLTexture, _unit: number, _uniform: string): void {
