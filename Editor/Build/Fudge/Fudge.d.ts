@@ -1,8 +1,6 @@
 /// <reference types="../../../node_modules/electron/electron" />
 /// <reference types="node" />
-/// <reference types="../../../distribution/fudgeaid" />
 /// <reference types="../../GoldenLayout/golden-layout" />
-/// <reference types="../../../distribution/fudgeuserinterface" />
 declare namespace Fudge {
     export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
     type Subclass<T> = {
@@ -125,6 +123,7 @@ declare namespace Fudge {
     export {};
 }
 declare namespace Fudge {
+    import ƒ = FudgeCore;
     enum EVENT_EDITOR {
         /** An entity gets created, is not dispatched so far */
         CREATE = "EDITOR_CREATE",
@@ -359,6 +358,7 @@ declare namespace Fudge {
     }
 }
 declare namespace Fudge {
+    import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
     class ControllerTableResource extends ƒui.TableController<ƒ.SerializableResource> {
         private static head;
@@ -446,6 +446,7 @@ declare namespace Fudge {
     }
 }
 declare namespace Fudge {
+    import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
     type ResourceEntry = ResourceFile | ResourceFolder;
     interface ResourceFile extends ƒ.SerializableResource {

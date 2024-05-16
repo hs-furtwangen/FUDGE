@@ -1,4 +1,3 @@
-/// <reference path="FudgeCore.d.ts" />
 declare namespace FudgeUserInterface {
     import ƒ = FudgeCore;
     /**

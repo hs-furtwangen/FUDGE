@@ -1,4 +1,3 @@
-/// <reference path="FudgeCore.d.ts" />
 declare namespace FudgeNet {
     enum COMMAND {
         UNDEFINED = "undefined",
@@ -73,35 +72,6 @@ declare namespace FudgeNet {
         content?: {
             [key: string]: any;
         };
-    }
-}
-declare namespace FudgeNet {
-    enum EVENT {
-        CONNECTION_OPENED = "open",
-        CONNECTION_CLOSED = "close",
-        ERROR = "error",
-        MESSAGE_RECEIVED = "message"
-    }
-    let configuration: {
-        iceServers: {
-            urls: string;
-        }[];
-    };
-    /**
-     * Manages a single rtc peer-to-peer connection with multiple channels.
-     * {@link FudgeNet.Message}s are passed on from the client using this connection
-     * for further processing by some observer. Instances of this class are
-     * used internally by the {@link FudgeClient} and should not be used otherwise.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     */
-    class Rtc extends RTCPeerConnection {
-        dataChannel: RTCDataChannel | undefined;
-        mediaStream: MediaStream | undefined;
-        constructor();
-        setupDataChannel: (_client: FudgeClient, _idRemote: string) => void;
-        addDataChannel: (_client: FudgeClient, _dataChannel: RTCDataChannel) => void;
-        send: (_message: string) => void;
-        private logState;
     }
 }
 declare namespace FudgeNet {
@@ -197,5 +167,34 @@ declare namespace FudgeNet {
          */
         private cEaddIceCandidate;
         private cEestablishConnection;
+    }
+}
+declare namespace FudgeNet {
+    enum EVENT {
+        CONNECTION_OPENED = "open",
+        CONNECTION_CLOSED = "close",
+        ERROR = "error",
+        MESSAGE_RECEIVED = "message"
+    }
+    let configuration: {
+        iceServers: {
+            urls: string;
+        }[];
+    };
+    /**
+     * Manages a single rtc peer-to-peer connection with multiple channels.
+     * {@link FudgeNet.Message}s are passed on from the client using this connection
+     * for further processing by some observer. Instances of this class are
+     * used internally by the {@link FudgeClient} and should not be used otherwise.
+     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+     */
+    class Rtc extends RTCPeerConnection {
+        dataChannel: RTCDataChannel | undefined;
+        mediaStream: MediaStream | undefined;
+        constructor();
+        setupDataChannel: (_client: FudgeClient, _idRemote: string) => void;
+        addDataChannel: (_client: FudgeClient, _dataChannel: RTCDataChannel) => void;
+        send: (_message: string) => void;
+        private logState;
     }
 }

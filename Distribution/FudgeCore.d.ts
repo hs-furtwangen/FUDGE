@@ -456,7 +456,7 @@ declare namespace FudgeCore {
     /**
      * Represents a node in the scenetree.
      * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Graph
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Graph
      */
     class Node extends EventTargetUnified implements Serializable {
         #private;
@@ -652,7 +652,7 @@ declare namespace FudgeCore {
     /**
      * Superclass for all {@link Component}s that can be attached to {@link Node}s.
      * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Component
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
     abstract class Component extends Mutable implements Serializable {
         #private;
@@ -701,7 +701,7 @@ declare namespace FudgeCore {
     /**
      * Wraps a regular Javascript Array and offers very limited functionality geared solely towards avoiding garbage colletion.
      * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Recycler
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
      */
     class RecycableArray<T> {
         #private;
@@ -779,7 +779,7 @@ declare namespace FudgeCore {
      * Keeps a depot of objects that have been marked for reuse, sorted by type.
      * Using {@link Recycler} reduces load on the carbage collector and thus supports smooth performance.
      * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Recycler
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
      */
     abstract class Recycler {
         private static depot;
@@ -2398,7 +2398,7 @@ declare namespace FudgeCore {
     /**
      * Makes the node face the camera when rendering, respecting restrictions for rotation around specific axis
      * @authors Jirka Dell'Oro-Friedl, HFU, 2022
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Component
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
     class ComponentFaceCamera extends Component {
         static readonly iSubclass: number;
@@ -2428,7 +2428,7 @@ declare namespace FudgeCore {
      * Filters synchronization between a graph instance and the graph it is connected to. If active, no synchronization occurs.
      * Maybe more finegrained in the future...
      * @authors Jirka Dell'Oro-Friedl, HFU, 2022
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Component
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
     class ComponentGraphFilter extends Component {
         static readonly iSubclass: number;
@@ -2649,7 +2649,7 @@ declare namespace FudgeCore {
     /**
      * Base class for scripts the user writes
      * @authors Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Component
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
     class ComponentScript extends Component {
         static readonly iSubclass: number;
@@ -3261,7 +3261,7 @@ declare namespace FudgeCore {
     /**
      * A node managed by {@link Project} that functions as a template for {@link GraphInstance}s
      * @author Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Resource
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
      */
     class Graph extends Node implements SerializableResource {
         idResource: string;
@@ -3298,7 +3298,7 @@ declare namespace FudgeCore {
      * An instance of a {@link Graph}.
      * This node keeps a reference to its resource an can thus optimize serialization
      * @author Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Resource
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
      */
     class GraphInstance extends Node {
         #private;
@@ -3597,7 +3597,7 @@ declare namespace FudgeCore {
      * Framing describes how to map a rectangle into a given frame
      * and how points in the frame correspond to points in the resulting rectangle and vice versa
      * @authors Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Framing
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Framing
      */
     abstract class Framing extends Mutable {
         protected reduceMutator(_mutator: Mutator): void;
@@ -6363,7 +6363,7 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * The gizmos drawing interface. Custom {@link ComponentScript}s that implement {@link Gizmo} can use this to draw gizmos inside the respective methods.
+     * The gizmos drawing interface. {@link Component}s can use this to draw visual aids inside {@link Component.drawGizmos} and {@link Component.drawGizmosSelected}.
      */
     abstract class Gizmos {
         #private;
@@ -6534,7 +6534,7 @@ declare namespace FudgeCore {
      * through a series of {@link Framing} objects. The stages involved are in order of rendering
      * {@link Render}.viewport -> {@link Viewport}.source -> {@link Viewport}.destination -> DOM-Canvas -> Client(CSS)
      * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
-     * @link https://github.com/JirkaDellOro/FUDGE/wiki/Viewport
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Viewport
      */
     class Viewport extends EventTargetUnified {
         #private;

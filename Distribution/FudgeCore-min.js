@@ -544,7 +544,7 @@ var FudgeCore;
         }
         get mtxWorldInverse() {
             if (this.#mtxWorldInverseUpdated != this.timestampUpdate)
-                this.#mtxWorldInverse = FudgeCore.Matrix4x4.INVERSION(this.mtxWorld);
+                this.#mtxWorldInverse = FudgeCore.Matrix4x4.INVERSE(this.mtxWorld);
             this.#mtxWorldInverseUpdated = this.timestampUpdate;
             return this.#mtxWorldInverse;
         }
@@ -1207,7 +1207,7 @@ var FudgeCore;
                 crc3.uniformMatrix4fv(uniform, false, _mtxMeshToWorld.get());
             uniform = _shader.uniforms["u_mtxNormalMeshToWorld"];
             if (uniform) {
-                let normalMatrix = FudgeCore.Matrix4x4.TRANSPOSE(FudgeCore.Matrix4x4.INVERSION(_mtxMeshToWorld));
+                let normalMatrix = FudgeCore.Matrix4x4.TRANSPOSE(FudgeCore.Matrix4x4.INVERSE(_mtxMeshToWorld));
                 crc3.uniformMatrix4fv(uniform, false, normalMatrix.get());
             }
             uniform = _shader.uniforms["u_id"];
@@ -2222,7 +2222,7 @@ var FudgeCore;
         static getPicks(_size, _cmpCamera) {
             let data = new Int32Array(_size * _size * 4);
             FudgeCore.Render.crc3.readPixels(0, 0, _size, _size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
-            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSION(_cmpCamera.mtxWorldToView);
+            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
             let picked = [];
             for (let i = 0; i < FudgeCore.Render.ƒpicked.length; i++) {
                 let zBuffer = data[4 * i + 0] + data[4 * i + 1] / 256;
@@ -2320,7 +2320,7 @@ var FudgeCore;
                 for (let cmpLight of cmpLights) {
                     const lightDataOffset = iLight * lightDataSize;
                     lightsData.set(cmpLight.light.color.getArray(), lightDataOffset + 0);
-                    let mtxTotal = FudgeCore.Matrix4x4.MULTIPLICATION(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
+                    let mtxTotal = FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
                     if (_type == FudgeCore.LightDirectional) {
                         let zero = FudgeCore.Vector3.ZERO();
                         mtxTotal.translation = zero;
@@ -2328,7 +2328,7 @@ var FudgeCore;
                     }
                     lightsData.set(mtxTotal.get(), lightDataOffset + 4);
                     if (_type != FudgeCore.LightDirectional) {
-                        let mtxInverse = mtxTotal.inverse();
+                        let mtxInverse = FudgeCore.Matrix4x4.INVERSE(mtxTotal);
                         lightsData.set(mtxInverse.get(), lightDataOffset + 4 + 16);
                         FudgeCore.Recycler.store(mtxInverse);
                     }
@@ -2483,9 +2483,9 @@ var FudgeCore;
                 let mtxMeshToView;
                 mtxMeshToView = _mtxMeshToWorld.clone;
                 mtxMeshToView.lookAt(_target, cmpFaceCamera.upLocal ? null : cmpFaceCamera.up, cmpFaceCamera.restrict);
-                return FudgeCore.Matrix4x4.MULTIPLICATION(_mtxWorldToView, mtxMeshToView);
+                return FudgeCore.Matrix4x4.PRODUCT(_mtxWorldToView, mtxMeshToView);
             }
-            return FudgeCore.Matrix4x4.MULTIPLICATION(_mtxWorldToView, _mtxMeshToWorld);
+            return FudgeCore.Matrix4x4.PRODUCT(_mtxWorldToView, _mtxMeshToWorld);
         }
         static bindTexture(_shader, _texture, _unit, _uniform) {
             const crc3 = RenderWebGL.getRenderingContext();
@@ -4109,7 +4109,7 @@ var FudgeCore;
             this.update = (_event) => {
                 let mtxResult = this.mtxPivot;
                 if (this.node)
-                    mtxResult = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+                    mtxResult = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
                 let position = mtxResult.translation;
                 let forward = FudgeCore.Vector3.TRANSFORMATION(FudgeCore.Vector3.Z(1), mtxResult, false);
                 this.panner.positionX.value = position.x;
@@ -4215,7 +4215,7 @@ var FudgeCore;
                 this.gain.disconnect(this.audioManager.gain);
         }
         drawGizmos() {
-            let mtxShape = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+            let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
             mtxShape.scaling = new FudgeCore.Vector3(0.5, 0.5, 0.5);
             let color = FudgeCore.Color.CSS("cornflowerblue");
             FudgeCore.Gizmos.drawIcon(FudgeCore.TextureDefault.iconAudio, mtxShape, color);
@@ -4296,7 +4296,7 @@ var FudgeCore;
         update(_listener) {
             let mtxResult = this.mtxPivot;
             if (this.node)
-                mtxResult = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+                mtxResult = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
             let position = mtxResult.translation;
             let forward = FudgeCore.Vector3.TRANSFORMATION(FudgeCore.Vector3.Z(1), mtxResult, false);
             let up = FudgeCore.Vector3.TRANSFORMATION(FudgeCore.Vector3.Y(), mtxResult, false);
@@ -4416,7 +4416,7 @@ var FudgeCore;
         get mtxWorld() {
             let mtxCamera = this.mtxPivot.clone;
             try {
-                mtxCamera = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+                mtxCamera = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
             }
             catch (_error) {
             }
@@ -4425,13 +4425,13 @@ var FudgeCore;
         get mtxWorldToView() {
             if (this.#mtxWorldToView)
                 return this.#mtxWorldToView;
-            this.#mtxWorldToView = FudgeCore.Matrix4x4.MULTIPLICATION(this.#mtxProjection, this.mtxCameraInverse);
+            this.#mtxWorldToView = FudgeCore.Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxCameraInverse);
             return this.#mtxWorldToView;
         }
         get mtxCameraInverse() {
             if (this.#mtxCameraInverse)
                 return this.#mtxCameraInverse;
-            this.#mtxCameraInverse = FudgeCore.Matrix4x4.INVERSION(this.mtxWorld);
+            this.#mtxCameraInverse = FudgeCore.Matrix4x4.INVERSE(this.mtxWorld);
             return this.#mtxCameraInverse;
         }
         get mtxProjection() {
@@ -4510,7 +4510,7 @@ var FudgeCore;
             return result;
         }
         pointClipToWorld(_pointInClipSpace) {
-            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSION(this.mtxWorldToView);
+            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(this.mtxWorldToView);
             let m = mtxViewToWorld.get();
             let rayWorld = FudgeCore.Vector3.TRANSFORMATION(_pointInClipSpace, mtxViewToWorld, true);
             let w = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];
@@ -4743,14 +4743,14 @@ var FudgeCore;
             _mutator.type = type;
         }
         drawGizmos() {
-            let mtxShape = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+            let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
             mtxShape.scaling = new FudgeCore.Vector3(0.5, 0.5, 0.5);
             FudgeCore.Gizmos.drawIcon(FudgeCore.TextureDefault.iconLight, mtxShape, this.light.color);
             FudgeCore.Recycler.store(mtxShape);
         }
         ;
         drawGizmosSelected() {
-            let mtxShape = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+            let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
             let color = FudgeCore.Color.CSS("yellow");
             switch (this.light.getType()) {
                 case FudgeCore.LightDirectional:
@@ -4877,6 +4877,13 @@ var FudgeCore;
         getMutatorForUserInterface() {
             let mutator = this.getMutator();
             return mutator;
+        }
+        drawGizmosSelected() {
+            if (!this.mesh)
+                return;
+            let color = FudgeCore.Color.CSS("salmon");
+            FudgeCore.Gizmos.drawWireMesh(this.mesh, this.mtxWorld, color, 0.1);
+            FudgeCore.Recycler.store(color);
         }
     }
     FudgeCore.ComponentMesh = ComponentMesh;
@@ -5156,13 +5163,13 @@ var FudgeCore;
                 FudgeCore.Recycler.store(mtxBone);
             this.mtxBones.length = 0;
             for (let i = 0; i < this.bones.length; i++) {
-                let mtxBone = FudgeCore.Matrix4x4.MULTIPLICATION(this.bones[i].mtxWorld, this.mtxBindInverses[i]);
+                let mtxBone = FudgeCore.Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i]);
                 this.mtxBones.push(mtxBone);
             }
         }
         resetPose() {
             for (let i = 0; i < this.bones.length; i++)
-                this.bones[i].mtxLocal.set(FudgeCore.Matrix4x4.INVERSION(this.mtxBindInverses[i]));
+                this.bones[i].mtxLocal.set(FudgeCore.Matrix4x4.INVERSE(this.mtxBindInverses[i]));
         }
         serialize() {
             const serialization = {};
@@ -5297,14 +5304,14 @@ var FudgeCore;
                     if (node) {
                         let mtxTemp;
                         if (_base == BASE.NODE) {
-                            mtxTemp = FudgeCore.Matrix4x4.MULTIPLICATION(_node.mtxWorld, node.mtxLocal);
+                            mtxTemp = FudgeCore.Matrix4x4.PRODUCT(_node.mtxWorld, node.mtxLocal);
                             node.mtxWorld.set(mtxTemp);
                             FudgeCore.Recycler.store(mtxTemp);
                         }
                         let parent = node.getParent();
                         if (parent) {
                             this.rebase(node.getParent());
-                            mtxTemp = FudgeCore.Matrix4x4.MULTIPLICATION(node.getParent().mtxWorld, node.mtxLocal);
+                            mtxTemp = FudgeCore.Matrix4x4.PRODUCT(node.getParent().mtxWorld, node.mtxLocal);
                             node.mtxWorld.set(mtxTemp);
                             FudgeCore.Recycler.store(mtxTemp);
                         }
@@ -7119,12 +7126,12 @@ var FudgeCore;
             const mtxResult = FudgeCore.Recycler.get(Matrix4x4);
             return mtxResult;
         }
-        static CONSTRUCTION(_translation, _rotation, _scaling) {
+        static COMPOSITION(_translation, _rotation, _scaling) {
             let result = Matrix4x4.IDENTITY();
             result.mutate({ "translation": _translation, "rotation": _rotation, "scaling": _scaling });
             return result;
         }
-        static MULTIPLICATION(_mtxLeft, _mtxRight) {
+        static PRODUCT(_mtxLeft, _mtxRight) {
             let a = _mtxLeft.data;
             let b = _mtxRight.data;
             const mtxResult = FudgeCore.Recycler.get(Matrix4x4);
@@ -7191,77 +7198,8 @@ var FudgeCore;
             ]);
             return result;
         }
-        static INVERSION(_mtx) {
-            let m = _mtx.data;
-            let m00 = m[0 * 4 + 0];
-            let m01 = m[0 * 4 + 1];
-            let m02 = m[0 * 4 + 2];
-            let m03 = m[0 * 4 + 3];
-            let m10 = m[1 * 4 + 0];
-            let m11 = m[1 * 4 + 1];
-            let m12 = m[1 * 4 + 2];
-            let m13 = m[1 * 4 + 3];
-            let m20 = m[2 * 4 + 0];
-            let m21 = m[2 * 4 + 1];
-            let m22 = m[2 * 4 + 2];
-            let m23 = m[2 * 4 + 3];
-            let m30 = m[3 * 4 + 0];
-            let m31 = m[3 * 4 + 1];
-            let m32 = m[3 * 4 + 2];
-            let m33 = m[3 * 4 + 3];
-            let tmp0 = m22 * m33;
-            let tmp1 = m32 * m23;
-            let tmp2 = m12 * m33;
-            let tmp3 = m32 * m13;
-            let tmp4 = m12 * m23;
-            let tmp5 = m22 * m13;
-            let tmp6 = m02 * m33;
-            let tmp7 = m32 * m03;
-            let tmp8 = m02 * m23;
-            let tmp9 = m22 * m03;
-            let tmp10 = m02 * m13;
-            let tmp11 = m12 * m03;
-            let tmp12 = m20 * m31;
-            let tmp13 = m30 * m21;
-            let tmp14 = m10 * m31;
-            let tmp15 = m30 * m11;
-            let tmp16 = m10 * m21;
-            let tmp17 = m20 * m11;
-            let tmp18 = m00 * m31;
-            let tmp19 = m30 * m01;
-            let tmp20 = m00 * m21;
-            let tmp21 = m20 * m01;
-            let tmp22 = m00 * m11;
-            let tmp23 = m10 * m01;
-            let t0 = (tmp0 * m11 + tmp3 * m21 + tmp4 * m31) -
-                (tmp1 * m11 + tmp2 * m21 + tmp5 * m31);
-            let t1 = (tmp1 * m01 + tmp6 * m21 + tmp9 * m31) -
-                (tmp0 * m01 + tmp7 * m21 + tmp8 * m31);
-            let t2 = (tmp2 * m01 + tmp7 * m11 + tmp10 * m31) -
-                (tmp3 * m01 + tmp6 * m11 + tmp11 * m31);
-            let t3 = (tmp5 * m01 + tmp8 * m11 + tmp11 * m21) -
-                (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
-            let d = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
-            const mtxResult = FudgeCore.Recycler.get(Matrix4x4);
-            mtxResult.data.set([
-                d * t0,
-                d * t1,
-                d * t2,
-                d * t3,
-                d * ((tmp1 * m10 + tmp2 * m20 + tmp5 * m30) - (tmp0 * m10 + tmp3 * m20 + tmp4 * m30)),
-                d * ((tmp0 * m00 + tmp7 * m20 + tmp8 * m30) - (tmp1 * m00 + tmp6 * m20 + tmp9 * m30)),
-                d * ((tmp3 * m00 + tmp6 * m10 + tmp11 * m30) - (tmp2 * m00 + tmp7 * m10 + tmp10 * m30)),
-                d * ((tmp4 * m00 + tmp9 * m10 + tmp10 * m20) - (tmp5 * m00 + tmp8 * m10 + tmp11 * m20)),
-                d * ((tmp12 * m13 + tmp15 * m23 + tmp16 * m33) - (tmp13 * m13 + tmp14 * m23 + tmp17 * m33)),
-                d * ((tmp13 * m03 + tmp18 * m23 + tmp21 * m33) - (tmp12 * m03 + tmp19 * m23 + tmp20 * m33)),
-                d * ((tmp14 * m03 + tmp19 * m13 + tmp22 * m33) - (tmp15 * m03 + tmp18 * m13 + tmp23 * m33)),
-                d * ((tmp17 * m03 + tmp20 * m13 + tmp23 * m23) - (tmp16 * m03 + tmp21 * m13 + tmp22 * m23)),
-                d * ((tmp14 * m22 + tmp17 * m32 + tmp13 * m12) - (tmp16 * m32 + tmp12 * m12 + tmp15 * m22)),
-                d * ((tmp20 * m32 + tmp12 * m02 + tmp19 * m22) - (tmp18 * m22 + tmp21 * m32 + tmp13 * m02)),
-                d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),
-                d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))
-            ]);
-            return mtxResult;
+        static INVERSE(_mtx) {
+            return _mtx.clone.invert();
         }
         static LOOK_AT(_translation, _target, _up = FudgeCore.Vector3.Y(), _restrict = false) {
             const mtxResult = FudgeCore.Recycler.get(Matrix4x4);
@@ -7348,7 +7286,7 @@ var FudgeCore;
         }
         static ROTATION(_rotation) {
             const mtxResult = FudgeCore.Recycler.get(Matrix4x4);
-            Matrix4x4.SET_ROTATION(mtxResult.data, _rotation);
+            Matrix4x4.setRotation(mtxResult.data, _rotation);
             return mtxResult;
         }
         static SCALING(_scalar) {
@@ -7363,9 +7301,9 @@ var FudgeCore;
         }
         static RELATIVE(_mtx, _mtxBase, _mtxInverse) {
             if (_mtxInverse)
-                return Matrix4x4.MULTIPLICATION(_mtxInverse, _mtx);
-            let mtxInverse = Matrix4x4.INVERSION(_mtxBase);
-            let mtxResult = Matrix4x4.MULTIPLICATION(mtxInverse, _mtx);
+                return Matrix4x4.PRODUCT(_mtxInverse, _mtx);
+            let mtxInverse = Matrix4x4.INVERSE(_mtxBase);
+            let mtxResult = Matrix4x4.PRODUCT(mtxInverse, _mtx);
             FudgeCore.Recycler.store(mtxInverse);
             return mtxResult;
         }
@@ -7405,7 +7343,7 @@ var FudgeCore;
             ]);
             return mtxResult;
         }
-        static SET_ROTATION(_m, _rotation) {
+        static setRotation(_m, _rotation) {
             if (_rotation instanceof FudgeCore.Vector3) {
                 const anglesInRadians = FudgeCore.Vector3.SCALE(_rotation, FudgeCore.Calc.deg2rad);
                 const sinX = Math.sin(anglesInRadians.x);
@@ -7560,7 +7498,7 @@ var FudgeCore;
             ]);
             return this;
         }
-        inverse() {
+        invert() {
             let m = this.data;
             let m00 = m[0 * 4 + 0];
             let m01 = m[0 * 4 + 1];
@@ -7611,8 +7549,7 @@ var FudgeCore;
             let t3 = (tmp5 * m01 + tmp8 * m11 + tmp11 * m21) -
                 (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
             let d = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
-            const matrix = FudgeCore.Recycler.get(Matrix4x4);
-            matrix.data.set([
+            m.set([
                 d * t0,
                 d * t1,
                 d * t2,
@@ -7630,7 +7567,7 @@ var FudgeCore;
                 d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),
                 d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))
             ]);
-            return matrix;
+            return this;
         }
         rotateX(_angleInDegrees, _fromLeft = false) {
             let mtxRotation = Matrix4x4.ROTATION_X(_angleInDegrees);
@@ -7690,7 +7627,7 @@ var FudgeCore;
             FudgeCore.Recycler.store(translation);
         }
         scale(_by) {
-            const mtxResult = Matrix4x4.MULTIPLICATION(this, Matrix4x4.SCALING(_by));
+            const mtxResult = Matrix4x4.PRODUCT(this, Matrix4x4.SCALING(_by));
             this.set(mtxResult);
             FudgeCore.Recycler.store(mtxResult);
         }
@@ -7713,7 +7650,7 @@ var FudgeCore;
             FudgeCore.Recycler.store(vector);
         }
         multiply(_matrix, _fromLeft = false) {
-            const mtxResult = _fromLeft ? Matrix4x4.MULTIPLICATION(_matrix, this) : Matrix4x4.MULTIPLICATION(this, _matrix);
+            const mtxResult = _fromLeft ? Matrix4x4.PRODUCT(_matrix, this) : Matrix4x4.PRODUCT(this, _matrix);
             this.set(mtxResult);
             FudgeCore.Recycler.store(mtxResult);
         }
@@ -7815,7 +7752,7 @@ var FudgeCore;
                     rotation.mutate(_mutator.rotation);
                 if (_mutator.scaling)
                     scaling.mutate(_mutator.scaling);
-                Matrix4x4.SET_ROTATION(m, rotation);
+                Matrix4x4.setRotation(m, rotation);
                 const isEulerRotation = rotation instanceof FudgeCore.Vector3;
                 this.#rotationDirty = !isEulerRotation;
                 this.#quaternionDirty = isEulerRotation;
@@ -9360,7 +9297,7 @@ var FudgeCore;
         }
         getTerrainInfo(_position, _mtxWorld = FudgeCore.Matrix4x4.IDENTITY(), _mtxInverse) {
             if (!_mtxInverse)
-                _mtxInverse = FudgeCore.Matrix4x4.INVERSION(_mtxWorld);
+                _mtxInverse = FudgeCore.Matrix4x4.INVERSE(_mtxWorld);
             let terrainInfo = new TerrainInfo;
             let posLocal = FudgeCore.Vector3.TRANSFORMATION(_position, _mtxInverse, true);
             let z = Math.floor((posLocal.z + 0.5) * this.resolution.y);
@@ -10058,7 +9995,7 @@ var FudgeCore;
             return this.#connections;
         }
         get mtxWorld() {
-            return FudgeCore.Matrix4x4.MULTIPLICATION(this.mtxLocal, this.node.mtxWorld);
+            return FudgeCore.Matrix4x4.PRODUCT(this.mtxLocal, this.node.mtxWorld);
         }
         addConnection(_connection) {
             this.#connections.push(_connection);
@@ -10099,7 +10036,7 @@ var FudgeCore;
         drawGizmos() {
             let scaleVector = FudgeCore.Vector3.SCALE(FudgeCore.Vector3.ONE(), 0.1);
             let mtx = this.mtxWorld;
-            FudgeCore.Gizmos.drawSphere(FudgeCore.Matrix4x4.CONSTRUCTION(mtx.translation, FudgeCore.Vector3.ZERO(), scaleVector), FudgeCore.Color.CSS("orange"));
+            FudgeCore.Gizmos.drawSphere(FudgeCore.Matrix4x4.COMPOSITION(mtx.translation, FudgeCore.Vector3.ZERO(), scaleVector), FudgeCore.Color.CSS("orange"));
             let lines = [];
             for (let connection of this.connections) {
                 let tmpMtx = connection.end.mtxWorld.clone;
@@ -10388,7 +10325,7 @@ var FudgeCore;
                 case BODY_INIT.TO_PIVOT:
                     break;
             }
-            let mtxWorld = FudgeCore.Matrix4x4.MULTIPLICATION(this.node.mtxWorld, this.mtxPivot);
+            let mtxWorld = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
             let position = mtxWorld.translation;
             let rotation = mtxWorld.rotation;
             let scaling = mtxWorld.scaling;
@@ -10397,8 +10334,8 @@ var FudgeCore;
             this.setPosition(position);
             this.setRotation(rotation);
             let scalingInverse = this.node.mtxWorld.scaling.map(_i => 1 / _i);
-            this.#mtxPivotUnscaled = FudgeCore.Matrix4x4.CONSTRUCTION(this.mtxPivot.translation, this.mtxPivot.rotation, scalingInverse);
-            this.#mtxPivotInverse = FudgeCore.Matrix4x4.INVERSION(this.#mtxPivotUnscaled);
+            this.#mtxPivotUnscaled = FudgeCore.Matrix4x4.COMPOSITION(this.mtxPivot.translation, this.mtxPivot.rotation, scalingInverse);
+            this.#mtxPivotInverse = FudgeCore.Matrix4x4.INVERSE(this.#mtxPivotUnscaled);
             this.addRigidbodyToWorld();
             this.isInitialized = true;
         }
@@ -12142,7 +12079,7 @@ var FudgeCore;
         get posMesh() {
             if (this.#posMesh)
                 return this.#posMesh;
-            let mtxWorldToMesh = FudgeCore.Matrix4x4.INVERSION(this.node.getComponent(FudgeCore.ComponentMesh).mtxWorld);
+            let mtxWorldToMesh = FudgeCore.Matrix4x4.INVERSE(this.node.getComponent(FudgeCore.ComponentMesh).mtxWorld);
             let posMesh = FudgeCore.Vector3.TRANSFORMATION(this.posWorld, mtxWorldToMesh);
             this.#posMesh = posMesh;
             return posMesh;
@@ -12169,31 +12106,31 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class Picker {
-        static pickRay(_nodes, _ray, _min, _max, _pickGizmos = false) {
+        static pickRay(_nodes, _ray, _min, _max, _pickGizmos = false, _gizmosFilter) {
             let cmpCameraPick = new FudgeCore.ComponentCamera();
             cmpCameraPick.mtxPivot.translation = _ray.origin;
             cmpCameraPick.mtxPivot.lookAt(FudgeCore.Vector3.SUM(_ray.origin, _ray.direction));
             cmpCameraPick.projectCentral(1, 0.001, FudgeCore.FIELD_OF_VIEW.DIAGONAL, _min, _max);
-            let picks = FudgeCore.Render.pickBranch(_nodes, cmpCameraPick, _pickGizmos);
+            let picks = FudgeCore.Render.pickBranch(_nodes, cmpCameraPick, _pickGizmos, _gizmosFilter);
             return picks;
         }
-        static pickCamera(_nodes, _cmpCamera, _posProjection, _pickGizmos = false) {
+        static pickCamera(_nodes, _cmpCamera, _posProjection, _pickGizmos = false, _gizmosFilter) {
             let ray = new FudgeCore.Ray(new FudgeCore.Vector3(-_posProjection.x, _posProjection.y, 1));
             let length = ray.direction.magnitude;
             if (_cmpCamera.node) {
-                let mtxCamera = FudgeCore.Matrix4x4.MULTIPLICATION(_cmpCamera.node.mtxWorld, _cmpCamera.mtxPivot);
+                let mtxCamera = FudgeCore.Matrix4x4.PRODUCT(_cmpCamera.node.mtxWorld, _cmpCamera.mtxPivot);
                 ray.transform(mtxCamera);
                 FudgeCore.Recycler.store(mtxCamera);
             }
             else
                 ray.transform(_cmpCamera.mtxPivot);
-            let picks = Picker.pickRay(_nodes, ray, length * _cmpCamera.getNear(), length * _cmpCamera.getFar(), _pickGizmos);
+            let picks = Picker.pickRay(_nodes, ray, length * _cmpCamera.getNear(), length * _cmpCamera.getFar(), _pickGizmos, _gizmosFilter);
             return picks;
         }
         static pickViewport(_viewport, _posClient) {
             let posProjection = _viewport.pointClientToProjection(_posClient);
             let nodes = Array.from(_viewport.getBranch().getIterator(true));
-            let picks = Picker.pickCamera(nodes, _viewport.camera, posProjection, _viewport.renderingGizmos);
+            let picks = Picker.pickCamera(nodes, _viewport.camera, posProjection, _viewport.gizmosEnabled, _viewport.gizmosFilter);
             return picks;
         }
     }
@@ -12238,11 +12175,6 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class Gizmos {
-        static {
-            this.filter = new Map(FudgeCore.Component.subclasses
-                .filter((_class) => _class.prototype.drawGizmos || _class.prototype.drawGizmosSelected)
-                .map((_class) => [_class.name, true]));
-        }
         static { this.alphaOccluded = 0.3; }
         static { this.posIcons = new Set(); }
         static { this.arrayBuffer = FudgeCore.RenderWebGL.assert(FudgeCore.RenderWebGL.getRenderingContext().createBuffer()); }
@@ -12328,15 +12260,15 @@ var FudgeCore;
         static get picking() {
             return this.pickId != null;
         }
-        static draw(_cmpCamera) {
-            Gizmos.#camera = _cmpCamera;
+        static draw(_viewport) {
+            Gizmos.#camera = _viewport.camera;
             Gizmos.posIcons.clear();
             for (const gizmo of FudgeCore.Render.gizmos)
-                Reflect.set(gizmo.node, "zCamera", _cmpCamera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
+                Reflect.set(gizmo.node, "zCamera", _viewport.camera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
             const sorted = FudgeCore.Render.gizmos.getSorted((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
             for (const gizmo of sorted) {
                 gizmo.drawGizmos?.();
-                if (gizmo.node == Gizmos.selected)
+                if (_viewport.gizmosSelected?.includes(gizmo.node))
                     gizmo.drawGizmosSelected?.();
             }
         }
@@ -12395,7 +12327,7 @@ var FudgeCore;
         static drawWireSphere(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
             let mtxWorld = _mtxWorld.clone;
             Gizmos.drawLines(Gizmos.wireSphere, mtxWorld, _color, _alphaOccluded);
-            mtxWorld.lookAt(Gizmos.camera.mtxWorld.translation);
+            mtxWorld.lookAt(Gizmos.#camera.mtxWorld.translation);
             Gizmos.drawWireCircle(mtxWorld, _color, _alphaOccluded);
             FudgeCore.Recycler.store(mtxWorld);
         }
@@ -12447,7 +12379,7 @@ var FudgeCore;
         static drawMesh(_mesh, _mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
             const shader = Gizmos.picking ? FudgeCore.ShaderPick : FudgeCore.ShaderGizmo;
             shader.useProgram();
-            let renderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, FudgeCore.Matrix4x4.MULTIPLICATION(Gizmos.camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
+            let renderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
             Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
         }
         static drawIcon(_texture, _mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
@@ -12460,17 +12392,17 @@ var FudgeCore;
             shader.useProgram();
             let mtxWorld = _mtxWorld.clone;
             let color = _color.clone;
-            let back = Gizmos.camera.mtxWorld.forward.negate();
-            let up = Gizmos.camera.mtxWorld.up;
+            let back = Gizmos.#camera.mtxWorld.forward.negate();
+            let up = Gizmos.#camera.mtxWorld.up;
             mtxWorld.lookIn(back, up);
-            let distance = FudgeCore.Vector3.DIFFERENCE(Gizmos.camera.mtxWorld.translation, mtxWorld.translation).magnitude;
+            let distance = FudgeCore.Vector3.DIFFERENCE(Gizmos.#camera.mtxWorld.translation, mtxWorld.translation).magnitude;
             let fadeFar = 4;
             let fadeNear = 1.5;
             if (distance > 0 && distance < fadeFar) {
                 distance = (distance - fadeNear) / (fadeFar - fadeNear);
                 color.a = FudgeCore.Calc.lerp(0, color.a, distance);
             }
-            let renderBuffers = Gizmos.quad.useRenderBuffers(shader, mtxWorld, FudgeCore.Matrix4x4.MULTIPLICATION(Gizmos.camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
+            let renderBuffers = Gizmos.quad.useRenderBuffers(shader, mtxWorld, FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
             _texture.useRenderData(FudgeCore.TEXTURE_LOCATION.COLOR.UNIT);
             crc3.uniform1i(shader.uniforms[FudgeCore.TEXTURE_LOCATION.COLOR.UNIFORM], FudgeCore.TEXTURE_LOCATION.COLOR.INDEX);
             Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
@@ -12487,7 +12419,7 @@ var FudgeCore;
             FudgeCore.RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.getArray());
         }
         static bufferMatrix(_shader, _mtxWorld) {
-            const mtxMeshToView = FudgeCore.Matrix4x4.MULTIPLICATION(Gizmos.camera.mtxWorldToView, _mtxWorld);
+            const mtxMeshToView = FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld);
             FudgeCore.RenderWebGL.getRenderingContext().uniformMatrix4fv(_shader.uniforms["u_mtxMeshToView"], false, mtxMeshToView.get());
             FudgeCore.Recycler.store(mtxMeshToView);
         }
@@ -12544,7 +12476,7 @@ var FudgeCore;
                 Render.componentsPick.reset();
                 Render.componentsSkeleton.reset();
                 Render.lights.forEach(_array => _array.reset());
-                if (_options?.collectGizmos)
+                if (_options?.gizmosEnabled)
                     Render.gizmos.reset();
                 _branch.dispatchEvent(new Event("renderPrepareStart"));
             }
@@ -12555,7 +12487,7 @@ var FudgeCore;
             _branch.dispatchEventToTargetOnly(new Event("renderPrepare"));
             _branch.timestampUpdate = Render.timestampUpdate;
             if (_branch.cmpTransform && _branch.cmpTransform.isActive) {
-                let mtxWorldBranch = FudgeCore.Matrix4x4.MULTIPLICATION(_mtxWorld, _branch.cmpTransform.mtxLocal);
+                let mtxWorldBranch = FudgeCore.Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
                 _branch.mtxWorld.set(mtxWorldBranch);
                 FudgeCore.Recycler.store(mtxWorldBranch);
             }
@@ -12576,7 +12508,7 @@ var FudgeCore;
             let cmpMesh = _branch.getComponent(FudgeCore.ComponentMesh);
             let cmpMaterial = _branch.getComponent(FudgeCore.ComponentMaterial);
             if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
-                let mtxWorldMesh = FudgeCore.Matrix4x4.MULTIPLICATION(_branch.mtxWorld, cmpMesh.mtxPivot);
+                let mtxWorldMesh = FudgeCore.Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
                 cmpMesh.mtxWorld.set(mtxWorldMesh);
                 FudgeCore.Recycler.store(mtxWorldMesh);
                 let shader = cmpMaterial.material.getShader();
@@ -12595,9 +12527,9 @@ var FudgeCore;
             for (let cmpSkeleton of cmpSkeletons)
                 if (cmpSkeleton && cmpSkeleton.isActive)
                     Render.componentsSkeleton.push(cmpSkeleton);
-            if (_options?.collectGizmos) {
+            if (_options?.gizmosEnabled && _options?.gizmosFilter) {
                 for (const component of _branch.getAllComponents())
-                    if (component.isActive && FudgeCore.Gizmos.filter.get(component.type))
+                    if (component.isActive && _options.gizmosFilter.get(component.type))
                         Render.gizmos.push(component);
             }
             for (let child of _branch.getChildren()) {
@@ -12631,7 +12563,7 @@ var FudgeCore;
                 lightsOfType.push(cmpLight);
             }
         }
-        static pickBranch(_nodes, _cmpCamera, _pickGizmos = false) {
+        static pickBranch(_nodes, _cmpCamera, _pickGizmos = false, _gizmosFilter) {
             Render.ƒpicked = [];
             let size = Math.ceil(Math.sqrt(_nodes.length + Render.gizmos.length));
             Render.createPickTexture(size);
@@ -12642,9 +12574,9 @@ var FudgeCore;
                 let cmpMaterial = node.getComponent(FudgeCore.ComponentMaterial);
                 if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive)
                     Render.pick(node, _cmpCamera);
-                if (_pickGizmos) {
+                if (_pickGizmos && _gizmosFilter) {
                     for (let gizmo of node.getAllComponents()) {
-                        if (!gizmo.isActive || !FudgeCore.Gizmos.filter.get(gizmo.type) || !gizmo.drawGizmos)
+                        if (!gizmo.isActive || !_gizmosFilter.get(gizmo.type) || !gizmo.drawGizmos)
                             continue;
                         gizmos.push(gizmo);
                     }
@@ -12673,13 +12605,13 @@ var FudgeCore;
             }
             _cmpRigidbody.checkCollisionEvents();
             if (_cmpRigidbody.typeBody == FudgeCore.BODY_TYPE.KINEMATIC || FudgeCore.Project.mode == FudgeCore.MODE.EDITOR) {
-                let mtxPivotWorld = FudgeCore.Matrix4x4.MULTIPLICATION(_node.mtxWorld, _cmpRigidbody.mtxPivotUnscaled);
+                let mtxPivotWorld = FudgeCore.Matrix4x4.PRODUCT(_node.mtxWorld, _cmpRigidbody.mtxPivotUnscaled);
                 _cmpRigidbody.setPosition(mtxPivotWorld.translation);
                 _cmpRigidbody.setRotation(mtxPivotWorld.rotation);
                 FudgeCore.Recycler.store(mtxPivotWorld);
                 return;
             }
-            let mtxWorld = FudgeCore.Matrix4x4.CONSTRUCTION(_cmpRigidbody.getPosition(), _cmpRigidbody.getRotation(), null);
+            let mtxWorld = FudgeCore.Matrix4x4.COMPOSITION(_cmpRigidbody.getPosition(), _cmpRigidbody.getRotation(), null);
             mtxWorld.multiply(_cmpRigidbody.mtxPivotInverse);
             _node.mtxWorld.translation = mtxWorld.translation;
             _node.mtxWorld.rotation = mtxWorld.rotation;
@@ -12859,7 +12791,10 @@ var FudgeCore;
             this.adjustingFrames = true;
             this.adjustingCamera = true;
             this.physicsDebugMode = FudgeCore.PHYSICS_DEBUGMODE.NONE;
-            this.renderingGizmos = false;
+            this.gizmosEnabled = false;
+            this.gizmosFilter = new Map(FudgeCore.Component.subclasses
+                .filter((_class) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
+                .map((_class) => [_class.name, true]));
             this.componentsPick = new FudgeCore.RecycableArray();
             this.#branch = null;
             this.#crc2 = null;
@@ -12906,8 +12841,8 @@ var FudgeCore;
             this.prepare(_prepareBranch);
             if (this.physicsDebugMode != FudgeCore.PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY) {
                 FudgeCore.Render.draw(this.camera);
-                if (this.renderingGizmos)
-                    FudgeCore.Gizmos.draw(this.camera);
+                if (this.gizmosEnabled)
+                    FudgeCore.Gizmos.draw(this);
             }
             if (this.physicsDebugMode != FudgeCore.PHYSICS_DEBUGMODE.NONE) {
                 FudgeCore.Physics.draw(this.camera, this.physicsDebugMode);
@@ -12933,7 +12868,7 @@ var FudgeCore;
             if (this.#branch.getParent())
                 mtxRoot = this.#branch.getParent().mtxWorld;
             this.dispatchEvent(new Event("renderPrepareStart"));
-            FudgeCore.Render.prepare(this.#branch, { collectGizmos: this.renderingGizmos }, mtxRoot);
+            FudgeCore.Render.prepare(this.#branch, { gizmosEnabled: this.gizmosEnabled, gizmosFilter: this.gizmosFilter }, mtxRoot);
             this.dispatchEvent(new Event("renderPrepareEnd"));
             this.componentsPick = FudgeCore.Render.componentsPick;
         }
@@ -12948,7 +12883,7 @@ var FudgeCore;
                 else
                     otherPicks.push(cmpPick);
             if (cameraPicks.length) {
-                let picks = FudgeCore.Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient), this.renderingGizmos);
+                let picks = FudgeCore.Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient), this.gizmosEnabled, this.gizmosFilter);
                 for (let pick of picks) {
                     Reflect.set(_event, "pick", pick);
                     pick.node.dispatchEvent(_event);
@@ -13129,7 +13064,7 @@ var FudgeCore;
                 return;
             mtxWorld = mtxWorld.clone;
             mtxWorld.rotateY(180);
-            let invMtxTransfom = mtxWorld.inverse();
+            let invMtxTransfom = FudgeCore.Matrix4x4.INVERSE(mtxWorld);
             XRViewport.default.referenceSpace = XRViewport.default.referenceSpace.getOffsetReferenceSpace(new XRRigidTransform(invMtxTransfom.translation, invMtxTransfom.quaternion));
         }
         setControllerConfigs(_xrFrame) {
@@ -13701,9 +13636,9 @@ var FudgeCore;
                         const parent = node.getParent();
                         if (parent)
                             node.mtxWorld.set(node.cmpTransform ?
-                                FudgeCore.Matrix4x4.MULTIPLICATION(parent.mtxWorld, node.mtxLocal) :
+                                FudgeCore.Matrix4x4.PRODUCT(parent.mtxWorld, node.mtxLocal) :
                                 parent.mtxWorld);
-                        node.mtxWorldInverse.set(FudgeCore.Matrix4x4.INVERSION(node.mtxWorld));
+                        node.mtxWorldInverse.set(FudgeCore.Matrix4x4.INVERSE(node.mtxWorld));
                         skeleton.addBone(node);
                     }
                 }
@@ -13776,7 +13711,7 @@ var FudgeCore;
             }
             if (_modelFBX.PostRotation) {
                 let mtxPostRotationInverse = FudgeCore.Matrix4x4.ROTATION(this.getOrdered(_modelFBX.PostRotation, _modelFBX));
-                mtxPostRotationInverse = FudgeCore.Matrix4x4.INVERSION(mtxPostRotationInverse);
+                mtxPostRotationInverse = FudgeCore.Matrix4x4.INVERSE(mtxPostRotationInverse);
                 mtxLocalRotation.multiply(mtxPostRotationInverse);
             }
             const mtxLocalScaling = _modelFBX.LclScaling ?
@@ -13784,7 +13719,7 @@ var FudgeCore;
                 undefined;
             const mtxParentWorldRotation = parent ? FudgeCore.Matrix4x4.ROTATION(parent.mtxWorld.rotation) : undefined;
             const mtxParentWorldScale = parent ? (() => {
-                const mtxParentWorldScale = FudgeCore.Matrix4x4.INVERSION(mtxParentWorldRotation);
+                const mtxParentWorldScale = FudgeCore.Matrix4x4.INVERSE(mtxParentWorldRotation);
                 mtxParentWorldScale.translate(FudgeCore.Vector3.SCALE(parent.mtxWorld.translation, -1));
                 mtxParentWorldScale.multiply(parent.mtxWorld);
                 return mtxParentWorldScale;
@@ -13820,7 +13755,7 @@ var FudgeCore;
                     if (parent) {
                         mtxWorldRotationScale.multiply(mtxParentWorldScale);
                         let mtxParentLocalScalingInverse = FudgeCore.Matrix4x4.SCALING(parent.mtxLocal.scaling);
-                        mtxParentLocalScalingInverse = FudgeCore.Matrix4x4.INVERSION(mtxParentLocalScalingInverse);
+                        mtxParentLocalScalingInverse = FudgeCore.Matrix4x4.INVERSE(mtxParentLocalScalingInverse);
                         mtxWorldRotationScale.multiply(mtxParentLocalScalingInverse);
                     }
                     if (mtxLocalScaling)
@@ -13851,13 +13786,13 @@ var FudgeCore;
             if (_modelFBX.ScalingPivot)
                 mtxTransform.translate(FudgeCore.Vector3.SCALE(_modelFBX.ScalingPivot, -1));
             const mtxWorldTranslation = parent ?
-                FudgeCore.Matrix4x4.TRANSLATION(FudgeCore.Matrix4x4.MULTIPLICATION(parent.mtxWorld, FudgeCore.Matrix4x4.TRANSLATION(mtxTransform.translation)).translation) :
+                FudgeCore.Matrix4x4.TRANSLATION(FudgeCore.Matrix4x4.PRODUCT(parent.mtxWorld, FudgeCore.Matrix4x4.TRANSLATION(mtxTransform.translation)).translation) :
                 FudgeCore.Matrix4x4.TRANSLATION(mtxTransform.translation);
             mtxTransform.set(mtxWorldTranslation);
             mtxTransform.multiply(mtxWorldRotationScale);
             _node.mtxWorld.set(mtxTransform);
             if (parent)
-                mtxTransform.multiply(FudgeCore.Matrix4x4.INVERSION(parent.mtxWorld), true);
+                mtxTransform.multiply(FudgeCore.Matrix4x4.INVERSE(parent.mtxWorld), true);
             _node.addComponent(new FudgeCore.ComponentTransform(mtxTransform));
         }
         getTransformVector(_vector, _default) {

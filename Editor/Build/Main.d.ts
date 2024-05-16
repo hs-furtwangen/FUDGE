@@ -70,8 +70,7 @@ declare namespace Fudge {
         SCALE = "scale"
     }
     enum GIZMOS {
-        TRANSFORM = "Transform",
-        WIRE_MESH = "WireMesh"
+        TRANSFORM = "Transform"
     }
 }
 /**

@@ -49,7 +49,9 @@ cd ../..
 echo --- Compile Editor
 cd Editor/Source
 call npx tsc -p tsconfig.json
-cd ../..
+cd Fudge
+call npx tsc -p tsconfig.json
+cd ../../..
 
 :Test
 echo --- Compile Test

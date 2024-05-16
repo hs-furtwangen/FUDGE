@@ -1,6 +1,3 @@
-/// <reference path="FudgeCore.d.ts" />
-import ƒ = FudgeCore;
-import ƒAid = FudgeAid;
 declare namespace FudgeAid {
 }
 declare namespace FudgeAid {
@@ -141,6 +138,7 @@ declare namespace FudgeAid {
     function addStandardLightComponents(_node: ƒ.Node, _clrAmbient?: ƒ.Color, _clrKey?: ƒ.Color, _clrBack?: ƒ.Color, _posKey?: ƒ.Vector3, _posBack?: ƒ.Vector3): void;
 }
 declare namespace FudgeAid {
+    import ƒ = FudgeCore;
     /**
      * Handles the animation cycle of a sprite on a [[Node]]
      */
@@ -279,6 +277,7 @@ declare namespace FudgeAid {
     export {};
 }
 declare namespace FudgeAid {
+    import ƒ = FudgeCore;
     class Viewport {
         static create(_branch: ƒ.Node): ƒ.Viewport;
         static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus?: boolean, _speedCameraRotation?: number, _speedCameraTranslation?: number, _speedCameraDistance?: number): CameraOrbit;
