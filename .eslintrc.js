@@ -13,7 +13,7 @@ module.exports = {
     "@typescript-eslint"
   ],
   "root": true,
-  "ignorePatterns": ["node_modules/", "*.js"],
+  "ignorePatterns": ["node_modules/", "*.js", "*.d.ts"],
   "rules": {
     // formatting rules,
     // typescript-eslint documentation strongly recommends not using formatting linter rules

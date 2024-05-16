@@ -40,14 +40,19 @@
     // "paths": {"*":["../../Core/build/Engine/GLUtil.js"]},                           /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
     // "rootDirs": [],                        /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [],                       /* List of folders to include type definitions from. */
-    "types": ["../Distribution/FudgeClient", "../Distribution/FudgeCore", "../Distribution/FudgeAid", "../Distribution/FudgeUserInterface"],                           /* Type declaration files to be included in compilation. */
+    // "types": [
+    //   "../Distribution/FudgeClient",
+    //   "../Distribution/FudgeCore",
+    //   "../Distribution/FudgeAid",
+    //   "../Distribution/FudgeUserInterface"
+    // ], /* Type declaration files to be included in compilation. */
     // "allowSyntheticDefaultImports": true,  /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
     //"esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
     // "preserveSymlinks": true,              /* Do not resolve the real path of symlinks. */
     /* Source Map Options */
     // "sourceRoot": "",                      /* Specify the location where debugger should locate TypeScript files instead of source locations. */
     // "mapRoot": "",                         /* Specify the location where debugger should locate map files instead of generated locations. */
-    "inlineSourceMap": true,               /* Emit a single file with source maps instead of having a separate file. */
+    "inlineSourceMap": true, /* Emit a single file with source maps instead of having a separate file. */
     // "inlineSources": true,                 /* Emit the source alongside the sourcemaps within a single file; requires '--inlineSourceMap' or '--sourceMap' to be set. */
     /* Experimental Options */
     "experimentalDecorators": true, /* Enables experimental support for ES7 decorators. */
@@ -56,5 +61,19 @@
   },
   "exclude": [
     "Net/Server/**"
+  ],
+  "references": [
+    {
+      "path": "../Source/Core"
+    },
+    {
+      "path": "../Source/Aid"
+    },
+    {
+      "path": "../Source/UserInterface"
+    },
+    {
+      "path": "../Source/Net/Client"
+    }
   ]
 }

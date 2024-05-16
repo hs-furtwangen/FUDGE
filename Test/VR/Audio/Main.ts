@@ -74,7 +74,7 @@ namespace AudioSceneVR {
     audioRight = graph.getChildrenByName("AudioR")[0].getComponent(f.ComponentAudio);
   }
   function onSelect(_event: XRInputSourceEvent): void {
-    let cmpAudio: ƒ.ComponentAudio = _event.inputSource.handedness == "right" ? audioRight : _event.inputSource.handedness == "left" ? audioLeft : null;
+    let cmpAudio: FudgeCore.ComponentAudio = _event.inputSource.handedness == "right" ? audioRight : _event.inputSource.handedness == "left" ? audioLeft : null;
     let color: f.Color = _event.inputSource.handedness == "right" ? f.Color.CSS("lime") : _event.inputSource.handedness == "left" ? f.Color.CSS("red") : null;
     console.log(_event.inputSource.handedness + " " + !cmpAudio?.isPlaying);
     if (cmpAudio) 

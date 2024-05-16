@@ -1,6 +1,4 @@
 ///<reference types="../../../node_modules/electron/Electron"/>
-///<reference types="../../../Distribution/FudgeAid"/>
-///<reference types="../../../Distribution/FudgeUserInterface"/>
 ///<reference path="Definition.ts"/>
 
 namespace Fudge {

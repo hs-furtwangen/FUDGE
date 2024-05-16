@@ -6,6 +6,11 @@
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true
   },
+  "references": [
+    {
+      "path": "../../Source/Core"
+    }
+  ],
   "typedocOptions": {
     "entryPoints": [
       "."

@@ -9,5 +9,5 @@
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeExternals": true,
-  "plugin": ["typedoc-plugin-merge-modules"]
+  "plugin": ["typedoc-plugin-merge-modules"],
 }

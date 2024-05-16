@@ -1,7 +1,4 @@
-/// <reference path="../../Distribution/FudgeCore.d.ts"/>
-
-import ƒ = FudgeCore;
-import ƒAid = FudgeAid;
+// / <reference path="../../Distribution/FudgeCore.d.ts"/>
 namespace FudgeAid {
-  ƒ.Serializer.registerNamespace(FudgeAid);
+  FudgeCore.Serializer.registerNamespace(FudgeAid);
 }

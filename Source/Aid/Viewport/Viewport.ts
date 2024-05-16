@@ -1,4 +1,6 @@
 namespace FudgeAid {
+  import ƒ = FudgeCore;
+
   export class Viewport {
     public static create(_branch: ƒ.Node): ƒ.Viewport {
       let cmpCamera: ƒ.ComponentCamera = new ƒ.ComponentCamera();

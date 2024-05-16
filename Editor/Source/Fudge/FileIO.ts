@@ -1,5 +1,6 @@
 namespace Fudge {
   const fs: typeof import("fs") = require("fs");
+  import ƒ = FudgeCore;
   import ƒui = FudgeUserInterface;
   export let watcher: import("fs").FSWatcher;
 
@@ -39,7 +40,7 @@ namespace Fudge {
     };
     copyFiles(copyTemplates, new URL("Editor/Source/Template/", ƒPath), new URL("Script/", base));
 
-    let definition: Response = await fetch("https://JirkaDellOro.github.io/FUDGE/Core/Distribution/FudgeCore.d.ts");
+    let definition: Response = await fetch("https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeCore.d.ts");
     fs.writeFileSync(new URL("Script/Source/@types/FudgeCore.d.ts", base), await definition.text());
 
     await loadProject(new URL(project.fileIndex, project.base));

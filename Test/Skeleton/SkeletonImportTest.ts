@@ -117,43 +117,43 @@ namespace SkeletonTest {
 
 async function load(): Promise<void> {
   // load scene
-  SkeletonTest.loader = await ƒ.GLTFLoader.LOAD(SkeletonTest.slcFile.value);
+  SkeletonTest.loader = await FudgeCore.GLTFLoader.LOAD(SkeletonTest.slcFile.value);
 
   const amount: number = parseInt(SkeletonTest.slcAmount.value);
   if (amount == 1) {
     SkeletonTest.loaded = await SkeletonTest.loader.getGraph();
-    let animation: ƒ.Animation = await SkeletonTest.loader.getAnimation(0);
-    ƒ.Project.register(animation);
-    if (animation && !SkeletonTest.loaded.getComponent(ƒ.ComponentAnimator))
-      SkeletonTest.loaded.addComponent(new ƒ.ComponentAnimator(animation));
+    let animation: FudgeCore.Animation = await SkeletonTest.loader.getAnimation(0);
+    FudgeCore.Project.register(animation);
+    if (animation && !SkeletonTest.loaded.getComponent(FudgeCore.ComponentAnimator))
+      SkeletonTest.loaded.addComponent(new FudgeCore.ComponentAnimator(animation));
   } else {
-    SkeletonTest.loaded = new ƒ.Node("Scene");
+    SkeletonTest.loaded = new FudgeCore.Node("Scene");
     for (let i: number = 0; i < amount; i++) {
-      let graph: ƒ.Graph = <ƒ.Graph>await SkeletonTest.loader.getGraph();
-      ƒ.Project.register(graph);
-      let instance: ƒ.GraphInstance = await ƒ.Project.createGraphInstance(graph);
-      let animation: ƒ.Animation = await SkeletonTest.loader.getAnimation(0);
-      if (animation && !instance.getComponent(ƒ.ComponentAnimator))
-        instance.addComponent(new ƒ.ComponentAnimator(animation));
-      instance.addComponent(new ƒ.ComponentTransform());
+      let graph: FudgeCore.Graph = <FudgeCore.Graph>await SkeletonTest.loader.getGraph();
+      FudgeCore.Project.register(graph);
+      let instance: FudgeCore.GraphInstance = await FudgeCore.Project.createGraphInstance(graph);
+      let animation: FudgeCore.Animation = await SkeletonTest.loader.getAnimation(0);
+      if (animation && !instance.getComponent(FudgeCore.ComponentAnimator))
+        instance.addComponent(new FudgeCore.ComponentAnimator(animation));
+      instance.addComponent(new FudgeCore.ComponentTransform());
       instance.name = "instance" + i;
       instance.mtxLocal.translateX((i * 2 - (amount - 1)) * 1.5);
       SkeletonTest.loaded.addChild(instance);
     }
   }
 
-  SkeletonTest.cmpAnimator = SkeletonTest.loaded?.getComponent(ƒ.ComponentAnimator);
+  SkeletonTest.cmpAnimator = SkeletonTest.loaded?.getComponent(FudgeCore.ComponentAnimator);
   // SkeletonTest.loaded.name = "loaded";
-  // loaded.getComponent(ƒ.ComponentAnimator)?.activate(false);
-  let root: ƒ.Node = SkeletonTest.viewport.getBranch();
-  let loaded: ƒ.Node = root.getChildrenByName("Scene")[0];
+  // loaded.getComponent(FudgeCore.ComponentAnimator)?.activate(false);
+  let root: FudgeCore.Node = SkeletonTest.viewport.getBranch();
+  let loaded: FudgeCore.Node = root.getChildrenByName("Scene")[0];
   if (loaded)
     root.replaceChild(loaded, SkeletonTest.loaded);
   else
     root.appendChild(SkeletonTest.loaded);
 
-  ƒ.Debug.log("Loader:", SkeletonTest.loader);
-  ƒ.Debug.log("Loaded:", SkeletonTest.loaded);
+  FudgeCore.Debug.log("Loader:", SkeletonTest.loader);
+  FudgeCore.Debug.log("Loaded:", SkeletonTest.loaded);
 
   // To store the selected option in sessionStorage
   sessionStorage.setItem('selectedFile', SkeletonTest.slcFile.selectedIndex.toString());

@@ -1,4 +1,5 @@
 namespace FudgeAid {
+  import ƒ = FudgeCore;
   /**
    * Handles the animation cycle of a sprite on a [[Node]]
    */
@@ -13,7 +14,7 @@ namespace FudgeAid {
     private direction: number = 1;
     private timer: number;
 
-    constructor(_name: string) {
+    public constructor(_name: string) {
       super(_name);
 
       this.cmpMesh = new ƒ.ComponentMesh(NodeSprite.mesh);
@@ -64,7 +65,7 @@ namespace FudgeAid {
     public showFrameNext = (_event: ƒ.EventTimer): void => {
       this.frameCurrent = (this.frameCurrent + this.direction + this.animation.frames.length) % this.animation.frames.length;
       this.showFrame(this.frameCurrent);
-    }
+    };
 
     /**
      * Sets the direction for animation playback, negativ numbers make it play backwards.

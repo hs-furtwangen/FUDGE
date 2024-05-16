@@ -1,4 +1,5 @@
 namespace Fudge {
+  import ƒ = FudgeCore;
   import ƒui = FudgeUserInterface;
 
   export class ControllerTableResource extends ƒui.TableController<ƒ.SerializableResource> {

@@ -1,6 +1,3 @@
-///<reference path="../Message.ts"/>
-///<reference path="./RtcConnection.ts"/>
-///<reference path="../../../Distribution/FudgeCore.d.ts"/>
 namespace FudgeNet {
   import ƒ = FudgeCore;
   let idRoom: string = "abc";
@@ -18,23 +15,23 @@ namespace FudgeNet {
     public socket!: WebSocket;
     public peers: { [id: string]: Rtc } = {};
     // TODO: examine, if server should know about connected peers and send this information also
-    public clientsInfoFromServer: { [id: string]: { name?: string, isHost?: boolean } } = {};
+    public clientsInfoFromServer: { [id: string]: { name?: string; isHost?: boolean } } = {};
     public idHost!: string;
     // start is the servers lobby
     public idRoom: string = "Lobby";
 
-    constructor() {
+    public constructor() {
       super();
     }
 
     /** 
      * Tries to connect to the server at the given url and installs the appropriate listeners
      */
-    public connectToServer = (_uri: string = "ws://localhost:8080") => {
+    public connectToServer = (_uri: string = "ws://localhost:8080"): void => {
       this.urlServer = _uri;
       this.socket = new WebSocket(_uri);
       this.addWebSocketEventListeners();
-    }
+    };
 
     /** 
      * Tries to publish a human readable name for this client. Identification still solely by `id` 
@@ -48,7 +45,7 @@ namespace FudgeNet {
       } catch (error) {
         console.info("Unexpected error: Sending Login Request", error);
       }
-    }
+    };
 
     /** 
      * Tries to connect to another client with the given id via rtc
@@ -60,7 +57,7 @@ namespace FudgeNet {
         ƒ.Debug.warn("Peers already connected, ignoring request", this.id, _idPeer);
       else
         this.cRstartNegotiation(_idPeer);
-    }
+    };
 
     public connectPeers(_ids: string[]): void {
       for (let id of _ids) {
@@ -108,12 +105,10 @@ namespace FudgeNet {
         if (_message.route == FudgeNet.ROUTE.HOST) {
           // to host via rtc
           this.sendToPeer(this.idHost, message);
-        }
-        else if (_message.route) {
+        } else if (_message.route) {
           // other routes go via or to the server
           this.socket.send(message);
-        }
-        else {
+        } else {
           // send via RTC to specific peer (if idTarget set) or all peers (if not set)
           if (_message.idTarget)
             this.sendToPeer(_message.idTarget, message);
@@ -198,19 +193,19 @@ namespace FudgeNet {
 
       // Dispatch a new event with the same information a programm using this client can react to
       this.dispatchEvent(new MessageEvent(_event.type, <MessageEventInit<unknown>><unknown>_event));
-    }
+    };
 
     // ----------------------
 
-    private sendToPeer = (_idPeer: string, _message: string) => {
+    private sendToPeer = (_idPeer: string, _message: string): void => {
       this.peers[_idPeer].send(_message);
-    }
+    };
 
-    private sendToAllPeers = (_message: string) => {
+    private sendToAllPeers = (_message: string): void => {
       for (let idPeer in this.peers) {
         this.sendToPeer(idPeer, _message);
       }
-    }
+    };
 
     private addWebSocketEventListeners = (): void => {
       try {
@@ -228,7 +223,7 @@ namespace FudgeNet {
       } catch (error) {
         console.info("Unexpected Error: Adding websocket Eventlistener", error);
       }
-    }
+    };
 
 
     private loginValidAddUser = (_assignedId: string, _success: boolean, _name: string): void => {
@@ -238,9 +233,9 @@ namespace FudgeNet {
       } else {
         console.info("Login failed, username taken", this.name, this.id);
       }
-    }
+    };
 
-    private assignIdAndSendConfirmation = (_id: string | undefined) => {
+    private assignIdAndSendConfirmation = (_id: string | undefined): void => {
       try {
         if (!_id)
           throw (new Error("id undefined"));
@@ -251,7 +246,7 @@ namespace FudgeNet {
       } catch (error) {
         console.info("Unexpected Error: Sending ID Confirmation", error);
       }
-    }
+    };
 
     //#region RTC-Negotiation
     // cR = caller
@@ -279,12 +274,12 @@ namespace FudgeNet {
       rtc.setupDataChannel(this, _idRemote);
       // this.cRsendOffer(_idRemote);
       // rtc.restartIce();
-    }
+    };
 
     /**
      * Start negotiation by sending an offer with the local description of the connection via the signalling server
      */
-    private cRsendOffer = async (_idRemote: string) => {
+    private cRsendOffer = async (_idRemote: string): Promise<void> => {
       let rtc: RTCPeerConnection = this.peers[_idRemote];
       let localDescription: RTCSessionDescriptionInit = await rtc.createOffer({ iceRestart: true });
       await rtc.setLocalDescription(localDescription);
@@ -293,7 +288,7 @@ namespace FudgeNet {
       };
       this.dispatch(offerMessage);
       console.info("Caller: send offer, expected 'have-local-offer', got:  ", this.peers[_idRemote].signalingState);
-    }
+    };
 
     // cE = callee
     /**
@@ -317,12 +312,12 @@ namespace FudgeNet {
       console.info("Callee: send answer to server ", answerMessage);
       this.dispatch(answerMessage);
       console.info("Callee: remote description set, expected 'stable', got:  ", rtc.signalingState);
-    }
+    };
 
     /**
      * Caller receives the answer and sets the remote description on its side. The first part of the negotiation is done.
      */
-    private cRreceiveAnswer = async (_message: FudgeNet.Message) => {
+    private cRreceiveAnswer = async (_message: FudgeNet.Message): Promise<void> => {
       console.info("Caller: received answer, create data channel ", _message);
       let rtc: Rtc = this.peers[_message.idSource!];
       await rtc.setRemoteDescription(_message.content?.answer);
@@ -330,14 +325,14 @@ namespace FudgeNet {
       //   rtc.setupDataChannel(this, _message.idSource!);
       // else
       // console.warn("Datachannel reuse: ", rtc.dataChannel!.id, rtc.dataChannel!.label);
-    }
+    };
 
 
     /**
      * Caller starts collecting ICE-candidates and calls this function for each candidate found, 
      * which sends the candidate info to callee via the server
      */
-    private cRsendIceCandidates = async (_event: RTCPeerConnectionIceEvent, _idRemote: string) => {
+    private cRsendIceCandidates = async (_event: RTCPeerConnectionIceEvent, _idRemote: string): Promise<void> => {
       if (!_event.candidate)
         return;
 
@@ -347,24 +342,23 @@ namespace FudgeNet {
         idRoom: idRoom, route: FudgeNet.ROUTE.SERVER, command: FudgeNet.COMMAND.ICE_CANDIDATE, idTarget: _idRemote, content: { candidate: _event.candidate, states: [pc.connectionState, pc.iceConnectionState, pc.iceGatheringState] }
       };
       this.dispatch(message);
-    }
+    };
 
     /**
      * Callee receives the info about the ice-candidate and adds it to the connection
      */
-    private cEaddIceCandidate = async (_event: MessageEvent, _message: FudgeNet.Message) => {
+    private cEaddIceCandidate = async (_event: MessageEvent, _message: FudgeNet.Message): Promise<void> => {
       console.info("Callee: try to add candidate to peer connection", _message.content?.candidate);
       await this.peers[_message.idSource!].addIceCandidate(_message.content?.candidate);
-    }
+    };
 
-    private cEestablishConnection = (_event: RTCDataChannelEvent, _peer: Rtc) => {
+    private cEestablishConnection = (_event: RTCDataChannelEvent, _peer: Rtc): void => {
       console.info("Callee: establish channel on connection", _event.channel);
       if (_event.channel) {
         _peer.addDataChannel(this, _event.channel);
-      }
-      else {
+      } else {
         console.error("Unexpected Error: RemoteDatachannel");
       }
-    }
+    };
   }
 }

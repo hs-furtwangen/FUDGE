@@ -1,4 +1,6 @@
 namespace Fudge {
+  import ƒ = FudgeCore;
+  
   export enum EVENT_EDITOR {
     /** An entity gets created, is not dispatched so far */
     CREATE = "EDITOR_CREATE",
