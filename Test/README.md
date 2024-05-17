@@ -36,7 +36,7 @@
 
 ## Import
 
-- [OBJ](Import/OBJ)
+- [OBJ](Import/OBJ/Index.html)
   Test the OBJ file import.
 
 ## Mesh
@@ -65,7 +65,7 @@
 - [PickShader](Picking/PickShader/Picking.html)
   Test picking using the pick shader with overlapping quads
 
-## [Postprocessing](Postprocessing)
+## [Postprocessing](Postprocessing/Index.html)
 Test the different postprocessing effects that can be applied to a scene.
 
 ## Random
@@ -87,7 +87,7 @@ Test the different postprocessing effects that can be applied to a scene.
 - [SubclassRegistration](Resources/SubclassRegistration/Test.html)  
   Test the registration of all classes creating resources which is crucial for deserialization
 
-## [Shader](Shader)
+## [Shader](Shader/Index.html)
 Test the different material shaders.
 
 ## Skeleton
