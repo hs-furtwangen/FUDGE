@@ -244,15 +244,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Creates and returns a clone of this vector
-     */
-    public get clone(): Vector3 {
-      let clone: Vector3 = Recycler.get(Vector3);
-      clone.data.set(this.data);
-      return clone;
-    }
-
-    /**
      * - get: returns a geographic representation of this vector  
      * - set: adjust the cartesian values of this vector to represent the given as geographic coordinates
      */
@@ -272,17 +263,26 @@ namespace FudgeCore {
       geo.latitude = 180 * Math.asin(this.y / geo.magnitude) / Math.PI;
       return geo;
     }
-    //#endregion
-
-    public recycle(): void {
-      this.data.set([0, 0, 0]);
-    }
 
     /**
-     * Copies the values of the given vector into this
+     * Creates and returns a clone of this vector.
+     */
+    public get clone(): Vector3 {
+      let clone: Vector3 = Recycler.get(Vector3);
+      clone.copy(this);
+      return clone;
+    }
+    //#endregion
+
+    /**
+     * Copies the components of the given vector into this vector.
      */
     public copy(_original: Vector3): void {
       this.data.set(_original.data);
+    }
+
+    public recycle(): void {
+      this.data.set([0, 0, 0]);
     }
 
     /**
@@ -362,7 +362,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Defines the components of this vector with the given numbers
+     * Sets the components of this vector.
      */
     public set(_x: number = 0, _y: number = 0, _z: number = 0): void {
       this.data[0] = _x;
@@ -371,7 +371,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns this vector as a new Float32Array (copy)
+     * Returns an array of the components of this vector.
      */
     public get(): Float32Array {
       return new Float32Array(this.data);

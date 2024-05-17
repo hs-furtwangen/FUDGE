@@ -190,7 +190,7 @@ namespace FudgeCore {
       return this.#colors || (
         this.#colors = new Float32Array(this.mesh.vertices
           .filter(_vertex => _vertex.color)
-          .flatMap(_vertex => [..._vertex.color.getArray()])
+          .flatMap(_vertex => [..._vertex.color.get()])
         ));
     }
     public set colors(_colors: Float32Array) {

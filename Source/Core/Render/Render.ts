@@ -55,10 +55,10 @@ namespace FudgeCore {
 
       if (_branch.cmpTransform && _branch.cmpTransform.isActive) {
         let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
-        _branch.mtxWorld.set(mtxWorldBranch);
+        _branch.mtxWorld.copy(mtxWorldBranch);
         Recycler.store(mtxWorldBranch);
       } else
-        _branch.mtxWorld.set(_mtxWorld); // overwrite readonly mtxWorld of the current node
+        _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
 
       let cmpRigidbody: ComponentRigidbody = _branch.getComponent(ComponentRigidbody);
       if (cmpRigidbody && cmpRigidbody.isActive) { //TODO: support de-/activation throughout
@@ -80,7 +80,7 @@ namespace FudgeCore {
 
       if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
         let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
-        cmpMesh.mtxWorld.set(mtxWorldMesh);
+        cmpMesh.mtxWorld.copy(mtxWorldMesh);
         Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
         let shader: ShaderInterface = cmpMaterial.material.getShader();
         let cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
@@ -236,7 +236,7 @@ namespace FudgeCore {
       _node.mtxWorld.translation = mtxWorld.translation;
       _node.mtxWorld.rotation = mtxWorld.rotation;
       let mtxLocal: Matrix4x4 = _node.getParent() ? Matrix4x4.RELATIVE(_node.mtxWorld, _node.getParent().mtxWorld) : _node.mtxWorld;
-      _node.mtxLocal.set(mtxLocal);
+      _node.mtxLocal.copy(mtxLocal);
       Recycler.store(mtxWorld);
       Recycler.store(mtxLocal);
     }

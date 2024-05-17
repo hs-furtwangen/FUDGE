@@ -214,12 +214,12 @@ namespace FudgeCore {
           if (this.fbx.objects.models[this.#nodes.indexOf(node)].subtype == "LimbNode") {
             const parent: Node = node.getParent();
             if (parent)
-              node.mtxWorld.set(
+              node.mtxWorld.copy(
                 node.cmpTransform ?
                   Matrix4x4.PRODUCT(parent.mtxWorld, node.mtxLocal) :
                   parent.mtxWorld
               );
-            node.mtxWorldInverse.set(Matrix4x4.INVERSE(node.mtxWorld));
+            node.mtxWorldInverse.copy(Matrix4x4.INVERSE(node.mtxWorld));
             skeleton.addBone(node);
           }
         }
@@ -398,9 +398,9 @@ namespace FudgeCore {
         ).translation) :
         Matrix4x4.TRANSLATION(mtxTransform.translation);
 
-      mtxTransform.set(mtxWorldTranslation);
+      mtxTransform.copy(mtxWorldTranslation);
       mtxTransform.multiply(mtxWorldRotationScale);
-      _node.mtxWorld.set(mtxTransform);
+      _node.mtxWorld.copy(mtxTransform);
 
       if (parent)
         mtxTransform.multiply(Matrix4x4.INVERSE(parent.mtxWorld), true);

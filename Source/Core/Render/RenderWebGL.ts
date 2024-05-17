@@ -491,7 +491,7 @@ namespace FudgeCore {
       if (_cmpFog) {
         data[1] = _cmpFog.near;
         data[2] = _cmpFog.far;
-        data.set(_cmpFog.color.getArray(), 4);
+        data.set(_cmpFog.color.get(), 4);
       }
 
       // buffer data to bound buffer
@@ -521,7 +521,7 @@ namespace FudgeCore {
         RenderWebGL.crc3.bufferSubData(
           RenderWebGL.crc3.UNIFORM_BUFFER,
           RenderWebGL.uboLightsVariableOffsets["u_ambient.vctColor"], // byte offset of the struct Light "u_ambient" inside the ubo
-          new Float32Array(clrSum.getArray())
+          new Float32Array(clrSum.get())
         );
       }
 
@@ -551,7 +551,7 @@ namespace FudgeCore {
           const lightDataOffset: number = iLight * lightDataSize;
 
           // set vctColor
-          lightsData.set(cmpLight.light.color.getArray(), lightDataOffset + 0);
+          lightsData.set(cmpLight.light.color.get(), lightDataOffset + 0);
 
           // set mtxShape
           let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);

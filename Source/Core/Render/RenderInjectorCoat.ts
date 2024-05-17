@@ -14,8 +14,9 @@ namespace FudgeCore {
 
     protected static injectCoatColored(this: CoatColored, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
       let uniform: WebGLUniformLocation = _shader.uniforms["u_vctColor"];
-      let color: Color = Color.MULTIPLY(this.color, _cmpMaterial.clrPrimary);
-      RenderWebGL.getRenderingContext().uniform4fv(uniform, color.getArray());
+      let color: Color = Color.PRODUCT(this.color, _cmpMaterial.clrPrimary);
+      RenderWebGL.getRenderingContext().uniform4fv(uniform, color.get());
+      Recycler.store(color);
     }
 
     protected static injectCoatRemissive(this: CoatRemissive, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {

@@ -361,7 +361,7 @@ namespace FudgeCore {
         if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
           node.addComponent(new ComponentTransform());
           if (gltfNode.matrix) {
-            node.mtxLocal.set(Float32Array.from(gltfNode.matrix));
+            node.mtxLocal.set(gltfNode.matrix);
           } else {
             if (gltfNode.translation) {
               const translation: Vector3 = Recycler.get(Vector3);

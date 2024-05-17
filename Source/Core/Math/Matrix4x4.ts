@@ -115,15 +115,7 @@ namespace FudgeCore {
      * Computes and returns the transpose of a passed matrix.
      */
     public static TRANSPOSE(_mtx: Matrix4x4): Matrix4x4 {
-      let m: Float32Array = _mtx.data;
-      let result: Matrix4x4 = Recycler.get(Matrix4x4);
-      result.data.set([
-        m[0], m[4], m[8], m[12],
-        m[1], m[5], m[9], m[13],
-        m[2], m[6], m[10], m[14],
-        m[3], m[7], m[11], m[15]
-      ]);
-      return result;
+      return _mtx.clone.transpose();
     }
 
     /**
@@ -513,15 +505,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Return a copy of this
-     */
-    public get clone(): Matrix4x4 {
-      let mtxClone: Matrix4x4 = Recycler.get(Matrix4x4);
-      mtxClone.set(this);
-      return mtxClone;
-    }
-
-    /**
      * Returns the normalized cardinal x-axis.
      */
     public get right(): Vector3 {
@@ -546,6 +529,15 @@ namespace FudgeCore {
       let forward: Vector3 = this.getZ();
       forward.normalize();
       return forward;
+    }
+
+    /**
+     * Creates and returns a clone of this matrix.
+     */
+    public get clone(): Matrix4x4 {
+      let mtxClone: Matrix4x4 = Recycler.get(Matrix4x4);
+      mtxClone.copy(this);
+      return mtxClone;
     }
     //#endregion
 
@@ -599,12 +591,12 @@ namespace FudgeCore {
      * Transpose this matrix
      */
     public transpose(): Matrix4x4 {
-      let matrix: Float32Array = this.data;
-      this.data.set([
-        matrix[0], matrix[4], matrix[8], matrix[12],
-        matrix[1], matrix[5], matrix[9], matrix[13],
-        matrix[2], matrix[6], matrix[10], matrix[14],
-        matrix[3], matrix[7], matrix[11], matrix[15]
+      let m: Float32Array = this.data;
+      this.set([
+        m[0], m[4], m[8], m[12],
+        m[1], m[5], m[9], m[13],
+        m[2], m[6], m[10], m[14],
+        m[3], m[7], m[11], m[15]
       ]);
       return this;
     }
@@ -667,7 +659,7 @@ namespace FudgeCore {
 
       let d: number = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
 
-      m.set([
+      this.set([
         d * t0, // [0]
         d * t1, // [1]
         d * t2, // [2]
@@ -725,7 +717,7 @@ namespace FudgeCore {
 
       const mtxResult: Matrix4x4 = Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict);
       mtxResult.scale(this.scaling);
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
 
@@ -736,7 +728,7 @@ namespace FudgeCore {
     public lookIn(_direction: Vector3, _up: Vector3 = Vector3.Y()): void {
       const mtxResult: Matrix4x4 = Matrix4x4.LOOK_IN(this.translation, _direction, _up);
       mtxResult.scale(this.scaling);
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
 
@@ -835,7 +827,7 @@ namespace FudgeCore {
      */
     public scale(_by: Vector3): void {
       const mtxResult: Matrix4x4 = Matrix4x4.PRODUCT(this, Matrix4x4.SCALING(_by));
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
 
@@ -874,7 +866,7 @@ namespace FudgeCore {
      */
     public multiply(_matrix: Matrix4x4, _fromLeft: boolean = false): void {
       const mtxResult: Matrix4x4 = _fromLeft ? Matrix4x4.PRODUCT(_matrix, this) : Matrix4x4.PRODUCT(this, _matrix);
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
     //#endregion
@@ -911,14 +903,30 @@ namespace FudgeCore {
     // }
 
     /**
-     * Sets the elements of this matrix to the values of the given matrix
+     * Sets the elements of this matrix to the given array.
      */
-    public set(_mtxTo: Matrix4x4 | ArrayLike<number>): void {
-      if (_mtxTo instanceof Matrix4x4)
-        this.data.set(_mtxTo.data);
-      else
-        this.data.set(_mtxTo);
+    public set(_array: ArrayLike<number>): void {
+      this.data.set(_array);
       this.resetCache();
+    }
+
+    /**
+     * Copies the state of the given matrix into this matrix.
+     */
+    public copy(_original: Matrix4x4): void {
+      this.data.set(_original.data);
+      this.#translationDirty = _original.#translationDirty;
+      this.#rotationDirty = _original.#rotationDirty;
+      this.#scalingDirty = _original.#scalingDirty;
+      this.#quaternionDirty = _original.#quaternionDirty;
+      if (!this.#translationDirty)
+        this.#translation.copy(_original.#translation);
+      if (!this.#rotationDirty)
+        this.#rotation.copy(_original.#rotation);
+      if (!this.#scalingDirty)
+        this.#scaling.copy(_original.#scaling);
+      if (!this.#quaternionDirty)
+        this.#quaternion.copy(_original.#quaternion);
     }
 
     /**
@@ -929,7 +937,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Return the elements of this matrix as a Float32Array
+     * Returns an array of the elements of this matrix.
      */
     public get(): Float32Array {
       // TODO: optimization, it shouldn't always return a copy, since this bloats memory
@@ -969,6 +977,7 @@ namespace FudgeCore {
       this.data.set([this.data[4], this.data[5], this.data[6]], 0); // overwrite x-axis with y-axis
       this.data.set(temp, 4); // overwrite Y with temp
       this.data.set([-this.data[8], -this.data[9], -this.data[10]], 8); // reverse z-axis
+      this.resetCache();
     }
     /**
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
@@ -978,6 +987,7 @@ namespace FudgeCore {
       this.data.set([this.data[8], this.data[9], this.data[10]], 0); // overwrite x-axis with z-axis
       this.data.set(temp, 8); // overwrite Z with temp
       this.data.set([-this.data[4], -this.data[5], -this.data[6]], 4); // reverse y-axis
+      this.resetCache();
     }
     /**
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
@@ -987,6 +997,7 @@ namespace FudgeCore {
       this.data.set([this.data[8], this.data[9], this.data[10]], 4); // overwrite y-axis with z-axis
       this.data.set(temp, 8); // overwrite Z with temp
       this.data.set([-this.data[0], -this.data[1], -this.data[2]], 0); // reverse x-axis
+      this.resetCache();
     }
 
     /**

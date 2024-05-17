@@ -214,11 +214,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Return a copy of this
+     * Creates and returns a clone of this matrix.
      */
     public get clone(): Matrix3x3 {
       let mtxClone: Matrix3x3 = Recycler.get(Matrix3x3);
-      mtxClone.set(this);
+      mtxClone.copy(this);
       return mtxClone;
     }
 
@@ -248,7 +248,7 @@ namespace FudgeCore {
     public translate(_by: Vector2): void {
       const mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, Matrix3x3.TRANSLATION(_by));
       // TODO: possible optimization, translation may alter mutator instead of deleting it.
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
 
@@ -276,7 +276,7 @@ namespace FudgeCore {
      */
     public scale(_by: Vector2): void {
       const mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, Matrix3x3.SCALING(_by));
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
     /**
@@ -306,7 +306,7 @@ namespace FudgeCore {
      */
     public rotate(_angleInDegrees: number): void {
       const mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, Matrix3x3.ROTATION(_angleInDegrees));
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
     //#endregion
@@ -317,7 +317,7 @@ namespace FudgeCore {
      */
     public multiply(_mtxRight: Matrix3x3): void {
       let mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, _mtxRight);
-      this.set(mtxResult);
+      this.set(mtxResult.data);
       Recycler.store(mtxResult);
       this.mutator = null;
     }
@@ -353,12 +353,19 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the elements of this matrix to the values of the given matrix
+     * Sets the elements of this matrix to the given array.
      */
-    public set(_mtxTo: Matrix3x3): void {
-      // this.data = _to.get();
-      this.data.set(_mtxTo.data);
+    public set(_array: ArrayLike<number>): void {
+      this.data.set(_array);
       this.resetCache();
+    }
+
+    /**
+     * Copies the elements of the given matrix into this matrix.
+     */
+    public copy(_original: Matrix3x3): void {
+      this.data.set(_original.data);
+      this.resetCache(); // TODO: for now reset the cache, as i have no idea how the caching works for matrix3x3.
     }
 
     /**
@@ -368,8 +375,9 @@ namespace FudgeCore {
       return `ƒ.Matrix3x3(translation: ${this.translation.toString()}, rotation: ${this.rotation.toString()}, scaling: ${this.scaling.toString()}`;
     }
 
+
     /**
-     * Return the elements of this matrix as a Float32Array
+     * Returns an array of the elements of this matrix.
      */
     public get(): Float32Array {
       return new Float32Array(this.data);
@@ -442,7 +450,7 @@ namespace FudgeCore {
       }
       if (vectors.scaling)
         mtxResult.scale(vectors.scaling);
-      this.set(mtxResult);
+      this.set(mtxResult.data);
 
       this.vectors = vectors;
     }

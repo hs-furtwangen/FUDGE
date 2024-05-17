@@ -29,12 +29,19 @@ namespace FudgeCore {
     }
 
     /**
-     * Creates and returns a clone of this vector
+     * Creates and returns a clone of this vector.
      */
     public get clone(): Vector4 {
       let clone: Vector4 = Recycler.get(Vector4);
-      clone.set(this.x, this.y, this.z, this.w);
+      clone.copy(this);
       return clone;
+    }
+
+    /**
+     * Copies the components of the given vector into this vector.
+     */
+    public copy(_original: Vector4): void {
+      this.set(_original.x, _original.y, _original.z, _original.w);
     }
 
     /**
@@ -45,17 +52,10 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns an array with the components of this vector.
+     * Returns an array of the components of this vector.
      */
     public get(): [number, number, number, number] {
       return [this.x, this.y, this.z, this.w];
-    }
-
-    /**
-     * Copies the values of the given vector into this vector.
-     */
-    public copy(_original: Vector4): void {
-      this.set(_original.x, _original.y, _original.z, _original.w);
     }
 
     /**

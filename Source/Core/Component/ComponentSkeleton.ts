@@ -88,7 +88,7 @@ namespace FudgeCore {
      */
     public resetPose(): void { // TODO: test this
       for (let i: number = 0; i < this.bones.length; i++)
-        this.bones[i].mtxLocal.set(Matrix4x4.INVERSE(this.mtxBindInverses[i]));
+        this.bones[i].mtxLocal.copy(Matrix4x4.INVERSE(this.mtxBindInverses[i]));
     }
 
     public serialize(): Serialization {

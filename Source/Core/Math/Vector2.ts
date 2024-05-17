@@ -202,15 +202,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Creates and returns a clone of this
-     */
-    public get clone(): Vector2 {
-      let clone: Vector2 = Recycler.get(Vector2);
-      clone.data.set(this.data);
-      return clone;
-    }
-
-    /**
      * Returns a polar representation of this vector
      */
     public get geo(): Geo2 {
@@ -231,17 +222,26 @@ namespace FudgeCore {
       this.set(_geo.magnitude, 0);
       this.transform(Matrix3x3.ROTATION(_geo.angle));
     }
-    //#endregion
-
-    public recycle(): void {
-      this.data.set([0, 0]);
-    }
 
     /**
-     * Copies the values of the given vector into this
+     * Creates and returns a clone of this vector.
+     */
+    public get clone(): Vector2 {
+      let clone: Vector2 = Recycler.get(Vector2);
+      clone.copy(this);
+      return clone;
+    }
+    //#endregion
+
+    /**
+     * Copies the components of the given vector into this vector.
      */
     public copy(_original: Vector2): void {
       this.data.set(_original.data);
+    }
+
+    public recycle(): void {
+      this.data.set([0, 0]);
     }
 
     /**
@@ -285,7 +285,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Defines the components of this vector with the given numbers
+     * Sets the components of this vector.
      */
     public set(_x: number = 0, _y: number = 0): void {
       this.data[0] = _x;
@@ -293,7 +293,7 @@ namespace FudgeCore {
     }
 
     /**
-     * @returns An array of the data of the vector
+     * Returns an array of the components of this vector.
      */
     public get(): Float32Array {
       return new Float32Array(this.data);

@@ -368,7 +368,7 @@ namespace FudgeCore {
     }
 
     private static bufferColor(_shader: ShaderInterface, _color: Color): void {
-      RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.getArray());
+      RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.get());
     }
 
     private static bufferMatrix(_shader: ShaderInterface, _mtxWorld: Matrix4x4): void {

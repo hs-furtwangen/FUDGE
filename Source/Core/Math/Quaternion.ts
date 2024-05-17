@@ -155,11 +155,11 @@ namespace FudgeCore {
     //#endregion
 
     /**
-     * Return a copy of this
+     * Creates and returns a clone of this quaternion.
      */
     public get clone(): Quaternion {
       let result: Quaternion = Recycler.get(Quaternion);
-      result.set(this.x, this.y, this.z, this.w);
+      result.copy(this);
       return result;
     }
 
@@ -294,11 +294,22 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the elements of this quaternion to the values of the given quaternion
+     * Sets the components of this quaternion.
      */
     public set(_x: number, _y: number, _z: number, _w: number): void {
       this.x = _x; this.y = _y; this.z = _z; this.w = _w;
       this.resetCache();
+    }
+
+    /**
+     * Copies the state of the given quaternion into this quaternion.
+     */
+    public copy(_original: Quaternion): void {
+      this.x = _original.x; this.y = _original.y; this.z = _original.z; this.w = _original.w;
+      this.#eulerAnglesDirty = _original.#eulerAnglesDirty;
+      if (!this.#eulerAnglesDirty)
+        this.#eulerAngles.copy(_original.#eulerAngles);
+      this.mutator = null;
     }
 
     /**

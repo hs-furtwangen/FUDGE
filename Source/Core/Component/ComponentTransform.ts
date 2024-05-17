@@ -58,7 +58,7 @@ namespace FudgeCore {
             if (_base == BASE.NODE) {
               // fix mtxWorld of container for subsequent rebasing 
               mtxTemp = Matrix4x4.PRODUCT(_node.mtxWorld, node.mtxLocal);
-              node.mtxWorld.set(mtxTemp);
+              node.mtxWorld.copy(mtxTemp);
               Recycler.store(mtxTemp);
             }
 
@@ -67,7 +67,7 @@ namespace FudgeCore {
               // fix mtxLocal for current parent
               this.rebase(node.getParent());
               mtxTemp = Matrix4x4.PRODUCT(node.getParent().mtxWorld, node.mtxLocal);
-              node.mtxWorld.set(mtxTemp);
+              node.mtxWorld.copy(mtxTemp);
               Recycler.store(mtxTemp);
             }
           }

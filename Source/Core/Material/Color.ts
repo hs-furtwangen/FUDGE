@@ -1,7 +1,7 @@
 namespace FudgeCore {
   /**
    * Defines a color as values in the range of 0 to 1 for the four channels red, green, blue and alpha (for opacity)
-   */ // TODO: cleanup, harmonize with Vector3, Matrix4x4 e.g. naming and logic of set, get (getArray), clone, copy etc.
+   */
   export class Color extends Mutable implements Serializable, Recycable {
     // crc2 only used for converting colors from strings predefined by CSS
     private static crc2: CanvasRenderingContext2D = (() => {
@@ -17,23 +17,13 @@ namespace FudgeCore {
 
     public constructor(_r: number = 1, _g: number = 1, _b: number = 1, _a: number = 1) {
       super();
-      this.setNormRGBA(_r, _g, _b, _a);
+      this.setClamped(_r, _g, _b, _a);
     }
 
-    // /**
-    //  * Returns a hex-code representation, i.e. "#RRGGBBAA", of the given css color keyword.
-    //  */
-    // public static getHexFromCSSKeyword(_keyword: string): string {
-    //   let hex: string = "#";
-    //   for (let byte of Color.getBytesRGBAFromCSSKeyword(_keyword))
-    //     hex += byte.toString(16).padStart(2, "0");
-    //   return hex;
-    // }
-
     /**
-     * Returns a {@link Uint8ClampedArray} with the 8-bit color channel values in the order RGBA.
+     * Returns a {@link Uint8ClampedArray} with the 8-bit color channels in the order RGBA.
      */
-    public static getBytesRGBAFromCSS(_keyword: string): Uint8ClampedArray {
+    public static getBytesFromCSS(_keyword: string): Uint8ClampedArray {
       Color.crc2.fillStyle = _keyword;
       Color.crc2.fillRect(0, 0, 1, 1);
       return Color.crc2.getImageData(0, 0, 1, 1).data;
@@ -44,101 +34,112 @@ namespace FudgeCore {
      * Passing an _alpha value will override the alpha value specified in the keyword.
      */
     public static CSS(_keyword: string, _alpha?: number): Color {
-      // const bytesRGBA: Uint8ClampedArray = Color.getBytesRGBAFromCSS(_keyword);
-      const color: Color = Recycler.get(Color);
-      color.setCSS(_keyword, _alpha);
-      // const color: Color = new Color(
-      //   bytesRGBA[0] / 255,
-      //   bytesRGBA[1] / 255,
-      //   bytesRGBA[2] / 255,
-      //   _alpha ?? bytesRGBA[3] / 255);
-      return color;
+      return Recycler.get(Color).setCSS(_keyword, _alpha);
     }
 
-    // TODO: rename to MULTIPLICATION like in Matarix3x3/Matrix4x4?
     /**
      * Computes and retruns the product of two colors. 
      */
-    public static MULTIPLY(_color1: Color, _color2: Color): Color {
-      return new Color(_color1.r * _color2.r, _color1.g * _color2.g, _color1.b * _color2.b, _color1.a * _color2.a);
+    public static PRODUCT(_clrA: Color, _clrB: Color): Color {
+      return _clrA.clone.multiply(_clrB);
     }
 
     /**
-     * Creates and returns a clone of this color
+     * Creates and returns a clone of this color.
      */
     public get clone(): Color {
-      let clone: Color = Recycler.get(Color);
-      clone.copy(this);
-      return clone;
+      return Recycler.get(Color).copy(this);
     }
 
-    public setCSS(_keyword: string, _alpha?: number): void {
-      const bytesRGBA: Uint8ClampedArray = Color.getBytesRGBAFromCSS(_keyword);
-      this.setBytesRGBA(bytesRGBA[0], bytesRGBA[1], bytesRGBA[2], bytesRGBA[3]);
-      this.a = _alpha ?? this.a;
-    }
-
-    // TODO: rename to setClampedRGBA? Norm is misleading, since it is not normalized but clamped
     /**
-     * Clamps the given color channel values bewteen 0 and 1 and sets them.
+     * Copies the color channels of the given color into this color and returns it.
      */
-    public setNormRGBA(_r: number, _g: number, _b: number, _a: number): void {
-      this.r = Math.min(1, Math.max(0, _r));
-      this.g = Math.min(1, Math.max(0, _g));
-      this.b = Math.min(1, Math.max(0, _b));
-      this.a = Math.min(1, Math.max(0, _a));
+    public copy(_color: Color): Color {
+      this.r = _color.r;
+      this.g = _color.g;
+      this.b = _color.b;
+      this.a = _color.a;
+      return this;
+    }
+
+    public recycle(): void {
+      this.r = 1; this.g = 1; this.b = 1; this.a = 1;
+    }
+
+    /**
+     * Sets this color from the given css color keyword. Optinally sets the alpha value to the given value.
+     */
+    public setCSS(_keyword: string, _alpha?: number): Color {
+      const bytesRGBA: Uint8ClampedArray = Color.getBytesFromCSS(_keyword);
+      this.setBytes(bytesRGBA[0], bytesRGBA[1], bytesRGBA[2], bytesRGBA[3]);
+      this.a = _alpha ?? this.a;
+      return this;
     }
 
     /**
      * Sets this color from the given 8-bit values for the color channels.
      */
-    public setBytesRGBA(_r: number, _g: number, _b: number, _a: number): void {
-      this.setNormRGBA(_r / 255, _g / 255, _b / 255, _a / 255);
+    public setBytes(_r: number, _g: number, _b: number, _a: number): Color;
+    /**
+     * Sets this color from the given {@link Uint8ClampedArray}.
+     */
+    public setBytes(_rgba: Uint8ClampedArray): Color;
+    public setBytes(_r: number | Uint8ClampedArray, _g?: number, _b?: number, _a?: number): Color {
+      if (_r instanceof Uint8ClampedArray)
+        this.setBytes(_r[0], _r[1], _r[2], _r[3]);
+      else
+        this.setClamped(_r / 255, _g / 255, _b / 255, _a / 255);
+      return this;
     }
 
     /**
-     * Returns a new {@link Float32Array} with the color channel values in the order RGBA.
+     * Sets the color channels of this color and clamps them between 0 and 1.
      */
-    public getArray(): Float32Array {
+    public setClamped(_r: number, _g: number, _b: number, _a: number): Color;
+    /**
+     * Sets this color from the given {@link Float32Array} while clamping the values between 0 and 1.
+     */
+    public setClamped(_rgba: Float32Array): Color;
+    public setClamped(_r: number | Float32Array, _g?: number, _b?: number, _a?: number): Color {
+      if (_r instanceof Float32Array)
+        this.setClamped(_r[0], _r[1], _r[2], _r[3]);
+      else
+        this.set(
+          Calc.clamp(_r, 0, 1),
+          Calc.clamp(_g, 0, 1),
+          Calc.clamp(_b, 0, 1),
+          Calc.clamp(_a, 0, 1)
+        );
+      return this;
+    }
+
+    /**
+     * Sets the color channels of this color.
+     */
+    public set(_r: number, _g: number, _b: number, _a: number): Color {
+      this.r = _r; this.g = _g; this.b = _b; this.a = _a;
+      return this;
+    }
+
+    /**
+     * Returns an array of the color channels of this color.
+     */
+    public get(): Float32Array {
       return new Float32Array([this.r, this.g, this.b, this.a]);
     }
 
     /**
-     * Clamps the given color channel values between 0 and 1 and sets them.
+     * Returns a {@link Uint8ClampedArray} of the color channels of this color.
      */
-    public setArrayNormRGBA(_color: Float32Array): void {
-      this.setNormRGBA(_color[0], _color[1], _color[2], _color[3]);
-    }
-
-    /**
-     * Sets this color from the given {@link Uint8ClampedArray}. Order of the channels is RGBA
-     */
-    public setArrayBytesRGBA(_color: Uint8ClampedArray): void {
-      this.setBytesRGBA(_color[0], _color[1], _color[2], _color[3]);
-    }
-
-    /**
-     * Returns a new {@link Uint8ClampedArray} with the color channel values in the order RGBA.
-     */
-    public getArrayBytesRGBA(): Uint8ClampedArray {
+    public getBytes(): Uint8ClampedArray {
       return new Uint8ClampedArray([this.r * 255, this.g * 255, this.b * 255, this.a * 255]);
-    }
-
-    /**
-     * Adds the given color to this.
-     */
-    public add(_color: Color): void {
-      this.r += _color.r;
-      this.g += _color.g;
-      this.b += _color.b;
-      this.a += _color.a;
     }
 
     /**
      * Returns the css color keyword representing this color.
      */
     public getCSS(): string {
-      let bytes: Uint8ClampedArray = this.getArrayBytesRGBA();
+      let bytes: Uint8ClampedArray = this.getBytes();
       return `RGBA(${bytes[0]}, ${bytes[1]}, ${bytes[2]}, ${this.a})`;
     }
 
@@ -146,7 +147,7 @@ namespace FudgeCore {
      * Returns the hex string representation of this color.
      */
     public getHex(): string {
-      let bytes: Uint8ClampedArray = this.getArrayBytesRGBA();
+      let bytes: Uint8ClampedArray = this.getBytes();
       let hex: string = "";
       for (let byte of bytes)
         hex += byte.toString(16).padStart(2, "0");
@@ -156,26 +157,34 @@ namespace FudgeCore {
     /**
      * Sets this color from the given hex string color.
      */
-    public setHex(_hex: string): void {
-      let bytes: Uint8ClampedArray = this.getArrayBytesRGBA();
+    public setHex(_hex: string): Color {
+      let bytes: Uint8ClampedArray = this.getBytes();
       let channel: number = 0;
       for (let byte in bytes)
         bytes[byte] = parseInt(_hex.substr(channel++ * 2, 2), 16);
-      this.setArrayBytesRGBA(bytes);
-    }
-
-    public recycle(): void {
-      this.r = 1; this.g = 1; this.b = 1; this.a = 1;
+      return this.setBytes(bytes);;
     }
 
     /**
-     * Set this color to the values given by the color provided
+     * Adds the given color to this.
      */
-    public copy(_color: Color): void {
-      this.r = _color.r;
-      this.g = _color.g;
-      this.b = _color.b;
-      this.a = _color.a;
+    public add(_color: Color): Color {
+      this.r += _color.r;
+      this.g += _color.g;
+      this.b += _color.b;
+      this.a += _color.a;
+      return this;
+    }
+
+    /**
+     * Multiplies this with the given color.
+     */
+    public multiply(_color: Color): Color {
+      this.r *= _color.r;
+      this.g *= _color.g;
+      this.b *= _color.b;
+      this.a *= _color.a;
+      return this;
     }
 
     /**

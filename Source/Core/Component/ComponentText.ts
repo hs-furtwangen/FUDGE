@@ -35,7 +35,7 @@ namespace FudgeCore {
 
     public useRenderData(_mtxMeshToWorld: Matrix4x4, _cmpCamera: ComponentCamera): Matrix4x4 {
       this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
-      this.mtxWorld.set(_mtxMeshToWorld);
+      this.mtxWorld.copy(_mtxMeshToWorld);
 
       let scaling: Vector3 = Recycler.get(Vector3);
 

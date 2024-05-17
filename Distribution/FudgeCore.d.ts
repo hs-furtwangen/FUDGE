@@ -912,10 +912,6 @@ declare namespace FudgeCore {
          */
         get magnitudeSquared(): number;
         /**
-         * Creates and returns a clone of this
-         */
-        get clone(): Vector2;
-        /**
          * Returns a polar representation of this vector
          */
         get geo(): Geo2;
@@ -923,11 +919,15 @@ declare namespace FudgeCore {
          * Adjust the cartesian values of this vector to represent the given as polar coordinates
          */
         set geo(_geo: Geo2);
-        recycle(): void;
         /**
-         * Copies the values of the given vector into this
+         * Creates and returns a clone of this vector.
+         */
+        get clone(): Vector2;
+        /**
+         * Copies the components of the given vector into this vector.
          */
         copy(_original: Vector2): void;
+        recycle(): void;
         /**
          * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
          * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
@@ -952,11 +952,11 @@ declare namespace FudgeCore {
          */
         normalize(_length?: number): void;
         /**
-         * Defines the components of this vector with the given numbers
+         * Sets the components of this vector.
          */
         set(_x?: number, _y?: number): void;
         /**
-         * @returns An array of the data of the vector
+         * Returns an array of the components of this vector.
          */
         get(): Float32Array;
         /**
@@ -3423,7 +3423,8 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Defines a color as values in the range of 0 to 1 for the four channels red, green, blue and alpha (for opacity)
-     */ class Color extends Mutable implements Serializable, Recycable {
+     */
+    class Color extends Mutable implements Serializable, Recycable {
         private static crc2;
         r: number;
         g: number;
@@ -3431,9 +3432,9 @@ declare namespace FudgeCore {
         a: number;
         constructor(_r?: number, _g?: number, _b?: number, _a?: number);
         /**
-         * Returns a {@link Uint8ClampedArray} with the 8-bit color channel values in the order RGBA.
+         * Returns a {@link Uint8ClampedArray} with the 8-bit color channels in the order RGBA.
          */
-        static getBytesRGBAFromCSS(_keyword: string): Uint8ClampedArray;
+        static getBytesFromCSS(_keyword: string): Uint8ClampedArray;
         /**
          * Returns a new {@link Color} object created from the given css color keyword.
          * Passing an _alpha value will override the alpha value specified in the keyword.
@@ -3442,40 +3443,48 @@ declare namespace FudgeCore {
         /**
          * Computes and retruns the product of two colors.
          */
-        static MULTIPLY(_color1: Color, _color2: Color): Color;
+        static PRODUCT(_clrA: Color, _clrB: Color): Color;
         /**
-         * Creates and returns a clone of this color
+         * Creates and returns a clone of this color.
          */
         get clone(): Color;
-        setCSS(_keyword: string, _alpha?: number): void;
         /**
-         * Clamps the given color channel values bewteen 0 and 1 and sets them.
+         * Copies the color channels of the given color into this color and returns it.
          */
-        setNormRGBA(_r: number, _g: number, _b: number, _a: number): void;
+        copy(_color: Color): Color;
+        recycle(): void;
+        /**
+         * Sets this color from the given css color keyword. Optinally sets the alpha value to the given value.
+         */
+        setCSS(_keyword: string, _alpha?: number): Color;
         /**
          * Sets this color from the given 8-bit values for the color channels.
          */
-        setBytesRGBA(_r: number, _g: number, _b: number, _a: number): void;
+        setBytes(_r: number, _g: number, _b: number, _a: number): Color;
         /**
-         * Returns a new {@link Float32Array} with the color channel values in the order RGBA.
+         * Sets this color from the given {@link Uint8ClampedArray}.
          */
-        getArray(): Float32Array;
+        setBytes(_rgba: Uint8ClampedArray): Color;
         /**
-         * Clamps the given color channel values between 0 and 1 and sets them.
+         * Sets the color channels of this color and clamps them between 0 and 1.
          */
-        setArrayNormRGBA(_color: Float32Array): void;
+        setClamped(_r: number, _g: number, _b: number, _a: number): Color;
         /**
-         * Sets this color from the given {@link Uint8ClampedArray}. Order of the channels is RGBA
+         * Sets this color from the given {@link Float32Array} while clamping the values between 0 and 1.
          */
-        setArrayBytesRGBA(_color: Uint8ClampedArray): void;
+        setClamped(_rgba: Float32Array): Color;
         /**
-         * Returns a new {@link Uint8ClampedArray} with the color channel values in the order RGBA.
+         * Sets the color channels of this color.
          */
-        getArrayBytesRGBA(): Uint8ClampedArray;
+        set(_r: number, _g: number, _b: number, _a: number): Color;
         /**
-         * Adds the given color to this.
+         * Returns an array of the color channels of this color.
          */
-        add(_color: Color): void;
+        get(): Float32Array;
+        /**
+         * Returns a {@link Uint8ClampedArray} of the color channels of this color.
+         */
+        getBytes(): Uint8ClampedArray;
         /**
          * Returns the css color keyword representing this color.
          */
@@ -3487,12 +3496,15 @@ declare namespace FudgeCore {
         /**
          * Sets this color from the given hex string color.
          */
-        setHex(_hex: string): void;
-        recycle(): void;
+        setHex(_hex: string): Color;
         /**
-         * Set this color to the values given by the color provided
+         * Adds the given color to this.
          */
-        copy(_color: Color): void;
+        add(_color: Color): Color;
+        /**
+         * Multiplies this with the given color.
+         */
+        multiply(_color: Color): Color;
         /**
          * Returns a formatted string representation of this color
          */
@@ -3776,7 +3788,7 @@ declare namespace FudgeCore {
         get scaling(): Vector2;
         set scaling(_scaling: Vector2);
         /**
-         * Return a copy of this
+         * Creates and returns a clone of this matrix.
          */
         get clone(): Matrix3x3;
         /**
@@ -3824,15 +3836,19 @@ declare namespace FudgeCore {
          */
         getEulerAngle(): number;
         /**
-         * Sets the elements of this matrix to the values of the given matrix
+         * Sets the elements of this matrix to the given array.
          */
-        set(_mtxTo: Matrix3x3): void;
+        set(_array: ArrayLike<number>): void;
+        /**
+         * Copies the elements of the given matrix into this matrix.
+         */
+        copy(_original: Matrix3x3): void;
         /**
          * Returns a formatted string representation of this matrix
          */
         toString(): string;
         /**
-         * Return the elements of this matrix as a Float32Array
+         * Returns an array of the elements of this matrix.
          */
         get(): Float32Array;
         serialize(): Serialization;
@@ -3981,10 +3997,6 @@ declare namespace FudgeCore {
         get quaternion(): Quaternion;
         set quaternion(_quaternion: Quaternion);
         /**
-         * Return a copy of this
-         */
-        get clone(): Matrix4x4;
-        /**
          * Returns the normalized cardinal x-axis.
          */
         get right(): Vector3;
@@ -3996,6 +4008,10 @@ declare namespace FudgeCore {
          * Returns the normalized cardinal z-axis.
          */
         get forward(): Vector3;
+        /**
+         * Creates and returns a clone of this matrix.
+         */
+        get clone(): Matrix4x4;
         /**
          * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
          */
@@ -4082,15 +4098,19 @@ declare namespace FudgeCore {
          */
         multiply(_matrix: Matrix4x4, _fromLeft?: boolean): void;
         /**
-         * Sets the elements of this matrix to the values of the given matrix
+         * Sets the elements of this matrix to the given array.
          */
-        set(_mtxTo: Matrix4x4 | ArrayLike<number>): void;
+        set(_array: ArrayLike<number>): void;
+        /**
+         * Copies the state of the given matrix into this matrix.
+         */
+        copy(_original: Matrix4x4): void;
         /**
          * Returns a formatted string representation of this matrix
          */
         toString(): string;
         /**
-         * Return the elements of this matrix as a Float32Array
+         * Returns an array of the elements of this matrix.
          */
         get(): Float32Array;
         /**
@@ -4264,7 +4284,7 @@ declare namespace FudgeCore {
          */
         static SLERP(_from: Quaternion, _to: Quaternion, _factor: number): Quaternion;
         /**
-         * Return a copy of this
+         * Creates and returns a clone of this quaternion.
          */
         get clone(): Quaternion;
         /**
@@ -4298,9 +4318,13 @@ declare namespace FudgeCore {
          */
         multiply(_other: Quaternion, _fromLeft?: boolean): void;
         /**
-         * Sets the elements of this quaternion to the values of the given quaternion
+         * Sets the components of this quaternion.
          */
         set(_x: number, _y: number, _z: number, _w: number): void;
+        /**
+         * Copies the state of the given quaternion into this quaternion.
+         */
+        copy(_original: Quaternion): void;
         /**
          * Returns a formatted string representation of this quaternion
          */
@@ -4486,20 +4510,20 @@ declare namespace FudgeCore {
          */
         get magnitudeSquared(): number;
         /**
-         * Creates and returns a clone of this vector
-         */
-        get clone(): Vector3;
-        /**
          * - get: returns a geographic representation of this vector
          * - set: adjust the cartesian values of this vector to represent the given as geographic coordinates
          */
         set geo(_geo: Geo3);
         get geo(): Geo3;
-        recycle(): void;
         /**
-         * Copies the values of the given vector into this
+         * Creates and returns a clone of this vector.
+         */
+        get clone(): Vector3;
+        /**
+         * Copies the components of the given vector into this vector.
          */
         copy(_original: Vector3): void;
+        recycle(): void;
         /**
          * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
          * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
@@ -4534,11 +4558,11 @@ declare namespace FudgeCore {
          */
         negate(): Vector3;
         /**
-         * Defines the components of this vector with the given numbers
+         * Sets the components of this vector.
          */
         set(_x?: number, _y?: number, _z?: number): void;
         /**
-         * Returns this vector as a new Float32Array (copy)
+         * Returns an array of the components of this vector.
          */
         get(): Float32Array;
         /**
@@ -4607,21 +4631,21 @@ declare namespace FudgeCore {
          */
         get magnitudeSquared(): number;
         /**
-         * Creates and returns a clone of this vector
+         * Creates and returns a clone of this vector.
          */
         get clone(): Vector4;
+        /**
+         * Copies the components of the given vector into this vector.
+         */
+        copy(_original: Vector4): void;
         /**
          * Sets the components of this vector.
          */
         set(_x: number, _y: number, _z: number, _w: number): void;
         /**
-         * Returns an array with the components of this vector.
+         * Returns an array of the components of this vector.
          */
         get(): [number, number, number, number];
-        /**
-         * Copies the values of the given vector into this vector.
-         */
-        copy(_original: Vector4): void;
         /**
          * Adds the given vector to this vector.
          */

@@ -1711,7 +1711,7 @@ var FudgeCore;
         }
         get clone() {
             let clone = FudgeCore.Recycler.get(Vector2);
-            clone.data.set(this.data);
+            clone.copy(this);
             return clone;
         }
         get geo() {
@@ -7453,7 +7453,7 @@ var FudgeCore;
         }
         get clone() {
             let mtxClone = FudgeCore.Recycler.get(Matrix4x4);
-            mtxClone.set(this);
+            mtxClone.copy(this);
             return mtxClone;
         }
         get right() {
@@ -7660,6 +7660,21 @@ var FudgeCore;
             else
                 this.data.set(_mtxTo);
             this.resetCache();
+        }
+        copy(_original) {
+            this.data.set(_original.data);
+            this.#translationDirty = _original.#translationDirty;
+            this.#rotationDirty = _original.#rotationDirty;
+            this.#scalingDirty = _original.#scalingDirty;
+            this.#quaternionDirty = _original.#quaternionDirty;
+            if (!this.#translationDirty)
+                this.#translation.copy(_original.#translation);
+            if (!this.#rotationDirty)
+                this.#rotation.copy(_original.#rotation);
+            if (!this.#scalingDirty)
+                this.#scaling.copy(_original.#scaling);
+            if (!this.#quaternionDirty)
+                this.#quaternion.copy(_original.#quaternion);
         }
         toString() {
             return `ƒ.Matrix4x4(translation: ${this.translation.toString()}, rotation: ${this.rotation.toString()}, scaling: ${this.scaling.toString()}`;
@@ -8231,6 +8246,16 @@ var FudgeCore;
             this.w = _w;
             this.resetCache();
         }
+        copy(_original) {
+            this.x = _original.x;
+            this.y = _original.y;
+            this.z = _original.z;
+            this.w = _original.w;
+            this.#eulerAnglesDirty = _original.#eulerAnglesDirty;
+            if (!this.#eulerAnglesDirty)
+                this.#eulerAngles.copy(_original.#eulerAngles);
+            this.mutator = null;
+        }
         toString() {
             return `ƒ.Quaternion(x: ${this.x}, y: ${this.y}, z: ${this.z}, w: ${this.w})`;
         }
@@ -8464,7 +8489,7 @@ var FudgeCore;
         }
         get clone() {
             let clone = FudgeCore.Recycler.get(Vector3);
-            clone.data.set(this.data);
+            clone.copy(this);
             return clone;
         }
         set geo(_geo) {
@@ -8620,7 +8645,7 @@ var FudgeCore;
         }
         get clone() {
             let clone = FudgeCore.Recycler.get(Vector4);
-            clone.set(this.x, this.y, this.z, this.w);
+            clone.copy(this);
             return clone;
         }
         set(_x, _y, _z, _w) {
