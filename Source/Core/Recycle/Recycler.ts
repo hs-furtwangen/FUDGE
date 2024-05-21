@@ -36,7 +36,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Fetches an object of the requested type from the depot and returns it. ⚠️ DOES NOT call its recycle-method.
+     * Fetches an object of the requested type from the depot and returns it. ⚠️**DOES NOT** call its recycle-method.
      * Faster than {@link Recycler.get}, but should be used with caution.
      */
     public static reuse<T extends Object>(_t: new () => T): T {

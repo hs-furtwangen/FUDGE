@@ -790,7 +790,7 @@ declare namespace FudgeCore {
          */
         static get<T extends Recycable | RecycableArray<T>>(_t: new () => T): T;
         /**
-         * Fetches an object of the requested type from the depot and returns it. ⚠️ DOES NOT call its recycle-method.
+         * Fetches an object of the requested type from the depot and returns it. ⚠️**DOES NOT** call its recycle-method.
          * Faster than {@link Recycler.get}, but should be used with caution.
          */
         static reuse<T extends Object>(_t: new () => T): T;
@@ -831,7 +831,8 @@ declare namespace FudgeCore {
      * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019
      */
     class Vector2 extends Mutable implements Serializable, Recycable {
-        private data;
+        x: number;
+        y: number;
         constructor(_x?: number, _y?: number);
         /**
          * A shorthand for writing `new Vector2(0, 0)`.
@@ -844,26 +845,23 @@ declare namespace FudgeCore {
          */
         static ONE(_scale?: number): Vector2;
         /**
-         * A shorthand for writing `new Vector2(0, y)`.
-         * @param _scale The number to write in the y coordinate. Default: 1
-         * @returns A new vector with the values (0, _scale)
-         */
-        static Y(_scale?: number): Vector2;
-        /**
          * A shorthand for writing `new Vector2(x, 0)`.
          * @param _scale The number to write in the x coordinate. Default: 1
          * @returns A new vector with the values (_scale, 0)
          */
         static X(_scale?: number): Vector2;
         /**
+         * A shorthand for writing `new Vector2(0, y)`.
+         * @param _scale The number to write in the y coordinate. Default: 1
+         * @returns A new vector with the values (0, _scale)
+         */
+        static Y(_scale?: number): Vector2;
+        /**
          * Creates and returns a vector through transformation of the given vector by the given matrix
          */
         static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation?: boolean): Vector2;
         /**
-         * Normalizes a given vector to the given length without editing the original vector.
-         * @param _vector the vector to normalize
-         * @param _length the length of the resulting vector. defaults to 1
-         * @returns a new vector representing the normalised vector scaled by the given length
+         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
          */
         static NORMALIZATION(_vector: Vector2, _length?: number): Vector2;
         /**
@@ -879,17 +877,14 @@ declare namespace FudgeCore {
          */
         static DIFFERENCE(_minuend: Vector2, _subtrahend: Vector2): Vector2;
         /**
+         * Calculates the cross product of two Vectors. Due to them being only 2 Dimensional, the result is a single number,
+         * which implicitly is on the Z axis. It is also the signed magnitude of the result.
+         */
+        static CROSS(_a: Vector2, _b: Vector2): number;
+        /**
          * Computes the dotproduct of 2 vectors.
          */
         static DOT(_a: Vector2, _b: Vector2): number;
-        /**
-         * Calculates the cross product of two Vectors. Due to them being only 2 Dimensional, the result is a single number,
-         * which implicitly is on the Z axis. It is also the signed magnitude of the result.
-         * @param _a Vector to compute the cross product on
-         * @param _b Vector to compute the cross product with
-         * @returns A number representing result of the cross product.
-         */
-        static CROSS(_a: Vector2, _b: Vector2): number;
         /**
          * Calculates the orthogonal vector to the given vector. Rotates counterclockwise by default.
          * ```text
@@ -904,10 +899,6 @@ declare namespace FudgeCore {
          * Creates a cartesian vector from polar coordinates
          */
         static GEO(_angle?: number, _magnitude?: number): Vector2;
-        get x(): number;
-        get y(): number;
-        set x(_x: number);
-        set y(_y: number);
         /**
          * Returns the length of the vector
          */
@@ -931,7 +922,7 @@ declare namespace FudgeCore {
         /**
          * Copies the components of the given vector into this vector.
          */
-        copy(_original: Vector2): void;
+        copy(_original: Vector2): Vector2;
         recycle(): void;
         /**
          * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
@@ -942,24 +933,24 @@ declare namespace FudgeCore {
          * Adds the given vector to the executing vector, changing the executor.
          * @param _addend The vector to add.
          */
-        add(_addend: Vector2): void;
+        add(_addend: Vector2): Vector2;
         /**
          * Subtracts the given vector from the executing vector, changing the executor.
          * @param _subtrahend The vector to subtract.
          */
-        subtract(_subtrahend: Vector2): void;
+        subtract(_subtrahend: Vector2): Vector2;
         /**
          * Scales the Vector by the given _scalar.
          */
-        scale(_scalar: number): void;
+        scale(_scalar: number): Vector2;
         /**
          * Normalizes this to the given length, 1 by default
          */
-        normalize(_length?: number): void;
+        normalize(_length?: number): Vector2;
         /**
          * Sets the components of this vector.
          */
-        set(_x?: number, _y?: number): void;
+        set(_x?: number, _y?: number): Vector2;
         /**
          * Returns an array of the components of this vector.
          */
@@ -968,15 +959,15 @@ declare namespace FudgeCore {
          * Transforms this vector by the given matrix, including or exluding the translation.
          * Including is the default, excluding will only rotate and scale this vector.
          */
-        transform(_mtxTransform: Matrix3x3, _includeTranslation?: boolean): void;
+        transform(_mtxTransform: Matrix3x3, _includeTranslation?: boolean): Vector2;
         /**
          * For each dimension, moves the component to the minimum of this and the given vector
          */
-        min(_compare: Vector3): void;
+        min(_compare: Vector2): Vector2;
         /**
          * For each dimension, moves the component to the maximum of this and the given vector
          */
-        max(_compare: Vector3): void;
+        max(_compare: Vector2): Vector2;
         /**
          * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3
          */
@@ -989,7 +980,7 @@ declare namespace FudgeCore {
          * Uses the standard array.map functionality to perform the given function on all components of this vector
          * and return a new vector with the results
          */
-        map(_function: (value: number, index: number, array: Float32Array) => number): Vector2;
+        map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector2;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Vector2>;
         getMutator(): Mutator;
