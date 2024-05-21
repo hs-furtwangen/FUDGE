@@ -218,8 +218,8 @@ namespace SkeletonTest {
     if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_LEFT])) _mtxRotatorY.rotateY(-3);
     if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_DOWN])) _mtxRotatorX.rotateX(3);
     if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.SPACE])) {
-      _mtxRotatorX.set(ƒ.Matrix4x4.IDENTITY());
-      _mtxRotatorY.set(ƒ.Matrix4x4.IDENTITY());
+      _mtxRotatorX.copy(ƒ.Matrix4x4.IDENTITY());
+      _mtxRotatorY.copy(ƒ.Matrix4x4.IDENTITY());
     }
     if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.F])) _material.setShader(ƒ.ShaderFlatSkin);
     if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.G])) _material.setShader(ƒ.ShaderGouraudSkin);

@@ -10,11 +10,13 @@ namespace FudgeCore {
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
    */
   export class Vector3 extends Mutable implements Serializable, Recycable {
-    private data: Float32Array; // TODO: check why this shouldn't be x,y,z as numbers...
+    public x: number;
+    public y: number;
+    public z: number;
 
     public constructor(_x: number = 0, _y: number = 0, _z: number = 0) {
       super();
-      this.data = new Float32Array([_x, _y, _z]);
+      this.set(_x, _y, _z);
     }
 
     //#region Static
@@ -41,7 +43,7 @@ namespace FudgeCore {
      */
     public static Z(_scale: number = 1): Vector3 {
       const vector: Vector3 = Recycler.get(Vector3);
-      vector.data.set([0, 0, _scale]);
+      vector.set(0, 0, _scale);
       return vector;
     }
 
@@ -208,32 +210,11 @@ namespace FudgeCore {
     //#endregion
 
     //#region Accessors
-    // TODO: implement equals-functions
-    public get x(): number {
-      return this.data[0];
-    }
-    public get y(): number {
-      return this.data[1];
-    }
-    public get z(): number {
-      return this.data[2];
-    }
-
-    public set x(_x: number) {
-      this.data[0] = _x;
-    }
-    public set y(_y: number) {
-      this.data[1] = _y;
-    }
-    public set z(_z: number) {
-      this.data[2] = _z;
-    }
-
     /**
      * Returns the length of the vector
      */
     public get magnitude(): number {
-      return Math.hypot(...this.data);
+      return Math.hypot(this.x, this.y, this.z);
     }
 
     /**
@@ -268,21 +249,19 @@ namespace FudgeCore {
      * Creates and returns a clone of this vector.
      */
     public get clone(): Vector3 {
-      let clone: Vector3 = Recycler.get(Vector3);
-      clone.copy(this);
-      return clone;
+      return Recycler.reuse(Vector3).copy(this);
     }
     //#endregion
 
     /**
      * Copies the components of the given vector into this vector.
      */
-    public copy(_original: Vector3): void {
-      this.data.set(_original.data);
+    public copy(_original: Vector3): Vector3 {
+      return this.set(_original.x, _original.y, _original.z);
     }
 
     public recycle(): void {
-      this.data.set([0, 0, 0]);
+      this.set(0, 0, 0);
     }
 
     /**
@@ -321,60 +300,67 @@ namespace FudgeCore {
     }
 
     /**
-     * Adds the given vector to this
+     * Adds the given vector to this vector.
      */
-    public add(_addend: Vector3): void {
-      this.data.set([_addend.x + this.x, _addend.y + this.y, _addend.z + this.z]);
-      // this.x += _addend.x; this.y += _addend.y; this.z += _addend.z;
+    public add(_addend: Vector3): Vector3 {
+      this.x += _addend.x; 
+      this.y += _addend.y; 
+      this.z += _addend.z;
+      return this;
     }
 
     /**
-     * Subtracts the given vector from this
+     * Subtracts the given vector from this vector.
      */
-    public subtract(_subtrahend: Vector3): void {
-      this.data.set([this.x - _subtrahend.x, this.y - _subtrahend.y, this.z - _subtrahend.z]);
-      // this.x -= _subtrahend.x; this.y -= _subtrahend.y; this.z -= _subtrahend.z;
+    public subtract(_subtrahend: Vector3): Vector3 {
+      this.x -= _subtrahend.x; 
+      this.y -= _subtrahend.y; 
+      this.z -= _subtrahend.z;
+      return this;
     }
 
     /**
-     * Scales this vector by the given scalar
+     * Scales this vector by the given scalar.
      */
-    public scale(_scalar: number): void {
-      this.data.set([_scalar * this.x, _scalar * this.y, _scalar * this.z]);
-      // this.x *= _scalar; this.y *= _scalar; this.z *= _scalar;
+    public scale(_scalar: number): Vector3 {
+      this.x *= _scalar; 
+      this.y *= _scalar; 
+      this.z *= _scalar;
+      return this;
     }
 
     /**
      * Normalizes this to the given length, 1 by default
      */
-    public normalize(_length: number = 1): void {
-      this.data = Vector3.NORMALIZATION(this, _length).data;
+    public normalize(_length: number = 1): Vector3 {
+      return this.copy(Vector3.NORMALIZATION(this, _length));
     }
 
     /**
      * Negates this vector by flipping the signs of its components
      */
     public negate(): Vector3 {
-      // this.data.set([-this.x, -this.y, -this.z]);
-      // TODO: check if index-access is faster than set, as set needs to create a new array
-      this.x = -this.x; this.y = -this.y; this.z = -this.z;
+      this.x = -this.x; 
+      this.y = -this.y; 
+      this.z = -this.z;
       return this;
     }
 
     /**
-     * Sets the components of this vector.
+     * Sets the components of this vector and returns it.
      */
-    public set(_x: number = 0, _y: number = 0, _z: number = 0): void {
-      this.data[0] = _x;
-      this.data[1] = _y;
-      this.data[2] = _z;
+    public set(_x: number = 0, _y: number = 0, _z: number = 0): Vector3 {
+      this.x = _x;
+      this.y = _y;
+      this.z = _z;
+      return this;
     }
 
     /**
      * Returns an array of the components of this vector.
      */
     public get(): Float32Array {
-      return new Float32Array(this.data);
+      return new Float32Array([this.x, this.y, this.z]);
     }
 
     /**
@@ -382,10 +368,11 @@ namespace FudgeCore {
      * Including or exluding the translation if a matrix is passed.
      * Including is the default, excluding will only rotate and scale this vector.
      */
-    public transform(_transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true): void {
+    public transform(_transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true): Vector3 {
       let transformed: Vector3 = Vector3.TRANSFORMATION(this, _transform, _includeTranslation);
-      this.data.set(transformed.data);
+      this.copy(transformed);
       Recycler.store(transformed);
+      return this;
     }
 
     /**
@@ -398,18 +385,20 @@ namespace FudgeCore {
     /**
      * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}
      */
-    public reflect(_normal: Vector3): void {
+    public reflect(_normal: Vector3): Vector3 {
       const reflected: Vector3 = Vector3.REFLECTION(this, _normal);
       this.set(reflected.x, reflected.y, reflected.z);
       Recycler.store(reflected);
+      return this;
     }
 
     /**
      * Shuffles the components of this vector
      */
-    public shuffle(): void {
-      let a: number[] = Array.from(this.data);
+    public shuffle(): Vector3 {
+      let a: number[] = [this.x, this.y, this.z];
       this.set(Random.default.splice(a), Random.default.splice(a), a[0]);
+      return this;
     }
 
     /**
@@ -424,18 +413,21 @@ namespace FudgeCore {
     /**
      * For each dimension, moves the component to the minimum of this and the given vector
      */
-    public min(_compare: Vector3): void {
+    public min(_compare: Vector3): Vector3 {
       this.x = Math.min(this.x, _compare.x);
       this.y = Math.min(this.y, _compare.y);
       this.z = Math.min(this.z, _compare.z);
+      return this;
     }
+
     /**
      * For each dimension, moves the component to the maximum of this and the given vector
      */
-    public max(_compare: Vector3): void {
+    public max(_compare: Vector3): Vector3 {
       this.x = Math.max(this.x, _compare.x);
       this.y = Math.max(this.y, _compare.y);
       this.z = Math.max(this.z, _compare.z);
+      return this;
     }
 
     /**
@@ -450,9 +442,9 @@ namespace FudgeCore {
      * Uses the standard array.map functionality to perform the given function on all components of this vector
      * and return a new vector with the results
      */
-    public map(_function: (value: number, index: number, array: Float32Array) => number): Vector3 {
+    public map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector3 {
       let copy: Vector3 = Recycler.get(Vector3);
-      copy.data = this.data.map(_function);
+      copy.set(...[this.x, this.y, this.z].map(_function));
       return copy;
     }
 
@@ -473,13 +465,16 @@ namespace FudgeCore {
     }
 
     public async mutate(_mutator: Mutator): Promise<void> {
-      this.data[0] = _mutator.x ?? this.data[0];
-      this.data[1] = _mutator.y ?? this.data[1];
-      this.data[2] = _mutator.z ?? this.data[2];
+      if (_mutator.x !== undefined)
+        this.x = _mutator.x;
+      if (_mutator.y !== undefined)
+        this.y = _mutator.y;
+      if (_mutator.z !== undefined)
+        this.z = _mutator.z;
     }
 
     public getMutator(): Mutator {
-      let mutator: Mutator = { x: this.data[0], y: this.data[1], z: this.data[2] };
+      let mutator: Mutator = { x: this.x, y: this.y, z: this.z };
       return mutator;
     }
     protected reduceMutator(_mutator: Mutator): void {/** */ }

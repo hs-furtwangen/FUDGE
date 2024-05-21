@@ -1119,8 +1119,9 @@ var FudgeCore;
         }
         static injectCoatColored(_shader, _cmpMaterial) {
             let uniform = _shader.uniforms["u_vctColor"];
-            let color = FudgeCore.Color.MULTIPLY(this.color, _cmpMaterial.clrPrimary);
-            FudgeCore.RenderWebGL.getRenderingContext().uniform4fv(uniform, color.getArray());
+            let color = FudgeCore.Color.PRODUCT(this.color, _cmpMaterial.clrPrimary);
+            FudgeCore.RenderWebGL.getRenderingContext().uniform4fv(uniform, color.get());
+            FudgeCore.Recycler.store(color);
         }
         static injectCoatRemissive(_shader, _cmpMaterial) {
             RenderInjectorCoat.injectCoatColored.call(this, _shader, _cmpMaterial);
@@ -1568,6 +1569,9 @@ var FudgeCore;
             else
                 return new _t();
         }
+        static reuse(_t) {
+            return Recycler.depot[_t.name]?.pop() ?? new _t();
+        }
         static borrow(_t) {
             let t;
             let key = _t.name;
@@ -1709,11 +1713,6 @@ var FudgeCore;
         get magnitudeSquared() {
             return Vector2.DOT(this, this);
         }
-        get clone() {
-            let clone = FudgeCore.Recycler.get(Vector2);
-            clone.copy(this);
-            return clone;
-        }
         get geo() {
             let geo = FudgeCore.Recycler.get(FudgeCore.Geo2);
             geo.magnitude = this.magnitude;
@@ -1726,11 +1725,16 @@ var FudgeCore;
             this.set(_geo.magnitude, 0);
             this.transform(FudgeCore.Matrix3x3.ROTATION(_geo.angle));
         }
-        recycle() {
-            this.data.set([0, 0]);
+        get clone() {
+            let clone = FudgeCore.Recycler.reuse(Vector2);
+            clone.copy(this);
+            return clone;
         }
         copy(_original) {
             this.data.set(_original.data);
+        }
+        recycle() {
+            this.data.set([0, 0]);
         }
         equals(_compare, _tolerance = Number.EPSILON) {
             if (Math.abs(this.x - _compare.x) > _tolerance)
@@ -2289,7 +2293,7 @@ var FudgeCore;
             if (_cmpFog) {
                 data[1] = _cmpFog.near;
                 data[2] = _cmpFog.far;
-                data.set(_cmpFog.color.getArray(), 4);
+                data.set(_cmpFog.color.get(), 4);
             }
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboFog);
             crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.STATIC_DRAW);
@@ -2304,7 +2308,7 @@ var FudgeCore;
                 let clrSum = new FudgeCore.Color(0, 0, 0, 0);
                 for (let cmpLight of cmpLights)
                     clrSum.add(cmpLight.light.color);
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsVariableOffsets["u_ambient.vctColor"], new Float32Array(clrSum.getArray()));
+                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsVariableOffsets["u_ambient.vctColor"], new Float32Array(clrSum.get()));
             }
             bufferLightsOfType(FudgeCore.LightDirectional, "u_nLightsDirectional", "u_directional");
             bufferLightsOfType(FudgeCore.LightPoint, "u_nLightsPoint", "u_point");
@@ -2319,7 +2323,7 @@ var FudgeCore;
                 let iLight = 0;
                 for (let cmpLight of cmpLights) {
                     const lightDataOffset = iLight * lightDataSize;
-                    lightsData.set(cmpLight.light.color.getArray(), lightDataOffset + 0);
+                    lightsData.set(cmpLight.light.color.get(), lightDataOffset + 0);
                     let mtxTotal = FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
                     if (_type == FudgeCore.LightDirectional) {
                         let zero = FudgeCore.Vector3.ZERO();
@@ -5169,7 +5173,7 @@ var FudgeCore;
         }
         resetPose() {
             for (let i = 0; i < this.bones.length; i++)
-                this.bones[i].mtxLocal.set(FudgeCore.Matrix4x4.INVERSE(this.mtxBindInverses[i]));
+                this.bones[i].mtxLocal.copy(FudgeCore.Matrix4x4.INVERSE(this.mtxBindInverses[i]));
         }
         serialize() {
             const serialization = {};
@@ -5218,7 +5222,7 @@ var FudgeCore;
         }
         useRenderData(_mtxMeshToWorld, _cmpCamera) {
             this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.COLOR.UNIT);
-            this.mtxWorld.set(_mtxMeshToWorld);
+            this.mtxWorld.copy(_mtxMeshToWorld);
             let scaling = FudgeCore.Recycler.get(FudgeCore.Vector3);
             if (this.fixedSize) {
                 let scale;
@@ -5305,14 +5309,14 @@ var FudgeCore;
                         let mtxTemp;
                         if (_base == BASE.NODE) {
                             mtxTemp = FudgeCore.Matrix4x4.PRODUCT(_node.mtxWorld, node.mtxLocal);
-                            node.mtxWorld.set(mtxTemp);
+                            node.mtxWorld.copy(mtxTemp);
                             FudgeCore.Recycler.store(mtxTemp);
                         }
                         let parent = node.getParent();
                         if (parent) {
                             this.rebase(node.getParent());
                             mtxTemp = FudgeCore.Matrix4x4.PRODUCT(node.getParent().mtxWorld, node.mtxLocal);
-                            node.mtxWorld.set(mtxTemp);
+                            node.mtxWorld.copy(mtxTemp);
                             FudgeCore.Recycler.store(mtxTemp);
                         }
                     }
@@ -6400,75 +6404,28 @@ var FudgeCore;
         }
         constructor(_r = 1, _g = 1, _b = 1, _a = 1) {
             super();
-            this.setNormRGBA(_r, _g, _b, _a);
+            this.setClamped(_r, _g, _b, _a);
         }
-        static getBytesRGBAFromCSS(_keyword) {
+        static getBytesFromCSS(_keyword) {
             Color.crc2.fillStyle = _keyword;
             Color.crc2.fillRect(0, 0, 1, 1);
             return Color.crc2.getImageData(0, 0, 1, 1).data;
         }
         static CSS(_keyword, _alpha) {
-            const color = FudgeCore.Recycler.get(Color);
-            color.setCSS(_keyword, _alpha);
-            return color;
+            return FudgeCore.Recycler.get(Color).setCSS(_keyword, _alpha);
         }
-        static MULTIPLY(_color1, _color2) {
-            return new Color(_color1.r * _color2.r, _color1.g * _color2.g, _color1.b * _color2.b, _color1.a * _color2.a);
+        static PRODUCT(_clrA, _clrB) {
+            return _clrA.clone.multiply(_clrB);
         }
         get clone() {
-            let clone = FudgeCore.Recycler.get(Color);
-            clone.copy(this);
-            return clone;
+            return FudgeCore.Recycler.reuse(Color).copy(this);
         }
-        setCSS(_keyword, _alpha) {
-            const bytesRGBA = Color.getBytesRGBAFromCSS(_keyword);
-            this.setBytesRGBA(bytesRGBA[0], bytesRGBA[1], bytesRGBA[2], bytesRGBA[3]);
-            this.a = _alpha ?? this.a;
-        }
-        setNormRGBA(_r, _g, _b, _a) {
-            this.r = Math.min(1, Math.max(0, _r));
-            this.g = Math.min(1, Math.max(0, _g));
-            this.b = Math.min(1, Math.max(0, _b));
-            this.a = Math.min(1, Math.max(0, _a));
-        }
-        setBytesRGBA(_r, _g, _b, _a) {
-            this.setNormRGBA(_r / 255, _g / 255, _b / 255, _a / 255);
-        }
-        getArray() {
-            return new Float32Array([this.r, this.g, this.b, this.a]);
-        }
-        setArrayNormRGBA(_color) {
-            this.setNormRGBA(_color[0], _color[1], _color[2], _color[3]);
-        }
-        setArrayBytesRGBA(_color) {
-            this.setBytesRGBA(_color[0], _color[1], _color[2], _color[3]);
-        }
-        getArrayBytesRGBA() {
-            return new Uint8ClampedArray([this.r * 255, this.g * 255, this.b * 255, this.a * 255]);
-        }
-        add(_color) {
-            this.r += _color.r;
-            this.g += _color.g;
-            this.b += _color.b;
-            this.a += _color.a;
-        }
-        getCSS() {
-            let bytes = this.getArrayBytesRGBA();
-            return `RGBA(${bytes[0]}, ${bytes[1]}, ${bytes[2]}, ${this.a})`;
-        }
-        getHex() {
-            let bytes = this.getArrayBytesRGBA();
-            let hex = "";
-            for (let byte of bytes)
-                hex += byte.toString(16).padStart(2, "0");
-            return hex;
-        }
-        setHex(_hex) {
-            let bytes = this.getArrayBytesRGBA();
-            let channel = 0;
-            for (let byte in bytes)
-                bytes[byte] = parseInt(_hex.substr(channel++ * 2, 2), 16);
-            this.setArrayBytesRGBA(bytes);
+        copy(_color) {
+            this.r = _color.r;
+            this.g = _color.g;
+            this.b = _color.b;
+            this.a = _color.a;
+            return this;
         }
         recycle() {
             this.r = 1;
@@ -6476,11 +6433,71 @@ var FudgeCore;
             this.b = 1;
             this.a = 1;
         }
-        copy(_color) {
-            this.r = _color.r;
-            this.g = _color.g;
-            this.b = _color.b;
-            this.a = _color.a;
+        setCSS(_keyword, _alpha) {
+            const bytesRGBA = Color.getBytesFromCSS(_keyword);
+            this.setBytes(bytesRGBA[0], bytesRGBA[1], bytesRGBA[2], bytesRGBA[3]);
+            this.a = _alpha ?? this.a;
+            return this;
+        }
+        setBytes(_r, _g, _b, _a) {
+            if (_r instanceof Uint8ClampedArray)
+                this.setBytes(_r[0], _r[1], _r[2], _r[3]);
+            else
+                this.setClamped(_r / 255, _g / 255, _b / 255, _a / 255);
+            return this;
+        }
+        setClamped(_r, _g, _b, _a) {
+            if (_r instanceof Float32Array)
+                this.setClamped(_r[0], _r[1], _r[2], _r[3]);
+            else
+                this.set(FudgeCore.Calc.clamp(_r, 0, 1), FudgeCore.Calc.clamp(_g, 0, 1), FudgeCore.Calc.clamp(_b, 0, 1), FudgeCore.Calc.clamp(_a, 0, 1));
+            return this;
+        }
+        set(_r, _g, _b, _a) {
+            this.r = _r;
+            this.g = _g;
+            this.b = _b;
+            this.a = _a;
+            return this;
+        }
+        get() {
+            return new Float32Array([this.r, this.g, this.b, this.a]);
+        }
+        getBytes() {
+            return new Uint8ClampedArray([this.r * 255, this.g * 255, this.b * 255, this.a * 255]);
+        }
+        getCSS() {
+            let bytes = this.getBytes();
+            return `RGBA(${bytes[0]}, ${bytes[1]}, ${bytes[2]}, ${this.a})`;
+        }
+        getHex() {
+            let bytes = this.getBytes();
+            let hex = "";
+            for (let byte of bytes)
+                hex += byte.toString(16).padStart(2, "0");
+            return hex;
+        }
+        setHex(_hex) {
+            let bytes = this.getBytes();
+            let channel = 0;
+            for (let byte in bytes)
+                bytes[byte] = parseInt(_hex.substr(channel++ * 2, 2), 16);
+            return this.setBytes(bytes);
+            ;
+        }
+        add(_color) {
+            this.r += _color.r;
+            this.g += _color.g;
+            this.b += _color.b;
+            this.a += _color.a;
+            return this;
+        }
+        multiply(_color) {
+            this.r *= _color.r;
+            this.g *= _color.g;
+            this.b *= _color.b;
+            this.a *= _color.a;
+            return this;
         }
         toString() {
             return `(r: ${this.r.toFixed(3)}, g: ${this.g.toFixed(3)}, b: ${this.b.toFixed(3)}, a: ${this.a.toFixed(3)})`;
@@ -6853,7 +6870,7 @@ var FudgeCore;
             ]);
             return mtxResult;
         }
-        static MULTIPLICATION(_mtxLeft, _mtxRight) {
+        static PRODUCT(_mtxLeft, _mtxRight) {
             let a00 = _mtxLeft.data[0 * 3 + 0];
             let a01 = _mtxLeft.data[0 * 3 + 1];
             let a02 = _mtxLeft.data[0 * 3 + 2];
@@ -6886,7 +6903,7 @@ var FudgeCore;
             ]);
             return mtxResult;
         }
-        static INVERSION(_mtx) {
+        static INVERSE(_mtx) {
             let m = _mtx.data;
             let m00 = m[0 * 3 + 0];
             let m01 = m[0 * 3 + 1];
@@ -6944,8 +6961,8 @@ var FudgeCore;
             this.resetCache();
         }
         get clone() {
-            let mtxClone = FudgeCore.Recycler.get(Matrix3x3);
-            mtxClone.set(this);
+            let mtxClone = FudgeCore.Recycler.reuse(Matrix3x3);
+            mtxClone.copy(this);
             return mtxClone;
         }
         recycle() {
@@ -6960,8 +6977,8 @@ var FudgeCore;
             this.recycle();
         }
         translate(_by) {
-            const mtxResult = Matrix3x3.MULTIPLICATION(this, Matrix3x3.TRANSLATION(_by));
-            this.set(mtxResult);
+            const mtxResult = Matrix3x3.PRODUCT(this, Matrix3x3.TRANSLATION(_by));
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
         translateX(_x) {
@@ -6975,8 +6992,8 @@ var FudgeCore;
             this.vectors.translation = null;
         }
         scale(_by) {
-            const mtxResult = Matrix3x3.MULTIPLICATION(this, Matrix3x3.SCALING(_by));
-            this.set(mtxResult);
+            const mtxResult = Matrix3x3.PRODUCT(this, Matrix3x3.SCALING(_by));
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
         scaleX(_by) {
@@ -6992,13 +7009,13 @@ var FudgeCore;
             FudgeCore.Recycler.store(vector);
         }
         rotate(_angleInDegrees) {
-            const mtxResult = Matrix3x3.MULTIPLICATION(this, Matrix3x3.ROTATION(_angleInDegrees));
-            this.set(mtxResult);
+            const mtxResult = Matrix3x3.PRODUCT(this, Matrix3x3.ROTATION(_angleInDegrees));
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
         multiply(_mtxRight) {
-            let mtxResult = Matrix3x3.MULTIPLICATION(this, _mtxRight);
-            this.set(mtxResult);
+            let mtxResult = Matrix3x3.PRODUCT(this, _mtxRight);
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
             this.mutator = null;
         }
@@ -7019,8 +7036,12 @@ var FudgeCore;
             rotation *= FudgeCore.Calc.rad2deg;
             return rotation;
         }
-        set(_mtxTo) {
-            this.data.set(_mtxTo.data);
+        set(_array) {
+            this.data.set(_array);
+            this.resetCache();
+        }
+        copy(_original) {
+            this.data.set(_original.data);
             this.resetCache();
         }
         toString() {
@@ -7080,7 +7101,7 @@ var FudgeCore;
             }
             if (vectors.scaling)
                 mtxResult.scale(vectors.scaling);
-            this.set(mtxResult);
+            this.set(mtxResult.data);
             this.vectors = vectors;
         }
         getMutatorAttributeTypes(_mutator) {
@@ -7188,15 +7209,7 @@ var FudgeCore;
             return mtxResult;
         }
         static TRANSPOSE(_mtx) {
-            let m = _mtx.data;
-            let result = FudgeCore.Recycler.get(Matrix4x4);
-            result.data.set([
-                m[0], m[4], m[8], m[12],
-                m[1], m[5], m[9], m[13],
-                m[2], m[6], m[10], m[14],
-                m[3], m[7], m[11], m[15]
-            ]);
-            return result;
+            return _mtx.clone.transpose();
         }
         static INVERSE(_mtx) {
             return _mtx.clone.invert();
@@ -7451,11 +7464,6 @@ var FudgeCore;
         set quaternion(_quaternion) {
             this.mutate({ "rotation": _quaternion });
         }
-        get clone() {
-            let mtxClone = FudgeCore.Recycler.get(Matrix4x4);
-            mtxClone.copy(this);
-            return mtxClone;
-        }
         get right() {
             let right = this.getX();
             right.normalize();
@@ -7470,6 +7478,11 @@ var FudgeCore;
             let forward = this.getZ();
             forward.normalize();
             return forward;
+        }
+        get clone() {
+            let mtxClone = FudgeCore.Recycler.reuse(Matrix4x4);
+            mtxClone.copy(this);
+            return mtxClone;
         }
         recycle() {
             this.data.set([
@@ -7489,12 +7502,12 @@ var FudgeCore;
             FudgeCore.Recycler.store(mtxRotation);
         }
         transpose() {
-            let matrix = this.data;
-            this.data.set([
-                matrix[0], matrix[4], matrix[8], matrix[12],
-                matrix[1], matrix[5], matrix[9], matrix[13],
-                matrix[2], matrix[6], matrix[10], matrix[14],
-                matrix[3], matrix[7], matrix[11], matrix[15]
+            let m = this.data;
+            this.set([
+                m[0], m[4], m[8], m[12],
+                m[1], m[5], m[9], m[13],
+                m[2], m[6], m[10], m[14],
+                m[3], m[7], m[11], m[15]
             ]);
             return this;
         }
@@ -7549,7 +7562,7 @@ var FudgeCore;
             let t3 = (tmp5 * m01 + tmp8 * m11 + tmp11 * m21) -
                 (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
             let d = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
-            m.set([
+            this.set([
                 d * t0,
                 d * t1,
                 d * t2,
@@ -7588,13 +7601,13 @@ var FudgeCore;
             _up = _up ? FudgeCore.Vector3.NORMALIZATION(_up) : FudgeCore.Vector3.NORMALIZATION(this.up);
             const mtxResult = Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict);
             mtxResult.scale(this.scaling);
-            this.set(mtxResult);
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
         lookIn(_direction, _up = FudgeCore.Vector3.Y()) {
             const mtxResult = Matrix4x4.LOOK_IN(this.translation, _direction, _up);
             mtxResult.scale(this.scaling);
-            this.set(mtxResult);
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
         translate(_by, _local = true) {
@@ -7628,7 +7641,7 @@ var FudgeCore;
         }
         scale(_by) {
             const mtxResult = Matrix4x4.PRODUCT(this, Matrix4x4.SCALING(_by));
-            this.set(mtxResult);
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
         scaleX(_by) {
@@ -7651,14 +7664,11 @@ var FudgeCore;
         }
         multiply(_matrix, _fromLeft = false) {
             const mtxResult = _fromLeft ? Matrix4x4.PRODUCT(_matrix, this) : Matrix4x4.PRODUCT(this, _matrix);
-            this.set(mtxResult);
+            this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
         }
-        set(_mtxTo) {
-            if (_mtxTo instanceof Matrix4x4)
-                this.data.set(_mtxTo.data);
-            else
-                this.data.set(_mtxTo);
+        set(_array) {
+            this.data.set(_array);
             this.resetCache();
         }
         copy(_original) {
@@ -7702,18 +7712,21 @@ var FudgeCore;
             this.data.set([this.data[4], this.data[5], this.data[6]], 0);
             this.data.set(temp, 4);
             this.data.set([-this.data[8], -this.data[9], -this.data[10]], 8);
+            this.resetCache();
         }
         swapXZ() {
             let temp = [this.data[0], this.data[1], this.data[2]];
             this.data.set([this.data[8], this.data[9], this.data[10]], 0);
             this.data.set(temp, 8);
             this.data.set([-this.data[4], -this.data[5], -this.data[6]], 4);
+            this.resetCache();
         }
         swapYZ() {
             let temp = [this.data[4], this.data[5], this.data[6]];
             this.data.set([this.data[8], this.data[9], this.data[10]], 4);
             this.data.set(temp, 8);
             this.data.set([-this.data[0], -this.data[1], -this.data[2]], 0);
+            this.resetCache();
         }
         getTranslationTo(_mtxTarget) {
             let difference = FudgeCore.Recycler.get(FudgeCore.Vector3);
@@ -8159,8 +8172,8 @@ var FudgeCore;
             return result;
         }
         get clone() {
-            let result = FudgeCore.Recycler.get(Quaternion);
-            result.set(this.x, this.y, this.z, this.w);
+            let result = FudgeCore.Recycler.reuse(Quaternion);
+            result.copy(this);
             return result;
         }
         get eulerAngles() {
@@ -8360,7 +8373,7 @@ var FudgeCore;
     class Vector3 extends FudgeCore.Mutable {
         constructor(_x = 0, _y = 0, _z = 0) {
             super();
-            this.data = new Float32Array([_x, _y, _z]);
+            this.set(_x, _y, _z);
         }
         static X(_scale = 1) {
             const vector = FudgeCore.Recycler.get(Vector3);
@@ -8374,7 +8387,7 @@ var FudgeCore;
         }
         static Z(_scale = 1) {
             const vector = FudgeCore.Recycler.get(Vector3);
-            vector.data.set([0, 0, _scale]);
+            vector.set(0, 0, _scale);
             return vector;
         }
         static ZERO() {
@@ -8463,34 +8476,11 @@ var FudgeCore;
             let angle = Math.acos(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude));
             return angle * FudgeCore.Calc.rad2deg;
         }
-        get x() {
-            return this.data[0];
-        }
-        get y() {
-            return this.data[1];
-        }
-        get z() {
-            return this.data[2];
-        }
-        set x(_x) {
-            this.data[0] = _x;
-        }
-        set y(_y) {
-            this.data[1] = _y;
-        }
-        set z(_z) {
-            this.data[2] = _z;
-        }
         get magnitude() {
-            return Math.hypot(...this.data);
+            return Math.hypot(this.x, this.y, this.z);
         }
         get magnitudeSquared() {
             return Vector3.DOT(this, this);
-        }
-        get clone() {
-            let clone = FudgeCore.Recycler.get(Vector3);
-            clone.copy(this);
-            return clone;
         }
         set geo(_geo) {
             this.set(0, 0, _geo.magnitude);
@@ -8506,11 +8496,14 @@ var FudgeCore;
             geo.latitude = 180 * Math.asin(this.y / geo.magnitude) / Math.PI;
             return geo;
         }
-        recycle() {
-            this.data.set([0, 0, 0]);
+        get clone() {
+            return FudgeCore.Recycler.reuse(Vector3).copy(this);
         }
         copy(_original) {
-            this.data.set(_original.data);
+            return this.set(_original.x, _original.y, _original.z);
+        }
+        recycle() {
+            this.set(0, 0, 0);
         }
         equals(_compare, _tolerance = Number.EPSILON) {
             if (Math.abs(this.x - _compare.x) > _tolerance)
@@ -8538,16 +8531,25 @@ var FudgeCore;
             return difference.magnitudeSquared < (_radius * _radius);
         }
         add(_addend) {
-            this.data.set([_addend.x + this.x, _addend.y + this.y, _addend.z + this.z]);
+            this.x += _addend.x;
+            this.y += _addend.y;
+            this.z += _addend.z;
+            return this;
         }
         subtract(_subtrahend) {
-            this.data.set([this.x - _subtrahend.x, this.y - _subtrahend.y, this.z - _subtrahend.z]);
+            this.x -= _subtrahend.x;
+            this.y -= _subtrahend.y;
+            this.z -= _subtrahend.z;
+            return this;
         }
         scale(_scalar) {
-            this.data.set([_scalar * this.x, _scalar * this.y, _scalar * this.z]);
+            this.x *= _scalar;
+            this.y *= _scalar;
+            this.z *= _scalar;
+            return this;
         }
         normalize(_length = 1) {
-            this.data = Vector3.NORMALIZATION(this, _length).data;
+            return this.copy(Vector3.NORMALIZATION(this, _length));
         }
         negate() {
             this.x = -this.x;
@@ -8556,17 +8558,19 @@ var FudgeCore;
             return this;
         }
         set(_x = 0, _y = 0, _z = 0) {
-            this.data[0] = _x;
-            this.data[1] = _y;
-            this.data[2] = _z;
+            this.x = _x;
+            this.y = _y;
+            this.z = _z;
+            return this;
         }
         get() {
-            return new Float32Array(this.data);
+            return new Float32Array([this.x, this.y, this.z]);
         }
         transform(_transform, _includeTranslation = true) {
             let transformed = Vector3.TRANSFORMATION(this, _transform, _includeTranslation);
-            this.data.set(transformed.data);
+            this.copy(transformed);
             FudgeCore.Recycler.store(transformed);
+            return this;
         }
         toVector2() {
             return new FudgeCore.Vector2(this.x, this.y);
@@ -8575,10 +8579,12 @@ var FudgeCore;
             const reflected = Vector3.REFLECTION(this, _normal);
             this.set(reflected.x, reflected.y, reflected.z);
             FudgeCore.Recycler.store(reflected);
+            return this;
         }
         shuffle() {
-            let a = Array.from(this.data);
+            let a = [this.x, this.y, this.z];
             this.set(FudgeCore.Random.default.splice(a), FudgeCore.Random.default.splice(a), a[0]);
+            return this;
         }
         getDistance(_to) {
             let difference = Vector3.DIFFERENCE(this, _to);
@@ -8589,11 +8595,13 @@ var FudgeCore;
             this.x = Math.min(this.x, _compare.x);
             this.y = Math.min(this.y, _compare.y);
             this.z = Math.min(this.z, _compare.z);
+            return this;
         }
         max(_compare) {
             this.x = Math.max(this.x, _compare.x);
             this.y = Math.max(this.y, _compare.y);
             this.z = Math.max(this.z, _compare.z);
+            return this;
         }
         toString() {
             let result = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)}, ${this.z.toPrecision(5)})`;
@@ -8601,7 +8609,7 @@ var FudgeCore;
         }
         map(_function) {
             let copy = FudgeCore.Recycler.get(Vector3);
-            copy.data = this.data.map(_function);
+            copy.set(...[this.x, this.y, this.z].map(_function));
             return copy;
         }
         serialize() {
@@ -8618,12 +8626,15 @@ var FudgeCore;
             return this;
         }
         async mutate(_mutator) {
-            this.data[0] = _mutator.x ?? this.data[0];
-            this.data[1] = _mutator.y ?? this.data[1];
-            this.data[2] = _mutator.z ?? this.data[2];
+            if (_mutator.x !== undefined)
+                this.x = _mutator.x;
+            if (_mutator.y !== undefined)
+                this.y = _mutator.y;
+            if (_mutator.z !== undefined)
+                this.z = _mutator.z;
         }
         getMutator() {
-            let mutator = { x: this.data[0], y: this.data[1], z: this.data[2] };
+            let mutator = { x: this.x, y: this.y, z: this.z };
             return mutator;
         }
         reduceMutator(_mutator) { }
@@ -8644,21 +8655,20 @@ var FudgeCore;
             return this.dot(this);
         }
         get clone() {
-            let clone = FudgeCore.Recycler.get(Vector4);
-            clone.copy(this);
-            return clone;
+            return FudgeCore.Recycler.reuse(Vector4).copy(this);
+        }
+        copy(_original) {
+            return this.set(_original.x, _original.y, _original.z, _original.w);
         }
         set(_x, _y, _z, _w) {
             this.x = _x;
             this.y = _y;
             this.z = _z;
             this.w = _w;
+            return this;
         }
         get() {
             return [this.x, this.y, this.z, this.w];
-        }
-        copy(_original) {
-            this.set(_original.x, _original.y, _original.z, _original.w);
         }
         add(_addend) {
             this.x += _addend.x;
@@ -12441,7 +12451,7 @@ var FudgeCore;
             crc3.vertexAttribPointer(attribute, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
         }
         static bufferColor(_shader, _color) {
-            FudgeCore.RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.getArray());
+            FudgeCore.RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.get());
         }
         static bufferMatrix(_shader, _mtxWorld) {
             const mtxMeshToView = FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld);
@@ -12513,11 +12523,11 @@ var FudgeCore;
             _branch.timestampUpdate = Render.timestampUpdate;
             if (_branch.cmpTransform && _branch.cmpTransform.isActive) {
                 let mtxWorldBranch = FudgeCore.Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
-                _branch.mtxWorld.set(mtxWorldBranch);
+                _branch.mtxWorld.copy(mtxWorldBranch);
                 FudgeCore.Recycler.store(mtxWorldBranch);
             }
             else
-                _branch.mtxWorld.set(_mtxWorld);
+                _branch.mtxWorld.copy(_mtxWorld);
             let cmpRigidbody = _branch.getComponent(FudgeCore.ComponentRigidbody);
             if (cmpRigidbody && cmpRigidbody.isActive) {
                 Render.nodesPhysics.push(_branch);
@@ -12534,7 +12544,7 @@ var FudgeCore;
             let cmpMaterial = _branch.getComponent(FudgeCore.ComponentMaterial);
             if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
                 let mtxWorldMesh = FudgeCore.Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
-                cmpMesh.mtxWorld.set(mtxWorldMesh);
+                cmpMesh.mtxWorld.copy(mtxWorldMesh);
                 FudgeCore.Recycler.store(mtxWorldMesh);
                 let shader = cmpMaterial.material.getShader();
                 let cmpParticleSystem = _branch.getComponent(FudgeCore.ComponentParticleSystem);
@@ -12641,7 +12651,7 @@ var FudgeCore;
             _node.mtxWorld.translation = mtxWorld.translation;
             _node.mtxWorld.rotation = mtxWorld.rotation;
             let mtxLocal = _node.getParent() ? FudgeCore.Matrix4x4.RELATIVE(_node.mtxWorld, _node.getParent().mtxWorld) : _node.mtxWorld;
-            _node.mtxLocal.set(mtxLocal);
+            _node.mtxLocal.copy(mtxLocal);
             FudgeCore.Recycler.store(mtxWorld);
             FudgeCore.Recycler.store(mtxLocal);
         }
@@ -12761,7 +12771,7 @@ var FudgeCore;
         get colors() {
             return this.#colors || (this.#colors = new Float32Array(this.mesh.vertices
                 .filter(_vertex => _vertex.color)
-                .flatMap(_vertex => [..._vertex.color.getArray()])));
+                .flatMap(_vertex => [..._vertex.color.get()])));
         }
         set colors(_colors) {
             this.#colors = _colors;
@@ -13660,10 +13670,10 @@ var FudgeCore;
                     if (this.fbx.objects.models[this.#nodes.indexOf(node)].subtype == "LimbNode") {
                         const parent = node.getParent();
                         if (parent)
-                            node.mtxWorld.set(node.cmpTransform ?
+                            node.mtxWorld.copy(node.cmpTransform ?
                                 FudgeCore.Matrix4x4.PRODUCT(parent.mtxWorld, node.mtxLocal) :
                                 parent.mtxWorld);
-                        node.mtxWorldInverse.set(FudgeCore.Matrix4x4.INVERSE(node.mtxWorld));
+                        node.mtxWorldInverse.copy(FudgeCore.Matrix4x4.INVERSE(node.mtxWorld));
                         skeleton.addBone(node);
                     }
                 }
@@ -13813,9 +13823,9 @@ var FudgeCore;
             const mtxWorldTranslation = parent ?
                 FudgeCore.Matrix4x4.TRANSLATION(FudgeCore.Matrix4x4.PRODUCT(parent.mtxWorld, FudgeCore.Matrix4x4.TRANSLATION(mtxTransform.translation)).translation) :
                 FudgeCore.Matrix4x4.TRANSLATION(mtxTransform.translation);
-            mtxTransform.set(mtxWorldTranslation);
+            mtxTransform.copy(mtxWorldTranslation);
             mtxTransform.multiply(mtxWorldRotationScale);
-            _node.mtxWorld.set(mtxTransform);
+            _node.mtxWorld.copy(mtxTransform);
             if (parent)
                 mtxTransform.multiply(FudgeCore.Matrix4x4.INVERSE(parent.mtxWorld), true);
             _node.addComponent(new FudgeCore.ComponentTransform(mtxTransform));
@@ -14445,7 +14455,7 @@ var FudgeCore;
                 if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
                     node.addComponent(new FudgeCore.ComponentTransform());
                     if (gltfNode.matrix) {
-                        node.mtxLocal.set(Float32Array.from(gltfNode.matrix));
+                        node.mtxLocal.set(gltfNode.matrix);
                     }
                     else {
                         if (gltfNode.translation) {

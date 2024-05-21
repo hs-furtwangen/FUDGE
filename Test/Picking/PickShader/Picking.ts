@@ -60,7 +60,7 @@ namespace Picking {
     canvasPick.width = 10;
     canvasPick.height = 10;
     cameraPick = new ƒ.ComponentCamera();
-    cameraPick.mtxPivot.set(cmpCamera.mtxPivot);
+    cameraPick.mtxPivot.copy(cmpCamera.mtxPivot);
     cameraPick.projectCentral(1, 10);
     viewportPick.initialize("pick", graph, cameraPick, canvasPick);
     viewportPick.adjustingFrames = false;

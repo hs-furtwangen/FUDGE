@@ -21,7 +21,6 @@ namespace FudgeCore {
     public constructor() {
       super();
       this.recycle();
-      this.resetCache();
     }
 
 
@@ -94,7 +93,7 @@ namespace FudgeCore {
      * @param _mtxLeft The matrix to multiply.
      * @param _mtxRight The matrix to multiply by.
      */
-    public static MULTIPLICATION(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3 {
+    public static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3 {
       let a00: number = _mtxLeft.data[0 * 3 + 0];
       let a01: number = _mtxLeft.data[0 * 3 + 1];
       let a02: number = _mtxLeft.data[0 * 3 + 2];
@@ -132,7 +131,7 @@ namespace FudgeCore {
      * Computes and returns the inverse of a passed matrix.
      * @param _mtx The matrix to compute the inverse of.
      */
-    public static INVERSION(_mtx: Matrix3x3): Matrix3x3 {
+    public static INVERSE(_mtx: Matrix3x3): Matrix3x3 {
       let m: Float32Array = _mtx.data;
       let m00: number = m[0 * 3 + 0];
       let m01: number = m[0 * 3 + 1];
@@ -217,7 +216,7 @@ namespace FudgeCore {
      * Creates and returns a clone of this matrix.
      */
     public get clone(): Matrix3x3 {
-      let mtxClone: Matrix3x3 = Recycler.get(Matrix3x3);
+      let mtxClone: Matrix3x3 = Recycler.reuse(Matrix3x3);
       mtxClone.copy(this);
       return mtxClone;
     }
@@ -226,12 +225,11 @@ namespace FudgeCore {
      * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
      */
     public recycle(): void {
-      this.data = new Float32Array([
+      this.set([
         1, 0, 0,
         0, 1, 0,
         0, 0, 1
       ]);
-      this.resetCache();
     }
 
     /**
@@ -246,7 +244,7 @@ namespace FudgeCore {
      * Add a translation by the given {@link Vector2} to this matrix 
      */
     public translate(_by: Vector2): void {
-      const mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, Matrix3x3.TRANSLATION(_by));
+      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.TRANSLATION(_by));
       // TODO: possible optimization, translation may alter mutator instead of deleting it.
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
@@ -275,7 +273,7 @@ namespace FudgeCore {
      * Add a scaling by the given {@link Vector2} to this matrix 
      */
     public scale(_by: Vector2): void {
-      const mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, Matrix3x3.SCALING(_by));
+      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.SCALING(_by));
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
@@ -305,7 +303,7 @@ namespace FudgeCore {
      * Adds a rotation around the z-Axis to this matrix
      */
     public rotate(_angleInDegrees: number): void {
-      const mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, Matrix3x3.ROTATION(_angleInDegrees));
+      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.ROTATION(_angleInDegrees));
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
     }
@@ -316,7 +314,7 @@ namespace FudgeCore {
      * Multiply this matrix with the given matrix
      */
     public multiply(_mtxRight: Matrix3x3): void {
-      let mtxResult: Matrix3x3 = Matrix3x3.MULTIPLICATION(this, _mtxRight);
+      let mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, _mtxRight);
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
       this.mutator = null;

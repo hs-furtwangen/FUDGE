@@ -48,7 +48,7 @@ namespace FudgeCore {
      * Creates and returns a clone of this color.
      */
     public get clone(): Color {
-      return Recycler.get(Color).copy(this);
+      return Recycler.reuse(Color).copy(this);
     }
 
     /**

@@ -30,10 +30,11 @@ namespace FudgeCore {
       return result;
     }
 
+    /**
+     * Returns a quaternion which is a copy of the given quaternion scaled to length 1.
+     */
     public static NORMALIZATION(_q: Quaternion): Quaternion {
-      const result: Quaternion = _q.clone;
-      result.normalize();
-      return result;
+      return _q.clone.normalize();
     }
 
     /**
@@ -73,28 +74,22 @@ namespace FudgeCore {
     /**
      * Computes and returns the product of two passed quaternions.
      */
-    public static MULTIPLICATION(_qLeft: Quaternion, _qRight: Quaternion): Quaternion {
-      const result: Quaternion = _qLeft.clone;
-      result.multiply(_qRight);
-      return result;
+    public static PRODUCT(_qLeft: Quaternion, _qRight: Quaternion): Quaternion {
+      return _qLeft.clone.multiply(_qRight);
     }
 
     /**
      * Computes and returns the inverse of a passed quaternion.
      */
-    public static INVERSION(_q: Quaternion): Quaternion {
-      const result: Quaternion = _q.clone;
-      result.inverse();
-      return result;
+    public static INVERSE(_q: Quaternion): Quaternion {
+      return _q.clone.invert();
     }
 
     /**
      * Computes and returns the conjugate of a passed quaternion.
      */
     public static CONJUGATION(_q: Quaternion): Quaternion {
-      const result: Quaternion = _q.clone;
-      result.conjugate();
-      return result;
+      return _q.clone.conjugate();
     }
 
     /**
@@ -158,13 +153,14 @@ namespace FudgeCore {
      * Creates and returns a clone of this quaternion.
      */
     public get clone(): Quaternion {
-      let result: Quaternion = Recycler.get(Quaternion);
+      let result: Quaternion = Recycler.reuse(Quaternion);
       result.copy(this);
       return result;
     }
 
     /**
-     * - get: return the euler angle representation of the rotation in degrees.  
+     * - get: return the euler angle representation of the rotation in degrees. 
+     * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: set the euler angle representation of the rotation in degrees.
      */
     public get eulerAngles(): Vector3 {
@@ -215,6 +211,7 @@ namespace FudgeCore {
         cosX * cosY * cosZ + sinX * sinY * sinZ
       );
 
+      this.#eulerAngles.copy(_eulerAngles);
       this.#eulerAnglesDirty = false;
     }
 
@@ -251,15 +248,15 @@ namespace FudgeCore {
     }
 
     /**
-     * Inverse this quaternion
+     * Invert this quaternion.
      */
-    public inverse(): void {
+    public invert(): Quaternion {
       // quaternion is assumed to have unit length
-      this.conjugate();
+      return this.conjugate();
     }
 
     /**
-     * Conjugates this quaternion and returns it
+     * Conjugates this quaternion and returns it.
      */
     public conjugate(): Quaternion {
       this.x *= -1;
@@ -272,7 +269,7 @@ namespace FudgeCore {
     /**
      * Multiply this quaternion with the given quaternion
      */
-    public multiply(_other: Quaternion, _fromLeft: boolean = false): void {
+    public multiply(_other: Quaternion, _fromLeft: boolean = false): Quaternion {
       const a: Quaternion = _fromLeft ? _other : this;
       const b: Quaternion = _fromLeft ? this : _other;
       // from: http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
@@ -291,25 +288,29 @@ namespace FudgeCore {
         ax * by - ay * bx + az * bw + aw * bz,
         -ax * bx - ay * by - az * bz + aw * bw
       );
+
+      return this;
     }
 
     /**
      * Sets the components of this quaternion.
      */
-    public set(_x: number, _y: number, _z: number, _w: number): void {
+    public set(_x: number, _y: number, _z: number, _w: number): Quaternion {
       this.x = _x; this.y = _y; this.z = _z; this.w = _w;
       this.resetCache();
+      return this;
     }
 
     /**
      * Copies the state of the given quaternion into this quaternion.
      */
-    public copy(_original: Quaternion): void {
+    public copy(_original: Quaternion): Quaternion {
       this.x = _original.x; this.y = _original.y; this.z = _original.z; this.w = _original.w;
       this.#eulerAnglesDirty = _original.#eulerAnglesDirty;
       if (!this.#eulerAnglesDirty)
         this.#eulerAngles.copy(_original.#eulerAngles);
       this.mutator = null;
+      return this;
     }
 
     /**

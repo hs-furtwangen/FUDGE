@@ -32,23 +32,22 @@ namespace FudgeCore {
      * Creates and returns a clone of this vector.
      */
     public get clone(): Vector4 {
-      let clone: Vector4 = Recycler.get(Vector4);
-      clone.copy(this);
-      return clone;
+      return Recycler.reuse(Vector4).copy(this);
     }
 
     /**
      * Copies the components of the given vector into this vector.
      */
-    public copy(_original: Vector4): void {
-      this.set(_original.x, _original.y, _original.z, _original.w);
+    public copy(_original: Vector4): Vector4 {
+      return this.set(_original.x, _original.y, _original.z, _original.w);
     }
 
     /**
-     * Sets the components of this vector.
+     * Sets the components of this vector and returns it.
      */
-    public set(_x: number, _y: number, _z: number, _w: number): void {
+    public set(_x: number, _y: number, _z: number, _w: number): Vector4 {
       this.x = _x; this.y = _y; this.z = _z; this.w = _w;
+      return this;
     }
 
     /**

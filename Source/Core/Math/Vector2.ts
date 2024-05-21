@@ -227,7 +227,7 @@ namespace FudgeCore {
      * Creates and returns a clone of this vector.
      */
     public get clone(): Vector2 {
-      let clone: Vector2 = Recycler.get(Vector2);
+      let clone: Vector2 = Recycler.reuse(Vector2);
       clone.copy(this);
       return clone;
     }

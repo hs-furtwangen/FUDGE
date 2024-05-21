@@ -733,7 +733,7 @@ namespace Fudge {
     private hndPointerMoveSlope = (_event: PointerEvent): void => {
       _event.preventDefault();
       let vctDelta: ƒ.Vector2 = ƒ.Vector2.DIFFERENCE(new ƒ.Vector2(_event.offsetX, _event.offsetY), this.worldToScreenPoint(this.selectedKey.data.time, this.selectedKey.data.value));
-      vctDelta.transform(ƒ.Matrix3x3.SCALING(ƒ.Matrix3x3.INVERSION(this.mtxWorldToScreen).scaling));
+      vctDelta.transform(ƒ.Matrix3x3.SCALING(ƒ.Matrix3x3.INVERSE(this.mtxWorldToScreen).scaling));
       let slope: number = vctDelta.y / vctDelta.x;
       this.selectedKey.data.slopeIn = slope;
       this.selectedKey.data.slopeOut = slope;
@@ -840,7 +840,7 @@ namespace Fudge {
 
     private screenToWorldPoint(_x: number, _y: number): ƒ.Vector2 {
       let vector: ƒ.Vector2 = new ƒ.Vector2(_x, _y);
-      vector.transform(ƒ.Matrix3x3.INVERSION(this.mtxWorldToScreen));
+      vector.transform(ƒ.Matrix3x3.INVERSE(this.mtxWorldToScreen));
       return vector;
     }
 

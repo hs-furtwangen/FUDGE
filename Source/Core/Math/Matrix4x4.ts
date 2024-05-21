@@ -535,7 +535,7 @@ namespace FudgeCore {
      * Creates and returns a clone of this matrix.
      */
     public get clone(): Matrix4x4 {
-      let mtxClone: Matrix4x4 = Recycler.get(Matrix4x4);
+      let mtxClone: Matrix4x4 = Recycler.reuse(Matrix4x4);
       mtxClone.copy(this);
       return mtxClone;
     }
@@ -545,25 +545,12 @@ namespace FudgeCore {
      * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
      */
     public recycle(): void {
-      this.data.set([
+      this.set([
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
       ]);
-      // TODO: think about this change: translation, rotation and scaling of a recycled matrix are actually 
-      // known and need not be lazily recalculated. But most matrix manipulation logic assumes that a recycled matrix
-      // will do this lazily. So, for now, we reset the cache here, but maybe we should rather reset the cache
-      // everytime a matrix is changed i.e. use .set() instead of .data.set() when cache should be reset.
-      // this.#translation.set(0, 0, 0);
-      // this.#rotation.set(0, 0, 0);
-      // this.#scaling.set(1, 1, 1);
-      // this.#quaternion.set(0, 0, 0, 1);
-      // this.#translationDirty = false;
-      // this.#rotationDirty = false;
-      // this.#scalingDirty = false;
-      // this.#quaternionDirty = false;
-      this.resetCache();
     }
 
     /**
@@ -579,9 +566,6 @@ namespace FudgeCore {
      * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
      */
     public rotate(_by: Vector3, _fromLeft: boolean = false): void {
-      // this.rotateZ(_by.z, _fromLeft);
-      // this.rotateY(_by.y, _fromLeft);
-      // this.rotateX(_by.x, _fromLeft);
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION(_by);
       this.multiply(mtxRotation, _fromLeft);
       Recycler.store(mtxRotation);
@@ -1054,7 +1038,6 @@ namespace FudgeCore {
       }
 
       if (_mutator.rotation || _mutator.scaling) {
-        // TODO: imported animation uses "scale" instead of "scaling" -> rename our "scaling" to "scale"?
         // TODO: make full vector and quaternion mutators mandatory?
 
         let rotation: Vector3 | Quaternion = _mutator.rotation?.w != undefined ?

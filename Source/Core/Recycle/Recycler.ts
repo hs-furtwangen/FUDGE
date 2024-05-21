@@ -21,7 +21,7 @@ namespace FudgeCore {
 
     /**
      * Fetches an object of the requested type from the depot, calls its recycle-method and returns it.
-     * If the depot for that type is empty it returns a new object of the requested type
+     * If the depot for that type is empty it returns a new object of the requested type.
      * @param _t The class identifier of the desired object
      */
     public static get<T extends Recycable | RecycableArray<T>>(_t: new () => T): T {
@@ -36,9 +36,17 @@ namespace FudgeCore {
     }
 
     /**
+     * Fetches an object of the requested type from the depot and returns it. ⚠️ DOES NOT call its recycle-method.
+     * Faster than {@link Recycler.get}, but should be used with caution.
+     */
+    public static reuse<T extends Object>(_t: new () => T): T {
+      return <T>Recycler.depot[_t.name]?.pop() ?? new _t();
+    }
+
+    /**
      * Returns a reference to an object of the requested type in the depot, but does not remove it there. 
      * If no object of the requested type was in the depot, one is created, stored and borrowed.
-     * For short term usage of objects in a local scope, when there will be no other call to Recycler.get or .borrow!
+     * For short term usage of objects in a local scope, when there will be no other call to {@link Recycler.get}, {@link Recycler.reuse} or {@link Recycler.borrow}!
      * @param _t The class identifier of the desired object
      */
     public static borrow<T extends Recycable>(_t: new () => T): T {

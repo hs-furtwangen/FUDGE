@@ -38,7 +38,7 @@ namespace AudioSpace {
     const mtxMesh: ƒ.Matrix4x4 = inner.mtxMeshPivot;
     mtxMesh.rotateX(-90);
     mtxMesh.translateZ(1, false);
-    outer.mtxMeshPivot.set(inner.mtxMeshPivot);
+    outer.mtxMeshPivot.copy(inner.mtxMeshPivot);
     const speaker: ƒAid.Node = new ƒAid.Node("Speaker", ƒ.Matrix4x4.IDENTITY());
     speaker.addChild(inner);
     speaker.addChild(outer);
@@ -102,13 +102,13 @@ namespace AudioSpace {
       {
         let sin: number = Math.sin(Math.PI * <number>panner["coneInnerAngle"] / 360);
         let cos: number = Math.cos(Math.PI * <number>panner["coneInnerAngle"] / 360);
-        mtxInner.set(ƒ.Matrix4x4.IDENTITY());
+        mtxInner.copy(ƒ.Matrix4x4.IDENTITY());
         mtxInner.scaling = new ƒ.Vector3(2 * sin, 2 * sin, cos);
       }
       {
         let sin: number = Math.sin(Math.PI * <number>panner["coneOuterAngle"] / 360);
         let cos: number = Math.cos(Math.PI * <number>panner["coneOuterAngle"] / 360);
-        mtxOuter.set(ƒ.Matrix4x4.IDENTITY());
+        mtxOuter.copy(ƒ.Matrix4x4.IDENTITY());
         mtxOuter.scaling = new ƒ.Vector3(2 * sin, 2 * sin, cos);
       }
 
@@ -176,9 +176,9 @@ namespace AudioSpace {
 
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.SPACE:
-          mtxRotatorX.set(ƒ.Matrix4x4.IDENTITY());
-          mtxRotatorY.set(ƒ.Matrix4x4.IDENTITY());
-          mtxTranslator.set(ƒ.Matrix4x4.IDENTITY());
+          mtxRotatorX.copy(ƒ.Matrix4x4.IDENTITY());
+          mtxRotatorY.copy(ƒ.Matrix4x4.IDENTITY());
+          mtxTranslator.copy(ƒ.Matrix4x4.IDENTITY());
           // parameter.xAmplitude = parameter.zAmplitude = 0;
           break;
         // case ƒ.KEYBOARD_CODE.PLUS+:

@@ -785,14 +785,19 @@ declare namespace FudgeCore {
         private static depot;
         /**
          * Fetches an object of the requested type from the depot, calls its recycle-method and returns it.
-         * If the depot for that type is empty it returns a new object of the requested type
+         * If the depot for that type is empty it returns a new object of the requested type.
          * @param _t The class identifier of the desired object
          */
         static get<T extends Recycable | RecycableArray<T>>(_t: new () => T): T;
         /**
+         * Fetches an object of the requested type from the depot and returns it. ⚠️ DOES NOT call its recycle-method.
+         * Faster than {@link Recycler.get}, but should be used with caution.
+         */
+        static reuse<T extends Object>(_t: new () => T): T;
+        /**
          * Returns a reference to an object of the requested type in the depot, but does not remove it there.
          * If no object of the requested type was in the depot, one is created, stored and borrowed.
-         * For short term usage of objects in a local scope, when there will be no other call to Recycler.get or .borrow!
+         * For short term usage of objects in a local scope, when there will be no other call to {@link Recycler.get}, {@link Recycler.reuse} or {@link Recycler.borrow}!
          * @param _t The class identifier of the desired object
          */
         static borrow<T extends Recycable>(_t: new () => T): T;
@@ -3761,12 +3766,12 @@ declare namespace FudgeCore {
          * @param _mtxLeft The matrix to multiply.
          * @param _mtxRight The matrix to multiply by.
          */
-        static MULTIPLICATION(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3;
+        static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3;
         /**
          * Computes and returns the inverse of a passed matrix.
          * @param _mtx The matrix to compute the inverse of.
          */
-        static INVERSION(_mtx: Matrix3x3): Matrix3x3;
+        static INVERSE(_mtx: Matrix3x3): Matrix3x3;
         /**
          * - get: return a vector representation of the translation {@link Vector2}.
          * **Caution!** Use immediately, since the vector is going to be reused by Recycler. Create a clone to keep longer and manipulate.
@@ -4249,6 +4254,9 @@ declare namespace FudgeCore {
          * Retrieve a new identity quaternion
          */
         static IDENTITY(): Quaternion;
+        /**
+         * Returns a quaternion which is a copy of the given quaternion scaled to length 1.
+         */
         static NORMALIZATION(_q: Quaternion): Quaternion;
         /**
          * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
@@ -4262,11 +4270,11 @@ declare namespace FudgeCore {
         /**
          * Computes and returns the product of two passed quaternions.
          */
-        static MULTIPLICATION(_qLeft: Quaternion, _qRight: Quaternion): Quaternion;
+        static PRODUCT(_qLeft: Quaternion, _qRight: Quaternion): Quaternion;
         /**
          * Computes and returns the inverse of a passed quaternion.
          */
-        static INVERSION(_q: Quaternion): Quaternion;
+        static INVERSE(_q: Quaternion): Quaternion;
         /**
          * Computes and returns the conjugate of a passed quaternion.
          */
@@ -4289,6 +4297,7 @@ declare namespace FudgeCore {
         get clone(): Quaternion;
         /**
          * - get: return the euler angle representation of the rotation in degrees.
+         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
          * - set: set the euler angle representation of the rotation in degrees.
          */
         get eulerAngles(): Vector3;
@@ -4306,25 +4315,25 @@ declare namespace FudgeCore {
          */
         recycle(): void;
         /**
-         * Inverse this quaternion
+         * Invert this quaternion.
          */
-        inverse(): void;
+        invert(): Quaternion;
         /**
-         * Conjugates this quaternion and returns it
+         * Conjugates this quaternion and returns it.
          */
         conjugate(): Quaternion;
         /**
          * Multiply this quaternion with the given quaternion
          */
-        multiply(_other: Quaternion, _fromLeft?: boolean): void;
+        multiply(_other: Quaternion, _fromLeft?: boolean): Quaternion;
         /**
          * Sets the components of this quaternion.
          */
-        set(_x: number, _y: number, _z: number, _w: number): void;
+        set(_x: number, _y: number, _z: number, _w: number): Quaternion;
         /**
          * Copies the state of the given quaternion into this quaternion.
          */
-        copy(_original: Quaternion): void;
+        copy(_original: Quaternion): Quaternion;
         /**
          * Returns a formatted string representation of this quaternion
          */
@@ -4423,7 +4432,9 @@ declare namespace FudgeCore {
      * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
      */
     class Vector3 extends Mutable implements Serializable, Recycable {
-        private data;
+        x: number;
+        y: number;
+        z: number;
         constructor(_x?: number, _y?: number, _z?: number);
         /**
          * Creates and returns a vector with the given length pointing in x-direction
@@ -4495,12 +4506,6 @@ declare namespace FudgeCore {
          * Return the angle in degrees between the two given vectors
          */
         static ANGLE(_from: Vector3, _to: Vector3): number;
-        get x(): number;
-        get y(): number;
-        get z(): number;
-        set x(_x: number);
-        set y(_y: number);
-        set z(_z: number);
         /**
          * Returns the length of the vector
          */
@@ -4522,7 +4527,7 @@ declare namespace FudgeCore {
         /**
          * Copies the components of the given vector into this vector.
          */
-        copy(_original: Vector3): void;
+        copy(_original: Vector3): Vector3;
         recycle(): void;
         /**
          * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
@@ -4538,29 +4543,29 @@ declare namespace FudgeCore {
          */
         isInsideSphere(_center: Vector3, _radius: number): boolean;
         /**
-         * Adds the given vector to this
+         * Adds the given vector to this vector.
          */
-        add(_addend: Vector3): void;
+        add(_addend: Vector3): Vector3;
         /**
-         * Subtracts the given vector from this
+         * Subtracts the given vector from this vector.
          */
-        subtract(_subtrahend: Vector3): void;
+        subtract(_subtrahend: Vector3): Vector3;
         /**
-         * Scales this vector by the given scalar
+         * Scales this vector by the given scalar.
          */
-        scale(_scalar: number): void;
+        scale(_scalar: number): Vector3;
         /**
          * Normalizes this to the given length, 1 by default
          */
-        normalize(_length?: number): void;
+        normalize(_length?: number): Vector3;
         /**
          * Negates this vector by flipping the signs of its components
          */
         negate(): Vector3;
         /**
-         * Sets the components of this vector.
+         * Sets the components of this vector and returns it.
          */
-        set(_x?: number, _y?: number, _z?: number): void;
+        set(_x?: number, _y?: number, _z?: number): Vector3;
         /**
          * Returns an array of the components of this vector.
          */
@@ -4570,7 +4575,7 @@ declare namespace FudgeCore {
          * Including or exluding the translation if a matrix is passed.
          * Including is the default, excluding will only rotate and scale this vector.
          */
-        transform(_transform: Matrix4x4 | Quaternion, _includeTranslation?: boolean): void;
+        transform(_transform: Matrix4x4 | Quaternion, _includeTranslation?: boolean): Vector3;
         /**
          * Drops the z-component and returns a Vector2 consisting of the x- and y-components
          */
@@ -4578,11 +4583,11 @@ declare namespace FudgeCore {
         /**
          * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}
          */
-        reflect(_normal: Vector3): void;
+        reflect(_normal: Vector3): Vector3;
         /**
          * Shuffles the components of this vector
          */
-        shuffle(): void;
+        shuffle(): Vector3;
         /**
          * Returns the distance bewtween this vector and the given vector
          */
@@ -4590,11 +4595,11 @@ declare namespace FudgeCore {
         /**
          * For each dimension, moves the component to the minimum of this and the given vector
          */
-        min(_compare: Vector3): void;
+        min(_compare: Vector3): Vector3;
         /**
          * For each dimension, moves the component to the maximum of this and the given vector
          */
-        max(_compare: Vector3): void;
+        max(_compare: Vector3): Vector3;
         /**
          * Returns a formatted string representation of this vector
          */
@@ -4603,7 +4608,7 @@ declare namespace FudgeCore {
          * Uses the standard array.map functionality to perform the given function on all components of this vector
          * and return a new vector with the results
          */
-        map(_function: (value: number, index: number, array: Float32Array) => number): Vector3;
+        map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector3;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Vector3>;
         mutate(_mutator: Mutator): Promise<void>;
@@ -4637,11 +4642,11 @@ declare namespace FudgeCore {
         /**
          * Copies the components of the given vector into this vector.
          */
-        copy(_original: Vector4): void;
+        copy(_original: Vector4): Vector4;
         /**
-         * Sets the components of this vector.
+         * Sets the components of this vector and returns it.
          */
-        set(_x: number, _y: number, _z: number, _w: number): void;
+        set(_x: number, _y: number, _z: number, _w: number): Vector4;
         /**
          * Returns an array of the components of this vector.
          */
