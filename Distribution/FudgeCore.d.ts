@@ -3736,11 +3736,11 @@ declare namespace FudgeCore {
         /** TODO: describe! */
         static PROJECTION(_width: number, _height: number): Matrix3x3;
         /**
-         * Retrieve a new identity matrix
+         * Retrieve a new identity matrix.
          */
         static IDENTITY(): Matrix3x3;
         /**
-         * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector2}.
+         * Returns a matrix that translates coordinates along the x- and y-axis according to the given {@link Vector2}.
          */
         static TRANSLATION(_translate: Vector2): Matrix3x3;
         /**
@@ -3749,13 +3749,11 @@ declare namespace FudgeCore {
          */
         static ROTATION(_angleInDegrees: number): Matrix3x3;
         /**
-         * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector2}
+         * Returns a matrix that scales coordinates along the x- and y-axis according to the given {@link Vector2}
          */
         static SCALING(_scalar: Vector2): Matrix3x3;
         /**
          * Computes and returns the product of two passed matrices.
-         * @param _mtxLeft The matrix to multiply.
-         * @param _mtxRight The matrix to multiply by.
          */
         static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3;
         /**
@@ -3796,37 +3794,37 @@ declare namespace FudgeCore {
          */
         reset(): void;
         /**
-         * Add a translation by the given {@link Vector2} to this matrix
+         * Adds a translation by the given {@link Vector2} to this matrix.
          */
-        translate(_by: Vector2): void;
+        translate(_by: Vector2): Matrix3x3;
         /**
-         * Add a translation along the x-Axis by the given amount to this matrix
+         * Adds a translation along the x-axis to this matrix.
          */
-        translateX(_x: number): void;
+        translateX(_x: number): Matrix3x3;
         /**
-         * Add a translation along the y-Axis by the given amount to this matrix
+         * Adds a translation along the y-axis to this matrix.
          */
-        translateY(_y: number): void;
-        /**
-         * Add a scaling by the given {@link Vector2} to this matrix
-         */
-        scale(_by: Vector2): void;
-        /**
-         * Add a scaling along the x-Axis by the given amount to this matrix
-         */
-        scaleX(_by: number): void;
-        /**
-         * Add a scaling along the y-Axis by the given amount to this matrix
-         */
-        scaleY(_by: number): void;
+        translateY(_y: number): Matrix3x3;
         /**
          * Adds a rotation around the z-Axis to this matrix
          */
-        rotate(_angleInDegrees: number): void;
+        rotate(_angleInDegrees: number): Matrix3x3;
+        /**
+         * Adds a scaling by the given {@link Vector2} to this matrix.
+         */
+        scale(_by: Vector2): Matrix3x3;
+        /**
+         * Adds a scaling along the x-Axis to this matrix.
+         */
+        scaleX(_by: number): Matrix3x3;
+        /**
+         * Adds a scaling along the y-Axis to this matrix.
+         */
+        scaleY(_by: number): Matrix3x3;
         /**
          * Multiply this matrix with the given matrix
          */
-        multiply(_mtxRight: Matrix3x3): void;
+        multiply(_mtxRight: Matrix3x3): Matrix3x3;
         /**
          * Calculates and returns the euler-angles representing the current rotation of this matrix
          */
@@ -3834,11 +3832,11 @@ declare namespace FudgeCore {
         /**
          * Sets the elements of this matrix to the given array.
          */
-        set(_array: ArrayLike<number>): void;
+        set(_array: ArrayLike<number>): Matrix3x3;
         /**
          * Copies the elements of the given matrix into this matrix.
          */
-        copy(_original: Matrix3x3): void;
+        copy(_original: Matrix3x3): Matrix3x3;
         /**
          * Returns a formatted string representation of this matrix
          */
@@ -3883,8 +3881,6 @@ declare namespace FudgeCore {
         static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3): Matrix4x4;
         /**
          * Computes and returns the product of two passed matrices.
-         * @param _mtxLeft The matrix to multiply.
-         * @param _mtxRight The matrix to multiply by.
          */
         static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4;
         /**
@@ -4017,11 +4013,6 @@ declare namespace FudgeCore {
          */
         reset(): void;
         /**
-         * Rotate this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
-         * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
-         */
-        rotate(_by: Vector3, _fromLeft?: boolean): void;
-        /**
          * Transpose this matrix
          */
         transpose(): Matrix4x4;
@@ -4030,77 +4021,82 @@ declare namespace FudgeCore {
          */
         invert(): Matrix4x4;
         /**
-         * Adds a rotation around the x-axis to this matrix
+         * Adds a translation by the given {@link Vector3} to this matrix.
+         * If _local is true, the translation occurs according to the current rotation and scaling of this matrix,
+         * otherwise, it occurs according to the parent.
          */
-        rotateX(_angleInDegrees: number, _fromLeft?: boolean): void;
+        translate(_by: Vector3, _local?: boolean): Matrix4x4;
         /**
-         * Adds a rotation around the y-axis to this matrix
+         * Adds a translation along the x-axis to this matrix.
          */
-        rotateY(_angleInDegrees: number, _fromLeft?: boolean): void;
+        translateX(_x: number, _local?: boolean): Matrix4x4;
         /**
-         * Adds a rotation around the z-axis to this matrix
+         * Adds a translation along the y-axis to this matrix.
          */
-        rotateZ(_angleInDegrees: number, _fromLeft?: boolean): void;
+        translateY(_y: number, _local?: boolean): Matrix4x4;
+        /**
+         * Adds a translation along the z-axis to this matrix.
+         */
+        translateZ(_z: number, _local?: boolean): Matrix4x4;
+        /**
+         * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
+         * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
+         */
+        rotate(_by: Vector3, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a rotation around the x-axis to this matrix.
+         */
+        rotateX(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a rotation around the y-axis to this matrix.
+         */
+        rotateY(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a rotation around the z-axis to this matrix.
+         */
+        rotateZ(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
         /**
          * Adjusts the rotation of this matrix to point the z-axis directly at the given target and tilts it to accord with the given up-{@link Vector3},
          * respectively calculating yaw and pitch. If no up-{@link Vector3} is given, the previous up-{@link Vector3} is used.
          * The pitch may be restricted to the up-vector to only calculate yaw.
          */
-        lookAt(_target: Vector3, _up?: Vector3, _restrict?: boolean): void;
+        lookAt(_target: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
         /**
          * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
          * Up should be perpendicular to the given direction. If no up-vector is provided, (0, 1, 0) is used.
          */
-        lookIn(_direction: Vector3, _up?: Vector3): void;
+        lookIn(_direction: Vector3, _up?: Vector3): Matrix4x4;
         /**
          * Same as {@link Matrix4x4.lookAt}, but optimized and needs testing
          */
         /**
-         * Add a translation by the given {@link Vector3} to this matrix.
-         * If _local is true, translation occurs according to the current rotation and scaling of this matrix,
-         * according to the parent otherwise.
+         * Adds a scaling by the given {@link Vector3} to this matrix.
          */
-        translate(_by: Vector3, _local?: boolean): void;
+        scale(_by: Vector3): Matrix4x4;
         /**
-         * Add a translation along the x-axis by the given amount to this matrix
+         * Adds a scaling along the x-axis to this matrix.
          */
-        translateX(_x: number, _local?: boolean): void;
+        scaleX(_by: number): Matrix4x4;
         /**
-         * Add a translation along the y-axis by the given amount to this matrix
+         * Adds a scaling along the y-axis to this matrix.
          */
-        translateY(_y: number, _local?: boolean): void;
+        scaleY(_by: number): Matrix4x4;
         /**
-         * Add a translation along the z-axis by the given amount to this matrix
+         * Adds a scaling along the z-axis to this matrix.
          */
-        translateZ(_z: number, _local?: boolean): void;
+        scaleZ(_by: number): Matrix4x4;
         /**
-         * Add a scaling by the given {@link Vector3} to this matrix
+         * Multiply this matrix by the given matrix.
          */
-        scale(_by: Vector3): void;
-        /**
-         * Add a scaling along the x-axis by the given amount to this matrix
-         */
-        scaleX(_by: number): void;
-        /**
-         * Add a scaling along the y-axis by the given amount to this matrix
-         */
-        scaleY(_by: number): void;
-        /**
-         * Add a scaling along the z-axis by the given amount to this matrix
-         */
-        scaleZ(_by: number): void;
-        /**
-         * Multiply this matrix with the given matrix
-         */
-        multiply(_matrix: Matrix4x4, _fromLeft?: boolean): void;
+        multiply(_matrix: Matrix4x4, _fromLeft?: boolean): Matrix4x4;
         /**
          * Sets the elements of this matrix to the given array.
          */
-        set(_array: ArrayLike<number>): void;
+        set(_array: ArrayLike<number>): Matrix4x4;
         /**
          * Copies the state of the given matrix into this matrix.
          */
-        copy(_original: Matrix4x4): void;
+        copy(_original: Matrix4x4): Matrix4x4;
         /**
          * Returns a formatted string representation of this matrix
          */

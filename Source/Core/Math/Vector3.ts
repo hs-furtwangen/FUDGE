@@ -24,7 +24,7 @@ namespace FudgeCore {
      * Creates and returns a vector with the given length pointing in x-direction
      */
     public static X(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.get(Vector3);
+      const vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(_scale, 0, 0);
       return vector;
     }
@@ -33,7 +33,7 @@ namespace FudgeCore {
      * Creates and returns a vector with the given length pointing in y-direction
      */
     public static Y(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.get(Vector3);
+      const vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(0, _scale, 0);
       return vector;
     }
@@ -42,7 +42,7 @@ namespace FudgeCore {
      * Creates and returns a vector with the given length pointing in z-direction
      */
     public static Z(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.get(Vector3);
+      const vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(0, 0, _scale);
       return vector;
     }
@@ -51,7 +51,7 @@ namespace FudgeCore {
      * Creates and returns a vector with the value 0 on each axis
      */
     public static ZERO(): Vector3 {
-      const vector: Vector3 = Recycler.get(Vector3);
+      const vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(0, 0, 0); // should be set to 0 by recycler already?
       return vector;
     }
@@ -60,7 +60,7 @@ namespace FudgeCore {
      * Creates and returns a vector of the given size on each of the three axis
      */
     public static ONE(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.get(Vector3);
+      const vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(_scale, _scale, _scale);
       return vector;
     }
@@ -69,29 +69,29 @@ namespace FudgeCore {
      * Creates and returns a vector through transformation of the given vector by the given matrix or rotation quaternion.
      */
     public static TRANSFORMATION(_vector: Vector3, _transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true): Vector3 {
-      let result: Vector3 = Recycler.get(Vector3);
-      let [x, y, z] = _vector.get();
+      const result: Vector3 = Recycler.reuse(Vector3);
 
       if (_transform instanceof Matrix4x4) {
         let m: Float32Array = _transform.get();
 
-        result.x = m[0] * x + m[4] * y + m[8] * z;
-        result.y = m[1] * x + m[5] * y + m[9] * z;
-        result.z = m[2] * x + m[6] * y + m[10] * z;
+        result.set(
+          m[0] * _vector.x + m[4] * _vector.y + m[8] * _vector.z,
+          m[1] * _vector.x + m[5] * _vector.y + m[9] * _vector.z,
+          m[2] * _vector.x + m[6] * _vector.y + m[10] * _vector.z
+        );
 
-        if (_includeTranslation) {
+        if (_includeTranslation)
           result.add(_transform.translation);
-        }
+
       } else {
         // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/transforms/index.htm
         // result = q * quaternion(vector.x, vector.y, vector.z, 0) * conj(q)
-        // const q: number[] = _transform.get();
 
         // q * quaternion(vector.x, vector.y, vector.z, 0) ...
-        const qx: number = _transform.w * x + _transform.y * z - _transform.z * y;
-        const qy: number = _transform.w * y + _transform.z * x - _transform.x * z;
-        const qz: number = _transform.w * z + _transform.x * y - _transform.y * x;
-        const qw: number = -_transform.x * x - _transform.y * y - _transform.z * z;
+        const qx: number = _transform.w * _vector.x + _transform.y * _vector.z - _transform.z * _vector.y;
+        const qy: number = _transform.w * _vector.y + _transform.z * _vector.x - _transform.x * _vector.z;
+        const qz: number = _transform.w * _vector.z + _transform.x * _vector.y - _transform.y * _vector.x;
+        const qw: number = -_transform.x * _vector.x - _transform.y * _vector.y - _transform.z * _vector.z;
 
         // ... * conj(q)
         result.set(
@@ -120,7 +120,7 @@ namespace FudgeCore {
      * Returns the resulting vector attained by addition of all given vectors.
      */
     public static SUM(..._vectors: Vector3[]): Vector3 {
-      let result: Vector3 = Recycler.get(Vector3);
+      let result: Vector3 = Recycler.reuse(Vector3);
       for (let vector of _vectors)
         result.set(result.x + vector.x, result.y + vector.y, result.z + vector.z);
       return result;
@@ -130,7 +130,7 @@ namespace FudgeCore {
      * Returns the result of the subtraction of two vectors.
      */
     public static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3): Vector3 {
-      let vector: Vector3 = Recycler.get(Vector3);
+      let vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y, _minuend.z - _subtrahend.z);
       return vector;
     }
@@ -139,7 +139,7 @@ namespace FudgeCore {
      * Returns a new vector representing the given vector scaled by the given scaling factor
      */
     public static SCALE(_vector: Vector3, _scaling: number): Vector3 {
-      let scaled: Vector3 = Recycler.get(Vector3);
+      let scaled: Vector3 = Recycler.reuse(Vector3);
       scaled.set(_vector.x * _scaling, _vector.y * _scaling, _vector.z * _scaling);
       return scaled;
     }
@@ -148,7 +148,7 @@ namespace FudgeCore {
      * Computes the crossproduct of 2 vectors.
      */
     public static CROSS(_a: Vector3, _b: Vector3): Vector3 {
-      let vector: Vector3 = Recycler.get(Vector3);
+      let vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(
         _a.y * _b.z - _a.z * _b.y,
         _a.z * _b.x - _a.x * _b.z,
@@ -160,8 +160,7 @@ namespace FudgeCore {
      * Computes the dotproduct of 2 vectors.
      */
     public static DOT(_a: Vector3, _b: Vector3): number {
-      let scalarProduct: number = _a.x * _b.x + _a.y * _b.y + _a.z * _b.z;
-      return scalarProduct;
+      return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z;;
     }
 
     /**
@@ -183,7 +182,7 @@ namespace FudgeCore {
      * Divides the dividend by the divisor component by component and returns the result
      */
     public static RATIO(_dividend: Vector3, _divisor: Vector3): Vector3 {
-      let vector: Vector3 = Recycler.get(Vector3);
+      let vector: Vector3 = Recycler.reuse(Vector3);
       vector.set(_dividend.x / _divisor.x, _dividend.y / _divisor.y, _dividend.z / _divisor.z);
       return vector;
     }
@@ -192,8 +191,8 @@ namespace FudgeCore {
      * Creates a cartesian vector from geographic coordinates
      */
     public static GEO(_longitude: number = 0, _latitude: number = 0, _magnitude: number = 1): Vector3 {
-      let vector: Vector3 = Recycler.get(Vector3);
-      let geo: Geo3 = Recycler.get(Geo3);
+      let vector: Vector3 = Recycler.reuse(Vector3);
+      let geo: Geo3 = Recycler.reuse(Geo3);
       geo.set(_longitude, _latitude, _magnitude);
       vector.geo = geo;
       Recycler.store(geo);
@@ -303,8 +302,8 @@ namespace FudgeCore {
      * Adds the given vector to this vector.
      */
     public add(_addend: Vector3): Vector3 {
-      this.x += _addend.x; 
-      this.y += _addend.y; 
+      this.x += _addend.x;
+      this.y += _addend.y;
       this.z += _addend.z;
       return this;
     }
@@ -313,8 +312,8 @@ namespace FudgeCore {
      * Subtracts the given vector from this vector.
      */
     public subtract(_subtrahend: Vector3): Vector3 {
-      this.x -= _subtrahend.x; 
-      this.y -= _subtrahend.y; 
+      this.x -= _subtrahend.x;
+      this.y -= _subtrahend.y;
       this.z -= _subtrahend.z;
       return this;
     }
@@ -323,8 +322,8 @@ namespace FudgeCore {
      * Scales this vector by the given scalar.
      */
     public scale(_scalar: number): Vector3 {
-      this.x *= _scalar; 
-      this.y *= _scalar; 
+      this.x *= _scalar;
+      this.y *= _scalar;
       this.z *= _scalar;
       return this;
     }
@@ -340,8 +339,8 @@ namespace FudgeCore {
      * Negates this vector by flipping the signs of its components
      */
     public negate(): Vector3 {
-      this.x = -this.x; 
-      this.y = -this.y; 
+      this.x = -this.x;
+      this.y = -this.y;
       this.z = -this.z;
       return this;
     }

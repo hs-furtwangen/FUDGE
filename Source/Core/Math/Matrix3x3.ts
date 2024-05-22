@@ -37,7 +37,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Retrieve a new identity matrix
+     * Retrieve a new identity matrix.
      */
     public static IDENTITY(): Matrix3x3 {
       const mtxResult: Matrix3x3 = Recycler.get(Matrix3x3);
@@ -45,11 +45,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector2}.
+     * Returns a matrix that translates coordinates along the x- and y-axis according to the given {@link Vector2}.
      */
     public static TRANSLATION(_translate: Vector2): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.get(Matrix3x3);
-      mtxResult.data.set([
+      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
+      mtxResult.set([
         1, 0, 0,
         0, 1, 0,
         _translate.x, _translate.y, 1
@@ -62,11 +62,11 @@ namespace FudgeCore {
      * @param _angleInDegrees The value of the rotation.
      */
     public static ROTATION(_angleInDegrees: number): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.get(Matrix3x3);
+      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      mtxResult.data.set([
+      mtxResult.set([
         cos, sin, 0,
         -sin, cos, 0,
         0, 0, 1
@@ -75,11 +75,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector2}
+     * Returns a matrix that scales coordinates along the x- and y-axis according to the given {@link Vector2}
      */
     public static SCALING(_scalar: Vector2): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.get(Matrix3x3);
-      mtxResult.data.set([
+      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
+      mtxResult.set([
         _scalar.x, 0, 0,
         0, _scalar.y, 0,
         0, 0, 1
@@ -90,8 +90,6 @@ namespace FudgeCore {
 
     /**
      * Computes and returns the product of two passed matrices.
-     * @param _mtxLeft The matrix to multiply.
-     * @param _mtxRight The matrix to multiply by.
      */
     public static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3 {
       let a00: number = _mtxLeft.data[0 * 3 + 0];
@@ -112,8 +110,8 @@ namespace FudgeCore {
       let b20: number = _mtxRight.data[2 * 3 + 0];
       let b21: number = _mtxRight.data[2 * 3 + 1];
       let b22: number = _mtxRight.data[2 * 3 + 2];
-      let mtxResult: Matrix3x3 = new Matrix3x3;
-      mtxResult.data.set([
+      let mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
+      mtxResult.set([
         b00 * a00 + b01 * a10 + b02 * a20,
         b00 * a01 + b01 * a11 + b02 * a21,
         b00 * a02 + b01 * a12 + b02 * a22,
@@ -148,8 +146,8 @@ namespace FudgeCore {
           m01 * (m10 * m22 - m12 * m20) +
           m02 * (m10 * m21 - m11 * m20));
 
-      const mtxResult: Matrix3x3 = Recycler.get(Matrix3x3);
-      mtxResult.data.set([
+      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
+      mtxResult.set([
         d * (m11 * m22 - m21 * m12), // [0]
         d * (m02 * m21 - m01 * m22), // [1]
         d * (m01 * m12 - m02 * m11), // [2]
@@ -216,9 +214,7 @@ namespace FudgeCore {
      * Creates and returns a clone of this matrix.
      */
     public get clone(): Matrix3x3 {
-      let mtxClone: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxClone.copy(this);
-      return mtxClone;
+      return Recycler.reuse(Matrix3x3).copy(this);
     }
 
     /**
@@ -241,71 +237,80 @@ namespace FudgeCore {
 
     //#region Translation
     /**
-     * Add a translation by the given {@link Vector2} to this matrix 
+     * Adds a translation by the given {@link Vector2} to this matrix.
      */
-    public translate(_by: Vector2): void {
+    public translate(_by: Vector2): Matrix3x3 {
       const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.TRANSLATION(_by));
       // TODO: possible optimization, translation may alter mutator instead of deleting it.
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
+      return this;
     }
 
     /**
-     * Add a translation along the x-Axis by the given amount to this matrix 
+     * Adds a translation along the x-axis to this matrix.
      */
-    public translateX(_x: number): void {
+    public translateX(_x: number): Matrix3x3 {
       this.data[6] += _x;
       this.mutator = null;
       this.vectors.translation = null;
+      return this;
     }
+
     /**
-     * Add a translation along the y-Axis by the given amount to this matrix 
+     * Adds a translation along the y-axis to this matrix.
      */
-    public translateY(_y: number): void {
+    public translateY(_y: number): Matrix3x3 {
       this.data[7] += _y;
       this.mutator = null;
       this.vectors.translation = null;
+      return this;
     }
     //#endregion
-
-    //#region Scaling
-    /**
-     * Add a scaling by the given {@link Vector2} to this matrix 
-     */
-    public scale(_by: Vector2): void {
-      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.SCALING(_by));
-      this.set(mtxResult.data);
-      Recycler.store(mtxResult);
-    }
-    /**
-     * Add a scaling along the x-Axis by the given amount to this matrix 
-     */
-    public scaleX(_by: number): void {
-      let vector: Vector2 = Recycler.get(Vector2);
-      vector.set(_by, 1);
-      this.scale(vector);
-      Recycler.store(vector);
-    }
-    /**
-     * Add a scaling along the y-Axis by the given amount to this matrix 
-     */
-    public scaleY(_by: number): void {
-      let vector: Vector2 = Recycler.get(Vector2);
-      vector.set(1, _by);
-      this.scale(vector);
-      Recycler.store(vector);
-    }
-    //#endregion
-
 
     //#region Rotation
     /**
      * Adds a rotation around the z-Axis to this matrix
      */
-    public rotate(_angleInDegrees: number): void {
+    public rotate(_angleInDegrees: number): Matrix3x3 {
       const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.ROTATION(_angleInDegrees));
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
+      return this;
+    }
+    //#endregion
+
+    //#region Scaling
+    /**
+     * Adds a scaling by the given {@link Vector2} to this matrix.
+     */
+    public scale(_by: Vector2): Matrix3x3 {
+      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.SCALING(_by));
+      this.set(mtxResult.data);
+      Recycler.store(mtxResult);
+      return this;
+    }
+
+    /**
+     * Adds a scaling along the x-Axis to this matrix.
+     */
+    public scaleX(_by: number): Matrix3x3 {
+      let vector: Vector2 = Recycler.get(Vector2);
+      vector.set(_by, 1);
+      this.scale(vector);
+      Recycler.store(vector);
+      return this;
+    }
+
+    /**
+     * Adds a scaling along the y-Axis to this matrix.
+     */
+    public scaleY(_by: number): Matrix3x3 {
+      let vector: Vector2 = Recycler.get(Vector2);
+      vector.set(1, _by);
+      this.scale(vector);
+      Recycler.store(vector);
+      return this;
     }
     //#endregion
 
@@ -313,14 +318,14 @@ namespace FudgeCore {
     /**
      * Multiply this matrix with the given matrix
      */
-    public multiply(_mtxRight: Matrix3x3): void {
+    public multiply(_mtxRight: Matrix3x3): Matrix3x3 {
       let mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, _mtxRight);
       this.set(mtxResult.data);
       Recycler.store(mtxResult);
       this.mutator = null;
+      return this;
     }
     //#endregion
-
 
     //#region Transfer
     /**
@@ -353,17 +358,19 @@ namespace FudgeCore {
     /**
      * Sets the elements of this matrix to the given array.
      */
-    public set(_array: ArrayLike<number>): void {
+    public set(_array: ArrayLike<number>): Matrix3x3 {
       this.data.set(_array);
       this.resetCache();
+      return this;
     }
 
     /**
      * Copies the elements of the given matrix into this matrix.
      */
-    public copy(_original: Matrix3x3): void {
+    public copy(_original: Matrix3x3): Matrix3x3 {
       this.data.set(_original.data);
       this.resetCache(); // TODO: for now reset the cache, as i have no idea how the caching works for matrix3x3.
+      return this;
     }
 
     /**
@@ -372,7 +379,6 @@ namespace FudgeCore {
     public toString(): string {
       return `ƒ.Matrix3x3(translation: ${this.translation.toString()}, rotation: ${this.rotation.toString()}, scaling: ${this.scaling.toString()}`;
     }
-
 
     /**
      * Returns an array of the elements of this matrix.
