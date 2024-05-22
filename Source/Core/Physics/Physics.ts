@@ -97,16 +97,18 @@ namespace FudgeCore {
 
 
     /**
-    * Simulates the physical world. _deltaTime is the amount of time between physical steps, default is about 17ms (assuming 60 frames per second).
+    * Simulates the physical world. _deltaTime is the amount of time between physical steps in seconds. Default is {@link Loop.timeFrameGame} / 1000 to run in sync with the {@link Loop}.
     * The maximum value is 1/30 of a second, to have more consistent frame calculations.
     */
-    public static simulate(_deltaTime: number = 1 / 60): void {
+    public static simulate(_deltaTime: number = Loop.timeFrameGame / 1000): void {
       if (Physics.ƒactive.jointList.length > 0)
-        Physics.connectJoints(); //Connect joints if anything has happened between the last call to any of the two paired rigidbodies
-      if (Time.game.getScale() != 0) { //If time is stopped do not simulate to avoid misbehaviour
-        _deltaTime = _deltaTime > 1 / 30 ? 1 / 30 : _deltaTime; //If instead of a fixed rate the game framerate is used, make sure irregular timings are fixed to 30fps
-        Physics.ƒactive.oimoWorld.step(_deltaTime * Time.game.getScale());  //Update the simulation by the given deltaTime and the FUDGE internal TimeScale
-      }
+        Physics.connectJoints(); // Connect joints if anything has happened between the last call to any of the two paired rigidbodies
+      if (_deltaTime == 0) // No time passed, no need to update the physics world
+        return;
+
+      _deltaTime = _deltaTime > 1 / 30 ? 1 / 30 : _deltaTime; // If instead of a fixed rate the game framerate is used, make sure irregular timings are fixed to 30fps
+      Physics.ƒactive.oimoWorld.step(_deltaTime);  // Update the simulation by the given deltaTime
+
     }
 
     /**

@@ -5580,11 +5580,6 @@ declare namespace FudgeCore {
          */
         activateAutoSleep(_on: boolean): void;
         /**
-         * Checking for Collision with other Colliders and dispatches a custom event with information about the collider.
-         * Automatically called in the RenderManager, no interaction needed.
-         */
-        checkCollisionEvents(): void;
-        /**
          * Sends a ray through this specific body ignoring the rest of the world and checks if this body was hit by the ray,
          * returning info about the hit. Provides the same functionality and information a regular raycast does but the ray is only testing against this specific body.
          */
@@ -5611,6 +5606,8 @@ declare namespace FudgeCore {
         /** Removing this ComponentRigidbody from the Physiscs.world taking the informations from the oimoPhysics system */
         private removeRigidbodyFromWorld;
         private collisionCenterPoint;
+        private collisionEnter;
+        private collisionExit;
         /**
         * Trigger EnteringEvent Callback, automatically called by OIMO Physics within their calculations.
         * Since the event does not know which body is the trigger iniator, the event can be listened to
@@ -6204,7 +6201,7 @@ declare namespace FudgeCore {
         */
         static raycast(_origin: Vector3, _direction: Vector3, _length?: number, _debugDraw?: boolean, _group?: COLLISION_GROUP): RayHitInfo;
         /**
-        * Simulates the physical world. _deltaTime is the amount of time between physical steps, default is about 17ms (assuming 60 frames per second).
+        * Simulates the physical world. _deltaTime is the amount of time between physical steps in seconds. Default is {@link Loop.timeFrameGame} / 1000 to run in sync with the {@link Loop}.
         * The maximum value is 1/30 of a second, to have more consistent frame calculations.
         */
         static simulate(_deltaTime?: number): void;

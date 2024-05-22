@@ -85,7 +85,7 @@ namespace FudgePhysics_Communication {
   }
 
   function update(): void {
-    f.Physics.simulate(f.Loop.timeFrameGame / 1000);
+    f.Physics.simulate();
     viewPort.draw();
     measureFPS();
   }

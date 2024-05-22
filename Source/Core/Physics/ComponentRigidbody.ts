@@ -477,84 +477,50 @@ namespace FudgeCore {
     //#endregion
 
     //#region Collision
-    /**
-     * Checking for Collision with other Colliders and dispatches a custom event with information about the collider.
-     * Automatically called in the RenderManager, no interaction needed.
-     */
-    public checkCollisionEvents(): void {
-      if (!this.isInitialized) // check collisions only if intialization completed
-        return;
-      let list: OIMO.ContactLink = this.#rigidbody.getContactLinkList(); //all physical contacts between colliding bodies on this rb
-      let objHit: ComponentRigidbody; //collision consisting of 2 bodies, so Hit1/2
-      let objHit2: ComponentRigidbody;
-      let event: EventPhysics;  //The event that will be send and the informations added to it
-      let normalImpulse: number = 0;
-      let binormalImpulse: number = 0;
-      let tangentImpulse: number = 0;
-      let colPoint: Vector3;
-      //ADD NEW Collision - That just happened
-      for (let i: number = 0; i < this.#rigidbody.getNumContactLinks(); i++) {
-        let collisionManifold: OIMO.Manifold = list.getContact().getManifold(); //Manifold = Additional informations about the contact
-        objHit = list.getContact().getShape1().userData;  //Userdata is used to transfer the ƒ.ComponentRigidbody, it's an empty OimoPhysics Variable
-        //Only register the collision on the actual touch, not on "shadowCollide", to register in the moment of impulse calculation
-        if (!objHit.isInitialized)
-          continue;
-        if (objHit == null || list.getContact().isTouching() == false) // only act if the collision is actual touching, so right at the moment when a impulse is happening, not when shapes overlap
-          return;
-        objHit2 = list.getContact().getShape2().userData;
-        if (!objHit2.isInitialized)
-          continue;
-        if (objHit2 == null || list.getContact().isTouching() == false)
-          return;
-        let points: OIMO.ManifoldPoint[] = collisionManifold.getPoints(); //All points in the collision where the two bodies are touching, used to calculate the full impact
-        let normal: OIMO.Vec3 = collisionManifold.getNormal();
-        if (objHit.getOimoRigidbody() != this.getOimoRigidbody() && this.collisions.indexOf(objHit) == -1) { //Fire, if the hit object is not the Body itself but another and it's not already fired.
-          let colPos: OIMO.Vec3 = this.collisionCenterPoint(points, collisionManifold.getNumPoints()); //THE point of collision is the first touching point (EXTENSION: could be the center of all touching points combined)
-          colPoint = new Vector3(colPos.x, colPos.y, colPos.z);
-          points.forEach((_value: OIMO.ManifoldPoint): void => { //The impact of the collision involving all touching points
-            normalImpulse += _value.getNormalImpulse();
-            binormalImpulse += _value.getBinormalImpulse();
-            tangentImpulse += _value.getTangentImpulse();
-          });
-          this.collisions.push(objHit); //Tell the object that the event for this object does not need to be fired again
-          event = new EventPhysics(EVENT_PHYSICS.COLLISION_ENTER, objHit, normalImpulse, tangentImpulse, binormalImpulse, colPoint, new Vector3(normal.x, normal.y, normal.z)); //Building the actual event, with what object did collide and informations about it
-          this.dispatchEvent(event); //Sending the given event
-        }
-        if (objHit2 != this && this.collisions.indexOf(objHit2) == -1) { //Same as the above but for the case the SECOND hit object is not the body itself
-          let colPos: OIMO.Vec3 = this.collisionCenterPoint(points, collisionManifold.getNumPoints());
-          colPoint = new Vector3(colPos.x, colPos.y, colPos.z);
-          points.forEach((_value: OIMO.ManifoldPoint): void => {
-            normalImpulse += _value.getNormalImpulse();
-            binormalImpulse += _value.getBinormalImpulse();
-            tangentImpulse += _value.getTangentImpulse();
-          });
+    // /**
+    //  * Checking for Collision with other Colliders and dispatches a custom event with information about the collider.
+    //  * Automatically called in the RenderManager, no interaction needed.
+    //  */
+    // public checkCollisionEvents(): void {
+    //   if (!this.isInitialized) // check collisions only if initialization completed
+    //     return;
 
-          this.collisions.push(objHit2);
-          event = new EventPhysics(EVENT_PHYSICS.COLLISION_ENTER, objHit2, normalImpulse, tangentImpulse, binormalImpulse, colPoint, new Vector3(normal.x, normal.y, normal.z));
-          this.dispatchEvent(event);
-        }
-        list = list.getNext(); //Start the same routine with the next collision in the list
-      }
-      //REMOVE OLD Collisions - That do not happen anymore
-      this.collisions.forEach((_value: ComponentRigidbody) => { //Every Collider in the list is checked if the collision is still happening
-        let isColliding: boolean = false;
-        list = this.#rigidbody.getContactLinkList();
-        for (let i: number = 0; i < this.#rigidbody.getNumContactLinks(); i++) {
-          objHit = list.getContact().getShape1().userData;
-          objHit2 = list.getContact().getShape2().userData;
-          if (_value == objHit || _value == objHit2) { //If the given object in the collisions list is still one of the objHit the collision is not CollisionEXIT
-            isColliding = true;
-          }
-          list = list.getNext();
-        }
-        if (isColliding == false) { //The collision is exiting but was in the collision list, then EXIT Event needs to be fired
-          let index: number = this.collisions.indexOf(_value); //Find object in the array
-          this.collisions.splice(index); //remove it from the array
-          event = new EventPhysics(EVENT_PHYSICS.COLLISION_EXIT, _value, 0, 0, 0);
-          this.dispatchEvent(event);
-        }
-      });
-    }
+    //   let contactLink: OIMO.ContactLink = this.#rigidbody.getContactLinkList(); // all physical contacts between colliding bodies on this rb
+    //   while (contactLink != null) {
+    //     let other: ComponentRigidbody = contactLink.getOther().userData; // get the other component rigidbody involved in the collision
+    //     if (!other.isInitialized) {
+    //       contactLink = contactLink.getNext();
+    //       continue;
+    //     }
+
+    //     let contact: OIMO.Contact = contactLink.getContact();
+    //     let wasTouching: boolean = this.collisions.includes(other);
+    //     let isTouching: boolean = contact.isTouching();
+
+    //     if (!wasTouching && isTouching) { // ENTER
+    //       let manifold: OIMO.Manifold = contact.getManifold();
+    //       let points: OIMO.ManifoldPoint[] = manifold.getPoints(); // All points in the collision where the two bodies are touching, used to calculate the full impact
+    //       let normalImpulse: number = 0;
+    //       let binormalImpulse: number = 0;
+    //       let tangentImpulse: number = 0;
+    //       for (let manifoldPoint of points) { // The impact of the collision involving all touching points
+    //         normalImpulse += manifoldPoint.getNormalImpulse();
+    //         binormalImpulse += manifoldPoint.getBinormalImpulse();
+    //         tangentImpulse += manifoldPoint.getTangentImpulse();
+    //       }
+    //       let normal: OIMO.Vec3 = manifold.getNormal();
+    //       let collisionNormal: Vector3 = new Vector3(normal.x, normal.y, normal.z);
+    //       let collisionCenterPoint: Vector3 = this.collisionCenterPoint(points, manifold.getNumPoints());
+    //       this.collisions.push(other);
+    //       this.dispatchEvent(new EventPhysics(EVENT_PHYSICS.COLLISION_ENTER, other, normalImpulse, tangentImpulse, binormalImpulse, collisionCenterPoint, collisionNormal)); // Sending the given event
+    //     } else if (wasTouching && !isTouching) { // EXIT
+    //       this.collisions.splice(this.collisions.indexOf(other), 1);
+    //       this.dispatchEvent(new EventPhysics(EVENT_PHYSICS.COLLISION_EXIT, other, 0, 0, 0));
+    //     }
+
+    //     contactLink = contactLink.getNext(); // Start the same routine with the next collision in the list
+    //   }
+    // }
 
     /**
      * Sends a ray through this specific body ignoring the rest of the world and checks if this body was hit by the ray,
@@ -741,6 +707,8 @@ namespace FudgeCore {
       this.#callbacks = new OIMO.ContactCallback(); //fehm
       this.#callbacks.beginTriggerContact = this.triggerEnter;
       this.#callbacks.endTriggerContact = this.triggerExit;
+      this.#callbacks.postSolve = this.collisionEnter; // use postSolve for collisionEnter to get the impulse
+      this.#callbacks.endContact = this.collisionExit;
     }
 
     /** Creates the actual OimoPhysics Rigidbody out of informations the FUDGE Component has. */
@@ -860,8 +828,7 @@ namespace FudgeCore {
 
     //#region private EVENT functions
     //Calculating the center of a collision as a singular point - in case there is more than one point - by getting the geometrical center of all colliding points
-    private collisionCenterPoint(_colPoints: OIMO.ManifoldPoint[], _numPoints: number): OIMO.Vec3 {
-      let center: OIMO.Vec3;
+    private collisionCenterPoint(_colPoints: OIMO.ManifoldPoint[], _numPoints: number): Vector3 {
       let totalPoints: number = 0;
       let totalX: number = 0;
       let totalY: number = 0;
@@ -874,11 +841,51 @@ namespace FudgeCore {
           totalZ += _value.getPosition2().z;
         }
       });
-      center = new OIMO.Vec3(totalX / _numPoints, totalY / _numPoints, totalZ / _numPoints);
-      return center;
+      return new Vector3(totalX / _numPoints, totalY / _numPoints, totalZ / _numPoints);;
     }
     //#endregion
 
+    private collisionEnter(_contact: OIMO.Contact): void {
+      let bodyA: ComponentRigidbody = _contact.getShape1().userData;
+      let bodyB: ComponentRigidbody = _contact.getShape2().userData;
+
+      if (bodyA.collisions.includes(bodyB)) // already collided
+        return;
+
+      bodyA.collisions.push(bodyB);
+      bodyB.collisions.push(bodyA);
+
+      // TODO: maybe rather expose the manifold to the event or something
+      let manifold: OIMO.Manifold = _contact.getManifold();
+      let points: OIMO.ManifoldPoint[] = manifold.getPoints(); // All points in the collision where the two bodies are touching, used to calculate the full impact
+      let normalImpulse: number = 0;
+      let tangentImpulse: number = 0;
+      let binormalImpulse: number = 0;
+      for (let manifoldPoint of points) { // The impact of the collision involving all touching points
+        normalImpulse += manifoldPoint.getNormalImpulse();
+        tangentImpulse += manifoldPoint.getTangentImpulse();
+        binormalImpulse += manifoldPoint.getBinormalImpulse();
+      }
+      let normal: OIMO.Vec3 = manifold.getNormal();
+      let collisionNormal: Vector3 = new Vector3(normal.x, normal.y, normal.z);
+      let collisionCenterPoint: Vector3 = bodyA.collisionCenterPoint(points, manifold.getNumPoints());
+      bodyA.dispatchEvent(new EventPhysics(EVENT_PHYSICS.COLLISION_ENTER, bodyB, normalImpulse, tangentImpulse, binormalImpulse, collisionCenterPoint, collisionNormal));
+      bodyB.dispatchEvent(new EventPhysics(EVENT_PHYSICS.COLLISION_ENTER, bodyA, normalImpulse, tangentImpulse, binormalImpulse, collisionCenterPoint, collisionNormal));
+    }
+
+    private collisionExit(_contact: OIMO.Contact): void {
+      let bodyA: ComponentRigidbody = _contact.getShape1().userData;
+      let bodyB: ComponentRigidbody = _contact.getShape2().userData;
+
+      if (!bodyA.collisions.includes(bodyB)) // already exited
+        return;
+
+      bodyA.collisions.splice(bodyA.collisions.indexOf(bodyB), 1);
+      bodyB.collisions.splice(bodyB.collisions.indexOf(bodyA), 1);
+
+      bodyA.dispatchEvent(new EventPhysics(EVENT_PHYSICS.COLLISION_EXIT, bodyB, 0, 0, 0));
+      bodyB.dispatchEvent(new EventPhysics(EVENT_PHYSICS.COLLISION_EXIT, bodyA, 0, 0, 0));
+    }
 
     /**
     * Trigger EnteringEvent Callback, automatically called by OIMO Physics within their calculations.
@@ -903,16 +910,15 @@ namespace FudgeCore {
       let points: OIMO.ManifoldPoint[] = collisionManifold.getPoints(); //All points in the collision where the two bodies are touching, used to calculate the full impact
       let normal: OIMO.Vec3 = collisionManifold.getNormal();
       if (objHit2.triggerings.indexOf(objHit) == -1) { //Fire, if the hit object is not the Body itself but another and it's not already fired.
-        let colPos: OIMO.Vec3 = objHit2.collisionCenterPoint(points, collisionManifold.getNumPoints()); //THE point of collision is the first touching point (EXTENSION: could be the center of all touching points combined)
-        colPoint = new Vector3(colPos.x, colPos.y, colPos.z);
+        //THE point of collision is the first touching point (EXTENSION: could be the center of all touching points combined)
+        colPoint = objHit2.collisionCenterPoint(points, collisionManifold.getNumPoints());;
         // Impulses are 0 since, there are no forces/impulses at work, else this would not be a trigger, but a collision
         objHit2.triggerings.push(objHit); //Tell the object that the event for this object does not need to be fired again
         event = new EventPhysics(EVENT_PHYSICS.TRIGGER_ENTER, objHit, 0, 0, 0, colPoint, new Vector3(normal.x, normal.y, normal.z)); //Building the actual event, with what object did collide and informations about it
         objHit2.dispatchEvent(event); //Sending the given event
       }
       if (objHit.triggerings.indexOf(objHit2) == -1) { //Same as the above but for the case the SECOND hit object is not the body itself
-        let colPos: OIMO.Vec3 = objHit.collisionCenterPoint(points, collisionManifold.getNumPoints());
-        colPoint = new Vector3(colPos.x, colPos.y, colPos.z);
+        colPoint = objHit.collisionCenterPoint(points, collisionManifold.getNumPoints());
         // Impulses are 0 since, there are no forces/impulses at work, else this would not be a trigger, but a collision,
         // also the event is handled before the actual solving impulse step in OIMO
         objHit.triggerings.push(objHit2);

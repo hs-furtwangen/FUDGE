@@ -220,7 +220,7 @@ namespace FudgeCore {
         throw (new Error("ComponentRigidbody requires ComponentTransform at the same Node"));
       }
 
-      _cmpRigidbody.checkCollisionEvents();
+      // _cmpRigidbody.checkCollisionEvents();
 
       if (_cmpRigidbody.typeBody == BODY_TYPE.KINEMATIC || Project.mode == MODE.EDITOR) { //Case of Kinematic Rigidbody
         let mtxPivotWorld: Matrix4x4 = Matrix4x4.PRODUCT(_node.mtxWorld, _cmpRigidbody.mtxPivotUnscaled);
