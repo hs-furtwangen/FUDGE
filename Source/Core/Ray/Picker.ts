@@ -8,13 +8,16 @@ namespace FudgeCore {
      * Takes a ray plus min and max values for the near and far planes to construct the picker-camera,
      * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
      */
-    public static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos: boolean = false, _gizmosFilter?: Map<string, boolean>): Pick[] {
+    public static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos: boolean = false, _gizmosFilter?: Viewport["gizmosFilter"]): Pick[] {
       let cmpCameraPick: ComponentCamera = new ComponentCamera();
       cmpCameraPick.mtxPivot.translation = _ray.origin;
       cmpCameraPick.mtxPivot.lookAt(Vector3.SUM(_ray.origin, _ray.direction));
       cmpCameraPick.projectCentral(1, 0.001, FIELD_OF_VIEW.DIAGONAL, _min, _max);
 
-      let picks: Pick[] = Render.pickBranch(_nodes, cmpCameraPick, _pickGizmos, _gizmosFilter);
+      let picks: Pick[] = Render.pickBranch(_nodes, cmpCameraPick);
+      if (_pickGizmos && _gizmosFilter)
+        picks = picks.concat(Gizmos.pickBranch(_nodes, cmpCameraPick, _gizmosFilter));
+
       return picks;
     }
 
@@ -22,7 +25,7 @@ namespace FudgeCore {
      * Takes a camera and a point on its virtual normed projection plane (distance 1) to construct the picker-camera,
      * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
      */
-    public static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos: boolean = false, _gizmosFilter?: Map<string, boolean>): Pick[] {
+    public static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos: boolean = false, _gizmosFilter?: Viewport["gizmosFilter"]): Pick[] {
       let ray: Ray = new Ray(new Vector3(-_posProjection.x, _posProjection.y, 1));
       let length: number = ray.direction.magnitude;
 

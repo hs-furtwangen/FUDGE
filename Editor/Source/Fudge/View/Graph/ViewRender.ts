@@ -157,6 +157,12 @@ namespace Fudge {
       }
     }
 
+    protected getState(): ViewState {
+      let state: ViewState = super.getState();
+      state["gizmosFilter"] = Array.from(this.gizmosFilter.entries());
+      return state;
+    }
+
     private createUserInterface(): void {
       ƒAid.addStandardLightComponents(this.nodeLight);
 
@@ -361,11 +367,5 @@ namespace Fudge {
 
       ƒ.Recycler.storeMultiple(vctX, vctY, vctZ, origin, mtxWorld, color, scaling);
     };
-
-    protected getState(): ViewState {
-      let state: ViewState = super.getState();
-      state["gizmosFilter"] = Array.from(this.gizmosFilter.entries());
-      return state;
-    }
   }
 }

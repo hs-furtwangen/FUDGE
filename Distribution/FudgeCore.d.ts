@@ -1136,9 +1136,7 @@ declare namespace FudgeCore {
             [_name: string]: number;
         };
         protected static crc3: WebGL2RenderingContext;
-        protected static ƒpicked: Pick[];
         private static rectRender;
-        private static sizePick;
         private static fboMain;
         private static fboPost;
         private static fboTarget;
@@ -1148,6 +1146,8 @@ declare namespace FudgeCore {
         private static texNoise;
         private static texDepthStencil;
         private static texBloomSamples;
+        private static fboPick;
+        private static texPick;
         private static uboFog;
         /**
          * Initializes offscreen-canvas, renderingcontext and hardware viewport. Call once before creating any resources like meshes or shaders
@@ -1228,17 +1228,11 @@ declare namespace FudgeCore {
          */
         static adjustAttachments(): void;
         /**
-         * Creates a texture buffer to be used as pick-buffer
+         * The render function for picking nodes.
+         * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,
+         * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
-        protected static createPickTexture(_size: number): RenderTexture;
-        protected static getPicks(_size: number, _cmpCamera: ComponentCamera): Pick[];
-        /**
-        * The render function for picking a single node.
-        * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,
-        * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
-        */
-        protected static pick(_node: Node, _cmpCamera: ComponentCamera): void;
-        protected static pickGizmos(_gizmos: Component[], _cmpCamera: ComponentCamera): void;
+        protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera, _size: number): Pick[];
         /**
          * Buffer the fog parameters into the fog ubo
          */
@@ -6324,12 +6318,12 @@ declare namespace FudgeCore {
          * Takes a ray plus min and max values for the near and far planes to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos?: boolean, _gizmosFilter?: Map<string, boolean>): Pick[];
+        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos?: boolean, _gizmosFilter?: Viewport["gizmosFilter"]): Pick[];
         /**
          * Takes a camera and a point on its virtual normed projection plane (distance 1) to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos?: boolean, _gizmosFilter?: Map<string, boolean>): Pick[];
+        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos?: boolean, _gizmosFilter?: Viewport["gizmosFilter"]): Pick[];
         /**
          * Takes the camera of the given viewport and a point the client surface to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
@@ -6385,10 +6379,10 @@ declare namespace FudgeCore {
          * Set to 0 to make occluded gizmo parts disappear. Set to 1 to make occluded gizmo parts fully visible.
          */
         private static alphaOccluded;
-        private static pickId;
-        private static readonly posIcons;
         private static readonly arrayBuffer;
         private static readonly indexBuffer;
+        private static pickId;
+        private static readonly posIcons;
         /**
          * The camera which is currently used to draw gizmos.
          */
@@ -6456,14 +6450,13 @@ declare namespace FudgeCore {
         private static drawElementsTrianlges;
         private static drawElementsLines;
         private static drawArrays;
+        private static collectGizmos;
     }
 }
 declare namespace FudgeCore {
     type MapLightTypeToLightList = Map<TypeOfLight, RecycableArray<ComponentLight>>;
     interface RenderPrepareOptions {
         ignorePhysics?: boolean;
-        gizmosEnabled?: boolean;
-        gizmosFilter?: Map<string, boolean>;
     }
     /**
      * The main interface to the render engine, here WebGL (see superclass {@link RenderWebGL} and the RenderInjectors
@@ -6474,7 +6467,6 @@ declare namespace FudgeCore {
         static readonly nodesPhysics: RecycableArray<Node>;
         static readonly componentsPick: RecycableArray<ComponentPick>;
         static readonly lights: MapLightTypeToLightList;
-        static readonly gizmos: RecycableArray<Component>;
         private static readonly nodesSimple;
         private static readonly nodesAlpha;
         private static readonly componentsSkeleton;
@@ -6490,7 +6482,7 @@ declare namespace FudgeCore {
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
          * for each node in the line of sight and return that as an unsorted {@link Pick}-array
          */
-        static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pickGizmos?: boolean, _gizmosFilter?: Map<string, boolean>): Pick[];
+        static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws the scene from the point of view of the given camera
          */

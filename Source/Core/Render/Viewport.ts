@@ -29,7 +29,7 @@ namespace FudgeCore {
 
     public gizmosEnabled: boolean = false;
     public gizmosSelected: Node[];
-    public gizmosFilter: Map<string, boolean> = new Map(Component.subclasses // TODO: maybe make this lazy
+    public gizmosFilter: Map<string, boolean> = new Map(Component.subclasses // TODO: maybe make this lazy TODO: change to js object
       .filter((_class: typeof Component) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
       .map((_class: typeof Component) => [_class.name, true])
     );
@@ -163,7 +163,7 @@ namespace FudgeCore {
       if (this.#branch.getParent())
         mtxRoot = this.#branch.getParent().mtxWorld;
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      Render.prepare(this.#branch, { gizmosEnabled: this.gizmosEnabled, gizmosFilter: this.gizmosFilter }, mtxRoot);
+      Render.prepare(this.#branch, { }, mtxRoot);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
     }

@@ -771,6 +771,7 @@ declare namespace Fudge {
         protected openContextMenu: (_event: Event) => void;
         protected hndDragOver(_event: DragEvent, _viewSource: View): void;
         protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected getState(): ViewState;
         private createUserInterface;
         private setGraph;
         private setCameraOrthographic;
@@ -782,7 +783,6 @@ declare namespace Fudge {
         private redraw;
         private setRenderContinously;
         private drawTranslation;
-        protected getState(): ViewState;
     }
 }
 declare namespace Fudge {

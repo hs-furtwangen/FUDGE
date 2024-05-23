@@ -10,11 +10,11 @@ namespace FudgeCore {
      */
     private static alphaOccluded: number = 0.3; // currently gizmos can always be picked even if this is set to 0...
 
-    private static pickId: number;
-    private static readonly posIcons: Set<string> = new Set(); // cache the positions of icons to avoid drawing them within each other
-
     private static readonly arrayBuffer: WebGLBuffer = RenderWebGL.assert(RenderWebGL.getRenderingContext().createBuffer());
     private static readonly indexBuffer: WebGLBuffer = RenderWebGL.assert(RenderWebGL.getRenderingContext().createBuffer());
+
+    private static pickId: number;
+    private static readonly posIcons: Set<string> = new Set(); // cache the positions of icons to avoid drawing them within each other
 
     static #camera: ComponentCamera; // TODO: maybe rather pass the camera into the drawGizmos methods on components?
 
@@ -130,10 +130,16 @@ namespace FudgeCore {
       Gizmos.#camera = _viewport.camera;
       Gizmos.posIcons.clear();
 
-      for (const gizmo of Render.gizmos)
+      if (!_viewport.gizmosFilter)
+        return;
+
+      let gizmos: Component[] = [];
+      Gizmos.collectGizmos(_viewport.getBranch(), _viewport.gizmosFilter, gizmos);
+
+      for (const gizmo of gizmos)
         Reflect.set(gizmo.node, "zCamera", _viewport.camera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
 
-      const sorted: Component[] = Render.gizmos.getSorted((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
+      const sorted: Component[] = gizmos.sort((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
       for (const gizmo of sorted) {
         gizmo.drawGizmos?.();
         if (_viewport.gizmosSelected?.includes(gizmo.node))
@@ -142,21 +148,45 @@ namespace FudgeCore {
     }
 
     /**
+     * See {@link RenderWebGL.pickBranch}
      * @internal
      */
-    public static pick(_gizmos: Component[], _cmpCamera: ComponentCamera, _picked: Pick[]): void {
-      Gizmos.#camera = _cmpCamera;
-      Gizmos.posIcons.clear();
+    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _gizmosFilter: Map<string, boolean>): Pick[] {
+      let picks: Pick[] = RenderWebGL.pickBranch(_nodes, _cmpCamera, pick);
+      return picks;
 
-      for (let gizmo of _gizmos) {
-        Gizmos.pickId = _picked.length;
-        gizmo.drawGizmos();
-        let pick: Pick = new Pick(gizmo.node);
-        pick.gizmo = gizmo;
-        _picked.push(pick);
+      function pick(_nodes: Node[], _cmpCamera: ComponentCamera, _size: number): Pick[] {
+        // buffer these into both shaders as we don't know which one will be used for the gizmos
+        const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+        let shader: ShaderInterface = ShaderPick;
+        shader.useProgram();
+        crc3.uniform2fv(shader.uniforms["u_vctSize"], [_size, _size]);
+        shader = ShaderPickTextured;
+        shader.useProgram();
+        crc3.uniform2fv(shader.uniforms["u_vctSize"], [_size, _size]);
+        crc3.uniformMatrix3fv(shader.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().get()); // only needed for textured pick shader, but gizmos have no pivot
+
+        Gizmos.#camera = _cmpCamera;
+        Gizmos.posIcons.clear();
+
+        let picks: Pick[] = [];
+        for (let node of _nodes) {
+          for (let gizmo of node.getAllComponents()) {
+            if (!gizmo.isActive || !_gizmosFilter.get(gizmo.type) || !gizmo.drawGizmos)
+              continue;
+
+            Gizmos.pickId = picks.length;
+            gizmo.drawGizmos();
+            let pick: Pick = new Pick(gizmo.node);
+            pick.gizmo = gizmo;
+            picks.push(pick);
+          }
+        }
+
+        Gizmos.pickId = null;
+
+        return picks;
       }
-
-      Gizmos.pickId = null;
     }
 
     /**
@@ -414,6 +444,14 @@ namespace FudgeCore {
 
     private static drawArrays(_count: number): void {
       RenderWebGL.getRenderingContext().drawArrays(WebGL2RenderingContext.LINES, 0, _count);
+    }
+
+    private static collectGizmos(_node: Node, _filter: Viewport["gizmosFilter"], _gizmos: Component[] = []): void {
+      for (const child of _node.getChildren())
+        Gizmos.collectGizmos(child, _filter, _gizmos);
+      for (const component of _node.getAllComponents())
+        if (component.isActive && _filter.get(component.type))
+          _gizmos.push(component);
     }
   }
 }

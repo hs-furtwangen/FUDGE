@@ -63,10 +63,8 @@ namespace FudgeCore {
     public static uboLightsVariableOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
 
     protected static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
-    protected static ƒpicked: Pick[];
 
     private static rectRender: Rectangle = RenderWebGL.getCanvasRect();
-    private static sizePick: number;
 
     private static fboMain: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
     private static fboPost: WebGLFramebuffer; // used for post-processing effects, attachments get swapped for different effects
@@ -78,6 +76,9 @@ namespace FudgeCore {
     private static texNoise: WebGLTexture; // stores random values for each pixel, used for ambient occlusion
     private static texDepthStencil: WebGLTexture; // stores the depth of each pixel, currently unused
     private static texBloomSamples: WebGLTexture[]; // stores down and upsampled versions of the color texture, used for bloom
+
+    private static fboPick: WebGLBuffer;
+    private static texPick: WebGLTexture;
 
     private static uboFog: WebGLBuffer; // stores the fog parameters
 
@@ -284,16 +285,29 @@ namespace FudgeCore {
       RenderWebGL.fboMain = RenderWebGL.assert<WebGLFramebuffer>(RenderWebGL.crc3.createFramebuffer());
       RenderWebGL.fboPost = RenderWebGL.assert<WebGLFramebuffer>(RenderWebGL.crc3.createFramebuffer());
       RenderWebGL.fboTarget = null;
+      RenderWebGL.fboPick = RenderWebGL.assert(RenderWebGL.crc3.createFramebuffer());
 
       RenderWebGL.texColor = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texPosition = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texNormal = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texDepthStencil = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texNoise = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+      RenderWebGL.texPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
       RenderWebGL.texBloomSamples = new Array(6);
       for (let i: number = 0; i < RenderWebGL.texBloomSamples.length; i++)
         RenderWebGL.texBloomSamples[i] = createTexture(WebGL2RenderingContext.LINEAR, WebGL2RenderingContext.CLAMP_TO_EDGE);
+
+      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
+      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
+      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
+      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
+
+      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
+      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
+
+      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 
       function createTexture(_filter: number, _wrap: number): WebGLTexture {
         const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
@@ -332,13 +346,6 @@ namespace FudgeCore {
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
 
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
-
       for (let i: number = 0, divisor: number = 1; i < RenderWebGL.texBloomSamples.length; i++, divisor *= 2) {
         let width: number = Math.max(Math.round(crc3.canvas.width / divisor), 1);
         let height: number = Math.max(Math.round(crc3.canvas.height / divisor), 1);
@@ -363,57 +370,46 @@ namespace FudgeCore {
 
     //#region Picking
     /**
-     * Creates a texture buffer to be used as pick-buffer
+     * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
+     * for each node (or each gizmo of each node) in the line of sight and return that as an unsorted {@link Pick}-array
+     * @internal
      */
-    protected static createPickTexture(_size: number): RenderTexture {
-      // create to render to
-      const targetTexture: RenderTexture = RenderWebGL.assert(Render.crc3.createTexture());
-      Render.crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, targetTexture); // TODO: check if superclass (RenderWebGL) should refer downwards to subclass (Render) like this
+    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pick: (_nodes: Node[], _cmpCamera: ComponentCamera, _size: number) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
+      const size: number = Math.ceil(Math.sqrt(_nodes.length));
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      {
-        const internalFormat: number = WebGL2RenderingContext.RGBA32I;
-        const format: number = WebGL2RenderingContext.RGBA_INTEGER;
-        const type: number = WebGL2RenderingContext.INT;
-        Render.pickBuffer = new Int32Array(_size * _size * 4);
-        Render.crc3.texImage2D(
-          WebGL2RenderingContext.TEXTURE_2D, 0, internalFormat, _size, _size, 0, format, type, Render.pickBuffer
-        );
+      // adjust pick buffer size
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
+      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null); // could use RBGA32F in the future e.g. WebGPU
+      
+      // render picks, either nodes or gizmos
+      RenderWebGL.setBlendMode(BLEND.OPAQUE);
+      let picks: Pick[] = _pick(_nodes, _cmpCamera, size);
+      RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
 
-        // set the filtering so we don't need mips
-        Render.crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER, WebGL2RenderingContext.LINEAR);
-        Render.crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_S, WebGL2RenderingContext.CLAMP_TO_EDGE);
-        Render.crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_T, WebGL2RenderingContext.CLAMP_TO_EDGE);
-      }
-
-      const framebuffer: WebGLFramebuffer = Render.crc3.createFramebuffer();
-      Render.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
-      const attachmentPoint: number = WebGL2RenderingContext.COLOR_ATTACHMENT0;
-      Render.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, attachmentPoint, WebGL2RenderingContext.TEXTURE_2D, targetTexture, 0);
-
-      RenderWebGL.sizePick = _size;
-      return targetTexture;
-    }
-
-    protected static getPicks(_size: number, _cmpCamera: ComponentCamera): Pick[] {
+      // get picks
       // evaluate texture by reading pixels and extract, convert and store the information about each mesh hit
-      let data: Int32Array = new Int32Array(_size * _size * 4);
-      Render.crc3.readPixels(0, 0, _size, _size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
+      let data: Int32Array = new Int32Array(size * size * 4);
+      Render.crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
 
-      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
       let picked: Pick[] = [];
-      for (let i: number = 0; i < Render.ƒpicked.length; i++) {
+      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
+      for (let i: number = 0; i < picks.length; i++) {
         let zBuffer: number = data[4 * i + 0] + data[4 * i + 1] / 256;
         if (zBuffer == 0) // discard misses 
           continue;
-        let pick: Pick = Render.ƒpicked[i];
+        let pick: Pick = picks[i];
         pick.zBuffer = convertInt32toFloat32(data, 4 * i + 0) * 2 - 1;
         pick.color = convertInt32toColor(data, 4 * i + 1);
-        pick.textureUV = Recycler.get(Vector2);
+        pick.textureUV = Recycler.reuse(Vector2);
         pick.textureUV.set(convertInt32toFloat32(data, 4 * i + 2), convertInt32toFloat32(data, 4 * i + 3));
         pick.mtxViewToWorld = mtxViewToWorld;
 
         picked.push(pick);
       }
+
+      RenderWebGL.resetFramebuffer();
 
       return picked;
 
@@ -434,48 +430,37 @@ namespace FudgeCore {
     }
 
     /**
-    * The render function for picking a single node. 
-    * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,  
-    * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
-    */
-    protected static pick(_node: Node, _cmpCamera: ComponentCamera): void { // create Texture to render to, int-rgba
-      try {
-        let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
-        let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
+     * The render function for picking nodes. 
+     * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,  
+     * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
+     */
+    protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera, _size: number): Pick[] {
+      let picks: Pick[] = [];
+
+      for (const node of _nodes) {
+        let cmpMesh: ComponentMesh = node.getComponent(ComponentMesh);
+        let cmpMaterial: ComponentMaterial = node.getComponent(ComponentMaterial);
+        if (!(cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive))
+          continue;
+
         let coat: Coat = cmpMaterial.material.coat;
         let shader: ShaderInterface = coat instanceof CoatTextured ? ShaderPickTextured : ShaderPick;
 
         shader.useProgram();
         coat.useRenderData(shader, cmpMaterial);
-        let mtxMeshToView: Matrix4x4 = this.calcMeshToView(_node, cmpMesh.mtxWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
+        let mtxMeshToView: Matrix4x4 = RenderWebGL.calcMeshToView(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
 
         let sizeUniformLocation: WebGLUniformLocation = shader.uniforms["u_vctSize"];
-        RenderWebGL.getRenderingContext().uniform2fv(sizeUniformLocation, [RenderWebGL.sizePick, RenderWebGL.sizePick]);
+        RenderWebGL.crc3.uniform2fv(sizeUniformLocation, [_size, _size]);
 
         let mesh: Mesh = cmpMesh.mesh;
-        let renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, _node.mtxWorld, mtxMeshToView, Render.ƒpicked.length);
+        let renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, node.mtxWorld, mtxMeshToView, picks.length);
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
 
-        let pick: Pick = new Pick(_node);
-        Render.ƒpicked.push(pick);
-      } catch (_error) {
-        //
+        picks.push(new Pick(node));
       }
-    }
 
-    protected static pickGizmos(_gizmos: Component[], _cmpCamera: ComponentCamera): void {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-
-      // buffer these into both shaders as we don't know which one will be used for the gizmo
-      let shader: ShaderInterface = ShaderPick;
-      shader.useProgram();
-      crc3.uniform2fv(shader.uniforms["u_vctSize"], [RenderWebGL.sizePick, RenderWebGL.sizePick]);
-      shader = ShaderPickTextured;
-      shader.useProgram();
-      crc3.uniform2fv(shader.uniforms["u_vctSize"], [RenderWebGL.sizePick, RenderWebGL.sizePick]);
-      crc3.uniformMatrix3fv(shader.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().get()); // only needed for textured pick shader, but gizmos have no pivot
-
-      Gizmos.pick(_gizmos, _cmpCamera, Render.ƒpicked);
+      return picks;
     }
     //#endregion
 
