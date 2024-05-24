@@ -151,7 +151,7 @@ namespace FudgeCore {
      * See {@link RenderWebGL.pickBranch}
      * @internal
      */
-    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _gizmosFilter: Map<string, boolean>): Pick[] {
+    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _gizmosFilter: Viewport["gizmosFilter"]): Pick[] {
       let picks: Pick[] = RenderWebGL.pickBranch(_nodes, _cmpCamera, pick);
       return picks;
 
@@ -172,7 +172,7 @@ namespace FudgeCore {
         let picks: Pick[] = [];
         for (let node of _nodes) {
           for (let gizmo of node.getAllComponents()) {
-            if (!gizmo.isActive || !_gizmosFilter.get(gizmo.type) || !gizmo.drawGizmos)
+            if (!gizmo.isActive || !_gizmosFilter[gizmo.type] || !gizmo.drawGizmos)
               continue;
 
             Gizmos.pickId = picks.length;
@@ -450,7 +450,7 @@ namespace FudgeCore {
       for (const child of _node.getChildren())
         Gizmos.collectGizmos(child, _filter, _gizmos);
       for (const component of _node.getAllComponents())
-        if (component.isActive && _filter.get(component.type))
+        if (component.isActive && _filter[component.type])
           _gizmos.push(component);
     }
   }

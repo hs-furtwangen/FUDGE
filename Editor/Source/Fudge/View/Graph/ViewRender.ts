@@ -42,14 +42,14 @@ namespace Fudge {
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
 
       if (_state["gizmosFilter"]) {
-        let gizmosFilter: Map<string, boolean> = new Map(_state["gizmosFilter"]);
-        for (const [key, value] of gizmosFilter)
-          if (this.gizmosFilter.has(key))
-            this.gizmosFilter.set(key, value);
+        let gizmosFilter: ƒ.Viewport["gizmosFilter"] = _state["gizmosFilter"];
+        for (const gizmo in gizmosFilter) // validate the saved state
+          if (gizmo in this.gizmosFilter)
+            this.gizmosFilter[gizmo] = gizmosFilter[gizmo];
       }
     }
 
-    private get gizmosFilter(): Map<string, boolean> {
+    private get gizmosFilter(): ƒ.Viewport["gizmosFilter"] {
       return this.viewport?.gizmosFilter;
     }
 
@@ -110,10 +110,10 @@ namespace Fudge {
           this.setRenderContinously(_item.checked);
           break;
         default:
-          if (!this.gizmosFilter.has(_item.id))
+          if (!(_item.id in this.gizmosFilter))
             break;
 
-          this.gizmosFilter.set(_item.id, _item.checked);
+          this.gizmosFilter[_item.id] = _item.checked;
           this.redraw();
           break;
       }
@@ -121,8 +121,8 @@ namespace Fudge {
 
     protected openContextMenu = (_event: Event): void => {
       if (!this.#pointerMoved) {
-        for (const [filter, active] of this.gizmosFilter)
-          this.contextMenu.getMenuItemById(filter).checked = active;
+        for (const gizmo in this.gizmosFilter)
+          this.contextMenu.getMenuItemById(gizmo).checked = this.gizmosFilter[gizmo];
         this.contextMenu.popup();
       }
       this.#pointerMoved = false;
@@ -159,7 +159,7 @@ namespace Fudge {
 
     protected getState(): ViewState {
       let state: ViewState = super.getState();
-      state["gizmosFilter"] = Array.from(this.gizmosFilter.entries());
+      state["gizmosFilter"] = this.gizmosFilter;
       return state;
     }
 
@@ -175,7 +175,7 @@ namespace Fudge {
       this.viewport = new ƒ.Viewport();
       this.viewport.gizmosEnabled = true;
       // add default values for view render gizmos
-      this.gizmosFilter.set(GIZMOS.TRANSFORM, true);
+      this.gizmosFilter[GIZMOS.TRANSFORM] = true;
       this.viewport.initialize("ViewNode_Viewport", this.graph, cmpCamera, this.canvas);
       try {
         this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false);
@@ -190,8 +190,8 @@ namespace Fudge {
       this.canvas.addEventListener("pick", this.hndPick);
 
       let submenu: Electron.MenuItemConstructorOptions[] = [];
-      for (const [filter] of this.gizmosFilter)
-        submenu.push({ label: filter, id: filter, type: "checkbox", click: this.contextMenuCallback.bind(this) });
+      for (const gizmo in this.gizmosFilter)
+        submenu.push({ label: gizmo, id: gizmo, type: "checkbox", click: this.contextMenuCallback.bind(this) });
 
       this.contextMenu.append(new remote.MenuItem({
         label: "Gizmos", submenu: submenu
@@ -348,7 +348,7 @@ namespace Fudge {
     }
 
     private drawTranslation = (): void => {
-      if (!this.node || !this.gizmosFilter.get(GIZMOS.TRANSFORM))
+      if (!this.node || !this.gizmosFilter[GIZMOS.TRANSFORM])
         return;
 
       const scaling: ƒ.Vector3 = ƒ.Vector3.ONE(ƒ.Vector3.DIFFERENCE(ƒ.Gizmos.camera.mtxWorld.translation, this.node.mtxWorld.translation).magnitude * 0.1);

@@ -29,7 +29,7 @@ namespace FudgeCore {
 
     public gizmosEnabled: boolean = false;
     public gizmosSelected: Node[];
-    public gizmosFilter: Map<string, boolean> = new Map(Component.subclasses // TODO: maybe make this lazy TODO: change to js object
+    public gizmosFilter: { [_gizmo: string]: boolean } = Object.fromEntries(Component.subclasses // TODO: maybe make this lazy TODO: change to js object
       .filter((_class: typeof Component) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
       .map((_class: typeof Component) => [_class.name, true])
     );
