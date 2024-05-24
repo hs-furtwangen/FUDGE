@@ -148,23 +148,16 @@ namespace FudgeCore {
     }
 
     /**
-     * See {@link RenderWebGL.pickBranch}
+     * Picks all gizmos of all nodes in the line of sight and returns an unsorted array of {@link Pick}s each associated with the node and gizmo the pick ray hit.
      * @internal
      */
     public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _gizmosFilter: Viewport["gizmosFilter"]): Pick[] {
-      let picks: Pick[] = RenderWebGL.pickBranch(_nodes, _cmpCamera, pick);
+      let picks: Pick[] = RenderWebGL.pickFrom(_nodes, _cmpCamera, pick);
       return picks;
 
-      function pick(_nodes: Node[], _cmpCamera: ComponentCamera, _size: number): Pick[] {
-        // buffer these into both shaders as we don't know which one will be used for the gizmos
+      function pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[] {
         const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-        let shader: ShaderInterface = ShaderPick;
-        shader.useProgram();
-        crc3.uniform2fv(shader.uniforms["u_vctSize"], [_size, _size]);
-        shader = ShaderPickTextured;
-        shader.useProgram();
-        crc3.uniform2fv(shader.uniforms["u_vctSize"], [_size, _size]);
-        crc3.uniformMatrix3fv(shader.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().get()); // only needed for textured pick shader, but gizmos have no pivot
+        crc3.uniformMatrix3fv(ShaderPickTextured.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().get()); // only needed for textured pick shader, but gizmos have no pivot
 
         Gizmos.#camera = _cmpCamera;
         Gizmos.posIcons.clear();

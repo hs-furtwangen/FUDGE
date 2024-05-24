@@ -1228,11 +1228,19 @@ declare namespace FudgeCore {
          */
         static adjustAttachments(): void;
         /**
+         * Used with a {@link Picker}-camera, this method renders one pixel with picking information
+         * for each pickable object in the line of sight and returns that as an unsorted {@link Pick}-array.
+         * The function to render the objects into the pick buffer must be provided by the caller.
+         * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object.
+         * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
+         */
+        static pickFrom<T>(_from: T[], _cmpCamera: ComponentCamera, _pick: (_from: T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[];
+        /**
          * The render function for picking nodes.
          * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
-        protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera, _size: number): Pick[];
+        protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Buffer the fog parameters into the fog ubo
          */
@@ -6557,7 +6565,9 @@ declare namespace FudgeCore {
         physicsDebugMode: PHYSICS_DEBUGMODE;
         gizmosEnabled: boolean;
         gizmosSelected: Node[];
-        gizmosFilter: Map<string, boolean>;
+        gizmosFilter: {
+            [_gizmo: string]: boolean;
+        };
         componentsPick: RecycableArray<ComponentPick>;
         /**
          * Returns true if this viewport currently has focus and thus receives keyboard events

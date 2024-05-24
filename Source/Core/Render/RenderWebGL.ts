@@ -371,24 +371,32 @@ namespace FudgeCore {
     //#region Picking
     /**
      * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
-     * for each node (or each gizmo of each node) in the line of sight and return that as an unsorted {@link Pick}-array
-     * @internal
+     * for each pickable object in the line of sight and returns that as an unsorted {@link Pick}-array.
+     * The function to render the objects into the pick buffer must be provided by the caller.
+     * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object. 
+     * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
      */
-    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _pick: (_nodes: Node[], _cmpCamera: ComponentCamera, _size: number) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
-      const size: number = Math.ceil(Math.sqrt(_nodes.length));
+    public static pickFrom<T>(_from: T[], _cmpCamera: ComponentCamera, _pick: (_from: T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
+      const size: number = Math.ceil(Math.sqrt(_from.length));
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       // adjust pick buffer size
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick);
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null); // could use RBGA32F in the future e.g. WebGPU
+
+      // buffer size into pick shaders
+      ShaderPick.useProgram();
+      crc3.uniform2fv(ShaderPick.uniforms["u_vctSize"], [size, size]);
+      ShaderPickTextured.useProgram();
+      crc3.uniform2fv(ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
       
-      // render picks, either nodes or gizmos
+      // render picks into pick buffer
       RenderWebGL.setBlendMode(BLEND.OPAQUE);
-      let picks: Pick[] = _pick(_nodes, _cmpCamera, size);
+      let picks: Pick[] = _pick(_from, _cmpCamera);
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
 
-      // get picks
+      // get/filter picks
       // evaluate texture by reading pixels and extract, convert and store the information about each mesh hit
       let data: Int32Array = new Int32Array(size * size * 4);
       Render.crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
@@ -434,7 +442,7 @@ namespace FudgeCore {
      * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,  
      * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
      */
-    protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera, _size: number): Pick[] {
+    protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[] {
       let picks: Pick[] = [];
 
       for (const node of _nodes) {
@@ -449,9 +457,6 @@ namespace FudgeCore {
         shader.useProgram();
         coat.useRenderData(shader, cmpMaterial);
         let mtxMeshToView: Matrix4x4 = RenderWebGL.calcMeshToView(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
-
-        let sizeUniformLocation: WebGLUniformLocation = shader.uniforms["u_vctSize"];
-        RenderWebGL.crc3.uniform2fv(sizeUniformLocation, [_size, _size]);
 
         let mesh: Mesh = cmpMesh.mesh;
         let renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, node.mtxWorld, mtxMeshToView, picks.length);
