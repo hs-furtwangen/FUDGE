@@ -121,7 +121,7 @@ namespace FudgeCore {
         Render.draw(this.camera);
 
         if (this.gizmosEnabled)
-          Gizmos.draw(this);
+          Gizmos.draw(this.#branch, this.camera, this.gizmosFilter, this.gizmosSelected);
       }
 
       if (this.physicsDebugMode != PHYSICS_DEBUGMODE.NONE) {
@@ -163,7 +163,7 @@ namespace FudgeCore {
       if (this.#branch.getParent())
         mtxRoot = this.#branch.getParent().mtxWorld;
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      Render.prepare(this.#branch, { }, mtxRoot);
+      Render.prepare(this.#branch, {}, mtxRoot);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
     }

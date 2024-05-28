@@ -371,7 +371,7 @@ namespace FudgeCore {
     //#region Picking
     /**
      * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
-     * for each pickable object in the line of sight and returns that as an unsorted {@link Pick}-array.
+     * for each pickable object in the line of sight and returns that as an unsorted array of {@link Pick}s.
      * The function to render the objects into the pick buffer must be provided by the caller.
      * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object. 
      * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
