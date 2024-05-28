@@ -40,31 +40,13 @@ namespace FudgeCore {
       let scaling: Vector3 = Recycler.get(Vector3);
 
       if (this.fixedSize) {
-        let scale: number;
-        let rect: Rectangle = Render.getRenderRectangle();
-        switch (_cmpCamera.getDirection()) {
-          case FIELD_OF_VIEW.VERTICAL:
-            scale = 1 / rect.height * window.devicePixelRatio;
-            break;
-          case FIELD_OF_VIEW.HORIZONTAL:
-            scale = 1 / rect.width * window.devicePixelRatio;
-            break;
-          case FIELD_OF_VIEW.DIAGONAL:
-            scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
-            break;
-        }
-
-        let distance: number = _cmpCamera.mtxWorld.translation.getDistance(_mtxMeshToWorld.translation);
-        scale = scale * distance;
-        scaling.set(this.texture.width * scale, this.texture.height * scale, 1);
-        this.mtxWorld.scaling = scaling;
-        Recycler.store(distance);
+        let scale: number = _cmpCamera.getWorldToPixelScale(_mtxMeshToWorld.translation);
+        this.mtxWorld.scaling = scaling.set(this.texture.width * scale, this.texture.height * scale, 1);;
       } else {
         let pixelsToUnits: number = 1 / this.texture.height;
         scaling.set(this.texture.width * pixelsToUnits, this.texture.height * pixelsToUnits, 1);
         this.mtxWorld.scale(scaling);
       }
-
 
       Recycler.store(scaling);
       return this.mtxWorld;
