@@ -754,7 +754,7 @@ namespace FudgeCore {
      * The pitch may be restricted to the up-vector to only calculate yaw.
      */
     public lookAt(_target: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
-      _up = _up ? Vector3.NORMALIZATION(_up) : Vector3.NORMALIZATION(this.up);
+      _up = _up ? Vector3.NORMALIZATION(_up) : this.up;
 
       const mtxResult: Matrix4x4 = Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict);
       mtxResult.scale(this.scaling);
@@ -765,9 +765,9 @@ namespace FudgeCore {
 
     /**
      * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
-     * Up should be perpendicular to the given direction. If no up-vector is provided, (0, 1, 0) is used.
+     * Up should be perpendicular to the given direction. If no up-vector is provided, {@link up} is used.
      */
-    public lookIn(_direction: Vector3, _up: Vector3 = Vector3.Y()): Matrix4x4 {
+    public lookIn(_direction: Vector3, _up: Vector3 = this.up): Matrix4x4 {
       const mtxResult: Matrix4x4 = Matrix4x4.LOOK_IN(this.translation, _direction, _up);
       mtxResult.scale(this.scaling);
       this.set(mtxResult.data);

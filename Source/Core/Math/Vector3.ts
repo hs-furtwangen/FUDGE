@@ -120,7 +120,7 @@ namespace FudgeCore {
      * Returns the resulting vector attained by addition of all given vectors.
      */
     public static SUM(..._vectors: Vector3[]): Vector3 {
-      let result: Vector3 = Recycler.reuse(Vector3);
+      let result: Vector3 = Recycler.get(Vector3);
       for (let vector of _vectors)
         result.set(result.x + vector.x, result.y + vector.y, result.z + vector.z);
       return result;
@@ -343,6 +343,12 @@ namespace FudgeCore {
       this.y = -this.y;
       this.z = -this.z;
       return this;
+    }
+
+    public project(_to: Vector3): Vector3 {
+      let normal: Vector3 = _to.clone.normalize();
+      let scalar: number = Vector3.DOT(this, normal);
+      return this.copy(normal.scale(scalar));
     }
 
     /**
