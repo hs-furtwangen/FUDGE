@@ -446,6 +446,9 @@ namespace FudgeCore {
 
       let components: Serialization = {};
       for (let type in this.components) {
+        if (this.components[type].length == 0)
+          continue;
+
         components[type] = [];
         for (let component of this.components[type]) {
           // components[type].push(component.serialize());
