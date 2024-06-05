@@ -39,8 +39,15 @@ namespace FudgeCore {
       return Gizmos.cube;
     }
 
+    private static get pyramid(): MeshPyramid {
+      let pyramid: MeshPyramid = new MeshPyramid("GizmoPyramid");
+      Project.deregister(pyramid);
+      Reflect.defineProperty(Gizmos, "pyramid", { value: pyramid });
+      return Gizmos.sphere;
+    }
+
     private static get sphere(): MeshSphere {
-      let sphere: MeshSphere = new MeshSphere("GizmoSphere", 6, 6);
+      let sphere: MeshSphere = new MeshSphere("GizmoSphere");
       Project.deregister(sphere);
       Reflect.defineProperty(Gizmos, "sphere", { value: sphere });
       return Gizmos.sphere;
@@ -375,6 +382,34 @@ namespace FudgeCore {
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
 
       Recycler.storeMultiple(mtxWorld, color, back, up);
+    }
+
+    /**
+     * Draws an arrow at the given world position, facing in the given direction with the given length and width. 
+     * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
+     */
+    public static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null = MeshPyramid, _alphaOccluded: number = Gizmos.alphaOccluded): void {
+      const scaling: Vector3 = Recycler.reuse(Vector3).set(_width, _width, _length - _size);
+      const mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(_position);
+      mtxWorld.scaling = scaling;
+      mtxWorld.lookIn(_direction, _up);
+      mtxWorld.translateZ(0.5);
+      Gizmos.drawCube(mtxWorld, _color, _alphaOccluded);
+      mtxWorld.translateZ(0.5);
+
+      if (_head == MeshPyramid) {
+        const widthHead: number = _size / 2;
+        mtxWorld.scaling = scaling.set(widthHead, widthHead, _size);
+        mtxWorld.rotateX(90); // rotate the pyramid so it points in the right direction
+      } else {
+        mtxWorld.scaling = scaling.set(_size, _size, _size);
+        mtxWorld.translateZ(0.5); // translate cube/sphere so it sits on top of the arrow
+      }
+
+      Gizmos.drawMesh(_head == MeshPyramid ? Gizmos.pyramid : _head == MeshCube ? Gizmos.cube : Gizmos.sphere, mtxWorld, _color, _alphaOccluded);
+
+      // TODO: cleanup
+      Recycler.storeMultiple(mtxWorld, scaling);
     }
 
     private static bufferPositions(_shader: ShaderInterface, _buffer: WebGLBuffer): void {
