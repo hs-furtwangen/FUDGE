@@ -147,7 +147,7 @@ namespace FudgeCore {
         _translation.z,
         1
       ]);
-      Recycler.storeMultiple(zAxis, xAxis, yAxis, vctCross);
+      Recycler.storeMultiple(zAxis, xAxis, vctCross); // don't store yAxis, it might be _up
       return mtxResult;
     }
 
@@ -477,6 +477,10 @@ namespace FudgeCore {
           Math.hypot(this.data[4], this.data[5], this.data[6]), //* (this.data[5] < 0 ? -1 : 1),
           Math.hypot(this.data[8], this.data[9], this.data[10]) // * (this.data[10] < 0 ? -1 : 1)
         );
+
+        if (this.determinant < 0) // ⚠️EXPERMINETAL from three js: if determinant is negative, invert one scale
+          this.#scaling.x = -this.#scaling.x;
+
         this.#scalingDirty = false;
       }
       return this.#scaling;
@@ -500,6 +504,28 @@ namespace FudgeCore {
     }
     public set quaternion(_quaternion: Quaternion) {
       this.mutate({ "rotation": _quaternion });
+    }
+
+    /**
+     * Returns the determinant of this matrix. Computational heavy operation, not cached so use with care.
+     */
+    public get determinant(): number {
+      const m: Float32Array = this.data;
+
+      const det00: number = m[10] * m[15] - m[11] * m[14];
+      const det01: number = m[9] * m[15] - m[11] * m[13];
+      const det02: number = m[9] * m[14] - m[10] * m[13];
+      const det03: number = m[8] * m[15] - m[11] * m[12];
+      const det04: number = m[8] * m[14] - m[10] * m[12];
+      const det05: number = m[8] * m[13] - m[9] * m[12];
+
+      const det: number =
+        m[0] * (m[5] * det00 - m[6] * det01 + m[7] * det02) -
+        m[1] * (m[4] * det00 - m[6] * det03 + m[7] * det04) +
+        m[2] * (m[4] * det01 - m[5] * det03 + m[7] * det05) -
+        m[3] * (m[4] * det02 - m[5] * det04 + m[6] * det05);
+
+      return det;
     }
 
     /**
@@ -817,11 +843,10 @@ namespace FudgeCore {
     /**
      * Adds a scaling by the given {@link Vector3} to this matrix.
      */
-    public scale(_by: Vector3): Matrix4x4 {
+    public scale(_by: Vector3, _fromLeft: boolean = false): Matrix4x4 {
       const mtxScaling: Matrix4x4 = Matrix4x4.SCALING(_by);
-      const mtxResult: Matrix4x4 = Matrix4x4.PRODUCT(this, mtxScaling);
-      this.set(mtxResult.data);
-      Recycler.storeMultiple(mtxScaling, mtxResult);
+      this.multiply(mtxScaling, _fromLeft);
+      Recycler.store(mtxScaling);
       return this;
     }
 

@@ -203,7 +203,7 @@ namespace FudgeCore {
      * Return the angle in degrees between the two given vectors
      */
     public static ANGLE(_from: Vector3, _to: Vector3): number {
-      let angle: number = Math.acos(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude));
+      let angle: number = Math.acos(Calc.clamp(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude), -1, 1)); // clamp because of floating point errors when from == to
       return angle * Calc.rad2deg;
     }
     //#endregion
@@ -343,12 +343,6 @@ namespace FudgeCore {
       this.y = -this.y;
       this.z = -this.z;
       return this;
-    }
-
-    public project(_to: Vector3): Vector3 {
-      let normal: Vector3 = _to.clone.normalize();
-      let scalar: number = Vector3.DOT(this, normal);
-      return this.copy(normal.scale(scalar));
     }
 
     /**
