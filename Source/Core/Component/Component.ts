@@ -81,12 +81,12 @@ namespace FudgeCore {
     /**
      * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
      */
-    public drawGizmos?(): void;
+    public drawGizmos?(_cmpCamera?: ComponentCamera): void;
 
     /**
      * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
      */
-    public drawGizmosSelected?(): void;
+    public drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
 
     //#region Transfer
     public serialize(): Serialization {

@@ -16,14 +16,7 @@ namespace FudgeCore {
     private static pickId: number;
     private static readonly posIcons: Set<string> = new Set(); // cache the positions of icons to avoid drawing them within each other
 
-    static #camera: ComponentCamera; // TODO: maybe rather pass the camera into the drawGizmos methods on components?
-
-    /**
-     * The camera which is currently used to draw gizmos.
-     */
-    public static get camera(): ComponentCamera {
-      return Gizmos.#camera;
-    }
+    static #camera: ComponentCamera;
 
     private static get quad(): MeshQuad {
       let quad: MeshQuad = new MeshQuad("GizmoQuad");
@@ -145,9 +138,9 @@ namespace FudgeCore {
 
       const sorted: Component[] = gizmos.sort((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
       for (const gizmo of sorted) {
-        gizmo.drawGizmos?.();
+        gizmo.drawGizmos?.(_cmpCamera);
         if (_selected?.includes(gizmo.node))
-          gizmo.drawGizmosSelected?.();
+          gizmo.drawGizmosSelected?.(_cmpCamera);
       }
     }
 
@@ -173,7 +166,7 @@ namespace FudgeCore {
 
         for (let gizmo of _gizmos) {
           Gizmos.pickId = picks.length;
-          gizmo.drawGizmos();
+          gizmo.drawGizmos(_cmpCamera);
           let pick: Pick = new Pick(gizmo.node);
           pick.gizmo = gizmo;
           picks.push(pick);
@@ -433,27 +426,22 @@ namespace FudgeCore {
 
     private static drawGizmos(_shader: ShaderInterface, _draw: Function, _count: number, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      Gizmos.bufferColor(_shader, _color);
+      _draw(_count);
+
+      if (_alphaOccluded <= 0)
+        return;
+
       let color: Color = _color.clone;
-      Gizmos.bufferColor(_shader, color);
-
-      // stencil stuff is for semi-transparent gizmos to have correct self occlusion
-      // first draw the gizmo opaque with depth test and set drawn pixels to 1 in stencil buffer
-      crc3.clear(WebGL2RenderingContext.STENCIL_BUFFER_BIT);
-      crc3.stencilFunc(WebGL2RenderingContext.ALWAYS, 1, 0xFF);
-      crc3.stencilOp(WebGL2RenderingContext.KEEP, WebGL2RenderingContext.KEEP, WebGL2RenderingContext.REPLACE);
-      crc3.enable(WebGL2RenderingContext.STENCIL_TEST);
-      _draw(_count);
-
-      // then draw the gizmo again with reduced alpha and without depth test where stencil buffer is 0
       color.a *= _alphaOccluded;
-      Gizmos.bufferColor(_shader, color);
 
-      crc3.stencilFunc(WebGL2RenderingContext.EQUAL, 0, 0xFF);
-      crc3.stencilOp(WebGL2RenderingContext.KEEP, WebGL2RenderingContext.KEEP, WebGL2RenderingContext.KEEP);
-      Render.setDepthTest(false);
+      // draw occluded parts where the depth test failed (by inverting the depth test + no depth write)
+      crc3.depthFunc(WebGL2RenderingContext.GEQUAL);
+      crc3.depthMask(false);
+      Gizmos.bufferColor(_shader, color);
       _draw(_count);
-      Render.setDepthTest(true);
-      crc3.disable(WebGL2RenderingContext.STENCIL_TEST);
+      crc3.depthMask(true);
+      crc3.depthFunc(WebGL2RenderingContext.LESS);
 
       Recycler.store(color);
     }
