@@ -15,6 +15,10 @@ namespace FudgeCore {
     OPAQUE, TRANSPARENT, ADDITIVE, SUBTRACTIVE, MODULATE
   }
 
+  export enum DEPTH_FUNCTION {
+    NEVER, LESS, EQUAL, LESS_EQUAL, GREATER, NOT_EQUAL, GREATER_EQUAL, ALWAYS
+  }
+
   // we want type inference here so we can use vs code to search for references
   export const UNIFORM_BLOCKS = { // eslint-disable-line
     LIGHTS: {
@@ -79,6 +83,7 @@ namespace FudgeCore {
 
     private static fboPick: WebGLBuffer;
     private static texPick: WebGLTexture;
+    private static texDepthPick: WebGLTexture;
 
     private static uboFog: WebGLBuffer; // stores the fog parameters
 
@@ -172,9 +177,16 @@ namespace FudgeCore {
     /**
      * Clear the offscreen renderbuffer with the given {@link Color}
      */
-    public static clear(_color?: Color): void {
+    public static clear(_color?: Color, _colors: boolean = true, _depth: boolean = true, _stencil: boolean = true): void {
       RenderWebGL.crc3.clearColor(_color?.r ?? 0, _color?.g ?? 0, _color?.b ?? 0, _color?.a ?? 1);
-      RenderWebGL.crc3.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT | WebGL2RenderingContext.STENCIL_BUFFER_BIT);
+      let mask: number = 0;
+      if (_colors)
+        mask |= WebGL2RenderingContext.COLOR_BUFFER_BIT;
+      if (_depth)
+        mask |= WebGL2RenderingContext.DEPTH_BUFFER_BIT;
+      if (_stencil)
+        mask |= WebGL2RenderingContext.STENCIL_BUFFER_BIT;
+      RenderWebGL.crc3.clear(mask);
     }
 
     /**
@@ -210,6 +222,13 @@ namespace FudgeCore {
     }
 
     /**
+     * Set the comparison operation used to test fragment depths against current depth buffer values.
+     */
+    public static setDepthFunction(_function: DEPTH_FUNCTION = DEPTH_FUNCTION.LESS): void {
+      RenderWebGL.crc3.depthFunc(_function + WebGL2RenderingContext.NEVER);
+    }
+
+    /**
      * Enable / Disable WebGLs scissor test.
      */
     public static setScissorTest(_test: boolean, _x?: number, _y?: number, _width?: number, _height?: number): void {
@@ -218,6 +237,13 @@ namespace FudgeCore {
       else
         RenderWebGL.crc3.disable(WebGL2RenderingContext.SCISSOR_TEST);
       RenderWebGL.crc3.scissor(_x, _y, _width, _height);
+    }
+
+    /**
+     * Set which color components to enable or to disable when rendering to a color buffer.
+     */
+    public static setColorWriteMask(_r: boolean, _g: boolean, _b: boolean, _a: boolean): void {
+      RenderWebGL.crc3.colorMask(_r, _g, _b, _a);
     }
 
     /**
@@ -293,6 +319,7 @@ namespace FudgeCore {
       RenderWebGL.texDepthStencil = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texNoise = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+      RenderWebGL.texDepthPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
       RenderWebGL.texBloomSamples = new Array(6);
       for (let i: number = 0; i < RenderWebGL.texBloomSamples.length; i++)
@@ -306,6 +333,7 @@ namespace FudgeCore {
 
       RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
       RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
+      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick, 0);
 
       RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 
@@ -384,13 +412,16 @@ namespace FudgeCore {
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick);
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null); // could use RBGA32F in the future e.g. WebGPU
+      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
+      crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
 
       // buffer size into pick shaders
       ShaderPick.useProgram();
       crc3.uniform2fv(ShaderPick.uniforms["u_vctSize"], [size, size]);
       ShaderPickTextured.useProgram();
       crc3.uniform2fv(ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
-      
+
       // render picks into pick buffer
       RenderWebGL.setBlendMode(BLEND.OPAQUE);
       let picks: Pick[] = _pick(_from, _cmpCamera);
