@@ -121,7 +121,7 @@ namespace FudgeCore {
         Render.draw(this.camera);
 
         if (this.gizmosEnabled)
-          Gizmos.draw(this.#branch, this.camera, this.gizmosFilter, this.gizmosSelected);
+          Gizmos.draw(this.getGizmos(), this.camera, this.gizmosSelected);
       }
 
       if (this.physicsDebugMode != PHYSICS_DEBUGMODE.NONE) {
@@ -189,7 +189,7 @@ namespace FudgeCore {
 
 
       if (cameraPicks.length) {
-        let picks: Pick[] = Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient), this.gizmosEnabled, this.gizmosFilter);
+        let picks: Pick[] = Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient));
         for (let pick of picks) {
           Reflect.set(_event, "pick", pick);
           pick.node.dispatchEvent(_event);
@@ -368,5 +368,14 @@ namespace FudgeCore {
       return screen;
     }
     // #endregion
+
+    /**
+     * Returns all the gizmos in the branch of this viewport that are active, filtered by {@link gizmosFilter}
+     */ 
+    public getGizmos(_nodes: Node[] = Array.from(this.#branch.getIterator(true))): Gizmo[] {
+      return _nodes
+        .flatMap(_node => _node.getAllComponents())
+        .filter(_component => _component.isActive && _component.drawGizmos && this.gizmosFilter[_component.type]);
+    }
   }
 }

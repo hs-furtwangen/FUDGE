@@ -1,6 +1,22 @@
 namespace FudgeCore {
 
   /**
+   * The interface to render visual aids in the editor. Implemented by {@link Component}s. Can be used on its own to draw and pick visual aids independent of a scene graph.
+   */
+  export interface Gizmo {
+    node?: Node;
+    /**
+     * Implement this to draw visual aids inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
+     */
+    drawGizmos?(_cmpCamera?: ComponentCamera): void;
+
+    /**
+     * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
+     */
+    drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
+  }
+
+  /**
    * The gizmos drawing interface. {@link Component}s can use this to draw visual aids inside {@link Component.drawGizmos} and {@link Component.drawGizmosSelected}.
    */
   export abstract class Gizmos {
@@ -123,21 +139,22 @@ namespace FudgeCore {
     }
 
     /**
-     * Draws the scene's gizmos from the point of view of the given viewports camera.
-     * @internal
+     * Draws the given gizmos from the point of view of the given camera.
      */
-    public static draw(_branch: Node, _cmpCamera: ComponentCamera, _filter?: Viewport["gizmosFilter"], _selected?: Node[]): void {
+    public static draw(_gizmos: Gizmo[], _cmpCamera: ComponentCamera, _selected?: Node[]): void {
+      for (const gizmo of _gizmos)
+        if (gizmo.node)
+          Reflect.set(gizmo.node, "zCamera", _cmpCamera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
+
+      _gizmos = _gizmos.sort((_a, _b) =>
+        (_b.node ? Reflect.get(_b.node, "zCamera") : 2) -
+        (_a.node ? Reflect.get(_a.node, "zCamera") : 2)
+      );
+
       Gizmos.#camera = _cmpCamera;
       Gizmos.posIcons.clear();
 
-      let gizmos: Component[] = [];
-      Gizmos.collectGizmos(_branch, gizmos, _filter);
-
-      for (const gizmo of gizmos)
-        Reflect.set(gizmo.node, "zCamera", _cmpCamera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
-
-      const sorted: Component[] = gizmos.sort((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
-      for (const gizmo of sorted) {
+      for (const gizmo of _gizmos) {
         gizmo.drawGizmos?.(_cmpCamera);
         if (_selected?.includes(gizmo.node))
           gizmo.drawGizmosSelected?.(_cmpCamera);
@@ -145,17 +162,12 @@ namespace FudgeCore {
     }
 
     /**
-     * Picks all gizmos of all nodes in the line of sight and returns an unsorted array of {@link Pick}s each associated with the node and gizmo the pick ray hit.
-     * @internal
+     * Picks all gizmos in the line of sight and returns an unsorted array of {@link Pick}s each associated with the gizmo the pick ray hit.
      */
-    public static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera, _gizmosFilter: Viewport["gizmosFilter"]): Pick[] {
-      let gizmos: Component[] = _nodes
-        .flatMap(_node => _node.getAllComponents())
-        .filter(_gizmo => _gizmo.drawGizmos && _gizmo.isActive && _gizmosFilter[_gizmo.type]);
-      let picks: Pick[] = RenderWebGL.pickFrom(gizmos, _cmpCamera, pick);
-      return picks;
+    public static pick(_gizmos: Gizmos[], _cmpCamera: ComponentCamera): Pick[] {
+      return RenderWebGL.pickFrom(_gizmos, _cmpCamera, pick);
 
-      function pick(_gizmos: Component[], _cmpCamera: ComponentCamera): Pick[] {
+      function pick(_gizmos: Gizmo[], _cmpCamera: ComponentCamera): Pick[] {
         const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
         crc3.uniformMatrix3fv(ShaderPickTextured.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().get()); // only needed for textured pick shader, but gizmos have no pivot
 
@@ -163,7 +175,6 @@ namespace FudgeCore {
         Gizmos.posIcons.clear();
 
         let picks: Pick[] = [];
-
         for (let gizmo of _gizmos) {
           Gizmos.pickId = picks.length;
           gizmo.drawGizmos(_cmpCamera);
@@ -456,14 +467,6 @@ namespace FudgeCore {
 
     private static drawArrays(_count: number): void {
       RenderWebGL.getRenderingContext().drawArrays(WebGL2RenderingContext.LINES, 0, _count);
-    }
-
-    private static collectGizmos(_node: Node, _gizmos: Component[], _filter?: Viewport["gizmosFilter"]): void {
-      for (const child of _node.getChildren())
-        Gizmos.collectGizmos(child, _gizmos, _filter);
-      for (const component of _node.getAllComponents())
-        if (component.isActive && _filter?.[component.type] || !_filter)
-          _gizmos.push(component);
     }
   }
 }

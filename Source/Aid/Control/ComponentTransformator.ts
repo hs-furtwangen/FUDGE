@@ -1,14 +1,16 @@
 namespace FudgeAid {
   import ƒ = FudgeCore;
 
-  export class ComponentTransformator extends ƒ.Component {
+  export class ComponentTransformator {
     public viewport: ƒ.Viewport;
 
     public mode: "translate" | "rotate" | "scale" = "translate";
     public selected: "x" | "y" | "z";
 
     public mtxLocal: ƒ.Matrix4x4;
+
     public mtxWorld: ƒ.Matrix4x4;
+    public mtxParent: ƒ.Matrix4x4;
 
     private readonly origin: ƒ.Vector3 = ƒ.Vector3.ZERO();
     private offset: ƒ.Vector3;
@@ -56,10 +58,7 @@ namespace FudgeAid {
     private quad: ƒ.MeshQuad;
 
     public constructor(_viewport: ƒ.Viewport) {
-      super();
       this.viewport = _viewport;
-      this.addEventListener(ƒ.EVENT.COMPONENT_ADD, this.addListeners);
-      this.addEventListener(ƒ.EVENT.COMPONENT_REMOVE, this.removeListeners);
       this.addListeners();
       this.torus = new ƒ.MeshTorus("Torus", 0.5 - 0.0005, 0.005, 60, 8);
       this.torusPick = new ƒ.MeshTorus("TorusPick", 0.5 - 0.003, 0.03, 60, 8);
@@ -74,6 +73,9 @@ namespace FudgeAid {
     }
 
     public drawGizmos(_cmpCamera: ƒ.ComponentCamera): void {
+      if (!this.mtxLocal)
+        return;
+
       let scale: number = _cmpCamera.getWorldToPixelScale(this.mtxWorld.translation);
       let widthArrow: number = scale * (this.isPicking ? 10 : 1); // 10 or 1 pixel wide;
       let lengthArrow: number;
@@ -105,29 +107,32 @@ namespace FudgeAid {
           break;
         case "rotate":
           let radius: number = scale * 80; // 80 pixels radius
+          sizeHead = scale * 12;
 
           if (this.isTransforming) {
             this.drawCircle(this.colors[this.selected], this.axes[this.selected], this.normals[this.selected], radius, 1);
             ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colors.origin, this.offset, this.axes[this.selected], radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
             // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.move, this.axes[this.selected], this.move.magnitude, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
             ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colors[this.selected], this.direction, this.axes[this.selected], radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
-          } else {
-            let mtx: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.mtxWorld.translation);
-            let direction: ƒ.Vector3 = _cmpCamera.mtxWorld.forward.negate();
-            mtx.scaling = ƒ.Vector3.ONE(radius * 2);
-            mtx.lookIn(direction);
-
-            // draw an invisible quad to occlude the tori
-            ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.ALWAYS);
-            ƒ.Render.setColorWriteMask(false, false, false, false);
-            ƒ.Gizmos.drawMesh(this.quad, mtx, this.colors.x); // color doesn't matter
-            ƒ.Render.setColorWriteMask(true, true, true, true);
-            ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.LESS);
-
-            this.drawCircle(clrX, this.axes.x, this.normals.x, radius, 0);
-            this.drawCircle(clrY, this.axes.y, this.normals.y, radius, 0);
-            this.drawCircle(clrZ, this.axes.z, this.normals.z, radius, 0);
+            break;
           }
+
+          let mtx: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.mtxWorld.translation);
+          let direction: ƒ.Vector3 = _cmpCamera.mtxWorld.forward.negate();
+          mtx.scaling = ƒ.Vector3.ONE(radius * 2);
+          mtx.lookIn(direction);
+
+          // draw an invisible quad to occlude the tori
+          ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.ALWAYS);
+          ƒ.Render.setColorWriteMask(false, false, false, false);
+          ƒ.Gizmos.drawMesh(this.quad, mtx, this.colors.x); // color doesn't matter
+          ƒ.Render.setColorWriteMask(true, true, true, true);
+          ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.LESS);
+
+          this.drawCircle(clrX, this.axes.x, this.normals.x, radius, 0);
+          this.drawCircle(clrY, this.axes.y, this.normals.y, radius, 0);
+          this.drawCircle(clrZ, this.axes.z, this.normals.z, radius, 0);
+
           break;
         case "scale":
           lengthArrow = scale * (this.isPicking ? 84 : 74);
@@ -138,18 +143,18 @@ namespace FudgeAid {
 
             ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colors[this.selected], this.axes[this.selected], this.normals[this.selected], lengthArrow * this.scale, widthArrow, sizeHead, ƒ.MeshCube, 1);
             ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colors.origin, this.axes[this.selected], this.normals[this.selected], lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
-          } else {
-            ƒ.Gizmos.drawArrow(this.mtxWorld.translation, clrX, this.axes.x, this.normals.x, lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
-            ƒ.Gizmos.drawArrow(this.mtxWorld.translation, clrY, this.axes.y, this.normals.y, lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
-            ƒ.Gizmos.drawArrow(this.mtxWorld.translation, clrZ, this.axes.z, this.normals.z, lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+            break;
           }
 
+          ƒ.Gizmos.drawArrow(this.mtxWorld.translation, clrX, this.axes.x, this.normals.x, lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+          ƒ.Gizmos.drawArrow(this.mtxWorld.translation, clrY, this.axes.y, this.normals.y, lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+          ƒ.Gizmos.drawArrow(this.mtxWorld.translation, clrZ, this.axes.z, this.normals.z, lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
           break;
       }
     }
 
     private hndPointerDown = (_event: PointerEvent): void => {
-      if (!this.camera || !this.viewport || !this.node || !this.selected)
+      if (!this.camera || !this.viewport || !this.selected)
         return;
 
       if (this.mode == "rotate")
@@ -177,7 +182,7 @@ namespace FudgeAid {
       if (_event.buttons != 1) {
         let point: ƒ.Vector2 = new ƒ.Vector2(_event.offsetX, _event.offsetY);
         this.isPicking = true;
-        let pick: ƒ.Pick = ƒ.Picker.pickCamera([this.node], this.camera, this.viewport.pointClientToProjection(point), true, this.viewport.gizmosFilter)[0];
+        let pick: ƒ.Pick = ƒ.Picker.pickCamera([this], this.camera, this.viewport.pointClientToProjection(point))[0];
         this.isPicking = false;
 
         if (pick?.color.r > 0.7)
@@ -197,7 +202,6 @@ namespace FudgeAid {
 
       if (this.selected) {
         let point: ƒ.Vector3 = this.getPoint3D(_event);
-        let parent: ƒ.Node = this.node.getParent();
         this.isTransforming = true;
         this.viewport.canvas.style.cursor = "grabbing";
 
@@ -215,8 +219,8 @@ namespace FudgeAid {
             if (this.selected != "z")
               point.z = this.mtxWorld.translation.z;
 
-            if (parent)
-              point.transform(parent.mtxWorldInverse);
+            if (this.mtxParent)
+              point.transform(this.mtxParent);
 
             this.mtxLocal.translation = point;
             break;
@@ -232,10 +236,8 @@ namespace FudgeAid {
             let rotation: ƒ.Quaternion = this.rotation.clone;
             rotation.rotate(this.axes[this.selected], angle, true);
 
-            if (parent) {
-              let invserse: ƒ.Quaternion = parent.mtxWorld.quaternion.clone.invert();
-              rotation.multiply(invserse, true);
-            }
+            if (this.mtxParent) 
+              rotation.multiply(this.mtxParent.quaternion, true);
 
             this.mtxLocal.rotation = rotation;
             break;
@@ -247,8 +249,8 @@ namespace FudgeAid {
             scaling[this.selected] = this.scale;
             mtxScaling.scale(scaling, true);
 
-            if (parent)
-              mtxScaling.multiply(parent.mtxWorldInverse, true);
+            if (this.mtxParent)
+              mtxScaling.multiply(this.mtxParent, true);
 
             this.mtxLocal.scaling = mtxScaling.scaling;
 

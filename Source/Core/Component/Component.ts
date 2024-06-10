@@ -6,7 +6,7 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019  
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
    */
-  export abstract class Component extends Mutable implements Serializable {
+  export abstract class Component extends Mutable implements Serializable, Gizmo {
     /** subclasses get a iSubclass number for identification */
     public static readonly iSubclass: number;
     /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
