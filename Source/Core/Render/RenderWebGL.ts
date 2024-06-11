@@ -63,9 +63,6 @@ namespace FudgeCore {
    * Methods and attributes of this class should not be called directly, only through {@link Render}
    */
   export abstract class RenderWebGL extends EventTargetStatic {
-    public static uboLights: WebGLBuffer;
-    public static uboLightsVariableOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
-
     protected static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
 
     private static rectRender: Rectangle = RenderWebGL.getCanvasRect();
@@ -85,7 +82,9 @@ namespace FudgeCore {
     private static texPick: WebGLTexture;
     private static texDepthPick: WebGLTexture;
 
-    private static uboFog: WebGLBuffer; // stores the fog parameters
+    private static uboLights: WebGLBuffer;
+    private static uboLightsOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
+    private static uboFog: WebGLBuffer;
 
     /**
      * Initializes offscreen-canvas, renderingcontext and hardware viewport. Call once before creating any resources like meshes or shaders
@@ -119,7 +118,8 @@ namespace FudgeCore {
       RenderWebGL.initializeAttachments();
       RenderWebGL.adjustAttachments();
 
-      RenderWebGL.uboFog = RenderWebGL.assert(crc3.createBuffer());
+      RenderWebGL.initializeLights();
+      RenderWebGL.initializeFog();
 
       return crc3;
     }
@@ -500,6 +500,11 @@ namespace FudgeCore {
     }
     //#endregion
 
+    protected static initializeFog(): void {
+      RenderWebGL.uboFog = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
+      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.FOG.BINDING, RenderWebGL.uboFog);
+    }
+
     /**
      * Buffer the fog parameters into the fog ubo
      */
@@ -517,10 +522,31 @@ namespace FudgeCore {
 
       // buffer data to bound buffer
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboFog);
-      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.STATIC_DRAW);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
 
-      // bind buffer to binding point
-      crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.FOG.BINDING, RenderWebGL.uboFog);
+    protected static initializeLights(): void {
+      const MAX_LIGHTS_DIRECTIONAL: number = 15; // must match the define in the shader
+      const MAX_LIGHTS_POINT: number = 100;
+      const MAX_LIGHTS_SPOT: number = 100;
+      const BYTES_PER_LIGHT: number = Float32Array.BYTES_PER_ELEMENT * (4 + 16 + 16); // vctColor + mtxShape + mtxShapeInverse as float32s in shader
+
+      RenderWebGL.uboLightsOffsets = {};
+      RenderWebGL.uboLightsOffsets["u_nLightsDirectional"] = Uint32Array.BYTES_PER_ELEMENT * 0;
+      RenderWebGL.uboLightsOffsets["u_nLightsPoint"] = Uint32Array.BYTES_PER_ELEMENT * 1;
+      RenderWebGL.uboLightsOffsets["u_nLightsSpot"] = Uint32Array.BYTES_PER_ELEMENT * 2;
+      RenderWebGL.uboLightsOffsets["u_ambient"] = Uint32Array.BYTES_PER_ELEMENT * 4;
+      RenderWebGL.uboLightsOffsets["u_directional"] = RenderWebGL.uboLightsOffsets["u_ambient"] + BYTES_PER_LIGHT * 1;
+      RenderWebGL.uboLightsOffsets["u_point"] = RenderWebGL.uboLightsOffsets["u_directional"] + BYTES_PER_LIGHT * MAX_LIGHTS_DIRECTIONAL;
+      RenderWebGL.uboLightsOffsets["u_spot"] = RenderWebGL.uboLightsOffsets["u_point"] + BYTES_PER_LIGHT * MAX_LIGHTS_POINT;
+
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      RenderWebGL.uboLights = RenderWebGL.assert(crc3.createBuffer());
+      const blockSize: number = RenderWebGL.uboLightsOffsets["u_spot"] + BYTES_PER_LIGHT * MAX_LIGHTS_SPOT;
+
+      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
+      crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.LIGHTS.BINDING, RenderWebGL.uboLights);
     }
 
     /**
@@ -541,7 +567,7 @@ namespace FudgeCore {
 
         RenderWebGL.crc3.bufferSubData(
           RenderWebGL.crc3.UNIFORM_BUFFER,
-          RenderWebGL.uboLightsVariableOffsets["u_ambient.vctColor"], // byte offset of the struct Light "u_ambient" inside the ubo
+          RenderWebGL.uboLightsOffsets["u_ambient"], // byte offset of the struct Light "u_ambient" inside the ubo
           new Float32Array(clrSum.get())
         );
       }
@@ -557,7 +583,7 @@ namespace FudgeCore {
 
         RenderWebGL.crc3.bufferSubData(
           RenderWebGL.crc3.UNIFORM_BUFFER,
-          RenderWebGL.uboLightsVariableOffsets[_uniName], // byte offset of the uint "u_nLightsDirectional" inside the ubo
+          RenderWebGL.uboLightsOffsets[_uniName], // byte offset of the uint "u_nLightsDirectional" inside the ubo
           new Uint8Array([cmpLights?.length ?? 0])
         );
 
@@ -597,7 +623,7 @@ namespace FudgeCore {
 
         RenderWebGL.crc3.bufferSubData(
           RenderWebGL.crc3.UNIFORM_BUFFER,
-          RenderWebGL.uboLightsVariableOffsets[`${_uniStruct}[0].vctColor`], // byte offset of the struct Light array inside the ubo
+          RenderWebGL.uboLightsOffsets[_uniStruct], // byte offset of the struct Light array inside the ubo
           lightsData
         );
       }
