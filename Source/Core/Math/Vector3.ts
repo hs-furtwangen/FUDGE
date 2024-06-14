@@ -346,6 +346,17 @@ namespace FudgeCore {
     }
 
     /**
+     * Projects this vector onto the given vector
+     */
+    public project(_on: Vector3): Vector3 {
+      let scalar: number = Vector3.DOT(this, _on) / _on.magnitudeSquared;
+      this.x = _on.x * scalar;
+      this.y = _on.y * scalar;
+      this.z = _on.z * scalar;
+      return this;
+    }
+
+    /**
      * Sets the components of this vector and returns it.
      */
     public set(_x: number = 0, _y: number = 0, _z: number = 0): Vector3 {

@@ -737,7 +737,7 @@ namespace FudgeCore {
      * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
      * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
      */
-    public rotate(_by: Vector3, _fromLeft: boolean = false): Matrix4x4 {
+    public rotate(_by: Vector3 | Quaternion, _fromLeft: boolean = false): Matrix4x4 {
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION(_by);
       this.multiply(mtxRotation, _fromLeft);
       Recycler.store(mtxRotation);

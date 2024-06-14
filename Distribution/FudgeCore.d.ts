@@ -654,7 +654,7 @@ declare namespace FudgeCore {
      * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019
      * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
-    abstract class Component extends Mutable implements Serializable {
+    abstract class Component extends Mutable implements Serializable, Gizmo {
         #private;
         /** subclasses get a iSubclass number for identification */
         static readonly iSubclass: number;
@@ -686,11 +686,11 @@ declare namespace FudgeCore {
         /**
          * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
          */
-        drawGizmos?(): void;
+        drawGizmos?(_cmpCamera?: ComponentCamera): void;
         /**
          * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
          */
-        drawGizmosSelected?(): void;
+        drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
@@ -1090,6 +1090,16 @@ declare namespace FudgeCore {
         SUBTRACTIVE = 3,
         MODULATE = 4
     }
+    enum DEPTH_FUNCTION {
+        NEVER = 0,
+        LESS = 1,
+        EQUAL = 2,
+        LESS_EQUAL = 3,
+        GREATER = 4,
+        NOT_EQUAL = 5,
+        GREATER_EQUAL = 6,
+        ALWAYS = 7
+    }
     const UNIFORM_BLOCKS: {
         LIGHTS: {
             NAME: string;
@@ -1131,10 +1141,6 @@ declare namespace FudgeCore {
      * Methods and attributes of this class should not be called directly, only through {@link Render}
      */
     abstract class RenderWebGL extends EventTargetStatic {
-        static uboLights: WebGLBuffer;
-        static uboLightsVariableOffsets: {
-            [_name: string]: number;
-        };
         protected static crc3: WebGL2RenderingContext;
         private static rectRender;
         private static fboMain;
@@ -1148,6 +1154,9 @@ declare namespace FudgeCore {
         private static texBloomSamples;
         private static fboPick;
         private static texPick;
+        private static texDepthPick;
+        private static uboLights;
+        private static uboLightsOffsets;
         private static uboFog;
         /**
          * Initializes offscreen-canvas, renderingcontext and hardware viewport. Call once before creating any resources like meshes or shaders
@@ -1183,7 +1192,7 @@ declare namespace FudgeCore {
         /**
          * Clear the offscreen renderbuffer with the given {@link Color}
          */
-        static clear(_color?: Color): void;
+        static clear(_color?: Color, _colors?: boolean, _depth?: boolean, _stencil?: boolean): void;
         /**
          * Set the final framebuffer to render to. If null, the canvas default framebuffer is used.
          * Used by XR to render to the XRWebGLLayer framebuffer.
@@ -1202,9 +1211,17 @@ declare namespace FudgeCore {
          */
         static setDepthTest(_test: boolean): void;
         /**
+         * Set the comparison operation used to test fragment depths against current depth buffer values.
+         */
+        static setDepthFunction(_function?: DEPTH_FUNCTION): void;
+        /**
          * Enable / Disable WebGLs scissor test.
          */
         static setScissorTest(_test: boolean, _x?: number, _y?: number, _width?: number, _height?: number): void;
+        /**
+         * Set which color components to enable or to disable when rendering to a color buffer.
+         */
+        static setColorWriteMask(_r: boolean, _g: boolean, _b: boolean, _a: boolean): void;
         /**
          * Set WebGLs viewport.
          */
@@ -1229,7 +1246,7 @@ declare namespace FudgeCore {
         static adjustAttachments(): void;
         /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
-         * for each pickable object in the line of sight and returns that as an unsorted {@link Pick}-array.
+         * for each pickable object in the line of sight and returns that as an unsorted array of {@link Pick}s.
          * The function to render the objects into the pick buffer must be provided by the caller.
          * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object.
          * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
@@ -1241,10 +1258,12 @@ declare namespace FudgeCore {
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
         protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
+        protected static initializeFog(): void;
         /**
          * Buffer the fog parameters into the fog ubo
          */
         protected static bufferFog(_cmpFog: ComponentFog): void;
+        protected static initializeLights(): void;
         /**
          * Buffer the data from the lights in the scenegraph into the lights ubo
          */
@@ -2383,6 +2402,13 @@ declare namespace FudgeCore {
          * Transforms the given point from clip space to world space
          */
         pointClipToWorld(_pointInClipSpace: Vector3): Vector3;
+        /**
+         * Returns a scaling factor that, given a position in world space,
+         * scales an object at that position so that one unit equals one (logical) pixel on the screen
+         * when seen through this camera.
+         * e.g., after setting the scaling, 1 unit in the world equals one (logical) pixel on the screen.
+         */
+        getWorldToPixelScale(_posWorld: Vector3): number;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
@@ -3991,6 +4017,10 @@ declare namespace FudgeCore {
         get quaternion(): Quaternion;
         set quaternion(_quaternion: Quaternion);
         /**
+         * Returns the determinant of this matrix. Computational heavy operation, not cached so use with care.
+         */
+        get determinant(): number;
+        /**
          * Returns the normalized cardinal x-axis.
          */
         get right(): Vector3;
@@ -4044,7 +4074,7 @@ declare namespace FudgeCore {
          * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
          * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
          */
-        rotate(_by: Vector3, _fromLeft?: boolean): Matrix4x4;
+        rotate(_by: Vector3 | Quaternion, _fromLeft?: boolean): Matrix4x4;
         /**
          * Adds a rotation around the x-axis to this matrix.
          */
@@ -4065,7 +4095,7 @@ declare namespace FudgeCore {
         lookAt(_target: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
         /**
          * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
-         * Up should be perpendicular to the given direction. If no up-vector is provided, (0, 1, 0) is used.
+         * Up should be perpendicular to the given direction. If no up-vector is provided, {@link up} is used.
          */
         lookIn(_direction: Vector3, _up?: Vector3): Matrix4x4;
         /**
@@ -4074,7 +4104,7 @@ declare namespace FudgeCore {
         /**
          * Adds a scaling by the given {@link Vector3} to this matrix.
          */
-        scale(_by: Vector3): Matrix4x4;
+        scale(_by: Vector3, _fromLeft?: boolean): Matrix4x4;
         /**
          * Adds a scaling along the x-axis to this matrix.
          */
@@ -4254,6 +4284,11 @@ declare namespace FudgeCore {
         static ROTATION(_eulerAngles: Vector3): Quaternion;
         /**
          * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
+         * Axis must be normalized. Angle is in degrees.
+         */
+        static ROTATION(_axis: Vector3, _angle: number): Quaternion;
+        /**
+         * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
          * ⚠️ UNTESTED!
          */
         /**
@@ -4311,6 +4346,11 @@ declare namespace FudgeCore {
          * Conjugates this quaternion and returns it.
          */
         conjugate(): Quaternion;
+        /**
+         * Rotates this quaternion around the given axis by the given angle.
+         * The rotation is appended to already applied rotations, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
+         */
+        rotate(_axis: Vector3, _angle: number, _fromLeft?: boolean): Quaternion;
         /**
          * Multiply this quaternion with the given quaternion
          */
@@ -4551,6 +4591,10 @@ declare namespace FudgeCore {
          * Negates this vector by flipping the signs of its components
          */
         negate(): Vector3;
+        /**
+         * Projects this vector onto the given vector
+         */
+        project(_on: Vector3): Vector3;
         /**
          * Sets the components of this vector and returns it.
          */
@@ -5066,19 +5110,20 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Generate a Torus with a given thickness and the number of major- and minor segments
+     * Generate a torus with a given ring radius, tube radius and the number of major- and minor segments
      * @authors Simon Storl-Schulke, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2020
      */
     class MeshTorus extends MeshRotation {
         static readonly iSubclass: number;
-        private size;
         private latitudes;
-        constructor(_name?: string, _size?: number, _longitudes?: number, _latitudes?: number);
+        private radiusRing;
+        private radiusTube;
+        constructor(_name?: string, _radiusRing?: number, _radiusTube?: number, _longitudes?: number, _latitudes?: number);
         private static getShape;
         /**
          * Create this torus from the given parameters
          */
-        create(_size?: number, _longitudes?: number, _latitudes?: number): void;
+        create(_radiusRing?: number, _radiusTube?: number, _longitudes?: number, _latitudes?: number): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
@@ -6296,7 +6341,7 @@ declare namespace FudgeCore {
         zBuffer: number;
         color: Color;
         textureUV: Vector2;
-        gizmo?: Component;
+        gizmo?: Gizmo;
         constructor(_node: Node);
         /**
          * Accessor to calculate and store world position of intersection of {@link Ray} and {@link Mesh} only when used.
@@ -6326,12 +6371,14 @@ declare namespace FudgeCore {
          * Takes a ray plus min and max values for the near and far planes to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number, _pickGizmos?: boolean, _gizmosFilter?: Viewport["gizmosFilter"]): Pick[];
+        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number): Pick[];
+        static pickRay(_gizmos: Gizmo[], _ray: Ray, _min: number, _max: number): Pick[];
         /**
          * Takes a camera and a point on its virtual normed projection plane (distance 1) to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2, _pickGizmos?: boolean, _gizmosFilter?: Viewport["gizmosFilter"]): Pick[];
+        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
+        static pickCamera(_nodes: Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
         /**
          * Takes the camera of the given viewport and a point the client surface to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
@@ -6378,6 +6425,20 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * The interface to render visual aids in the editor. Implemented by {@link Component}s. Can be used on its own to draw and pick visual aids independent of a scene graph.
+     */
+    interface Gizmo {
+        node?: Node;
+        /**
+         * Implement this to draw visual aids inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
+         */
+        drawGizmos?(_cmpCamera?: ComponentCamera): void;
+        /**
+         * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
+         */
+        drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
+    }
+    /**
      * The gizmos drawing interface. {@link Component}s can use this to draw visual aids inside {@link Component.drawGizmos} and {@link Component.drawGizmosSelected}.
      */
     abstract class Gizmos {
@@ -6391,12 +6452,9 @@ declare namespace FudgeCore {
         private static readonly indexBuffer;
         private static pickId;
         private static readonly posIcons;
-        /**
-         * The camera which is currently used to draw gizmos.
-         */
-        static get camera(): ComponentCamera;
         private static get quad();
         private static get cube();
+        private static get pyramid();
         private static get sphere();
         private static get wireCircle();
         private static get wireSphere();
@@ -6406,6 +6464,14 @@ declare namespace FudgeCore {
          * Are we currently rendering for picking?
          */
         private static get picking();
+        /**
+         * Draws the given gizmos from the point of view of the given camera.
+         */
+        static draw(_gizmos: Gizmo[], _cmpCamera: ComponentCamera, _selected?: Node[]): void;
+        /**
+         * Picks all gizmos in the line of sight and returns an unsorted array of {@link Pick}s each associated with the gizmo the pick ray hit.
+         */
+        static pick(_gizmos: Gizmos[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws a camera frustum for the given parameters. The frustum is oriented along the z-axis, with the tip of the truncated pyramid at the origin.
          */
@@ -6444,6 +6510,14 @@ declare namespace FudgeCore {
          */
         static drawSphere(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
         /**
+         * Draws a solid quad.
+         */
+        static drawQuad(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
+        /**
+         * Draws a solid pyramid.
+         */
+        static drawPyramid(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
+        /**
          * Draws a solid mesh.
          */
         static drawMesh(_mesh: Mesh, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
@@ -6451,6 +6525,11 @@ declare namespace FudgeCore {
          * Draws an icon from a {@link Texture} on a {@link MeshQuad}. The icon is affected by the given transform and color.
          */
         static drawIcon(_texture: Texture, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
+        /**
+         * Draws an arrow at the given world position, facing in the given direction with the given length and width.
+         * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
+         */
+        static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head?: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null, _alphaOccluded?: number): void;
         private static bufferPositions;
         private static bufferColor;
         private static bufferMatrix;
@@ -6458,7 +6537,6 @@ declare namespace FudgeCore {
         private static drawElementsTrianlges;
         private static drawElementsLines;
         private static drawArrays;
-        private static collectGizmos;
     }
 }
 declare namespace FudgeCore {
@@ -6490,7 +6568,7 @@ declare namespace FudgeCore {
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
          * for each node in the line of sight and return that as an unsorted {@link Pick}-array
          */
-        static pickBranch(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
+        static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws the scene from the point of view of the given camera
          */
@@ -6670,6 +6748,10 @@ declare namespace FudgeCore {
          * Returns a point in the browser page matching the given point of the viewport
          */
         pointClientToScreen(_client: Vector2): Vector2;
+        /**
+         * Returns all the gizmos in the branch of this viewport that are active, filtered by {@link gizmosFilter}
+         */
+        getGizmos(_nodes?: Node[]): Gizmo[];
     }
 }
 declare namespace FudgeCore {
