@@ -339,6 +339,20 @@ namespace FudgeCore {
     }
 
     /**
+     * Draws a solid quad.
+     */
+    public static drawQuad(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
+      Gizmos.drawMesh(Gizmos.quad, _mtxWorld, _color, _alphaOccluded);
+    }
+
+    /**
+     * Draws a solid pyramid.
+     */
+    public static drawPyramid(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
+      Gizmos.drawMesh(Gizmos.pyramid, _mtxWorld, _color, _alphaOccluded);
+    }
+
+    /**
      * Draws a solid mesh.
      */
     public static drawMesh(_mesh: Mesh, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {

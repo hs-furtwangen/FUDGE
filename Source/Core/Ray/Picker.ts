@@ -55,7 +55,7 @@ namespace FudgeCore {
       let nodes: Node[] = Array.from(_viewport.getBranch().getIterator(true));
       let picks: Pick[] = Picker.pickCamera(nodes, _viewport.camera, posProjection);
       if (_viewport.gizmosEnabled) 
-        picks = picks.concat(Picker.pickCamera(_viewport.getGizmos(nodes), _viewport.camera, posProjection));
+        picks = picks.concat(Picker.pickCamera(_viewport.getGizmos(nodes), _viewport.camera, posProjection)); // this is kind of wasteful because we do the same calculations twice
       
       return picks;
     }
