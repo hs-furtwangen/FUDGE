@@ -40,6 +40,7 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
+      this.dom.addEventListener(ƒUi.EVENT.KEY_DOWN, this.hndKey);
       this.dom.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener("pointermove", this.hndPointer);
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
@@ -50,6 +51,9 @@ namespace Fudge {
           if (gizmo in this.gizmosFilter)
             this.gizmosFilter[gizmo] = gizmosFilter[gizmo];
       }
+
+      if (_state["renderContinuously"])
+        this.setRenderContinously(_state["renderContinuously"]);
     }
 
     private get gizmosFilter(): ƒ.Viewport["gizmosFilter"] {
@@ -61,19 +65,18 @@ namespace Fudge {
       const menu: Electron.Menu = new remote.Menu();
       let item: Electron.MenuItem;
 
-      item = new remote.MenuItem({ label: "Translate", id: TRANSFORM.TRANSLATE, click: _callback, accelerator: process.platform == "darwin" ? "T" : "T" });
-      menu.append(item);
-      item = new remote.MenuItem({ label: "Rotate", id: TRANSFORM.ROTATE, click: _callback, accelerator: process.platform == "darwin" ? "R" : "R" });
-      menu.append(item);
-      item = new remote.MenuItem({ label: "Scale", id: TRANSFORM.SCALE, click: _callback, accelerator: process.platform == "darwin" ? "E" : "E" });
-      menu.append(item);
       item = new remote.MenuItem({
-        label: "Space", submenu: [
-          { "label": "World", id: String(TRANSFORM.WORLD), type: "radio", click: _callback },
-          { "label": "Local", id: String(TRANSFORM.LOCAL), type: "radio", click: _callback }
+        label: "Transform", submenu: [
+          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: process.platform == "darwin" ? "T" : "T" },
+          { label: "Rotate", id: TRANSFORM.ROTATE, type: "radio", click: _callback, accelerator: process.platform == "darwin" ? "R" : "R" },
+          { label: "Scale", id: TRANSFORM.SCALE, type: "radio", click: _callback, accelerator: process.platform == "darwin" ? "E" : "E" },
+          { type: "separator" },
+          { label: "World", id: TRANSFORM.WORLD, type: "radio", click: _callback, accelerator: "G" },
+          { label: "Local", id: TRANSFORM.LOCAL, type: "radio", click: _callback, accelerator: "H" }
         ]
       });
       menu.append(item);
+
       item = new remote.MenuItem({
         label: "Physics Debug", submenu: [
           { "label": "None", id: String(ƒ.PHYSICS_DEBUGMODE[0]), click: _callback },
@@ -177,6 +180,7 @@ namespace Fudge {
     protected getState(): ViewState {
       let state: ViewState = super.getState();
       state["gizmosFilter"] = this.gizmosFilter;
+      state["renderContinuously"] = this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked;
       return state;
     }
 
@@ -236,6 +240,7 @@ namespace Fudge {
       this.viewport.camera = this.cmrOrbit.cmpCamera;
       this.transformator.mtxLocal = null;
       this.transformator.mtxWorld = null;
+      this.transformator.clearUndo();
       ƒ.Render.prepare(this.graph);
     }
 
@@ -298,6 +303,31 @@ namespace Fudge {
       this.redraw();
     };
 
+    private hndKey = (_event: KeyboardEvent): void => {
+      switch (_event.code) {
+        case ƒ.KEYBOARD_CODE.T:
+          this.contextMenu.getMenuItemById(TRANSFORM.TRANSLATE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.R:
+          this.contextMenu.getMenuItemById(TRANSFORM.ROTATE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.E:
+          this.contextMenu.getMenuItemById(TRANSFORM.SCALE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.G:
+          this.contextMenu.getMenuItemById(TRANSFORM.WORLD).click();
+          break;
+        case ƒ.KEYBOARD_CODE.H:
+          this.contextMenu.getMenuItemById(TRANSFORM.LOCAL).click();
+          break;
+        case ƒ.KEYBOARD_CODE.Y:
+          if (_event.ctrlKey) {
+            this.transformator.undo();
+            break;
+          }
+      }
+    };
+
     private hndPick = (_event: EditorEvent): void => {
       if (this.transformator.selected)
         return;
@@ -320,7 +350,10 @@ namespace Fudge {
 
       this.dom.focus({ preventScroll: true });
       let restriction: string;
-      if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.X]))
+
+      if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.CTRL_LEFT, ƒ.KEYBOARD_CODE.CTRL_RIGHT]))
+        restriction = null;
+      else if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.X]))
         restriction = "x";
       else if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.Y]))
         restriction = "z";

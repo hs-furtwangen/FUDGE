@@ -777,6 +777,7 @@ declare namespace Fudge {
         private setCameraOrthographic;
         private hndPrepare;
         private hndEvent;
+        private hndKey;
         private hndPick;
         private hndPointer;
         private activeViewport;
