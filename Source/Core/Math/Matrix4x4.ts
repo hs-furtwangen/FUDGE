@@ -941,6 +941,7 @@ namespace FudgeCore {
      */
     public copy(_original: Matrix4x4): Matrix4x4 {
       this.data.set(_original.data);
+      this.mutator = null;
       this.#translationDirty = _original.#translationDirty;
       this.#rotationDirty = _original.#rotationDirty;
       this.#scalingDirty = _original.#scalingDirty;
