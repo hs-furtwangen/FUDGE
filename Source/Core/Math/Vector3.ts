@@ -206,6 +206,13 @@ namespace FudgeCore {
       let angle: number = Math.acos(Calc.clamp(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude), -1, 1)); // clamp because of floating point errors when from == to
       return angle * Calc.rad2deg;
     }
+
+    /**
+     * Return the projection of a onto b
+     */
+    public static PROJECTION(_a: Vector3, _b: Vector3): Vector3 {
+      return _a.clone.project(_b);
+    }
     //#endregion
 
     //#region Accessors

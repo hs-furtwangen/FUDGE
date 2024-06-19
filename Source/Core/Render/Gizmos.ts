@@ -426,7 +426,6 @@ namespace FudgeCore {
 
       Gizmos.drawMesh(_head == MeshPyramid ? Gizmos.pyramid : _head == MeshCube ? Gizmos.cube : Gizmos.sphere, mtxWorld, _color, _alphaOccluded);
 
-      // TODO: cleanup
       Recycler.storeMultiple(mtxWorld, scaling);
     }
 

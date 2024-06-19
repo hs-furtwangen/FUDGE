@@ -4536,6 +4536,10 @@ declare namespace FudgeCore {
          */
         static ANGLE(_from: Vector3, _to: Vector3): number;
         /**
+         * Return the projection of a onto b
+         */
+        static PROJECTION(_a: Vector3, _b: Vector3): Vector3;
+        /**
          * Returns the length of the vector
          */
         get magnitude(): number;

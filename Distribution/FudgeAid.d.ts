@@ -278,8 +278,36 @@ declare namespace FudgeAid {
 }
 declare namespace FudgeAid {
     import ƒ = FudgeCore;
+    /**
+     * Allows to translate, rotate and scale matrices visually by dragging with a pointer.
+     * Installs pointer event listeners on the given {@link ƒ.Viewport}s canvas on construction.
+     * Use {@link addListeners}/{@link removeListeners} to handle the installation manually.
+     */
+    class Transformator {
+        #private;
+        readonly viewport: ƒ.Viewport;
+        mode: "translate" | "rotate" | "scale";
+        space: "local" | "world";
+        selected: "x" | "y" | "z";
+        constructor(_viewport: ƒ.Viewport);
+        set mtxLocal(_mtx: ƒ.Matrix4x4);
+        set mtxWorld(_mtx: ƒ.Matrix4x4);
+        private get camera();
+        addListeners: () => void;
+        removeListeners: () => void;
+        drawGizmos(_cmpCamera: ƒ.ComponentCamera): void;
+        private hndPointerDown;
+        private hndPointerMove;
+        private hndPointerUp;
+        private hndRenderEnd;
+        private drawCircle;
+        private getPoint3D;
+    }
+}
+declare namespace FudgeAid {
+    import ƒ = FudgeCore;
     class Viewport {
         static create(_branch: ƒ.Node): ƒ.Viewport;
-        static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus?: boolean, _speedCameraRotation?: number, _speedCameraTranslation?: number, _speedCameraDistance?: number): CameraOrbit;
+        static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus?: boolean, _speedCameraRotation?: number, _speedCameraTranslation?: number, _speedCameraDistance?: number, _redraw?: () => void, _translateOnPick?: () => boolean): CameraOrbit;
     }
 }
