@@ -13,6 +13,8 @@ namespace FudgeAid {
     public space: "local" | "world" = "world";
     public selected: "x" | "y" | "z";
 
+    #undo: (() => void)[] = []; // stack of functions to undo the last transformation
+
     #mtxLocal: ƒ.Matrix4x4; // local matrix of the object to be transformed
     #mtxWorld: ƒ.Matrix4x4; // world matrix of the object to be transformed
 
@@ -80,6 +82,9 @@ namespace FudgeAid {
       return this.viewport.camera;
     }
 
+    /**
+     * Add pointer event listeners to the viewport canvas
+     */
     public addListeners = (): void => {
       this.viewport.canvas.addEventListener("pointerdown", this.hndPointerDown);
       this.viewport.canvas.addEventListener("pointermove", this.hndPointerMove);
@@ -89,6 +94,9 @@ namespace FudgeAid {
       this.viewport.addEventListener(ƒ.EVENT.RENDER_END, this.hndRenderEnd);
     };
 
+    /**
+     * Remove pointer event listeners from the viewport canvas
+     */
     public removeListeners = (): void => {
       this.viewport.canvas.removeEventListener("pointerdown", this.hndPointerDown);
       this.viewport.canvas.removeEventListener("pointermove", this.hndPointerMove);
@@ -97,6 +105,23 @@ namespace FudgeAid {
       this.viewport.canvas.removeEventListener("pointercancel", this.hndPointerUp);
       this.viewport.removeEventListener(ƒ.EVENT.RENDER_END, this.hndRenderEnd);
     };
+
+    /**
+     * Undo the last transformation
+     */
+    public undo(): void {
+      if (this.#isTransforming)
+        return;
+
+      this.#undo.pop()?.();
+    }
+
+    /**
+     * Clear the undo stack
+     */
+    public clearUndo(): void {
+      this.#undo.length = 0;
+    }
 
     public drawGizmos(_cmpCamera: ƒ.ComponentCamera): void {
       if (!this.#mtxLocal || !this.#mtxWorld)
@@ -199,6 +224,21 @@ namespace FudgeAid {
       this.#offset.copy(point.subtract(this.#mtxWorld.translation));
 
       ƒ.Recycler.storeMultiple(mtxNormal, point);
+
+      // create undo function
+      const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocal;
+      const mutatorLocal: ƒ.Mutator = mtxLocal.getMutator();
+      const mtxWorld: ƒ.Matrix4x4 = this.#mtxWorld;
+      const mutatorWorld: ƒ.Mutator = mtxWorld.getMutator();
+      let undo: () => void = () => {
+        mtxLocal.mutate(mutatorLocal);
+        mtxWorld.mutate(mutatorWorld);
+        if (this.#mtxLocal == mtxLocal)
+          this.#mtxLocalBase.copy(mtxLocal);
+        if (this.#mtxWorld == mtxWorld)
+          this.#mtxWorldBase.copy(mtxWorld);
+      };
+      this.#undo.push(undo);
     };
 
     private hndPointerMove = (_event: PointerEvent): void => {
@@ -293,7 +333,7 @@ namespace FudgeAid {
 
     };
 
-    private hndPointerUp = (_event: PointerEvent): void => {
+    private hndPointerUp = (): void => {
       if (this.#mtxLocal)
         this.#mtxLocalBase.copy(this.#mtxLocal);
       if (this.#mtxWorld)

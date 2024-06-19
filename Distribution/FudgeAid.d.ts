@@ -293,8 +293,22 @@ declare namespace FudgeAid {
         set mtxLocal(_mtx: ƒ.Matrix4x4);
         set mtxWorld(_mtx: ƒ.Matrix4x4);
         private get camera();
+        /**
+         * Add pointer event listeners to the viewport canvas
+         */
         addListeners: () => void;
+        /**
+         * Remove pointer event listeners from the viewport canvas
+         */
         removeListeners: () => void;
+        /**
+         * Undo the last transformation
+         */
+        undo(): void;
+        /**
+         * Clear the undo stack
+         */
+        clearUndo(): void;
         drawGizmos(_cmpCamera: ƒ.ComponentCamera): void;
         private hndPointerDown;
         private hndPointerMove;
