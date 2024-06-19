@@ -15,6 +15,9 @@ namespace Fudge {
     private node: ƒ.Node;
     private nodeLight: ƒ.Node = new ƒ.Node("Illumination"); // keeps light components for dark graphs
     private redrawId: number;
+
+    private transformator: ƒAid.Transformator;
+
     #pointerMoved: boolean = false;
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
@@ -65,6 +68,13 @@ namespace Fudge {
       item = new remote.MenuItem({ label: "Scale", id: TRANSFORM.SCALE, click: _callback, accelerator: process.platform == "darwin" ? "E" : "E" });
       menu.append(item);
       item = new remote.MenuItem({
+        label: "Space", submenu: [
+          { "label": "World", id: String(TRANSFORM.WORLD), type: "radio", click: _callback },
+          { "label": "Local", id: String(TRANSFORM.LOCAL), type: "radio", click: _callback }
+        ]
+      });
+      menu.append(item);
+      item = new remote.MenuItem({
         label: "Physics Debug", submenu: [
           { "label": "None", id: String(ƒ.PHYSICS_DEBUGMODE[0]), click: _callback },
           { "label": "Colliders", id: String(ƒ.PHYSICS_DEBUGMODE[1]), click: _callback },
@@ -93,6 +103,13 @@ namespace Fudge {
         case TRANSFORM.ROTATE:
         case TRANSFORM.SCALE:
           Page.setTransform(_item.id);
+          this.transformator.mode = _item.id;
+          this.redraw();
+
+          break;
+        case TRANSFORM.WORLD:
+        case TRANSFORM.LOCAL:
+          this.transformator.space = _item.id;
           break;
         case ƒ.PHYSICS_DEBUGMODE[ƒ.PHYSICS_DEBUGMODE.NONE]:
         case ƒ.PHYSICS_DEBUGMODE[ƒ.PHYSICS_DEBUGMODE.COLLIDERS]:
@@ -175,17 +192,17 @@ namespace Fudge {
       this.viewport = new ƒ.Viewport();
       this.viewport.gizmosEnabled = true;
       // add default values for view render gizmos
-      this.gizmosFilter[GIZMOS.TRANSFORM] = true;
-      this.viewport.initialize("ViewNode_Viewport", this.graph, cmpCamera, this.canvas);
-      try {
-        this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false);
-      } catch (_error: unknown) { /* view should load even if rendering fails... */ };
+      this.viewport.initialize("ViewNode_Viewport", null, cmpCamera, this.canvas);
+      const redraw = (): void => { if (this.redrawId == undefined && this.graph) this.redraw(); };
+      const translateOnPick = (): boolean => this.transformator.selected == null;
+
+      this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false, undefined, undefined, undefined, redraw, translateOnPick);
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.addEventListener(ƒ.EVENT.RENDER_PREPARE_START, this.hndPrepare);
-      this.viewport.addEventListener(ƒ.EVENT.RENDER_END, this.drawTranslation);
 
       this.setGraph(null);
 
+      this.transformator = new ƒAid.Transformator(this.viewport);
       this.canvas.addEventListener("pointerdown", this.activeViewport);
       this.canvas.addEventListener("pick", this.hndPick);
 
@@ -210,7 +227,6 @@ namespace Fudge {
       }
 
       this.graph = _node;
-
       ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
       ƒ.Physics.cleanup();
       this.graph.broadcastEvent(new Event(ƒ.EVENT.DISCONNECT_JOINT));
@@ -218,6 +234,8 @@ namespace Fudge {
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.setBranch(this.graph);
       this.viewport.camera = this.cmrOrbit.cmpCamera;
+      this.transformator.mtxLocal = null;
+      this.transformator.mtxWorld = null;
       ƒ.Render.prepare(this.graph);
     }
 
@@ -259,6 +277,9 @@ namespace Fudge {
           }
           if (detail.node) {
             this.node = detail.node;
+            this.transformator.mtxLocal = this.node.mtxLocal;
+            this.transformator.mtxWorld = this.node.mtxWorld;
+
             this.viewport.gizmosSelected = [this.node];
           }
           break;
@@ -268,7 +289,6 @@ namespace Fudge {
           break;
         case EVENT_EDITOR.CLOSE:
           this.setRenderContinously(false);
-          this.viewport.removeEventListener(ƒ.EVENT.RENDER_END, this.drawTranslation);
           this.viewport.gizmosSelected = null;
           break;
         case EVENT_EDITOR.UPDATE:
@@ -279,10 +299,13 @@ namespace Fudge {
     };
 
     private hndPick = (_event: EditorEvent): void => {
-      let picked: ƒ.Node = _event.detail.node;
+      if (this.transformator.selected)
+        return;
+
+      let pick: ƒ.Pick = <ƒ.Pick>_event.detail;
 
       //TODO: watch out, two selects
-      this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: picked } });
+      this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: pick.node } });
       // this.dom.dispatchEvent(new CustomEvent(ƒUi.EVENT.SELECT, { bubbles: true, detail: { data: picked } }));
     };
 
@@ -330,6 +353,7 @@ namespace Fudge {
         this.viewport.draw();
       } catch (_error: unknown) {
         this.setRenderContinously(false);
+        ƒ.Debug.error(_error);
         // console.error(_error);
         //nop
       }
@@ -346,26 +370,5 @@ namespace Fudge {
       }
       this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked = _on;
     }
-
-    private drawTranslation = (): void => {
-      if (!this.node || !this.gizmosFilter[GIZMOS.TRANSFORM])
-        return;
-
-      const scaling: ƒ.Vector3 = ƒ.Vector3.ONE(ƒ.Vector3.DIFFERENCE(ƒ.Gizmos.camera.mtxWorld.translation, this.node.mtxWorld.translation).magnitude * 0.1);
-      const origin: ƒ.Vector3 = ƒ.Vector3.ZERO();
-      const vctX: ƒ.Vector3 = ƒ.Vector3.X(1);
-      const vctY: ƒ.Vector3 = ƒ.Vector3.Y(1);
-      const vctZ: ƒ.Vector3 = ƒ.Vector3.Z(1);
-      let mtxWorld: ƒ.Matrix4x4 = this.node.mtxWorld.clone;
-      mtxWorld.scaling = scaling;
-      let color: ƒ.Color = ƒ.Color.CSS("red");
-      ƒ.Gizmos.drawLines([origin, vctX], mtxWorld, color);
-      color.setCSS("lime");
-      ƒ.Gizmos.drawLines([origin, vctY], mtxWorld, color);
-      color.setCSS("blue");
-      ƒ.Gizmos.drawLines([origin, vctZ], mtxWorld, color);
-
-      ƒ.Recycler.storeMultiple(vctX, vctY, vctZ, origin, mtxWorld, color, scaling);
-    };
   }
 }

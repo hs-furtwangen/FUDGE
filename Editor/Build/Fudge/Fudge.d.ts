@@ -82,10 +82,9 @@ declare namespace Fudge {
     enum TRANSFORM {
         TRANSLATE = "translate",
         ROTATE = "rotate",
-        SCALE = "scale"
-    }
-    enum GIZMOS {
-        TRANSFORM = "Transform"
+        SCALE = "scale",
+        WORLD = "world",
+        LOCAL = "local"
     }
 }
 declare namespace Fudge {
@@ -764,6 +763,7 @@ declare namespace Fudge {
         private node;
         private nodeLight;
         private redrawId;
+        private transformator;
         constructor(_container: ComponentContainer, _state: ViewState);
         private get gizmosFilter();
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
@@ -782,7 +782,6 @@ declare namespace Fudge {
         private activeViewport;
         private redraw;
         private setRenderContinously;
-        private drawTranslation;
     }
 }
 declare namespace Fudge {

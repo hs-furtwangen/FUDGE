@@ -76,10 +76,8 @@ namespace Fudge {
   export enum TRANSFORM {
     TRANSLATE = "translate",
     ROTATE = "rotate",
-    SCALE = "scale"
-  }
-
-  export enum GIZMOS {
-    TRANSFORM = "Transform"
+    SCALE = "scale",
+    WORLD = "world",
+    LOCAL = "local"
   }
 }
