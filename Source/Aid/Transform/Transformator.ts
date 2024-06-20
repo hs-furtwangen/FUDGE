@@ -13,6 +13,10 @@ namespace FudgeAid {
     public space: "local" | "world" = "world";
     public selected: "x" | "y" | "z";
 
+    public snapAngle: number = 15; // 15 degree
+    public snapDistance: number = 0.1; // 0.1 units
+    public snapScale: number = 0.1; // 10%
+
     #undo: (() => void)[] = []; // stack of functions to undo the last transformation
 
     #mtxLocal: ƒ.Matrix4x4; // local matrix of the object to be transformed
@@ -269,6 +273,8 @@ namespace FudgeAid {
       if (!this.camera || !this.viewport || !this.selected || !this.#mtxLocal || !this.#mtxWorld)
         return;
 
+      const isSnapping: boolean = ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.CTRL_LEFT, ƒ.KEYBOARD_CODE.CTRL_RIGHT]);
+
       this.#isTransforming = true;
       this.viewport.canvas.style.cursor = "grabbing";
 
@@ -282,7 +288,12 @@ namespace FudgeAid {
           const mtxWorldInvserse: ƒ.Matrix4x4 = this.#mtxWorldBase.clone.invert();
           const translation: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#direction, axis);
           const translationOffset: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#offset, axis);
+
           translation.subtract(translationOffset);
+
+          if (isSnapping)
+            translation.apply((_value: number) => ƒ.Calc.snap(_value, this.snapDistance));
+
           translation.transform(mtxWorldInvserse, false);
 
           this.#mtxLocal.translate(translation);
@@ -292,12 +303,15 @@ namespace FudgeAid {
         case "rotate":
           const rotationInverse: ƒ.Quaternion = this.#mtxWorldBase.quaternion.clone.invert();
 
-          // rotate vectors into local space
+          // rotate vectors into local space, this seems to be the most reliable way
           const offsetLocal: ƒ.Vector3 = this.#offset.clone.transform(rotationInverse);
           const directionLocal: ƒ.Vector3 = this.#direction.clone.transform(rotationInverse);
-          const axisLocal: ƒ.Vector3 = axis.transform(rotationInverse);
+          const axisLocal: ƒ.Vector3 = axis.clone.transform(rotationInverse);
 
           let angle: number = ƒ.Vector3.ANGLE(offsetLocal, directionLocal);
+
+          if (isSnapping)
+            angle = ƒ.Calc.snap(angle, this.snapAngle);
 
           // Determine the direction of rotation
           const cross: ƒ.Vector3 = ƒ.Vector3.CROSS(offsetLocal, directionLocal);
@@ -306,12 +320,24 @@ namespace FudgeAid {
 
           const rotation: ƒ.Quaternion = ƒ.Quaternion.ROTATION(axisLocal, angle);
 
-          this.#mtxLocal.rotate(rotation);
+          if (isSnapping) {
+            const directionSnapped: ƒ.Vector3 = offsetLocal
+              .transform(rotation) // rotate offset into snapped direction
+              .transform(this.#mtxWorldBase.quaternion); // rotate snapped direction back into world space
+            this.#direction.copy(directionSnapped);
+          }
+
+          this.#mtxLocal.quaternion = this.#mtxLocal.quaternion.multiply(rotation); // only affect rotation, ignore scaling
 
           ƒ.Recycler.storeMultiple(rotationInverse, offsetLocal, directionLocal, axisLocal, cross, rotation);
           break;
         case "scale":
-          this.#scaleFactor = Math.sign(ƒ.Vector3.DOT(axis, this.#direction)) * this.#direction.magnitude / this.#offset.magnitude;
+          this.#scaleFactor = 
+            Math.sign(ƒ.Vector3.DOT(axis, this.#direction)) * 
+            this.#direction.magnitude / this.#offset.magnitude;
+
+          if (isSnapping)
+            this.#scaleFactor = ƒ.Calc.snap(this.#scaleFactor, this.snapScale);
 
           const vctScaling: ƒ.Vector3 = ƒ.Vector3.ONE();
           vctScaling[this.selected] = this.#scaleFactor;

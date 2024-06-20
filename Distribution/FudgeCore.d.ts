@@ -3620,6 +3620,11 @@ declare namespace FudgeCore {
          * Returns the linear interpolation between two values (_a, _b) for the given interpolation factor (_f). f is clamped between 0 and 1.
          */
         static lerp(_a: number, _b: number, _f: number): number;
+        /**
+         * Rounds the given value to the nearest multiple of the given increment using the given rounding function.
+         * Default rounding function is {@link Math.round}, use {@link Math.floor} or {@link Math.ceil} to round down or up.
+         */
+        static snap(_value: number, _increment: number, _round?: (_value: number) => number): number;
     }
 }
 declare namespace FudgeCore {
@@ -4638,14 +4643,18 @@ declare namespace FudgeCore {
          */
         max(_compare: Vector3): Vector3;
         /**
-         * Returns a formatted string representation of this vector
-         */
-        toString(): string;
-        /**
          * Uses the standard array.map functionality to perform the given function on all components of this vector
          * and return a new vector with the results
          */
-        map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector3;
+        map(_function: (_value: number, _index: number, _array: ArrayLike<number>) => number): Vector3;
+        /**
+         * Applies the given function to all components of this vector (modifying it) and returns it.
+         */
+        apply(_function: (_value: number, _index: number) => number): void;
+        /**
+         * Returns a formatted string representation of this vector
+         */
+        toString(): string;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Vector3>;
         mutate(_mutator: Mutator): Promise<void>;

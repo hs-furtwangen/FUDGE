@@ -289,6 +289,9 @@ declare namespace FudgeAid {
         mode: "translate" | "rotate" | "scale";
         space: "local" | "world";
         selected: "x" | "y" | "z";
+        snapAngle: number;
+        snapDistance: number;
+        snapScale: number;
         constructor(_viewport: ƒ.Viewport);
         set mtxLocal(_mtx: ƒ.Matrix4x4);
         set mtxWorld(_mtx: ƒ.Matrix4x4);
