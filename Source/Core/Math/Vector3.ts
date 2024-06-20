@@ -448,21 +448,30 @@ namespace FudgeCore {
     }
 
     /**
+     * Uses the standard array.map functionality to perform the given function on all components of this vector
+     * and return a new vector with the results
+     */
+    public map(_function: (_value: number, _index: number, _array: ArrayLike<number>) => number): Vector3 {
+      let copy: Vector3 = Recycler.get(Vector3);
+      copy.set(...[this.x, this.y, this.z].map(_function));
+      return copy;
+    }
+
+    /**
+     * Applies the given function to all components of this vector (modifying it) and returns it.
+     */
+    public apply(_function: (_value: number, _index: number) => number): void {
+      this.x = _function(this.x, 0);
+      this.y = _function(this.y, 1);
+      this.z = _function(this.z, 2);
+    }
+
+    /**
      * Returns a formatted string representation of this vector
      */
     public toString(): string {
       let result: string = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)}, ${this.z.toPrecision(5)})`;
       return result;
-    }
-
-    /**
-     * Uses the standard array.map functionality to perform the given function on all components of this vector
-     * and return a new vector with the results
-     */
-    public map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector3 {
-      let copy: Vector3 = Recycler.get(Vector3);
-      copy.set(...[this.x, this.y, this.z].map(_function));
-      return copy;
     }
 
     //#region Transfer

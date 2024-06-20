@@ -23,5 +23,13 @@ namespace FudgeCore {
     public static lerp(_a: number, _b: number, _f: number): number {
       return _a + (_b - _a) * Calc.clamp(_f, 0, 1);
     }
+
+    /**
+     * Rounds the given value to the nearest multiple of the given increment using the given rounding function. 
+     * Default rounding function is {@link Math.round}, use {@link Math.floor} or {@link Math.ceil} to round down or up.
+     */
+    public static snap(_value: number, _increment: number, _round: (_value: number) => number = Math.round): number {
+      return _round(_value / _increment) * _increment;
+    }
   }
 }
