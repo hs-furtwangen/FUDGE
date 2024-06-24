@@ -187,6 +187,14 @@ namespace FudgeCore {
       return this;
     }
 
+    public equals(_compare: Color, _tolerance: number = Number.EPSILON): boolean {
+      if (Math.abs(this.r - _compare.r) > _tolerance) return false;
+      if (Math.abs(this.g - _compare.g) > _tolerance) return false;
+      if (Math.abs(this.b - _compare.b) > _tolerance) return false;
+      if (Math.abs(this.a - _compare.a) > _tolerance) return false;
+      return true;
+    }
+
     /**
      * Returns a formatted string representation of this color
      */

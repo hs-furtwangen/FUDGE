@@ -3529,6 +3529,7 @@ declare namespace FudgeCore {
          * Multiplies this with the given color.
          */
         multiply(_color: Color): Color;
+        equals(_compare: Color, _tolerance?: number): boolean;
         /**
          * Returns a formatted string representation of this color
          */
