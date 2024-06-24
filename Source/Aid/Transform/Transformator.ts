@@ -11,7 +11,7 @@ namespace FudgeAid {
 
     public mode: "translate" | "rotate" | "scale" = "translate";
     public space: "local" | "world" = "world";
-    public selected: "x" | "y" | "z";
+    public selected: "x" | "y" | "z" | "xyz";
 
     public snapAngle: number = 15; // 15 degree
     public snapDistance: number = 0.1; // 0.1 units
@@ -49,13 +49,15 @@ namespace FudgeAid {
       x: ƒ.Color.CSS("red"),
       y: ƒ.Color.CSS("limegreen"),
       z: ƒ.Color.CSS("blue"),
-      origin: ƒ.Color.CSS("dimgray", 0.75)
+      origin: ƒ.Color.CSS("dimgray", 0.75),
+      xyz: ƒ.Color.CSS("gainsboro")
     };
 
-    #colorsLight = { // eslint-disable-line
+    #colorsLite = { // eslint-disable-line
       x: ƒ.Color.CSS("salmon"),
       y: ƒ.Color.CSS("lightgreen"),
-      z: ƒ.Color.CSS("cornflowerblue")
+      z: ƒ.Color.CSS("cornflowerblue"),
+      xyz: ƒ.Color.CSS("ghostwhite")
     };
 
     #torus: ƒ.MeshTorus;
@@ -142,13 +144,15 @@ namespace FudgeAid {
         const mtx: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
         const line: ƒ.Vector3[] = [] = [ƒ.Vector3.Z(-1000), ƒ.Vector3.Z(1000)];
 
-        ƒ.Gizmos.drawLines(line, mtx.lookIn(this.#axes[this.selected](), this.#normals[this.selected]()), this.#colorsLight[this.selected], 1);
+        for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected)
+          ƒ.Gizmos.drawLines(line, mtx.lookIn(this.#axes[selected](), this.#normals[selected]()), this.#colorsLite[selected], 1);
+
         ƒ.Recycler.storeMultiple(mtx, line[0], line[1]);
       }
 
-      let clrX: ƒ.Color = this.selected == "x" && !this.#isTransforming ? this.#colorsLight[this.selected] : this.#colors.x;
-      let clrY: ƒ.Color = this.selected == "y" && !this.#isTransforming ? this.#colorsLight[this.selected] : this.#colors.y;
-      let clrZ: ƒ.Color = this.selected == "z" && !this.#isTransforming ? this.#colorsLight[this.selected] : this.#colors.z;
+      let clrX: ƒ.Color = this.selected == "x" && !this.#isTransforming ? this.#colorsLite.x : this.#colors.x;
+      let clrY: ƒ.Color = this.selected == "y" && !this.#isTransforming ? this.#colorsLite.y : this.#colors.y;
+      let clrZ: ƒ.Color = this.selected == "z" && !this.#isTransforming ? this.#colorsLite.z : this.#colors.z;
       switch (this.mode) {
         case "translate":
           lengthArrow = scale * (isPicking ? 90 : 80); // 80 pixels long
@@ -156,18 +160,18 @@ namespace FudgeAid {
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrX, this.#axes.x(), this.#normals.x(), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrY, this.#axes.y(), this.#normals.y(), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrZ, this.#axes.z(), this.#normals.z(), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
-          if (this.#isTransforming) {
+          if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
             let scaleOrigin: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorldBase.translation);
             ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.#colors.origin, this.#axes[this.selected](), this.#normals[this.selected](), scaleOrigin * 80, scaleOrigin * 1, scaleOrigin * 12, ƒ.MeshPyramid, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, ƒ.Color.CSS("magenta"), this.#normal, this.#axes[this.selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
           }
-          // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, ƒ.Color.CSS("magenta"), this.normal, this.axes[this.selected], lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
 
           break;
         case "rotate":
           let radius: number = scale * 80; // 80 pixels radius
           sizeHead = scale * 12;
 
-          if (this.#isTransforming) {
+          if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
             this.drawCircle(this.#torus, this.#colors[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), radius, 1);
             ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.origin, this.#offset, this.#axes[this.selected](), radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
             // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.move, this.axes[this.selected], this.move.magnitude, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
@@ -202,14 +206,22 @@ namespace FudgeAid {
 
           if (this.#isTransforming) {
             // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.direction, this.normals[this.selected], this.direction.magnitude, widthArrow, sizeHead, ƒ.MeshCube, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), lengthArrow * this.#scaleFactor, widthArrow, sizeHead, ƒ.MeshCube, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.origin, this.#axes[this.selected](), this.#normals[this.selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+            for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected) {
+              ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors[selected], this.#axes[selected](), this.#normals[selected](), lengthArrow * this.#scaleFactor, widthArrow, sizeHead, ƒ.MeshCube, 1);
+              ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.origin, this.#axes[selected](), this.#normals[selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+            }
+
             break;
           }
 
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrX, this.#axes.x(), this.#normals.x(), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrY, this.#axes.y(), this.#normals.y(), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrZ, this.#axes.z(), this.#normals.z(), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+
+          const mtxCube: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
+          mtxCube.scaling = ƒ.Vector3.ONE((isPicking ? 20 : 10) * scale);
+          ƒ.Gizmos.drawCube(mtxCube, this.selected == "xyz" ? this.#colorsLite.xyz : this.#colors.xyz, 1);
+          // ƒ.Recycler.store(mtxCube);
           break;
       }
     }
@@ -221,13 +233,22 @@ namespace FudgeAid {
       this.#mtxLocalBase.copy(this.#mtxLocal);
       this.#mtxWorldBase.copy(this.#mtxWorld);
 
-      const mtxNormal: ƒ.Matrix4x4 = ƒ.Matrix4x4.LOOK_AT(this.#mtxWorld.translation, this.camera.mtxWorld.translation, this.#axes[this.selected](), true);
-      this.#normal.copy(mtxNormal.forward); // normal of the plane the mouse ray will collide with
+      if (this.selected == "x" || this.selected == "y" || this.selected == "z") {
+        if (this.mode == "rotate") {
+          this.#normal.copy(this.#axes[this.selected]());
+        } else {
+          const mtxNormal: ƒ.Matrix4x4 = ƒ.Matrix4x4.LOOK_AT(this.#mtxWorld.translation, this.camera.mtxWorld.translation, this.#axes[this.selected](), true);
+          this.#normal.copy(mtxNormal.forward); // normal of the plane the mouse ray will collide with
+          ƒ.Recycler.store(mtxNormal);
+        }
+      } else if (this.selected == "xyz") {
+        this.#normal.copy(this.camera.mtxWorld.forward.negate());
+      }
 
       const point: ƒ.Vector3 = this.getPoint3D(_event);
       this.#offset.copy(point.subtract(this.#mtxWorld.translation));
 
-      ƒ.Recycler.storeMultiple(mtxNormal, point);
+      ƒ.Recycler.store(point);
 
       // create undo function
       const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocal;
@@ -253,12 +274,14 @@ namespace FudgeAid {
         const point: ƒ.Vector2 = new ƒ.Vector2(_event.offsetX, _event.offsetY);
         const pick: ƒ.Pick = ƒ.Picker.pickCamera([this], this.camera, this.viewport.pointClientToProjection(point))[0];
 
-        if (pick?.color.r > 0.7)
+        if (pick?.color.equals(this.#colors.x) || pick?.color.equals(this.#colorsLite.x))
           this.selected = "x";
-        else if (pick?.color.g > 0.7)
+        else if (pick?.color.equals(this.#colors.y) || pick?.color.equals(this.#colorsLite.y))
           this.selected = "y";
-        else if (pick?.color.b > 0.7)
+        else if (pick?.color.equals(this.#colors.z) || pick?.color.equals(this.#colorsLite.z))
           this.selected = "z";
+        else if (pick?.color.equals(this.#colors.xyz) || pick?.color.equals(this.#colorsLite.xyz))
+          this.selected = "xyz";
         else
           this.selected = null;
 
@@ -281,7 +304,9 @@ namespace FudgeAid {
       this.#direction.copy(this.getPoint3D(_event).subtract(this.#mtxWorldBase.translation));
       this.#mtxLocal.copy(this.#mtxLocalBase); // reset
 
-      const axis: ƒ.Vector3 = this.#axes[this.selected]();
+      let axis: ƒ.Vector3;
+      if (this.selected.length == 1)
+        axis = this.#axes[<"x" | "y" | "z">this.selected]();
 
       switch (this.mode) {
         case "translate":
@@ -332,15 +357,25 @@ namespace FudgeAid {
           ƒ.Recycler.storeMultiple(rotationInverse, offsetLocal, directionLocal, axisLocal, cross, rotation);
           break;
         case "scale":
-          this.#scaleFactor = 
-            Math.sign(ƒ.Vector3.DOT(axis, this.#direction)) * 
-            this.#direction.magnitude / this.#offset.magnitude;
+          let scale: number = this.camera.getWorldToPixelScale(this.#mtxWorld.translation);
+          let lengthArrow: number = scale * 80; // TODO: save this somewhere
+          if (this.selected == "xyz") 
+            axis = this.camera.mtxWorld.right.negate();
+
+          let offset: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#offset, axis);
+          let direction: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#direction, axis);
+          let signOffset: number = Math.sign(ƒ.Vector3.DOT(axis, offset));
+          let signDirection: number = Math.sign(ƒ.Vector3.DOT(axis, direction));
+
+          this.#scaleFactor = (((signDirection * direction.magnitude) - (signOffset * offset.magnitude)) / lengthArrow) + 1;
+
 
           if (isSnapping)
             this.#scaleFactor = ƒ.Calc.snap(this.#scaleFactor, this.snapScale);
 
           const vctScaling: ƒ.Vector3 = ƒ.Vector3.ONE();
-          vctScaling[this.selected] = this.#scaleFactor;
+          for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected)
+            vctScaling[selected] = this.#scaleFactor;
 
           const mtxScaling: ƒ.Matrix4x4 = ƒ.Matrix4x4.SCALING(vctScaling);
 
@@ -357,6 +392,7 @@ namespace FudgeAid {
           break;
       }
 
+      ƒ.Recycler.store(axis);
     };
 
     private hndPointerUp = (): void => {
@@ -390,10 +426,9 @@ namespace FudgeAid {
     private getPoint3D(_event: PointerEvent): ƒ.Vector3 {
       const point2D: ƒ.Vector2 = ƒ.Recycler.reuse(ƒ.Vector2).set(_event.offsetX, _event.offsetY);
       const ray: ƒ.Ray = this.viewport.getRayFromClient(point2D);
-      const normal: ƒ.Vector3 = this.mode == "rotate" ? this.#axes[this.selected]() : this.#normal;
 
       ƒ.Recycler.store(point2D);
-      return ray.intersectPlane(this.#mtxWorldBase.translation, normal);
+      return ray.intersectPlane(this.#mtxWorldBase.translation, this.#normal);
     }
   }
 }

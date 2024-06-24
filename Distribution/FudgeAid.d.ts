@@ -288,7 +288,7 @@ declare namespace FudgeAid {
         readonly viewport: ƒ.Viewport;
         mode: "translate" | "rotate" | "scale";
         space: "local" | "world";
-        selected: "x" | "y" | "z";
+        selected: "x" | "y" | "z" | "xyz";
         snapAngle: number;
         snapDistance: number;
         snapScale: number;

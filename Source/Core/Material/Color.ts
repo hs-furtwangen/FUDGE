@@ -187,6 +187,9 @@ namespace FudgeCore {
       return this;
     }
 
+    /**
+     * Returns true if the channels of this and the given color are to be considered identical within the given tolerance
+     */
     public equals(_compare: Color, _tolerance: number = Number.EPSILON): boolean {
       if (Math.abs(this.r - _compare.r) > _tolerance) return false;
       if (Math.abs(this.g - _compare.g) > _tolerance) return false;
