@@ -46,18 +46,23 @@ namespace FudgeAid {
     #normal: ƒ.Vector3 = ƒ.Vector3.ZERO();
 
     #colors = { // eslint-disable-line
-      x: ƒ.Color.CSS("red"),
-      y: ƒ.Color.CSS("limegreen"),
-      z: ƒ.Color.CSS("blue"),
-      origin: ƒ.Color.CSS("dimgray", 0.75),
-      xyz: ƒ.Color.CSS("gainsboro")
-    };
-
-    #colorsLite = { // eslint-disable-line
-      x: ƒ.Color.CSS("salmon"),
-      y: ƒ.Color.CSS("lightgreen"),
-      z: ƒ.Color.CSS("cornflowerblue"),
-      xyz: ƒ.Color.CSS("ghostwhite")
+      base: {
+        x: ƒ.Color.CSS("red"),
+        y: ƒ.Color.CSS("limegreen"),
+        z: ƒ.Color.CSS("blue"),
+        xyz: ƒ.Color.CSS("gainsboro")
+      },
+      lite: {
+        x: ƒ.Color.CSS("salmon"),
+        y: ƒ.Color.CSS("lightgreen"),
+        z: ƒ.Color.CSS("cornflowerblue"),
+        xyz: ƒ.Color.CSS("ghostwhite")
+      },
+      transparent: {
+        x: ƒ.Color.CSS("salmon", 0.66),
+        y: ƒ.Color.CSS("lightgreen", 0.66),
+        z: ƒ.Color.CSS("cornflowerblue", 0.66)
+      }
     };
 
     #torus: ƒ.MeshTorus;
@@ -140,19 +145,19 @@ namespace FudgeAid {
       let lengthArrow: number;
       let sizeHead: number;
 
-      if (this.#isTransforming) {
-        const mtx: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
-        const line: ƒ.Vector3[] = [] = [ƒ.Vector3.Z(-1000), ƒ.Vector3.Z(1000)];
+      // if (this.#isTransforming) {
+      //   const mtx: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
+      //   const line: ƒ.Vector3[] = [] = [ƒ.Vector3.Z(-1000), ƒ.Vector3.Z(1000)];
 
-        for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected)
-          ƒ.Gizmos.drawLines(line, mtx.lookIn(this.#axes[selected](), this.#normals[selected]()), this.#colorsLite[selected], 1);
+      //   for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected)
+      //     ƒ.Gizmos.drawLines(line, mtx.lookIn(this.#axes[selected](), this.#normals[selected]()), this.#colorsLite[selected], 1);
 
-        ƒ.Recycler.storeMultiple(mtx, line[0], line[1]);
-      }
+      //   ƒ.Recycler.storeMultiple(mtx, line[0], line[1]);
+      // }
 
-      let clrX: ƒ.Color = this.selected == "x" && !this.#isTransforming ? this.#colorsLite.x : this.#colors.x;
-      let clrY: ƒ.Color = this.selected == "y" && !this.#isTransforming ? this.#colorsLite.y : this.#colors.y;
-      let clrZ: ƒ.Color = this.selected == "z" && !this.#isTransforming ? this.#colorsLite.z : this.#colors.z;
+      let clrX: ƒ.Color = this.selected == "x" && !this.#isTransforming ? this.#colors.lite.x : this.#colors.base.x;
+      let clrY: ƒ.Color = this.selected == "y" && !this.#isTransforming ? this.#colors.lite.y : this.#colors.base.y;
+      let clrZ: ƒ.Color = this.selected == "z" && !this.#isTransforming ? this.#colors.lite.z : this.#colors.base.z;
       switch (this.mode) {
         case "translate":
           lengthArrow = scale * (isPicking ? 90 : 80); // 80 pixels long
@@ -162,8 +167,8 @@ namespace FudgeAid {
           ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrZ, this.#axes.z(), this.#normals.z(), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
           if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
             let scaleOrigin: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorldBase.translation);
-            ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.#colors.origin, this.#axes[this.selected](), this.#normals[this.selected](), scaleOrigin * 80, scaleOrigin * 1, scaleOrigin * 12, ƒ.MeshPyramid, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, ƒ.Color.CSS("magenta"), this.#normal, this.#axes[this.selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.#colors.transparent[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), scaleOrigin * 80, scaleOrigin * 1, scaleOrigin * 12, ƒ.MeshPyramid, 1);
+            // ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, ƒ.Color.CSS("magenta"), this.#normal, this.#axes[this.selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
           }
 
           break;
@@ -172,10 +177,10 @@ namespace FudgeAid {
           sizeHead = scale * 12;
 
           if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
-            this.drawCircle(this.#torus, this.#colors[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), radius, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.origin, this.#offset, this.#axes[this.selected](), radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
+            this.drawCircle(this.#torus, this.#colors.base[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), radius, 1);
             // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.move, this.axes[this.selected], this.move.magnitude, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors[this.selected], this.#direction, this.#axes[this.selected](), radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.base[this.selected], this.#direction, this.#axes[this.selected](), radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.transparent[this.selected], this.#offset, this.#axes[this.selected](), radius, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
             break;
           }
 
@@ -187,7 +192,7 @@ namespace FudgeAid {
 
           ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.ALWAYS);
           ƒ.Render.setColorWriteMask(false, false, false, false);
-          ƒ.Gizmos.drawQuad(mtxQuad, this.#colors.origin); // color doesn't matter
+          ƒ.Gizmos.drawQuad(mtxQuad, this.#colors.base.x); // color doesn't matter
           ƒ.Render.setColorWriteMask(true, true, true, true);
           ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.LESS);
 
@@ -207,8 +212,8 @@ namespace FudgeAid {
           if (this.#isTransforming) {
             // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.direction, this.normals[this.selected], this.direction.magnitude, widthArrow, sizeHead, ƒ.MeshCube, 1);
             for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected) {
-              ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors[selected], this.#axes[selected](), this.#normals[selected](), lengthArrow * this.#scaleFactor, widthArrow, sizeHead, ƒ.MeshCube, 1);
-              ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.origin, this.#axes[selected](), this.#normals[selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
+              ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.base[selected], this.#axes[selected](), this.#normals[selected](), lengthArrow * this.#scaleFactor, widthArrow, sizeHead, ƒ.MeshCube, 1);
+              ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.transparent[selected], this.#axes[selected](), this.#normals[selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshCube, 1);
             }
 
             break;
@@ -220,7 +225,7 @@ namespace FudgeAid {
 
           const mtxCube: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
           mtxCube.scaling = ƒ.Vector3.ONE((isPicking ? 20 : 10) * scale);
-          ƒ.Gizmos.drawCube(mtxCube, this.selected == "xyz" ? this.#colorsLite.xyz : this.#colors.xyz, 1);
+          ƒ.Gizmos.drawCube(mtxCube, this.selected == "xyz" ? this.#colors.lite.xyz : this.#colors.base.xyz, 1);
           // ƒ.Recycler.store(mtxCube);
           break;
       }
@@ -274,13 +279,13 @@ namespace FudgeAid {
         const point: ƒ.Vector2 = new ƒ.Vector2(_event.offsetX, _event.offsetY);
         const pick: ƒ.Pick = ƒ.Picker.pickCamera([this], this.camera, this.viewport.pointClientToProjection(point))[0];
 
-        if (pick?.color.equals(this.#colors.x) || pick?.color.equals(this.#colorsLite.x))
+        if (pick?.color.equals(this.#colors.base.x) || pick?.color.equals(this.#colors.lite.x))
           this.selected = "x";
-        else if (pick?.color.equals(this.#colors.y) || pick?.color.equals(this.#colorsLite.y))
+        else if (pick?.color.equals(this.#colors.base.y) || pick?.color.equals(this.#colors.lite.y))
           this.selected = "y";
-        else if (pick?.color.equals(this.#colors.z) || pick?.color.equals(this.#colorsLite.z))
+        else if (pick?.color.equals(this.#colors.base.z) || pick?.color.equals(this.#colors.lite.z))
           this.selected = "z";
-        else if (pick?.color.equals(this.#colors.xyz) || pick?.color.equals(this.#colorsLite.xyz))
+        else if (pick?.color.equals(this.#colors.base.xyz) || pick?.color.equals(this.#colors.lite.xyz))
           this.selected = "xyz";
         else
           this.selected = null;
@@ -359,7 +364,7 @@ namespace FudgeAid {
         case "scale":
           let scale: number = this.camera.getWorldToPixelScale(this.#mtxWorld.translation);
           let lengthArrow: number = scale * 80; // TODO: save this somewhere
-          if (this.selected == "xyz") 
+          if (this.selected == "xyz")
             axis = this.camera.mtxWorld.right.negate();
 
           let offset: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#offset, axis);
