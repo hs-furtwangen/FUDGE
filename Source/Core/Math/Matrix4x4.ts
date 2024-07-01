@@ -478,8 +478,8 @@ namespace FudgeCore {
           Math.hypot(this.data[8], this.data[9], this.data[10]) // * (this.data[10] < 0 ? -1 : 1)
         );
 
-        if (this.determinant < 0) // ⚠️EXPERMINETAL from three js: if determinant is negative, invert one scale
-          this.#scaling.x = -this.#scaling.x;
+        // if (this.determinant < 0) // ⚠️EXPERMINETAL from three js: if determinant is negative, invert one scale
+        //   this.#scaling.x = -this.#scaling.x;
 
         this.#scalingDirty = false;
       }
@@ -684,7 +684,11 @@ namespace FudgeCore {
     public translate(_by: Vector3, _local: boolean = true): Matrix4x4 {
       if (_local) {
         let mtxTranslation: Matrix4x4 = Matrix4x4.TRANSLATION(_by);
+        let rotationDirty: boolean = this.#rotationDirty; // preserve dirty flags for rotation and scaling as they are not affected by translation
+        let scalingDirty: boolean = this.#scalingDirty;
         this.multiply(mtxTranslation);
+        this.#rotationDirty = rotationDirty;
+        this.#scalingDirty = scalingDirty;
         Recycler.store(mtxTranslation);
       } else {
         this.data[12] += _by.x;

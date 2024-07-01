@@ -460,10 +460,11 @@ namespace FudgeCore {
     /**
      * Applies the given function to all components of this vector (modifying it) and returns it.
      */
-    public apply(_function: (_value: number, _index: number) => number): void {
-      this.x = _function(this.x, 0);
-      this.y = _function(this.y, 1);
-      this.z = _function(this.z, 2);
+    public apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z") => number): Vector3 {
+      this.x = _function(this.x, 0, "x");
+      this.y = _function(this.y, 1, "y");
+      this.z = _function(this.z, 2, "z");
+      return this;
     }
 
     /**
