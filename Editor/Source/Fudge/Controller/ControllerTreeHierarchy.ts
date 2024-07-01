@@ -4,12 +4,10 @@ namespace Fudge {
 
   export class ControllerTreeHierarchy extends ƒUi.CustomTreeController<ƒ.Node> {
 
-    public createContent(_object: ƒ.Node): HTMLFieldSetElement {
-      let content: HTMLFieldSetElement = document.createElement("fieldset");
-      let name: HTMLInputElement = document.createElement("input");
-      name.value = _object.name;
-      content.appendChild(name);
-      return content;
+    public createContent(_object: ƒ.Node): HTMLElement {
+      let input: HTMLInputElement = document.createElement("input");
+      input.value = _object.name;
+      return input;
     }
 
     public getAttributes(_node: ƒ.Node): string {
@@ -19,10 +17,10 @@ namespace Fudge {
       return attributes.join(" ");
     }
 
-    public async setValue(_node: ƒ.Node, _new: string): Promise<boolean> {
-      let rename: boolean = _node.name != _new;
+    public async setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean> {
+      let rename: boolean = _node.name != _element.value;
       if (rename) {
-        _node.name = _new;
+        _node.name = _element.value;
         await (<ƒ.GraphGLTF>_node).load?.();
       }
 

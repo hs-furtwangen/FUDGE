@@ -513,12 +513,12 @@ declare namespace FudgeUserInterface {
          * Override if some objects should not be addable to others
          */
         canAddChildren(_sources: T[], _target: T): boolean;
-        /** Create an HTMLFormElement for the tree item representing the object */
-        abstract createContent(_object: T): HTMLFieldSetElement;
+        /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
+        abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
         abstract getAttributes(_object: T): string;
         /** Process the proposed new value. The id of the html element on which the change occured is passed */
-        abstract setValue(_object: T, _new: string, _id?: string): Promise<boolean>;
+        abstract setValue(_object: T, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         /** Return true if the object has children that must be shown when unfolding the tree item */
         abstract hasChildren(_object: T): boolean;
         /** Return the object's children to show when unfolding the tree item */
@@ -575,10 +575,6 @@ declare namespace FudgeUserInterface {
          * Returns the content representing the attached {@link data}
          */
         get content(): HTMLFieldSetElement;
-        /**
-         * Set the content representing the attached {@link data}
-         */
-        set content(_content: HTMLFieldSetElement);
         /**
          * Returns whether this item is expanded, showing it's children, or closed
          */

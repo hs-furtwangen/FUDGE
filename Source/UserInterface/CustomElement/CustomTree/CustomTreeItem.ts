@@ -75,21 +75,6 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Set the content representing the attached {@link data}
-     */
-    public set content(_content: HTMLFieldSetElement) {
-      if (this.contains(this.#content))
-        this.replaceChild(_content, this.#content);
-      else
-        this.appendChild(_content);
-      this.#content = _content;
-      this.#content.onsubmit = (_event) => {
-        _event.preventDefault();
-        return false;
-      };
-    }
-
-    /**
      * Returns whether this item is expanded, showing it's children, or closed
      */
     public get expanded(): boolean {
@@ -101,8 +86,9 @@ namespace FudgeUserInterface {
     }
 
     public refreshContent(): void {
-      this.content = this.controller.createContent(this.data);
-      this.content.disabled = true;
+      this.#content.innerHTML = "";
+      this.#content.appendChild(this.controller.createContent(this.data));
+      this.#content.disabled = true;
     }
 
     /**
@@ -173,6 +159,8 @@ namespace FudgeUserInterface {
       this.checkbox = document.createElement("input");
       this.checkbox.type = "checkbox";
       this.appendChild(this.checkbox);
+      this.#content = document.createElement("fieldset");
+      this.appendChild(this.#content);
       this.refreshContent();
       this.refreshAttributes();
       this.tabIndex = 0;
@@ -187,12 +175,12 @@ namespace FudgeUserInterface {
       if (_event.target == this)
         return;
 
-      this.content.disabled = true;
+      this.#content.disabled = true;
     };
 
     private hndKey = (_event: KeyboardEvent): void => {
       _event.stopPropagation();
-      if (!this.content.disabled)
+      if (!this.#content.disabled)
         return;
 
       let content: CustomTreeList<T> = <CustomTreeList<T>>this.querySelector("ul");
@@ -218,11 +206,11 @@ namespace FudgeUserInterface {
           this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.F2:
-          const element: HTMLElement = <HTMLElement>this.content.elements.item(0);
+          const element: HTMLElement = <HTMLElement>this.#content.elements.item(0);
           if (!element)
             break;
 
-          this.content.disabled = false;
+          this.#content.disabled = false;
           element?.focus();
           break;
         case ƒ.KEYBOARD_CODE.SPACE:
@@ -260,7 +248,7 @@ namespace FudgeUserInterface {
       if (_event.target == this.checkbox)
         return;
 
-      this.content.disabled = false;
+      this.#content.disabled = false;
       const element: HTMLElement = <HTMLElement>document.elementFromPoint(_event.pageX, _event.pageY); // disabled elements don't dispatch click events, get the element manually
       if (!element)
         return;
@@ -277,7 +265,7 @@ namespace FudgeUserInterface {
         return;
       }
 
-      let renamed: boolean = await this.controller.setValue(this.data, target.value, target.id);
+      let renamed: boolean = await this.controller.setValue(this.data, target);
 
       this.refreshContent();
       this.refreshAttributes();
@@ -305,7 +293,7 @@ namespace FudgeUserInterface {
     };
 
     private hndDrag = (_event: DragEvent): void => {
-      let rect: DOMRect = this.content.getBoundingClientRect();
+      let rect: DOMRect = this.#content.getBoundingClientRect();
       let upper: number = rect.top + rect.height * (1 / 4);
       let lower: number = rect.top + rect.height * (3 / 4);
       let offset: number = _event.clientY;

@@ -36,14 +36,14 @@ namespace FudgeUserInterface {
       return true;
     }
 
-    /** Create an HTMLFormElement for the tree item representing the object */
-    public abstract createContent(_object: T): HTMLFieldSetElement;
+    /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
+    public abstract createContent(_object: T): HTMLElement;
 
     /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
     public abstract getAttributes(_object: T): string;
 
     /** Process the proposed new value. The id of the html element on which the change occured is passed */
-    public abstract setValue(_object: T, _new: string, _id?: string): Promise<boolean>;
+    public abstract setValue(_object: T, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
 
     /** Return true if the object has children that must be shown when unfolding the tree item */
     public abstract hasChildren(_object: T): boolean;

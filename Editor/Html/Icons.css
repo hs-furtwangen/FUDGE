@@ -73,55 +73,52 @@ tr[icon]>td:first-child>input {
   width: calc(100% - 21px);
 }
 
-ul.tree li:has(>fieldset[icon^=Mesh])::before,
+ul.tree fieldset:has(>*[icon^=Mesh])::before,
 tr[icon^=Mesh]>td:first-child::before {
   mask: url(../Html/Icon/Mesh.svg);
   -webkit-mask: url(../Html/Icon/Mesh.svg);
 }
 
-ul.tree li:has(>fieldset[icon^=Material])::before,
+ul.tree fieldset:has(>*[icon^=Material])::before,
 tr[icon^=Material]>td:first-child::before {
   mask: url(../Html/Icon/Material.svg);
   -webkit-mask: url(../Html/Icon/Material.svg);
 }
 
-ul.tree li:has(>fieldset[icon^=Graph])::before,
+ul.tree fieldset:has(>*[icon^=Graph])::before,
 tr[icon^=Graph]>td:first-child::before {
   mask: url(../Html/Icon/Graph.svg);
   -webkit-mask: url(../Html/Icon/Graph.svg);
 }
 
-ul.tree li:has(>fieldset[icon^=Audio])::before,
+ul.tree fieldset:has(>*[icon^=Audio])::before,
 tr[icon^=Audio]>td:first-child::before {
   mask: url(../Html/Icon/Audio.svg);
   -webkit-mask: url(../Html/Icon/Audio.svg);
 }
 
-ul.tree li:has(>fieldset[icon^=Texture])::before,
+ul.tree fieldset:has(>*[icon^=Texture])::before,
 tr[icon^=Texture]>td:first-child::before {
   mask: url(../Html/Icon/Texture.svg);
   -webkit-mask: url(../Html/Icon/Texture.svg);
 }
 
-ul.tree li:has(>fieldset[icon^=Animation])::before,
+ul.tree fieldset:has(>*[icon^=Animation])::before,
 tr[icon^=Animation]>td:first-child::before {
   mask: url(../Html/Icon/Animation.svg);
   -webkit-mask: url(../Html/Icon/Animation.svg);
 }
 
-ul.tree li:has(>fieldset[icon^=ParticleSystem])::before,
+ul.tree fieldset:has(>*[icon^=ParticleSystem])::before,
 tr[icon^=ParticleSystem]>td:first-child::before {
   mask: url(../Html/Icon/Particles.svg);
   -webkit-mask: url(../Html/Icon/Particles.svg);
 }
 
-ul.tree li:has(>fieldset[icon])::before {
+ul.tree fieldset:has(>*[icon])::before {
   mask-size: 80%;
   mask-repeat: no-repeat;
   mask-position: center;
-  -webkit-mask-size: 80%;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
   content: "►";
   background: var(--color-text);
   vertical-align: inherit;

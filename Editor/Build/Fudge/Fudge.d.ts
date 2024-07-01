@@ -396,8 +396,8 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒUi = FudgeUserInterface;
     class ControllerTreeDirectory extends ƒUi.CustomTreeController<DirectoryEntry> {
-        createContent(_entry: DirectoryEntry): HTMLFieldSetElement;
-        setValue(_entry: DirectoryEntry, _new: string): Promise<boolean>;
+        createContent(_entry: DirectoryEntry): HTMLElement;
+        setValue(_entry: DirectoryEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         getAttributes(_object: DirectoryEntry): string;
         hasChildren(_entry: DirectoryEntry): boolean;
         getChildren(_entry: DirectoryEntry): DirectoryEntry[];
@@ -411,9 +411,9 @@ declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒUi = FudgeUserInterface;
     class ControllerTreeHierarchy extends ƒUi.CustomTreeController<ƒ.Node> {
-        createContent(_object: ƒ.Node): HTMLFieldSetElement;
+        createContent(_object: ƒ.Node): HTMLElement;
         getAttributes(_node: ƒ.Node): string;
-        setValue(_node: ƒ.Node, _new: string): Promise<boolean>;
+        setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         hasChildren(_node: ƒ.Node): boolean;
         getChildren(_node: ƒ.Node): ƒ.Node[];
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
@@ -430,9 +430,9 @@ declare namespace Fudge {
         private data;
         private view;
         constructor(_data: ƒ.ParticleData.System, _view: ViewParticleSystem);
-        createContent(_data: ƒ.ParticleData.Recursive): HTMLFieldSetElement;
+        createContent(_data: ƒ.ParticleData.Recursive): HTMLElement;
         getAttributes(_data: ƒ.ParticleData.Recursive): string;
-        setValue(_data: ƒ.ParticleData.Recursive, _new: string, _id: string): Promise<boolean>;
+        setValue(_data: ƒ.ParticleData.Recursive, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         hasChildren(_data: ƒ.ParticleData.Recursive): boolean;
         getChildren(_data: ƒ.ParticleData.Recursive): ƒ.ParticleData.Recursive[];
         delete(_focused: (ƒ.ParticleData.Recursive)[]): Promise<ƒ.ParticleData.Recursive[]>;
@@ -467,9 +467,9 @@ declare namespace Fudge {
         [Symbol.iterator](): IterableIterator<ResourceEntry>;
     }
     class ControllerTreeResource extends ƒui.CustomTreeController<ResourceEntry> {
-        createContent(_object: ResourceEntry): HTMLFieldSetElement;
+        createContent(_object: ResourceEntry): HTMLElement;
         getAttributes(_object: ResourceEntry): string;
-        setValue(_entry: ResourceEntry, _new: string): Promise<boolean>;
+        setValue(_entry: ResourceEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         hasChildren(_entry: ResourceEntry): boolean;
         getChildren(_entry: ResourceEntry): ResourceEntry[];
         addChildren(_sources: ResourceEntry[], _target: ResourceEntry, _index?: number): ResourceEntry[];
