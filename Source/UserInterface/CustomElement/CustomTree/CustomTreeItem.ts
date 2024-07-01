@@ -178,14 +178,16 @@ namespace FudgeUserInterface {
       this.tabIndex = 0;
     }
 
-    private hndFocus = (_event: Event): void => {
+    private hndFocus = (_event: FocusEvent): void => {
       _event.stopPropagation();
 
       if (_event.target == this.checkbox)
         return;
 
-      if (_event.target != this)
-        this.content.disabled = true;
+      if (_event.target == this)
+        return;
+
+      this.content.disabled = true;
     };
 
     private hndKey = (_event: KeyboardEvent): void => {
@@ -216,7 +218,12 @@ namespace FudgeUserInterface {
           this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.F2:
-          this.startTypingInput();
+          const element: HTMLElement = <HTMLElement>this.content.elements.item(0);
+          if (!element)
+            break;
+
+          this.content.disabled = false;
+          element?.focus();
           break;
         case ƒ.KEYBOARD_CODE.SPACE:
           this.select(_event.ctrlKey, _event.shiftKey);
@@ -248,22 +255,17 @@ namespace FudgeUserInterface {
       }
     };
 
-    private startTypingInput(_inputElement?: HTMLElement): void {
-      if (!_inputElement)
-        _inputElement = <HTMLElement>this.content.elements.item(0);
-      this.content.disabled = false;
-      _inputElement.focus();
-      // if (_inputElement instanceof HTMLInputElement) {
-      //   _inputElement.disabled = false;
-      //   _inputElement.focus();  
-      // } 
-    }
-
-    private hndDblClick = (_event: Event): void => {
+    private hndDblClick = (_event: MouseEvent): void => {
       _event.stopPropagation();
-      if (_event.target != this.checkbox) {
-        this.startTypingInput(<HTMLElement>_event.target);
-      }
+      if (_event.target == this.checkbox)
+        return;
+
+      this.content.disabled = false;
+      const element: HTMLElement = <HTMLElement>document.elementFromPoint(_event.pageX, _event.pageY); // disabled elements don't dispatch click events, get the element manually
+      if (!element)
+        return;
+
+      element.focus();
     };
 
     private hndChange = async (_event: Event): Promise<void> => {
@@ -275,7 +277,7 @@ namespace FudgeUserInterface {
         return;
       }
 
-      let renamed: boolean = await this.controller.setValue(this.data, target.id, target.value);
+      let renamed: boolean = await this.controller.setValue(this.data, target.value, target.id);
 
       this.refreshContent();
       this.refreshAttributes();

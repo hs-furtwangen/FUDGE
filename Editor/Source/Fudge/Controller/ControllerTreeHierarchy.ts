@@ -19,7 +19,7 @@ namespace Fudge {
       return attributes.join(" ");
     }
 
-    public async setValue(_node: ƒ.Node, _id: string, _new: string): Promise<boolean> {
+    public async setValue(_node: ƒ.Node, _new: string): Promise<boolean> {
       let rename: boolean = _node.name != _new;
       if (rename) {
         _node.name = _new;

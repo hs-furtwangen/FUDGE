@@ -518,7 +518,7 @@ declare namespace FudgeUserInterface {
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
         abstract getAttributes(_object: T): string;
         /** Process the proposed new value. The id of the html element on which the change occured is passed */
-        abstract setValue(_object: T, _id: string, _new: string): Promise<boolean>;
+        abstract setValue(_object: T, _new: string, _id?: string): Promise<boolean>;
         /** Return true if the object has children that must be shown when unfolding the tree item */
         abstract hasChildren(_object: T): boolean;
         /** Return the object's children to show when unfolding the tree item */
@@ -616,7 +616,6 @@ declare namespace FudgeUserInterface {
         private create;
         private hndFocus;
         private hndKey;
-        private startTypingInput;
         private hndDblClick;
         private hndChange;
         private hndDragStart;

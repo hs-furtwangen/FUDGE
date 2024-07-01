@@ -13,7 +13,7 @@ namespace Fudge {
       return content;
     }
 
-    public async setValue(_entry: DirectoryEntry, _id: string, _new: string): Promise<boolean> {
+    public async setValue(_entry: DirectoryEntry, _new: string): Promise<boolean> {
       try {
         _entry.name = _new;
       } catch (_error) {

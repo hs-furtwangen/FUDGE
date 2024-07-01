@@ -93,7 +93,7 @@ namespace Fudge {
       return "";
     }
 
-    public async setValue(_entry: ResourceEntry, _id: string, _new: string): Promise<boolean> {
+    public async setValue(_entry: ResourceEntry, _new: string): Promise<boolean> {
       let rename: boolean = _entry.name != _new;
       if (rename) {
         _entry.name = _new;

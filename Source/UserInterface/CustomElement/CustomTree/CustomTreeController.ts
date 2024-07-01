@@ -43,7 +43,7 @@ namespace FudgeUserInterface {
     public abstract getAttributes(_object: T): string;
 
     /** Process the proposed new value. The id of the html element on which the change occured is passed */
-    public abstract setValue(_object: T, _id: string, _new: string): Promise<boolean>;
+    public abstract setValue(_object: T, _new: string, _id?: string): Promise<boolean>;
 
     /** Return true if the object has children that must be shown when unfolding the tree item */
     public abstract hasChildren(_object: T): boolean;
