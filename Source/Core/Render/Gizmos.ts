@@ -34,33 +34,7 @@ namespace FudgeCore {
 
     static #camera: ComponentCamera;
 
-    private static get quad(): MeshQuad {
-      let quad: MeshQuad = new MeshQuad("GizmoQuad");
-      Project.deregister(quad);
-      Reflect.defineProperty(Gizmos, "quad", { value: quad });
-      return Gizmos.quad;
-    }
-
-    private static get cube(): MeshCube {
-      let cube: MeshCube = new MeshCube("GizmoCube");
-      Project.deregister(cube);
-      Reflect.defineProperty(Gizmos, "cube", { value: cube });
-      return Gizmos.cube;
-    }
-
-    private static get pyramid(): MeshPyramid {
-      let pyramid: MeshPyramid = new MeshPyramid("GizmoPyramid");
-      Project.deregister(pyramid);
-      Reflect.defineProperty(Gizmos, "pyramid", { value: pyramid });
-      return Gizmos.sphere;
-    }
-
-    private static get sphere(): MeshSphere {
-      let sphere: MeshSphere = new MeshSphere("GizmoSphere");
-      Project.deregister(sphere);
-      Reflect.defineProperty(Gizmos, "sphere", { value: sphere });
-      return Gizmos.sphere;
-    }
+    static #meshes: { [key: string]: Mesh } = {};
 
     // TODO: think about drawing these on the fly instead of caching them. Then we could accept a position, radius etc. parameter and draw them independent from the mtxWorld
     private static get wireCircle(): Vector3[] {
@@ -328,28 +302,35 @@ namespace FudgeCore {
      * Draws a solid cube.
      */
     public static drawCube(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
-      Gizmos.drawMesh(Gizmos.cube, _mtxWorld, _color, _alphaOccluded);
+      Gizmos.drawMesh(Gizmos.getMesh(MeshCube), _mtxWorld, _color, _alphaOccluded);
     }
 
     /**
      * Draws a solid sphere.
      */
     public static drawSphere(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
-      Gizmos.drawMesh(Gizmos.sphere, _mtxWorld, _color, _alphaOccluded);
+      Gizmos.drawMesh(Gizmos.getMesh(MeshSphere), _mtxWorld, _color, _alphaOccluded);
     }
 
     /**
      * Draws a solid quad.
      */
     public static drawQuad(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
-      Gizmos.drawMesh(Gizmos.quad, _mtxWorld, _color, _alphaOccluded);
+      Gizmos.drawMesh(Gizmos.getMesh(MeshQuad), _mtxWorld, _color, _alphaOccluded);
+    }
+
+    /**
+     * Draws a solid double sided quad.
+     */
+    public static drawSprite(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
+      Gizmos.drawMesh(Gizmos.getMesh(MeshSprite), _mtxWorld, _color, _alphaOccluded);
     }
 
     /**
      * Draws a solid pyramid.
      */
     public static drawPyramid(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
-      Gizmos.drawMesh(Gizmos.pyramid, _mtxWorld, _color, _alphaOccluded);
+      Gizmos.drawMesh(Gizmos.getMesh(MeshPyramid), _mtxWorld, _color, _alphaOccluded);
     }
 
     /**
@@ -393,7 +374,7 @@ namespace FudgeCore {
         color.a = Calc.lerp(0, color.a, distance);
       }
 
-      let renderBuffers: RenderBuffers = Gizmos.quad.useRenderBuffers(shader, mtxWorld, Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
+      let renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
       _texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
       crc3.uniform1i(shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
 
@@ -424,7 +405,7 @@ namespace FudgeCore {
         mtxWorld.translateZ(0.5); // translate cube/sphere so it sits on top of the arrow
       }
 
-      Gizmos.drawMesh(_head == MeshPyramid ? Gizmos.pyramid : _head == MeshCube ? Gizmos.cube : Gizmos.sphere, mtxWorld, _color, _alphaOccluded);
+      Gizmos.drawMesh(_head == MeshPyramid ? Gizmos.getMesh(MeshPyramid) : _head == MeshCube ? Gizmos.getMesh(MeshCube) : Gizmos.getMesh(MeshSphere), mtxWorld, _color, _alphaOccluded);
 
       Recycler.storeMultiple(mtxWorld, scaling);
     }
@@ -450,24 +431,23 @@ namespace FudgeCore {
 
     private static drawGizmos(_shader: ShaderInterface, _draw: Function, _count: number, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+
+      if (_alphaOccluded > 0) {
+        let color: Color = _color.clone;
+        color.a *= _alphaOccluded;
+  
+        // draw occluded parts where the depth test failed (by inverting the depth test + no depth write)
+        crc3.depthFunc(WebGL2RenderingContext.GEQUAL);
+        crc3.depthMask(false);
+        Gizmos.bufferColor(_shader, color);
+        _draw(_count);
+        crc3.depthFunc(WebGL2RenderingContext.LESS);
+        crc3.depthMask(true);
+        Recycler.store(color);
+      }
+
       Gizmos.bufferColor(_shader, _color);
       _draw(_count);
-
-      if (_alphaOccluded <= 0)
-        return;
-
-      let color: Color = _color.clone;
-      color.a *= _alphaOccluded;
-
-      // draw occluded parts where the depth test failed (by inverting the depth test + no depth write)
-      crc3.depthFunc(WebGL2RenderingContext.GEQUAL);
-      crc3.depthMask(false);
-      Gizmos.bufferColor(_shader, color);
-      _draw(_count);
-      crc3.depthMask(true);
-      crc3.depthFunc(WebGL2RenderingContext.LESS);
-
-      Recycler.store(color);
     }
 
     private static drawElementsTrianlges(_count: number): void {
@@ -480,6 +460,18 @@ namespace FudgeCore {
 
     private static drawArrays(_count: number): void {
       RenderWebGL.getRenderingContext().drawArrays(WebGL2RenderingContext.LINES, 0, _count);
+    }
+
+    private static getMesh(_constructor: new (_name: string) => Mesh): Mesh {
+      let key: string = _constructor.name;
+      let mesh: Mesh = Gizmos.#meshes[key];
+      if (mesh)
+        return mesh;
+
+      mesh = new _constructor(key);
+      Project.deregister(mesh);
+      Gizmos.#meshes[key] = mesh;
+      return mesh;
     }
   }
 }

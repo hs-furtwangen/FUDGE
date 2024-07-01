@@ -4654,7 +4654,7 @@ declare namespace FudgeCore {
         /**
          * Applies the given function to all components of this vector (modifying it) and returns it.
          */
-        apply(_function: (_value: number, _index: number) => number): void;
+        apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z") => number): Vector3;
         /**
          * Returns a formatted string representation of this vector
          */
@@ -6469,10 +6469,6 @@ declare namespace FudgeCore {
         private static readonly indexBuffer;
         private static pickId;
         private static readonly posIcons;
-        private static get quad();
-        private static get cube();
-        private static get pyramid();
-        private static get sphere();
         private static get wireCircle();
         private static get wireSphere();
         private static get wireCone();
@@ -6531,6 +6527,10 @@ declare namespace FudgeCore {
          */
         static drawQuad(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
         /**
+         * Draws a solid double sided quad.
+         */
+        static drawSprite(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
+        /**
          * Draws a solid pyramid.
          */
         static drawPyramid(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
@@ -6554,6 +6554,7 @@ declare namespace FudgeCore {
         private static drawElementsTrianlges;
         private static drawElementsLines;
         private static drawArrays;
+        private static getMesh;
     }
 }
 declare namespace FudgeCore {
