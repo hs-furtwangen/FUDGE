@@ -130,7 +130,7 @@ ul.tree input[type="checkbox"]~ul {
   display: none;
 }
 
-ul.tree input[type="checkbox"]:has(+ fieldset[icon]) {
+ul.tree input[type="checkbox"]:has(+ fieldset>*[icon]) {
   display: none;
 }
 
@@ -208,7 +208,6 @@ input {
   background-color: var(--color-background-content);
   color: var(--color-text);
   border: none;
-  flex: 2;
 }
 
 *:focus {
