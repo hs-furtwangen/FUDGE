@@ -410,7 +410,7 @@ namespace FudgeCore {
             } else {
               const isFlat: boolean = gltfMesh.primitives[iPrimitive].attributes.NORMAL == undefined;
               cmpMaterial = new ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin, isFlat));
-              const alphaMode: string = this.#gltf.materials[iMaterial]?.alphaMode;
+              const alphaMode: GLTF.Material["alphaMode"] = this.#gltf.materials[iMaterial]?.alphaMode;
               if (alphaMode == "MASK")
                 Debug.warn(`${this}: Material with index ${iMaterial} uses alpha mode 'MASK'. FUDGE does not support this mode.`);
               cmpMaterial.sortForAlpha = alphaMode == "BLEND";
@@ -734,8 +734,9 @@ namespace FudgeCore {
       // TODO: add support for other glTF material properties: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
       // e.g. occlusion and emissive textures; alphaMode; alphaCutoff; doubleSided
       const gltfBaseColorFactor: number[] = gltfMaterial.pbrMetallicRoughness?.baseColorFactor ?? [1, 1, 1, 1];
-      let gltfMetallicFactor: number = gltfMaterial.pbrMetallicRoughness?.metallicFactor ?? 1;
-      let gltfRoughnessFactor: number = gltfMaterial.pbrMetallicRoughness?.roughnessFactor ?? 1;
+      const gltfMetallicFactor: number = gltfMaterial.pbrMetallicRoughness?.metallicFactor ?? 1;
+      const gltfRoughnessFactor: number = gltfMaterial.pbrMetallicRoughness?.roughnessFactor ?? 1;
+      const gltfEmissiveFactor: number[] = gltfMaterial.emissiveFactor ?? [0, 0, 0];
 
       // const gltfMetallicRoughnessTexture: GLTF.TextureInfo = gltfMaterial.pbrMetallicRoughness?.metallicRoughnessTexture;
       // if (gltfMetallicRoughnessTexture) {
@@ -777,18 +778,24 @@ namespace FudgeCore {
       // Influences how much the material's color affects the specular reflection. When metallic is higher, the specular reflection takes on the color of the material, creating a metallic appearance. Range from 0.0 to 1.0.
       const metallic: number = gltfMetallicFactor;
 
+      const isLit: boolean = gltfEmissiveFactor[0] == 1 && gltfEmissiveFactor[1] == 1 || gltfEmissiveFactor[2] == 1;
       const color: Color = new Color(...gltfBaseColorFactor);
       const coat: Coat = gltfBaseColorTexture ?
-        gltfNormalTexture ?
-          new CoatRemissiveTexturedNormals(color, await this.getTexture(gltfBaseColorTexture.index), await this.getTexture(gltfNormalTexture.index), diffuse, specular, intensity, metallic) :
-          new CoatRemissiveTextured(color, await this.getTexture(gltfBaseColorTexture.index), diffuse, specular, intensity, metallic) :
-        new CoatRemissive(color, diffuse, specular, intensity, metallic);
+        isLit ? new CoatTextured(color, await this.getTexture(gltfBaseColorTexture.index)) :
+          gltfNormalTexture ?
+            new CoatRemissiveTexturedNormals(color, await this.getTexture(gltfBaseColorTexture.index), await this.getTexture(gltfNormalTexture.index), diffuse, specular, intensity, metallic) :
+            new CoatRemissiveTextured(color, await this.getTexture(gltfBaseColorTexture.index), diffuse, specular, intensity, metallic) :
+        isLit ? new CoatColored(color) : new CoatRemissive(color, diffuse, specular, intensity, metallic);
 
       let shader: typeof Shader;
       if (_flat) { // TODO: make flat a flag in the material so that we can have flat mesh with phong shading gradients
         shader = gltfBaseColorTexture ?
           (_skin ? ShaderFlatTexturedSkin : ShaderFlatTextured) :
           (_skin ? ShaderFlatSkin : ShaderFlat);
+      } else if (isLit) {
+        shader = gltfBaseColorTexture ?
+          (_skin ? ShaderLitTexturedSkin : ShaderLitTextured) :
+          (_skin ? ShaderLitSkin : ShaderLit);
       } else {
         shader = gltfBaseColorTexture ?
           gltfNormalTexture ?

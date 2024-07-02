@@ -1103,7 +1103,12 @@ void main() {
       a_vctWeights.w * u_mtxBones[a_vctBones.w];
 
     mtxMeshToView = u_mtxWorldToView * mtxMeshToWorld;
-    mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
+
+    #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
+
+      mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
+
+    #endif
 
   #endif
 
