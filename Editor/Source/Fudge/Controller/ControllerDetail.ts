@@ -27,6 +27,8 @@ namespace Fudge {
     // MeshOnMeshLabel: { fromViews: [ViewInternal], onKeyAttribute: "mesh", ofType: ƒ.Mesh, dropEffect: "link" },
     TextureOnMaterialTexture: { fromViews: [ViewInternal], onKeyAttribute: "texture", onType: ƒ.Material, ofType: ƒ.Texture, dropEffect: "link" },
     TextureOnMaterialNormalMap: { fromViews: [ViewInternal], onKeyAttribute: "normalMap", onType: ƒ.Material, ofType: ƒ.Texture, dropEffect: "link" },
+    TextureOnMaterialTexToon: { fromViews: [ViewInternal], onKeyAttribute: "texToon", onType: ƒ.Material, ofType: ƒ.Texture, dropEffect: "link" },
+
 
     TextureOnAnimationSprite: { fromViews: [ViewInternal], onType: ƒ.AnimationSprite, ofType: ƒ.Texture, dropEffect: "link" },
     TextureOnMeshRelief: { fromViews: [ViewInternal], onType: ƒ.MeshRelief, ofType: ƒ.TextureImage, dropEffect: "link" }
@@ -106,6 +108,8 @@ namespace Fudge {
       if (this.filterDragDrop(_event, filter.TextureOnMaterialTexture)) return;
       // Texture on Material normal map
       if (this.filterDragDrop(_event, filter.TextureOnMaterialNormalMap)) return;
+      // Texture on Material texToon
+      if (this.filterDragDrop(_event, filter.TextureOnMaterialTexToon)) return;
       // Texture on MeshRelief
       if (this.filterDragDrop(_event, filter.TextureOnMeshRelief)) return;
       // Texture on AnimationSprite
@@ -149,13 +153,18 @@ namespace Fudge {
         this.domElement.dispatchEvent(new Event(EVENT_EDITOR.MODIFY, { bubbles: true }));
         return true;
       };
-      let setTexture: (_sources: Object[]) => boolean = (_sources: Object[]): boolean => {
+      let setTexture = (_sources: Object[]): boolean => {
         this.mutable["coat"]["texture"] = _sources[0];
         this.domElement.dispatchEvent(new Event(EVENT_EDITOR.MODIFY, { bubbles: true }));
         return true;
       };
-      let setNormalMap: (_sources: Object[]) => boolean = (_sources: Object[]): boolean => {
+      let setNormalMap = (_sources: Object[]): boolean => {
         this.mutable["coat"]["normalMap"] = _sources[0];
+        this.domElement.dispatchEvent(new Event(EVENT_EDITOR.MODIFY, { bubbles: true }));
+        return true;
+      };
+      let setTexToon = (_sources: Object[]): boolean => {
+        this.mutable["coat"]["texToon"] = _sources[0];
         this.domElement.dispatchEvent(new Event(EVENT_EDITOR.MODIFY, { bubbles: true }));
         return true;
       };
@@ -202,6 +211,8 @@ namespace Fudge {
       if (this.filterDragDrop(_event, filter.TextureOnMaterialTexture, setTexture)) return;
       // Texture on Material normal map
       if (this.filterDragDrop(_event, filter.TextureOnMaterialNormalMap, setNormalMap)) return;
+      // Texture on Material texToon
+      if (this.filterDragDrop(_event, filter.TextureOnMaterialTexToon, setTexToon)) return;
       // Texture on MeshRelief
       if (this.filterDragDrop(_event, filter.TextureOnMeshRelief, setHeightMap)) return;
       // Texture on AnimationSprite

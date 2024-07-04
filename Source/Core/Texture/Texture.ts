@@ -2,8 +2,14 @@ namespace FudgeCore {
   /** {@link TexImageSource} is a union type which as of now includes {@link VideoFrame}. All other parts of this union have a .width and .height property but VideoFrame does not. And since we only ever use {@link HTMLImageElement} and {@link OffscreenCanvas} currently VideoFrame can be excluded for convenience of accessing .width and .height */
   type ImageSource = Exclude<TexImageSource, VideoFrame>;
 
+  /**
+   * - CRISP: no mipmapping, mag filter nearest, min filter nearest
+   * - MEDIUM: mipmapping, mag filter nearest, min filter nearest_mipmap_linear
+   * - BLURRY: mipmapping, mag filter linear, min filter linear_mipmap_linear
+   * - SMOOTH: no mipmapping, mag filter linear, min filter linear
+   */
   export enum MIPMAP {
-    CRISP, MEDIUM, BLURRY
+    CRISP, MEDIUM, BLURRY, SMOOTH
   }
 
   export enum WRAP {
@@ -237,6 +243,7 @@ namespace FudgeCore {
       super(_name);
       this.image.src = _base64;
       this.mipmap = _mipmap;
+      this.wrap = _wrap;
       if (_width)
         this.image.width = _width;
       if (_height)

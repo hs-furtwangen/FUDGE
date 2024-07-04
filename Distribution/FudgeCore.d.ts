@@ -1125,6 +1125,11 @@ declare namespace FudgeCore {
             readonly UNIT: 33987;
             readonly INDEX: 3;
         };
+        readonly TOON: {
+            readonly UNIFORM: "u_texToon";
+            readonly UNIT: 33988;
+            readonly INDEX: 4;
+        };
     };
     /**
      * Base class for RenderManager, handling the connection to the rendering system, in this case WebGL.
@@ -3415,6 +3420,25 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
+}
+declare namespace FudgeCore {
+    const CoatToon_base: (abstract new (...args: any[]) => {
+        texToon: Texture;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }) & typeof CoatRemissive;
+    export class CoatToon extends CoatToon_base {
+        constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+    }
+    const CoatToonTextured_base: (abstract new (...args: any[]) => {
+        texToon: Texture;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }) & typeof CoatRemissiveTextured;
+    export class CoatToonTextured extends CoatToonTextured_base {
+        constructor(_color?: Color, _texture?: Texture, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+    }
+    export {};
 }
 declare namespace FudgeCore {
     /**
@@ -8256,12 +8280,41 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    abstract class ShaderToon extends Shader {
+        static readonly iSubclass: number;
+        static define: string[];
+        static getCoat(): typeof Coat;
+    }
+    abstract class ShaderToonSkin extends Shader {
+        static readonly iSubclass: number;
+        static define: string[];
+        static getCoat(): typeof Coat;
+    }
+    abstract class ShaderToonTextured extends Shader {
+        static readonly iSubclass: number;
+        static define: string[];
+        static getCoat(): typeof Coat;
+    }
+    abstract class ShaderToonTexturedSkin extends Shader {
+        static readonly iSubclass: number;
+        static define: string[];
+        static getCoat(): typeof Coat;
+    }
+}
+declare namespace FudgeCore {
     /** {@link TexImageSource} is a union type which as of now includes {@link VideoFrame}. All other parts of this union have a .width and .height property but VideoFrame does not. And since we only ever use {@link HTMLImageElement} and {@link OffscreenCanvas} currently VideoFrame can be excluded for convenience of accessing .width and .height */
     type ImageSource = Exclude<TexImageSource, VideoFrame>;
+    /**
+     * - CRISP: no mipmapping, mag filter nearest, min filter nearest
+     * - MEDIUM: mipmapping, mag filter nearest, min filter nearest_mipmap_linear
+     * - BLURRY: mipmapping, mag filter linear, min filter linear_mipmap_linear
+     * - SMOOTH: no mipmapping, mag filter linear, min filter linear
+     */
     export enum MIPMAP {
         CRISP = 0,
         MEDIUM = 1,
-        BLURRY = 2
+        BLURRY = 2,
+        SMOOTH = 3
     }
     export enum WRAP {
         REPEAT = 0,
@@ -8377,11 +8430,13 @@ declare namespace FudgeCore {
     class TextureDefault extends TextureBase64 {
         static color: TextureBase64;
         static normal: TextureBase64;
+        static toon: TextureBase64;
         static iconLight: TextureBase64;
         static iconCamera: TextureBase64;
         static iconAudio: TextureBase64;
         private static getColor;
         private static getNormal;
+        private static getToon;
         private static getIconLight;
         private static getIconCamera;
         private static getIconAudio;

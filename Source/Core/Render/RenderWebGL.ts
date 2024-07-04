@@ -51,6 +51,11 @@ namespace FudgeCore {
       UNIFORM: "u_texText", // TODO: add text uniform to shader...
       UNIT: WebGL2RenderingContext.TEXTURE3,
       INDEX: 3
+    },
+    TOON: {
+      UNIFORM: "u_texToon",
+      UNIT: WebGL2RenderingContext.TEXTURE4,
+      INDEX: 4
     }
   } as const;
 

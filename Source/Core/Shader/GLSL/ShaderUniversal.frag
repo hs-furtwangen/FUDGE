@@ -39,9 +39,15 @@ layout(location = 2) out vec4 vctFragNormal;
 
 #if defined(GOURAUD)
 
-    uniform float u_fMetallic;
-    in vec3 v_vctDiffuse;
-    in vec3 v_vctSpecular;
+  uniform float u_fMetallic;
+  in vec3 v_vctDiffuse;
+  in vec3 v_vctSpecular;
+
+#endif
+
+#if defined(TOON)
+
+  uniform sampler2D u_texToon;
 
 #endif
 
@@ -75,9 +81,17 @@ layout(location = 2) out vec4 vctFragNormal;
 
   void illuminateDirected(vec3 _vctDirection, vec3 _vctView, vec3 _vctNormal, vec3 _vctColor, inout vec3 _vctDiffuse, inout vec3 _vctSpecular) {
     vec3 vctDirection = normalize(_vctDirection);
-    float fIllumination = -dot(_vctNormal, vctDirection);
-    if(fIllumination > 0.0) {
-      _vctDiffuse += u_fDiffuse * fIllumination * _vctColor;
+    float fDiffuse = -dot(_vctNormal, vctDirection);
+
+    #if defined(TOON)
+      
+      fDiffuse = texture(u_texToon, vec2(fDiffuse, 0)).r;
+
+    #endif
+
+    if(fDiffuse > 0.0) {
+
+      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor;
 
       if(u_fSpecular <= 0.0)
         return;
@@ -87,7 +101,15 @@ layout(location = 2) out vec4 vctFragNormal;
       float factor = max(dot(-vctDirection, _vctNormal), 0.0); //Factor for smoothing out transition from surface facing the lightsource to surface facing away from the lightsource
       factor = 1.0 - (pow(factor - 1.0, 8.0));                 //The factor is altered in order to clearly see the specular highlight even at steep angles, while still preventing artifacts
 
-      _vctSpecular += pow(max(dot(_vctNormal, halfwayDir), 0.0), exp2(u_fSpecular * 5.0)) * u_fSpecular * u_fIntensity * factor * _vctColor;
+      float fSpecular = pow(max(dot(_vctNormal, halfwayDir), 0.0), exp2(u_fSpecular * 5.0)) * factor; 
+
+      #if defined(TOON)
+        
+        fSpecular = texture(u_texToon, vec2(fSpecular, 0.0)).g * fDiffuse;
+
+      #endif
+
+      _vctSpecular += fSpecular * u_fSpecular * u_fIntensity * _vctColor;
     }
   }
 

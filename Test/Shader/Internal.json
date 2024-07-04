@@ -4,8 +4,8 @@
       "idResource": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
       "name": "MeshSphere",
       "type": "MeshSphere",
-      "longitudes": 8,
-      "latitudes": 8
+      "longitudes": 26,
+      "latitudes": 18
     }
   },
   "Material|2023-11-30T11:08:43.223Z|83335": {
@@ -491,6 +491,62 @@
                   },
                   "children": []
                 }
+              },
+              {
+                "ƒ.Node": {
+                  "name": "Toon",
+                  "active": true,
+                  "components": {
+                    "ComponentTransform": [
+                      {
+                        "ƒ.ComponentTransform": {
+                          "local": {
+                            "translation": "[5.999999999999998, 0, 0]",
+                            "rotation": "[0, 0, 0]",
+                            "scaling": "[1, 1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          }
+                        }
+                      }
+                    ],
+                    "ComponentMesh": [
+                      {
+                        "ƒ.ComponentMesh": {
+                          "idMesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "pivot": {
+                            "translation": "[0, 0, 0]",
+                            "rotation": "[0, 0, 0]",
+                            "scaling": "[1, 1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          }
+                        }
+                      }
+                    ],
+                    "ComponentMaterial": [
+                      {
+                        "ƒ.ComponentMaterial": {
+                          "sortForAlpha": false,
+                          "clrPrimary": "[1, 1, 1, 1]",
+                          "clrSecondary": "[1, 1, 1, 1]",
+                          "pivot": {
+                            "translation": "[0, 0]",
+                            "rotation": 0,
+                            "scaling": "[1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          },
+                          "idMaterial": "Material|2024-07-04T13:33:59.064Z|51500"
+                        }
+                      }
+                    ]
+                  },
+                  "children": []
+                }
               }
             ]
           }
@@ -739,6 +795,62 @@
                   },
                   "children": []
                 }
+              },
+              {
+                "ƒ.Node": {
+                  "name": "Toon",
+                  "active": true,
+                  "components": {
+                    "ComponentTransform": [
+                      {
+                        "ƒ.ComponentTransform": {
+                          "local": {
+                            "translation": "[5.999999999999998, 0, 0]",
+                            "rotation": "[0, 0, 0]",
+                            "scaling": "[1, 1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          }
+                        }
+                      }
+                    ],
+                    "ComponentMesh": [
+                      {
+                        "ƒ.ComponentMesh": {
+                          "idMesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "pivot": {
+                            "translation": "[0, 0, 0]",
+                            "rotation": "[0, 0, 0]",
+                            "scaling": "[1, 1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          }
+                        }
+                      }
+                    ],
+                    "ComponentMaterial": [
+                      {
+                        "ƒ.ComponentMaterial": {
+                          "sortForAlpha": false,
+                          "clrPrimary": "[1, 1, 1, 1]",
+                          "clrSecondary": "[1, 1, 1, 1]",
+                          "pivot": {
+                            "translation": "[0, 0]",
+                            "rotation": 0,
+                            "scaling": "[1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          },
+                          "idMaterial": "Material|2024-07-04T13:34:02.331Z|39660"
+                        }
+                      }
+                    ]
+                  },
+                  "children": []
+                }
               }
             ]
           }
@@ -753,6 +865,38 @@
       "idResource": "MeshCube|2023-11-30T11:08:58.331Z|12301",
       "name": "MeshCube",
       "type": "MeshCube"
+    }
+  },
+  "Material|2024-07-04T13:33:59.064Z|51500": {
+    "ƒ.Material": {
+      "name": "ShaderToon",
+      "idResource": "Material|2024-07-04T13:33:59.064Z|51500",
+      "shader": "ShaderToon",
+      "coat": {
+        "ƒ.CoatToon": {
+          "color": "[1, 1, 1, 1]",
+          "diffuse": 1,
+          "specular": 1.2,
+          "intensity": 0.7,
+          "metallic": 0
+        }
+      }
+    }
+  },
+  "Material|2024-07-04T13:34:02.331Z|39660": {
+    "ƒ.Material": {
+      "name": "ShaderToonTextured",
+      "idResource": "Material|2024-07-04T13:34:02.331Z|39660",
+      "shader": "ShaderToonTextured",
+      "coat": {
+        "ƒ.CoatToonTextured": {
+          "color": "[1, 1, 1, 1]",
+          "diffuse": 1,
+          "specular": 1.2,
+          "intensity": 0.7,
+          "metallic": 0
+        }
+      }
     }
   }
 }
