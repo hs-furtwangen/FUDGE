@@ -1,6 +1,6 @@
 namespace FudgeCore {
   /**
-   * The simplest {@link Coat} providing just a color
+   * A {@link Coat} providing a color and parameters for the phong shading model.
    */
   @RenderInjectorCoat.decorate
   export class CoatRemissive extends CoatColored {
