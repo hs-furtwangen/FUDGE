@@ -19,13 +19,6 @@ namespace FudgeCore {
       // this.mutatorCoat = _material.getCoat().getMutatorForComponent();
     }
 
-    /**
-     * Returns true if the material has any areas (color or texture) with alpha < 1.
-     * ⚠️ CAUTION: Computionally expensive for textured materials, see {@link Texture.hasTransparency}
-     */
-    public get hasTransparency(): boolean {
-      return this.material?.hasTransparency || this.clrPrimary.a < 1;
-    }
 
     //#region Transfer
     public serialize(): Serialization {
