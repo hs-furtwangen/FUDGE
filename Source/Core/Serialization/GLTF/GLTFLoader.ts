@@ -410,10 +410,12 @@ namespace FudgeCore {
             } else {
               const isFlat: boolean = gltfMesh.primitives[iPrimitive].attributes.NORMAL == undefined;
               cmpMaterial = new ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin, isFlat));
-              const alphaMode: GLTF.Material["alphaMode"] = this.#gltf.materials[iMaterial]?.alphaMode;
-              if (alphaMode == "MASK")
-                Debug.warn(`${this}: Material with index ${iMaterial} uses alpha mode 'MASK'. FUDGE does not support this mode.`);
-              cmpMaterial.sortForAlpha = alphaMode == "BLEND";
+
+              // TODO: maybe this should be a fudge material property
+              const gltfMaterial: GLTF.Material = this.#gltf.materials[iMaterial];
+              if (gltfMaterial) 
+                cmpMaterial.sortForAlpha = gltfMaterial.alphaMode == "BLEND";
+              
             }
 
             subComponents.push([cmpMesh, cmpMaterial]);
@@ -732,7 +734,7 @@ namespace FudgeCore {
         throw new Error(`${this}: Couldn't find material with index ${_iMaterial}.`);
 
       // TODO: add support for other glTF material properties: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
-      // e.g. occlusion and emissive textures; alphaMode; alphaCutoff; doubleSided
+      // e.g. occlusion and emissive textures; doubleSided
       const gltfBaseColorFactor: number[] = gltfMaterial.pbrMetallicRoughness?.baseColorFactor ?? [1, 1, 1, 1];
       const gltfMetallicFactor: number = gltfMaterial.pbrMetallicRoughness?.metallicFactor ?? 1;
       const gltfRoughnessFactor: number = gltfMaterial.pbrMetallicRoughness?.roughnessFactor ?? 1;
@@ -807,6 +809,8 @@ namespace FudgeCore {
       const material: Material = _material ?? new MaterialGLTF(gltfMaterial.name);
       material.name = gltfMaterial.name;
       material.coat = coat;
+      if (gltfMaterial.alphaClip != undefined)
+        material.alphaClip = gltfMaterial.alphaClip;
       Reflect.set(material, "shaderType", shader);
       // material.setShader(shader);
       if (material instanceof MaterialGLTF)

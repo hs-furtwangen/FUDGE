@@ -1269,7 +1269,7 @@ declare namespace FudgeCore {
          * Draw a mesh buffer using the given infos and the complete projection matrix
         */
         protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
-        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera, _sortForAlpha: boolean): void;
+        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera): void;
         private static calcMeshToView;
         private static bindTexture;
     }
@@ -3367,7 +3367,7 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * The simplest {@link Coat} providing just a color
+     * A {@link Coat} providing a color and parameters for the phong shading model.
      */
     class CoatRemissive extends CoatColored {
         #private;
@@ -3427,6 +3427,9 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }) & typeof CoatRemissive;
+    /**
+     * A {@link Coat} providing a color and parameters for the toon shading model.
+     */
     export class CoatToon extends CoatToon_base {
         constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
     }
@@ -3435,6 +3438,9 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }) & typeof CoatRemissiveTextured;
+    /**
+     * A {@link Coat} providing a texture, a color and parameters for the toon shading model.
+     */
     export class CoatToonTextured extends CoatToonTextured_base {
         constructor(_color?: Color, _texture?: Texture, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
     }
@@ -3544,6 +3550,10 @@ declare namespace FudgeCore {
         /** The name to call the Material by. */
         name: string;
         idResource: string;
+        /**
+         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+         */
+        alphaClip: number;
         private shaderType;
         constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
         /**

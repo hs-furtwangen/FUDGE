@@ -649,6 +649,7 @@ precision highp int;
 // MINIMAL
 uniform vec4 u_vctColor;
 uniform vec3 u_vctCamera; // needed for fog
+uniform float u_fAlphaClip;
 
 layout(std140) uniform Fog {
   bool u_bFogActive;
@@ -904,7 +905,7 @@ void main() {
   #endif
 
   // discard pixel alltogether when transparent: don't show in Z-Buffer
-  if(vctFrag.a < 0.01)
+  if(vctFrag.a < u_fAlphaClip)
     discard;
 
   if (u_bFogActive) {
