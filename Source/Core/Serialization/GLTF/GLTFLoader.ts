@@ -740,34 +740,6 @@ namespace FudgeCore {
       const gltfRoughnessFactor: number = gltfMaterial.pbrMetallicRoughness?.roughnessFactor ?? 1;
       const gltfEmissiveFactor: number[] = gltfMaterial.emissiveFactor ?? [0, 0, 0];
 
-      // const gltfMetallicRoughnessTexture: GLTF.TextureInfo = gltfMaterial.pbrMetallicRoughness?.metallicRoughnessTexture;
-      // if (gltfMetallicRoughnessTexture) {
-      //   // TODO: maybe throw this out if it costs too much performance, or add the texture to the material
-      //   // average metallic and roughness values
-      //   const metallicRoughnessTexture: TextureImage = await this.getTexture(gltfMetallicRoughnessTexture.index) as TextureImage;
-      //   let image: HTMLImageElement = metallicRoughnessTexture.image;
-      //   let canvas: HTMLCanvasElement = document.createElement("canvas");
-      //   canvas.width = image.width;
-      //   canvas.height = image.height;
-      //   let ctx: CanvasRenderingContext2D = canvas.getContext("2d");
-      //   ctx.drawImage(image, 0, 0);
-      //   let imageData: ImageData = ctx.getImageData(0, 0, image.width, image.height);
-      //   let data: Uint8ClampedArray = imageData.data;
-
-      //   let sumMetallic: number = 0;
-      //   let sumRoughness: number = 0;
-      //   for (let iPixel: number = 0; iPixel < data.length; iPixel += 4) {
-      //     sumMetallic += data[iPixel + 2] / 255;
-      //     sumRoughness += data[iPixel + 1] / 255;
-      //   }
-
-      //   const averageMetallic: number = sumMetallic / (data.length / 4);
-      //   const averageRoughness: number = sumRoughness / (data.length / 4);
-
-      //   gltfMetallicFactor *= averageMetallic;
-      //   gltfRoughnessFactor *= averageRoughness;
-      // }
-
       const gltfBaseColorTexture: GLTF.TextureInfo = gltfMaterial.pbrMetallicRoughness?.baseColorTexture;
       const gltfNormalTexture: GLTF.MaterialNormalTextureInfo = gltfMaterial.normalTexture;
 
@@ -809,8 +781,8 @@ namespace FudgeCore {
       const material: Material = _material ?? new MaterialGLTF(gltfMaterial.name);
       material.name = gltfMaterial.name;
       material.coat = coat;
-      if (gltfMaterial.alphaClip != undefined)
-        material.alphaClip = gltfMaterial.alphaClip;
+      if (gltfMaterial.alphaCutoff != undefined)
+        material.alphaClip = gltfMaterial.alphaCutoff;
       Reflect.set(material, "shaderType", shader);
       // material.setShader(shader);
       if (material instanceof MaterialGLTF)
