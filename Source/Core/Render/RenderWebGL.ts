@@ -609,10 +609,10 @@ namespace FudgeCore {
       );
       RenderWebGL.clear(_cmpCamera.clrBackground);
 
-      // crc3.disable(WebGL2RenderingContext.BLEND);
+      crc3.disable(WebGL2RenderingContext.BLEND);
       for (let node of _nodesOpaque)
         RenderWebGL.drawNode(node, _cmpCamera);
-      // crc3.enable(WebGL2RenderingContext.BLEND);
+      crc3.enable(WebGL2RenderingContext.BLEND);
 
       // ambient occlusion pass
       if (cmpAmbientOcclusion?.isActive)
