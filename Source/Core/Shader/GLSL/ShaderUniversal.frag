@@ -218,7 +218,6 @@ void main() {
   #endif
 
   vec4 vctColor = u_vctColor * v_vctColor;
-  vctColor.rgb *= vctColor.a; // premultiply alpha
 
   #if defined(GOURAUD)
 
@@ -242,7 +241,9 @@ void main() {
   #if defined(TEXTURE) || defined(MATCAP)
     
     // TEXTURE: multiply with texel color
-    vec4 vctColorTexture = texture(u_texColor, v_vctTexture); // has premultiplied alpha by webgl
+    vec4 vctColorTexture = texture(u_texColor, v_vctTexture); // has premultiplied alpha by webgl for correct filtering
+    if (vctColorTexture.a > 0.0) // unpremultiply alpha
+      vctColorTexture.rgb /= vctColorTexture.a; 
     vctFrag *= vctColorTexture;
 
   #endif
@@ -270,7 +271,6 @@ void main() {
 
   if (u_bFogActive) {
     float fFog = getFog(v_vctPosition);
-    vctFrag.rgb /= vctFrag.a; // unpremultiply alpha
     vctFrag.rgb = mix(vctFrag.rgb, u_vctFogColor.rgb, fFog);
 
     #if defined(PARTICLE)
@@ -279,7 +279,5 @@ void main() {
         vctFrag.a = mix(vctFrag.a, 0.0, fFog);                          // fade out particle when in fog to make it disappear completely
 
     #endif
-
-    vctFrag.rgb *= vctFrag.a; // premultiply alpha
   }
 }

@@ -235,7 +235,6 @@ namespace FudgeCore {
      * Set the blend mode to render with
      */
     public static setBlendMode(_mode: BLEND): void {
-      // ⚠️ CAUTION: all blending is done with premultiplied alpha in the shader, so the blend functions are set accordingly
       switch (_mode) {
         case BLEND.OPAQUE:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
@@ -243,18 +242,18 @@ namespace FudgeCore {
           break;
         case BLEND.TRANSPARENT:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
-          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
-          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
           break;
         case BLEND.ADDITIVE:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
-          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
-          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.DST_ALPHA);
+          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
+          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE);
           break;
         case BLEND.SUBTRACTIVE:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT);
-          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
-          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.DST_ALPHA);
+          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
+          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE);
           break;
         case BLEND.MODULATE: // color gets multiplied, tried to copy unitys "Particle Shader: Blending Option: Rendering Mode: Modulate"
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
