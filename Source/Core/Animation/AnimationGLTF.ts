@@ -10,10 +10,10 @@ namespace FudgeCore {
       return GLTFLoader.loadResource(this);
     }
 
-    public serialize(): Serialization {
-      const serialization: Serialization = super.serialize();
-      serialization.framesPerSecond = this.fps;
-      return serialization;
-    }
+    // public serialize(): Serialization {
+    //   const serialization: Serialization = super.serialize();
+    //   serialization.framesPerSecond = this.fps; // TODO: check if this is correct??
+    //   return serialization;
+    // }
   }
 }
