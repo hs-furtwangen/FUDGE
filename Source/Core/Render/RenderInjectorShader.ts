@@ -8,7 +8,7 @@ namespace FudgeCore {
     /**
      * Injects the functionality of this class into the constructor of the given {@link Shader}-subclass
      */
-    public static decorate(_constructor: Function): void {
+    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
       Object.defineProperty(_constructor, "useProgram", {
         value: RenderInjectorShader.useProgram
       });

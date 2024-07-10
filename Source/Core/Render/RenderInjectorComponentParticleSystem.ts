@@ -9,7 +9,7 @@ namespace FudgeCore {
     /**
      * Injects the functionality of this class into the constructor of the {@link ComponentParticleSystem}
      */
-    public static decorate(_constructor: Function): void {
+    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
       Object.defineProperty(_constructor.prototype, "useRenderData", {
         value: RenderInjectorComponentParticleSystem.useRenderData
       });

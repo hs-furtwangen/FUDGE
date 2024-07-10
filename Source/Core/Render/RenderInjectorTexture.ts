@@ -5,7 +5,7 @@ namespace FudgeCore {
    * @internal
    */
   export class RenderInjectorTexture extends RenderInjector {
-    public static decorate(_constructor: Function): void {
+    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
       RenderInjector.inject(_constructor, RenderInjectorTexture);
       Object.defineProperty(_constructor.prototype, "deleteRenderData", {
         value: RenderInjectorTexture.deleteRenderData

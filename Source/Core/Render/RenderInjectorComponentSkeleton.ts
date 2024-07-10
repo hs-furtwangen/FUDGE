@@ -6,7 +6,7 @@ namespace FudgeCore {
    */
   export class RenderInjectorComponentSkeleton {
 
-    public static decorate(_constructor: Function): void {
+    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
       Object.defineProperty(_constructor.prototype, "useRenderBuffer", {
         value: RenderInjectorComponentSkeleton.useRenderBuffer
       });

@@ -86,8 +86,8 @@ namespace FudgeCore {
       }
     };
 
-    public static override decorate(_constructor: Function): void {
-      super.decorate(_constructor.prototype);
+    public static override decorate(_constructor: Function, _context: ClassDecoratorContext): void {
+      super.decorate(_constructor.prototype, _context);
       Object.defineProperty(_constructor.prototype, "getVertexShaderSource", {
         value: RenderInjectorShaderParticleSystem.getVertexShaderSource
       });
