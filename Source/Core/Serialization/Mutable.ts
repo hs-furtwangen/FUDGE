@@ -36,6 +36,39 @@ namespace FudgeCore {
     return mutator;
   }
 
+  // @ts-ignore - as of now we need to polyfill the symbol to make decorator metadata work, see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata
+  Symbol.metadata ??= Symbol("Symbol.metadata");
+
+  /**
+   * Association of an attribute with its specified type (constructor).
+   * @see {@link Metadata}.
+   */
+  export type MetaAttributeTypes = Record<string | symbol, Function>;
+
+  /**
+   * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
+   * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
+   */
+  export interface Metadata {
+    /**
+     * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
+     */
+    attributeTypes?: MetaAttributeTypes;
+  }
+
+  /**
+   * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+   * This way, the intended type of an attribute is known at runtime. Use this to make an attribute a valid drop target in the editor.
+   */
+  export function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+    return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
+      let name: string | symbol = _context.name;
+      let metadata: Metadata = _context.metadata;
+      let types: MetaAttributeTypes = metadata.attributeTypes ??= {};
+      types[name] = _constructor;
+    };
+  }
+
   /**
    * Base class for all types being mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.  
    * Mutables provide a {@link Mutator} that is build by collecting all object-properties that are either of a primitive type or again Mutable.
@@ -131,25 +164,42 @@ namespace FudgeCore {
     //     return <MutatorForComponent>this.getMutator();
     // }
     /**
-     * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values
+     * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
      * Does not recurse into objects!
      */
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
       let types: MutatorAttributeTypes = {};
       for (let attribute in _mutator) {
-        let type: string = null;
-        let value: number | boolean | string | object = _mutator[attribute];
-        if (_mutator[attribute] != undefined)
-          if (typeof (value) == "object")
+        let type: string;
+        let value: number | boolean | string | object | Function = _mutator[attribute];
+
+        if (value != undefined)
+          if (typeof value == "object")
             type = (<General>this)[attribute].constructor.name;
-          else if (typeof (value) == "function")
-            type = value["name"];
+          else if (typeof value == "function")
+            type = value.name;
           else
-            type = _mutator[attribute].constructor.name;
+            type = value.constructor.name;
+
         types[attribute] = type;
       }
       return types;
     }
+
+    /**
+     * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class , if available.
+     */
+    public getMetaAttributeTypes(): MetaAttributeTypes | undefined {
+      return this.getMetadata()?.attributeTypes;
+    }
+
+    /** 
+     * Retrieves the {@link Metadata | metadata} of this instance's class, if available.
+     */
+    public getMetadata(): Metadata | undefined {
+      return this.constructor[Symbol.metadata];
+    }
+
     /**
      * Updates the values of the given mutator according to the current state of the instance
      * @param _mutator 

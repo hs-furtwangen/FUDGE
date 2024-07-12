@@ -271,6 +271,26 @@ declare namespace FudgeCore {
      */
     function getMutatorOfArbitrary(_object: Object): Mutator;
     /**
+     * Association of an attribute with its specified type (constructor).
+     * @see {@link Metadata}.
+     */
+    type MetaAttributeTypes = Record<string | symbol, Function>;
+    /**
+     * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
+     * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
+     */
+    interface Metadata {
+        /**
+         * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
+         */
+        attributeTypes?: MetaAttributeTypes;
+    }
+    /**
+     * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+     * This way, the intended type of an attribute is known at runtime. Use this to make an attribute a valid drop target in the editor.
+     */
+    function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
+    /**
      * Base class for all types being mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      * Mutables provide a {@link Mutator} that is build by collecting all object-properties that are either of a primitive type or again Mutable.
      * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator-method.
@@ -308,10 +328,18 @@ declare namespace FudgeCore {
          * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
          */
         /**
-         * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values
+         * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
          * Does not recurse into objects!
          */
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
+        /**
+         * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class , if available.
+         */
+        getMetaAttributeTypes(): MetaAttributeTypes | undefined;
+        /**
+         * Retrieves the {@link Metadata | metadata} of this instance's class, if available.
+         */
+        getMetadata(): Metadata | undefined;
         /**
          * Updates the values of the given mutator according to the current state of the instance
          * @param _mutator
