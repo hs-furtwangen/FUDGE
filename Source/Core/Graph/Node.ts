@@ -606,14 +606,17 @@ namespace FudgeCore {
     private broadcastEventRecursive(_event: Event): void {
       // capture phase only
       Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
-      let captures: EventListenerUnified[] = this.captures[_event.type] || [];
-      for (let handler of captures)
-        // @ts-ignore
-        handler(_event);
-      // appears to be slower, astonishingly...
-      // captures.forEach(function (handler: Function): void {
-      //     handler(_event);
-      // });
+      let captures: EventListenerUnified[] = this.captures[_event.type];
+      if (captures) {
+        captures = [...captures]; // create a copy to avoid problems with handlers that detach themselves
+        for (let handler of captures)
+          // @ts-ignore
+          handler(_event);
+        // appears to be slower, astonishingly...
+        // captures.forEach(function (handler: Function): void {
+        //     handler(_event);
+        // });
+      }
 
       // same for children
       for (let child of this.children) {
