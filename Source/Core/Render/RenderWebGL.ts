@@ -607,7 +607,6 @@ namespace FudgeCore {
         [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] :
         [WebGL2RenderingContext.COLOR_ATTACHMENT0]
       );
-      RenderWebGL.clear(_cmpCamera.clrBackground);
 
       crc3.disable(WebGL2RenderingContext.BLEND);
       for (let node of _nodesOpaque)

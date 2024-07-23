@@ -108,6 +108,9 @@ namespace FudgeCore {
       this.vrDevice.mtxLocal.rotateY(180); // rotate back because the XR Rig is looking in the direction of negative z
       super.prepare(_prepareBranch);
 
+      Render.resetFramebuffer();
+      Render.clear(this.camera.clrBackground);
+
       let glLayer: XRWebGLLayer = this.session.renderState.baseLayer;
       for (let view of pose.views) {
         let viewport: globalThis.XRViewport = glLayer.getViewport(view);
@@ -120,11 +123,10 @@ namespace FudgeCore {
         this.camera.mtxProjection.set(view.projectionMatrix);
         this.camera.mtxCameraInverse.set(view.transform.inverse.matrix);
 
-        if (this.physicsDebugMode != PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY)
+        if (this.physicsDebugMode != PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY) 
           Render.draw(this.camera);
-        if (this.physicsDebugMode != PHYSICS_DEBUGMODE.NONE) {
+        if (this.physicsDebugMode != PHYSICS_DEBUGMODE.NONE) 
           Physics.draw(this.camera, this.physicsDebugMode);
-        }
       }
 
       // reset for other render operations e.g. picking
