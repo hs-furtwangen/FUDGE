@@ -109,7 +109,7 @@ layout(location = 2) out vec4 vctFragNormal;
       float factor = fDiffuse;                  // Factor for smoothing out transition from surface facing the lightsource to surface facing away from the lightsource
       factor = 1.0 - (pow(factor - 1.0, 8.0));  // The factor is altered in order to clearly see the specular highlight even at steep angles, while still preventing artifacts
 
-      float fSpecular = pow(max(dot(_vctNormal, halfwayDir), 0.0), exp2(u_fSpecular * 4.0)) * factor;
+      float fSpecular = pow(max(dot(_vctNormal, halfwayDir), 0.0), exp2(u_fSpecular * 5.0)) * factor; // TODO: remove magic numbers?
 
       #if defined(TOON)
         
@@ -117,7 +117,7 @@ layout(location = 2) out vec4 vctFragNormal;
 
       #endif
 
-      _vctSpecular += fSpecular * u_fSpecular * u_fIntensity * _vctColor;
+      _vctSpecular += fSpecular * u_fIntensity * _vctColor;
     }
   }
 
