@@ -70,6 +70,16 @@ namespace FudgeCore {
   }
 
   /**
+   * Decorator for making getters in a {@link Mutable} class enumerable. This enables the getters to be included in mutators and subsequently be displayed in the editor.
+   */
+  export function enumerable(_value: unknown, _context:  ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
+    _context.addInitializer(function (this: unknown) {
+      const prototype: unknown = Object.getPrototypeOf(this);
+      Object.defineProperty(prototype, _context.name, { enumerable: true });
+    });
+  }
+
+  /**
    * Base class for all types being mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.  
    * Mutables provide a {@link Mutator} that is build by collecting all object-properties that are either of a primitive type or again Mutable.
    * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator-method.
