@@ -1,39 +1,68 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
-<title>AnimationSprite</title>
-<meta charset="utf-8" />
-<link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="utf-8" />
+  <meta type="settings" autoview="Graph|2023-01-08T11:23:10.539Z|92636" project="{'name':'AnimationSprite','graphAutoView':'Graph|2023-01-08T11:23:10.539Z|92636'}" />
 
-<!--Editor settings of this project-->
-<meta type="settings" autoview="Graph|2023-01-08T11:23:10.539Z|92636" project="{'name':'AnimationSprite','graphAutoView':'Graph|2023-01-08T11:23:10.539Z|92636'}" />
+  <script src="../../../Distribution/OimoPhysics.js"></script>
+  <script src="../../../Distribution/FudgeCore.js"></script>
+  <script src="../../../Distribution/FudgeAid.js"></script>
 
-<!--Activate the following line to include the FUDGE-version of Oimo-Physics. You may want to download a local copy to work offline and be independent from future changes!-->
-<script type="text/javascript" src="https://hs-furtwangen.github.io/FUDGE/Distribution/OimoPhysics.js"></script>
+  <link type="resources" src="Internal.json" />
+  <script src="Main.js" editor="true"></script>
 
-<!--Load FUDGE. You may want to download local copies to work offline and be independent from future changes! Developers working on FUDGE itself may want to create symlinks-->
-<script type="text/javascript" src="../../../Distribution/FudgeCore.js"></script>
-<script type="text/javascript" src="../../../Distribution/FudgeAid.js"></script>
+  <link rel="stylesheet" href="../TestInstructions.css" />
+  <link rel="stylesheet" href="../UI.css" />
+  <script src="../dialog-polyfill.min.js"></script>
+  <script src="../TestInstructions.js"></script>
+  <script src="../UI.js"></script>
+  
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
 
-<!--Link internal resources. The editor only loads the first, but at runtime, multiple files can contribute-->
-<link type="resources" src="Internal.json" />
-
-<!--Load custom scripts-->
-<script type="text/javascript" src="Script/Build/Script.js" editor="true"></script>
-
-<!--Load Autoview script-->
-<script type="text/javascript" src="Autoview.js"></script>
-
+    canvas.fullscreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+<title>Shader</title>
 </head>
+
 <body>
-<!--Dialog shown at startup only-->
-<dialog>
-<p>FUDGE Autoview</p>
-<h1>Title (will be replaced by Autoview)</h1>
-<p>click to start</p>
-</dialog>
-<!--Canvas for FUDGE to render to-->
-<canvas class="fullscreen">
-</canvas>
+  <script>
+    TestInstructions.display({
+      Name: "Shader",
+      Test: [
+        "Shows the different material shaders."
+      ],
+      Setup: [
+        "From left to right the material shaders are: Lit, Flat, Gouraud and Phong.",
+        "The upper row shows the materials with a texture, the middle row without.",
+        "The lower row shows the MatCap material."
+      ],
+      Act: [
+        "Move the camera around."
+      ],
+      Observe: [
+        "Shading should be correct for each material."
+      ]
+    });
+  </script>
+  <!--Canvas for FUDGE to render to-->
+  <canvas class="fullscreen">
+  </canvas>
+  <span is="ui-fps" class="ui-canvas">
+  </span>
+  <div id="ui">
+    <!--UI-Elements, will be filled dynamically-->
+  </div>
 </body>
 </html>
