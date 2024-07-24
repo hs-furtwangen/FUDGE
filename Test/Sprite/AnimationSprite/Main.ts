@@ -1,4 +1,4 @@
-namespace ImportOBJTest {
+namespace AnimationSpriteTest {
   import ƒ = FudgeCore;
   import ƒAid = FudgeAid;
 
