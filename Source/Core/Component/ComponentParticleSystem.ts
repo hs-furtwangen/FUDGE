@@ -16,6 +16,7 @@ namespace FudgeCore {
   @RenderInjectorComponentParticleSystem.decorate
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
+    @type(ParticleSystem)
     public particleSystem: ParticleSystem;
     /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */
     public depthMask: boolean;

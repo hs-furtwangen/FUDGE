@@ -7,6 +7,8 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMesh);
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
+
+    @type(Mesh)
     public mesh: Mesh;
     public skeleton: ComponentSkeleton;
 

@@ -24,6 +24,8 @@ namespace FudgeCore {
 
   function mixinCoatToon<TBase extends new (...args: General[]) => Serializable>(_base: TBase) { // eslint-disable-line
     abstract class CoatToon extends _base {
+
+      @type(Texture)
       public texToon: Texture;
 
       public serialize(): Serialization {

@@ -12,6 +12,11 @@
 /// <reference path="Physics/HelpersPhysics.ts"/>
 /// <reference path="Physics/Joint.ts"/>
 /// <reference path="Physics/JointAxial.ts"/>
+/// <reference path="Texture/Texture.ts"/>
+/// <reference path="Mesh/Mesh.ts"/>
+/// <reference path="Material/Material.ts"/>
+/// <reference path="ParticleSystem/ParticleSystem.ts"/>
+/// <reference path="Component/ComponentSkeleton.ts"/>
 
 
 //global functions
