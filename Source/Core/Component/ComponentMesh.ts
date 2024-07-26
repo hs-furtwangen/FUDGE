@@ -111,12 +111,6 @@ namespace FudgeCore {
       return this;
     }
 
-    public getMutatorForUserInterface(): MutatorForUserInterface {
-      let mutator: MutatorForUserInterface = <MutatorForUserInterface>this.getMutator();
-      // if (!this.mesh)
-      //   mutator.mesh = Mesh;
-      return mutator;
-    }
     //#endregion
 
     public drawGizmosSelected(): void {

@@ -14,6 +14,7 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2022
    */
   @RenderInjectorComponentParticleSystem.decorate
+  @enumerable
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
     @type(ParticleSystem)
@@ -50,6 +51,7 @@ namespace FudgeCore {
     /**
      * Get the number of particles
      */
+    @enumerable
     public get size(): number {
       return this.#size;
     }
@@ -120,19 +122,6 @@ namespace FudgeCore {
       return this;
     }
 
-    public getMutator(_extendable?: boolean): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.size = this.size;
-      return mutator;
-    }
-
-    public getMutatorForUserInterface(): MutatorForUserInterface {
-      let mutator: MutatorForUserInterface = <MutatorForUserInterface>this.getMutator(true);
-      delete mutator.particleSystem;
-      mutator.particleSystem = this.particleSystem?.getMutatorForUserInterface();
-      return mutator;
-    }
-
     public getMutatorForAnimation(): MutatorForAnimation {
       let mutator: MutatorForAnimation = <MutatorForAnimation>this.getMutator();
       delete mutator.particleSystem;
@@ -147,12 +136,6 @@ namespace FudgeCore {
       if (types.playMode)
         types.playMode = PARTICLE_SYSTEM_PLAYMODE;
       return types;
-    }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.randomNumbersRenderData;
-      delete _mutator.time;
     }
     //#endregion
 

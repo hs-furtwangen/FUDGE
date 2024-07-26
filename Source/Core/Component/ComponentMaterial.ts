@@ -44,11 +44,6 @@ namespace FudgeCore {
       await super.deserialize(_serialization[super.constructor.name]);
       return this;
     }
-
-    // public getMutatorForUserInterface(): MutatorForUserInterface {
-    //   let mutatorCoat: MutatorForComponent = this.material.getCoat().getMutatorForComponent();
-    //   return <MutatorForUserInterface><unknown>mutatorCoat;
-    // }
     //#endregion
   }
 }

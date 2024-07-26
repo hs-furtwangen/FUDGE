@@ -54,6 +54,8 @@ namespace FudgeCore {
      * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
      */
     attributeTypes?: MetaAttributeTypes;
+
+    enumerableKeys?: (string | symbol)[];
   }
 
   /**
@@ -71,12 +73,28 @@ namespace FudgeCore {
 
   /**
    * Decorator for making getters in a {@link Mutable} class enumerable. This enables the getters to be included in mutators and subsequently be displayed in the editor.
+   * Has to be applied to the getter as well as to the class itself, to take effect.
    */
-  export function enumerable(_value: unknown, _context:  ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
-    _context.addInitializer(function (this: unknown) {
-      const prototype: unknown = Object.getPrototypeOf(this);
-      Object.defineProperty(prototype, _context.name, { enumerable: true });
-    });
+  export function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
+    // _context.addInitializer(function (this: unknown) { // this is run per instance... ideally we would want to run this once per class
+    //   const prototype: unknown = Object.getPrototypeOf(this);
+    //   const descriptor: PropertyDescriptor = Object.getOwnPropertyDescriptor(prototype, _context.name);
+    //   if (descriptor && descriptor.enumerable == false)
+    //     Object.defineProperty(prototype, _context.name, { enumerable: true });
+    // });
+
+    let metadata: Metadata = _context.metadata;
+    if (_context.kind == "getter" || _context.kind == "accessor") {
+      metadata.enumerableKeys ??= [];
+      metadata.enumerableKeys.push(_context.name.toString());
+      return;
+    }
+    if (_context.kind == "class") {
+      metadata.enumerableKeys ??= [];
+      for (const key of metadata.enumerableKeys)
+        Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
+      return;
+    }
   }
 
   /**
@@ -120,8 +138,9 @@ namespace FudgeCore {
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
      * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
      * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+     * A filter function can be supplied to include {@link Object object}-type attribute values in the mutator that meet the specified condition.
      */
-    public getMutator(_extendable: boolean = false): Mutator {
+    public getMutator(_extendable: boolean = false, _includeAttribute?: (_value: Object) => boolean): Mutator {
       let mutator: Mutator = {};
 
       // collect primitive and mutable attributes
@@ -129,7 +148,7 @@ namespace FudgeCore {
         let value: Object = this[attribute];
         if (value instanceof Function)
           continue;
-        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")))
+        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")) && !_includeAttribute?.(value))
           continue;
         mutator[attribute] = this[attribute];
       }
@@ -197,17 +216,17 @@ namespace FudgeCore {
     }
 
     /**
-     * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class , if available.
+     * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class.
      */
-    public getMetaAttributeTypes(): MetaAttributeTypes | undefined {
-      return this.getMetadata()?.attributeTypes;
+    public getMetaAttributeTypes(): MetaAttributeTypes {
+      return this.getMetadata().attributeTypes ??= {};
     }
 
     /** 
-     * Retrieves the {@link Metadata | metadata} of this instance's class, if available.
+     * Retrieves the {@link Metadata | metadata} of this instance's class.
      */
-    public getMetadata(): Metadata | undefined {
-      return this.constructor[Symbol.metadata];
+    public getMetadata(): Metadata {
+      return this.constructor[Symbol.metadata] ??= {};
     }
 
     /**

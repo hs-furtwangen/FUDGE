@@ -1,4 +1,5 @@
 namespace FudgeCore {
+  @enumerable
   export class AnimationSprite extends Animation {
     public static readonly iSubclass: number = Animation.registerSubclass(AnimationSprite);
     private frames: number = 25;

@@ -4,6 +4,7 @@ namespace FudgeCore {
    * Generates a planar Grid and applies a Heightmap-Function to it.
    * @authors Jirka Dell'Oro-Friedl, HFU, 2021 | Moritz Beaugrand, HFU, 2020
    */
+  @enumerable
   export class MeshRelief extends MeshTerrain {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshRelief);
 

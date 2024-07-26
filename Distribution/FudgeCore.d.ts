@@ -284,6 +284,7 @@ declare namespace FudgeCore {
          * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
          */
         attributeTypes?: MetaAttributeTypes;
+        enumerableKeys?: (string | symbol)[];
     }
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
@@ -292,8 +293,9 @@ declare namespace FudgeCore {
     function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This enables the getters to be included in mutators and subsequently be displayed in the editor.
+     * Has to be applied to the getter as well as to the class itself, to take effect.
      */
-    function enumerable(_value: unknown, _context: ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void;
+    function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void;
     /**
      * Base class for all types being mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      * Mutables provide a {@link Mutator} that is build by collecting all object-properties that are either of a primitive type or again Mutable.
@@ -315,8 +317,9 @@ declare namespace FudgeCore {
          * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
          * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+         * A filter function can be supplied to include {@link Object object}-type attribute values in the mutator that meet the specified condition.
          */
-        getMutator(_extendable?: boolean): Mutator;
+        getMutator(_extendable?: boolean, _includeAttribute?: (_value: Object) => boolean): Mutator;
         /**
          * Collect the attributes of the instance and their values applicable for animation.
          * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
@@ -337,13 +340,13 @@ declare namespace FudgeCore {
          */
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
-         * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class , if available.
+         * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class.
          */
-        getMetaAttributeTypes(): MetaAttributeTypes | undefined;
+        getMetaAttributeTypes(): MetaAttributeTypes;
         /**
-         * Retrieves the {@link Metadata | metadata} of this instance's class, if available.
+         * Retrieves the {@link Metadata | metadata} of this instance's class.
          */
-        getMetadata(): Metadata | undefined;
+        getMetadata(): Metadata;
         /**
          * Updates the values of the given mutator according to the current state of the instance
          * @param _mutator
@@ -698,6 +701,7 @@ declare namespace FudgeCore {
         protected active: boolean;
         constructor();
         protected static registerSubclass(_subclass: typeof Component): number;
+        private static includeAttributeNode;
         get isActive(): boolean;
         /**
          * Is true, when only one instance of the component class can be attached to a node
@@ -725,6 +729,7 @@ declare namespace FudgeCore {
         drawGizmosSelected?(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
+        getMutatorForUserInterface(): MutatorForUserInterface;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
     }
@@ -1858,8 +1863,6 @@ declare namespace FudgeCore {
         set data(_data: ParticleData.System);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutatorForUserInterface(): MutatorForUserInterface;
-        getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }
@@ -2919,7 +2922,6 @@ declare namespace FudgeCore {
         get radius(): number;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutatorForUserInterface(): MutatorForUserInterface;
         drawGizmosSelected(): void;
     }
 }
@@ -2960,11 +2962,8 @@ declare namespace FudgeCore {
         set timeScale(_scale: number);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(_extendable?: boolean): Mutator;
-        getMutatorForUserInterface(): MutatorForUserInterface;
         getMutatorForAnimation(): MutatorForAnimation;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        protected reduceMutator(_mutator: Mutator): void;
         private hndEvent;
         private update;
         private updateTimeScale;

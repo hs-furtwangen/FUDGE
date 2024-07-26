@@ -154,16 +154,6 @@ namespace FudgeCore {
       return this;
     }
 
-    public getMutatorForUserInterface(): MutatorForUserInterface {
-      return <MutatorForUserInterface>super.getMutator(); // remove data from mutator
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.data = this.data;
-      return mutator;
-    }
-
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.cachedMutators;
       delete _mutator.shaderMap;
