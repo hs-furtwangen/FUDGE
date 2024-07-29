@@ -87,9 +87,9 @@ declare namespace FudgeUserInterface {
      * label is recommended for labelled elements, key is used if not given.
      */
     interface CustomElementAttributes {
+        [name: string]: string;
         key: string;
         label?: string;
-        [name: string]: string;
     }
     /**
      * Handles the mapping of CustomElements to their HTML-Tags via customElement.define
@@ -234,6 +234,27 @@ declare namespace FudgeUserInterface {
         getMutatorValue(): Object;
         setMutatorValue(_mutator: ƒ.Mutator): void;
         protected connectedCallback(): void;
+    }
+}
+declare namespace FudgeUserInterface {
+    /**
+     * A standard text input field with a label to it.
+     */
+    class CustomElementOutput extends CustomElement {
+        private static customElement;
+        constructor(_attributes: CustomElementAttributes);
+        /**
+         * Creates the content of the element when connected the first time
+         */
+        connectedCallback(): void;
+        /**
+         * Retrieves the content of the input element
+         */
+        getMutatorValue(): string;
+        /**
+         * Sets the content of the input element
+         */
+        setMutatorValue(_value: string): void;
     }
 }
 declare namespace FudgeUserInterface {

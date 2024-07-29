@@ -61,7 +61,7 @@ namespace FudgeUserInterface {
       for (let key in mutator) {
         let element: HTMLElement = Controller.findChildElementByKey(_domElement, key);
         if (element == null)
-          return mutator;
+          continue;
 
         if (element instanceof CustomElement)
           mutator[key] = (<CustomElement>element).getMutatorValue();
