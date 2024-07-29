@@ -87,9 +87,8 @@ namespace FudgeUserInterface {
      */
     public static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
-      let mutatorTypes: ƒ.MutatorAttributeTypes = {};
-      if (_mutable instanceof ƒ.Mutable)
-        mutatorTypes = _mutable.getMutatorAttributeTypes(mutator);
+      let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
+      
       for (let key in mutator) {
         let element: CustomElement = <CustomElement>Controller.findChildElementByKey(_domElement, key);
         if (!element)
@@ -181,8 +180,18 @@ namespace FudgeUserInterface {
     }
 
     protected mutateOnInput = async (_event: Event): Promise<void> => {
-      this.mutator = this.getMutator();
-      await this.mutable.mutate(this.mutator);
+      let path: string[] = [];
+      for (let target of _event.composedPath()) {
+        if (target == this.domElement)
+          break;
+        
+        let key: string = (<HTMLElement>target).getAttribute("key");
+        if (key)
+          path.push(key);
+      }
+      path.reverse();
+      this.mutator = this.getMutator(); 
+      await this.mutable.mutate(this.mutator, path);
       _event.stopPropagation();
 
       this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));
