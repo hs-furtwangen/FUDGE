@@ -2945,6 +2945,7 @@ declare namespace FudgeCore {
         /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */
         depthMask: boolean;
         blendMode: BLEND;
+        no: Node;
         playMode: PARTICLE_SYSTEM_PLAYMODE;
         duration: number;
         constructor(_particleSystem?: ParticleSystem);

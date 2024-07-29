@@ -194,15 +194,16 @@ namespace FudgeCore {
     // }
     /**
      * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
-     * Does not recurse into objects!
+     * Does not recurse into objects! This will return the decorated {@link Metadata meta-type} instead of the runtime-type of the object, if available.
      */
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
       let types: MutatorAttributeTypes = {};
+      let metaTypes: MetaAttributeTypes = this.getMetaAttributeTypes();
       for (let attribute in _mutator) {
-        let type: string;
+        let type: string = metaTypes[attribute]?.name;
         let value: number | boolean | string | object | Function = _mutator[attribute];
 
-        if (value != undefined)
+        if (value != undefined && type == undefined)
           if (typeof value == "object")
             type = (<General>this)[attribute].constructor.name;
           else if (typeof value == "function")
