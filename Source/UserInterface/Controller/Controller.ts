@@ -191,7 +191,7 @@ namespace FudgeUserInterface {
       }
       path.reverse();
       this.mutator = this.getMutator(); 
-      await this.mutable.mutate(this.mutator, path);
+      await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));
       _event.stopPropagation();
 
       this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));

@@ -254,7 +254,7 @@ declare namespace FudgeUserInterface {
         /**
          * Sets the content of the input element
          */
-        setMutatorValue(_value: string): void;
+        setMutatorValue(_value: FudgeCore.General): void;
     }
 }
 declare namespace FudgeUserInterface {

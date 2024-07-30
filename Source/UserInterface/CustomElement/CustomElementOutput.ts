@@ -35,7 +35,7 @@ namespace FudgeUserInterface {
     /**
      * Sets the content of the input element
      */
-    public setMutatorValue(_value: string): void {
+    public setMutatorValue(_value: FudgeCore.General): void {
       let output: HTMLOutputElement = this.querySelector("output");
       output.value = _value ?? this.getAttribute("placeholder");
       if (_value)
