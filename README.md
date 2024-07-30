@@ -6,9 +6,12 @@ FUDGE is a lightweight open-source game engine and editor created for educating 
 
 Check out these examples to see what can be achieved with FUDGE:
 
+<!--
 - [GameZone](https://games.dm.hs-furtwangen.de/GameZone/): Visit the GameZone to explore a selection of applications created by students using FUDGE. You can filter for "FUDGE" in the technology dropdown to see FUDGE-powered projects.
+-->
 - [Prima-Lectures](https://github.com/JirkaDellOro/Prima#examples): The Prima-Lectures repository contains material from the Prototyping Interactive Media-Applications and Games lectures. You can find examples and resources related to FUDGE there.
 - [UfoUndLost](https://JirkaDellOro.github.io/UfoundLost/UfoundLost.html): UfoUndLost is a project created at the GlobalGameJam 2021 using FUDGE. Take a look to see how FUDGE was utilized in this game jam submission.
+- [Tsentris](https://jirkadelloro.github.io/Tsentris/): Tsentris started as a lecture project in the Prima-Lecture and has been taken further to become a small 3D-Tetris playable also on mobile devices. Connect the blocks to existing ones, 3 or more connected blocks yield points and disappear while the remaining blocks shift towards the center.
 
 # Get Started
 
