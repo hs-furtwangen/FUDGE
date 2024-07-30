@@ -33,10 +33,6 @@ namespace FudgeCore {
 
     protected static registerSubclass(_subclass: typeof Component): number { return Component.subclasses.push(_subclass) - 1; }
 
-    private static includeAttributeNode(_value: Object): boolean {
-      return _value instanceof Node;
-    }
-
     public get isActive(): boolean {
       return this.active;
     }
@@ -104,16 +100,6 @@ namespace FudgeCore {
       return this;
     }
 
-    public getMutatorForUserInterface(): MutatorForUserInterface {
-      let mutator: MutatorForUserInterface = <MutatorForUserInterface>this.getMutator(true, Component.includeAttributeNode); // include node references in the mutator
-      for (let attribute in mutator) {
-        let value: General = mutator[attribute];
-        if (value instanceof Node)
-          mutator[attribute] = value.name;
-      }
-      return mutator;
-    }
-
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       await super.mutate(_mutator, _selection, _dispatchMutate);
       if (typeof (_mutator.active) !== "undefined")
@@ -124,7 +110,6 @@ namespace FudgeCore {
       delete _mutator.singleton;
       delete _mutator.mtxWorld;
     }
-
 
     //#endregion
   }

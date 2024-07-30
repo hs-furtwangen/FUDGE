@@ -4,6 +4,7 @@ namespace FudgeCore {
    * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
+  @enumerable
   export class Material extends Mutable implements SerializableResource {
     /** The name to call the Material by. */
     public name: string;
@@ -33,6 +34,8 @@ namespace FudgeCore {
     /**
      * Returns the currently referenced {@link Coat} instance
      */
+    @type(Coat)
+    @enumerable
     public get coat(): Coat {
       return this.#coat;
     }
@@ -97,12 +100,6 @@ namespace FudgeCore {
       if (_serialization.alphaClip != undefined)
         this.alphaClip = _serialization.alphaClip;
       return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.coat = this.coat.getMutator();
-      return mutator;
     }
 
     protected reduceMutator(_mutator: Mutator): void {

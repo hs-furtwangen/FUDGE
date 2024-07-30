@@ -288,20 +288,28 @@ declare namespace FudgeCore {
     }
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-     * This way, the intended type of an attribute is known at runtime. Use this to make an attribute a valid drop target in the editor.
+     * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
+     *
+     * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator}
+     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
+     * will be displayed via their {@link toString} method in the editor.
      */
     function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
     /**
-     * Decorator for making getters in a {@link Mutable} class enumerable. This enables the getters to be included in mutators and subsequently be displayed in the editor.
-     * Has to be applied to the getter as well as to the class itself, to take effect.
-     */
+     * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
+     *
+     * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
+    */
     function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void;
     /**
-     * Base class for all types being mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
-     * Mutables provide a {@link Mutator} that is build by collecting all object-properties that are either of a primitive type or again Mutable.
-     * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator-method.
+     * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
+     *
+     * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
+     * Using the {@link type}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
+     *
+     * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
      * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
-     * Otherwise, they will be ignored if not handled by an override of the mutate-method in the subclass and throw errors in an automatically generated user-interface for the object.
+     * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
     abstract class Mutable extends EventTargetUnified {
         /**
@@ -317,26 +325,25 @@ declare namespace FudgeCore {
          * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
          * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
-         * A filter function can be supplied to include {@link Object object}-type attribute values in the mutator that meet the specified condition.
          */
-        getMutator(_extendable?: boolean, _includeAttribute?: (_value: Object) => boolean): Mutator;
+        getMutator(_extendable?: boolean): Mutator;
         /**
          * Collect the attributes of the instance and their values applicable for animation.
          * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
          */
-        getMutatorForAnimation(): MutatorForAnimation;
+        getMutatorForAnimation(_extendable?: boolean): MutatorForAnimation;
         /**
          * Collect the attributes of the instance and their values applicable for the user interface.
          * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
          */
-        getMutatorForUserInterface(): MutatorForUserInterface;
+        getMutatorForUserInterface(_extendable?: boolean): MutatorForUserInterface;
         /**
          * Collect the attributes of the instance and their values applicable for indiviualization by the component.
          * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
          */
         /**
          * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
-         * Does not recurse into objects!
+         * Does not recurse into objects! This will return the decorated {@link Metadata meta-type} instead of the runtime-type of the object, if available.
          */
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
@@ -651,6 +658,7 @@ declare namespace FudgeCore {
         removeComponent(_component: Component): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
+        toString(): string;
         /**
          * Creates a string as representation of this node and its descendants
          */
@@ -701,7 +709,6 @@ declare namespace FudgeCore {
         protected active: boolean;
         constructor();
         protected static registerSubclass(_subclass: typeof Component): number;
-        private static includeAttributeNode;
         get isActive(): boolean;
         /**
          * Is true, when only one instance of the component class can be attached to a node
@@ -729,7 +736,6 @@ declare namespace FudgeCore {
         drawGizmosSelected?(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutatorForUserInterface(): MutatorForUserInterface;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
     }
@@ -1785,7 +1791,6 @@ declare namespace FudgeCore {
         getShader(): typeof Shader;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }
@@ -2945,7 +2950,6 @@ declare namespace FudgeCore {
         /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */
         depthMask: boolean;
         blendMode: BLEND;
-        no: Node;
         playMode: PARTICLE_SYSTEM_PLAYMODE;
         duration: number;
         constructor(_particleSystem?: ParticleSystem);

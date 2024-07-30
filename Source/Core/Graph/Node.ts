@@ -501,6 +501,10 @@ namespace FudgeCore {
     }
     // #endregion
 
+    public toString(): string {
+      return this.name;
+    }
+
     /**
      * Creates a string as representation of this node and its descendants
      */
