@@ -210,24 +210,39 @@ details[key^=coat]>summary::after {
   margin: 0px;
 }
 
-details[key^=texture]>summary::after, details[key^=Texture]>summary::after {
+details[type*=Texture]>summary::after {
   mask: url(../Html/Icon/Texture.svg);
   -webkit-mask: url(../Html/Icon/Texture.svg);
 }
 
-details[key^=material]>summary::after, details[key^=Material]>summary::after, details[key^=ComponentMaterial]>summary::after {
+details[type*=Material]>summary::after {
   mask: url(../Html/Icon/Material.svg);
   -webkit-mask: url(../Html/Icon/Material.svg);
 }
 
-details[key^=mesh]>summary::after, details[key^=Mesh]>summary::after, details[key^=ComponentMesh]>summary::after {
+details[type*=Mesh]>summary::after {
   mask: url(../Html/Icon/Mesh.svg);
   -webkit-mask: url(../Html/Icon/Mesh.svg);
 }
 
-details[key^=light]>summary::after, details[key^=ComponentLight]>summary::after {
+details[type*=Light]>summary::after {
   mask: url(../Html/Icon/Light.svg);
   -webkit-mask: url(../Html/Icon/Light.svg);
+}
+
+details[type*=Animation]>summary::after, details[type^=ComponentAnimator]>summary::after {
+  mask: url(../Html/Icon/Animation.svg);
+  -webkit-mask: url(../Html/Icon/Animation.svg);
+}
+
+details[type*=ParticleSystem]>summary::after {
+  mask: url(../Html/Icon/Particles.svg);
+  -webkit-mask: url(../Html/Icon/Particles.svg);
+}
+
+details[type*=Audio]>summary::after {
+  mask: url(../Html/Icon/Audio.svg);
+  -webkit-mask: url(../Html/Icon/Audio.svg);
 }
 
 details[key^=script]>summary::after, details[key^=ComponentScript]>summary::after {
@@ -235,22 +250,17 @@ details[key^=script]>summary::after, details[key^=ComponentScript]>summary::afte
   -webkit-mask: url(../Html/Icon/Script.svg);
 }
 
-details[key^=audio]>summary::after, details[key^=Audio]>summary::after, details[key^=ComponentAudio]>summary::after {
-  mask: url(../Html/Icon/Audio.svg);
-  -webkit-mask: url(../Html/Icon/Audio.svg);
-}
-
-details[key^=ComponentAudioListener]>summary::after {
+details[type^=ComponentAudioListener]>summary::after {
   mask: url(../Html/Icon/Listener.svg);
   -webkit-mask: url(../Html/Icon/Listener.svg);
 }
 
-details[key^=ComponentTransform]>summary::after, details[key^=mtxTransforms]>summary::after {
+details[type^=ComponentTransform]>summary::after, details[key^=mtxTransforms]>summary::after {
   mask: url(../Html/Icon/Transform.svg);
   -webkit-mask: url(../Html/Icon/Transform.svg);
 }
 
-details[key^=ComponentRigidbody]>summary::after {
+details[type^=ComponentRigidbody]>summary::after {
   mask: url(../Html/Icon/Rigidbody.svg);
   -webkit-mask: url(../Html/Icon/Rigidbody.svg);
 }
@@ -260,7 +270,7 @@ details[key^=Joint]>summary::after {
   -webkit-mask: url(../Html/Icon/Joint.svg);
 }
 
-details[key^=ComponentCamera]>summary::after {
+details[type^=ComponentCamera]>summary::after, details[type^=ComponentVRDevice]>summary::after {
   mask: url(../Html/Icon/Camera.svg);
   -webkit-mask: url(../Html/Icon/Camera.svg);
 }
@@ -268,16 +278,6 @@ details[key^=ComponentCamera]>summary::after {
 details[key^=shape]>summary::after {
   mask: url(../Html/Icon/Shape.svg);
   -webkit-mask: url(../Html/Icon/Shape.svg);
-}
-
-details[key^=animation]>summary::after, details[key^=Animation]>summary::after, details[key^=ComponentAnimator]>summary::after {
-  mask: url(../Html/Icon/Animation.svg);
-  -webkit-mask: url(../Html/Icon/Animation.svg);
-}
-
-details[key^=particleSystem]>summary::after, details[key^=ParticleSystem]>summary::after, details[key^=ComponentParticleSystem]>summary::after {
-  mask: url(../Html/Icon/Particles.svg);
-  -webkit-mask: url(../Html/Icon/Particles.svg);
 }
 
 /* Playback */

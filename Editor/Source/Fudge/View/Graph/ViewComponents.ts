@@ -204,7 +204,7 @@ namespace Fudge {
 
       for (let component of components) {
         let details: ƒUi.Details = ƒUi.Generator.createDetailsFromMutable(component);
-        let controller: ControllerDetail = new ControllerDetail(component, details);
+        let controller: ControllerDetail = new ControllerDetail(component, details, this);
         Reflect.set(details, "controller", controller); // insert a link back to the controller
         details.expand(this.expanded[component.type]);
         this.dom.append(details);

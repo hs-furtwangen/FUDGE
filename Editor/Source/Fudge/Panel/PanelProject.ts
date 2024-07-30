@@ -73,7 +73,7 @@ namespace Fudge {
     }
 
     private hndEvent = (_event: CustomEvent): void => {
-      if (_event.type != EVENT_EDITOR.UPDATE && _event.type != EVENT_EDITOR.CREATE && _event.type != EVENT_EDITOR.DELETE)
+      if (_event.type != EVENT_EDITOR.UPDATE && _event.type != EVENT_EDITOR.CREATE && _event.type != EVENT_EDITOR.DELETE && _event.type != EVENT_EDITOR.MODIFY)
         _event.stopPropagation();
       this.setTitle("Project | " + project.name); //why here and everytime?
       if (_event.type == ƒui.EVENT.SELECT) {

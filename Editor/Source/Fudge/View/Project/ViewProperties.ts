@@ -29,7 +29,7 @@ namespace Fudge {
         this.setTitle("Properties | " + this.resource.name);
         if (this.resource instanceof ƒ.Mutable) {
           let fieldset: ƒui.Details = ƒui.Generator.createDetailsFromMutable(this.resource);
-          let uiMutable: ControllerDetail = new ControllerDetail(this.resource, fieldset);
+          let uiMutable: ControllerDetail = new ControllerDetail(this.resource, fieldset, this);
           content = uiMutable.domElement;
         } else if (this.resource instanceof DirectoryEntry && this.resource.stats) {
           content.innerHTML += "Size: " + (this.resource.stats["size"] / 1024).toFixed(2) + " KiB<br/>";
@@ -47,7 +47,7 @@ namespace Fudge {
             content.innerHTML += key + ": " + value + "<br/>";
           }
         } else if (this.resource instanceof ResourceFolder) {
-          let entries: { [name: string]: number } = {} ;
+          let entries: { [name: string]: number } = {};
           for (const entry of this.resource.entries) {
             entries[entry.type] = (entries[entry.type] ?? 0) + 1;
           }
@@ -55,8 +55,7 @@ namespace Fudge {
           for (let type in entries)
             content.innerHTML += `${type}: ${entries[type]}<br/>`;
         }
-      }
-      else {
+      } else {
         this.setTitle("Properties");
         content.innerHTML = "Select an internal or external resource to examine properties";
       }
@@ -76,12 +75,13 @@ namespace Fudge {
         case ƒui.EVENT.MUTATE:
           this.dispatchToParent(EVENT_EDITOR.UPDATE, {});
           break;
-        case EVENT_EDITOR.MODIFY: // let modify pass
+        case EVENT_EDITOR.MODIFY:
+          this.fillContent();
           return;
         default:
           break;
       }
       _event.stopPropagation();
-    }
+    };
   }
 }

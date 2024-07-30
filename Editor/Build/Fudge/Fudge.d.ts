@@ -347,14 +347,15 @@ declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒUi = FudgeUserInterface;
     class ControllerDetail extends ƒUi.Controller {
-        constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement);
-        protected mutateOnInput: (_event: Event) => Promise<void>;
+        #private;
+        constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View);
         private hndInsert;
         private hndKey;
         private hndDragOver;
         private hndDrop;
         private filterDragDrop;
         private getAncestorWithType;
+        private getTargetMutableAndKey;
     }
 }
 declare namespace Fudge {

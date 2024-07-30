@@ -137,7 +137,7 @@ namespace Fudge {
         let item: Electron.MenuItem;
         let path: string[] = Object.assign([], _path);
         path.push(property);
-        if (typeof _mutator[property] === "object") {
+        if (_mutator[property]?.constructor === Object) {
           item = new remote.MenuItem(
             { label: property, submenu: this.getMutatorSubmenu(_mutator[property], path, _callback) }
           );

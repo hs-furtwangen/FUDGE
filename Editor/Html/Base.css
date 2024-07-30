@@ -210,6 +210,12 @@ input {
   border: none;
 }
 
+output.placeholder {
+  background-color: var(--color-background-content);
+  color: var(--color-text);
+  font-style: italic;
+}
+
 *:focus {
   outline: 1px outset var(--color-focus);
   /* background-color: var(--color-focus); */
@@ -314,7 +320,8 @@ option {
 fudge-boolean, fudge-color, fudge-stepper, fudge-select {
   display: block;
 }
-fudge-textinput {
+
+fudge-textinput, fudge-output {
   display: flex;
 }
 
