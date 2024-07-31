@@ -34,12 +34,13 @@ namespace TimeLoop {
   function handleButtonClick(_event: Event): void {
     let lapse: number = Number((<HTMLInputElement>document.querySelector("input[name=lapse]")).value);
     console.log("Timeout set to: " + lapse);
-    ƒ.Time.game.setTimer(lapse, 1, handleTimeout);
+    ƒ.Time.game.setTimer(lapse, 1, handleTimeout, "argument1", "argument2");
   }
-  function handleTimeout(): void {
+  function handleTimeout(_event: ƒ.EventTimer): void {
     let meter: HTMLMeterElement = document.querySelector("[name=event]");
     meter.value = 1 + meter.value % 10;
     handleButtonClick(null);
+    console.log(_event.arguments);
   }
   function handleFrame(_event: Event): void {
     let meter: HTMLMeterElement = document.querySelector("[name=frame]");

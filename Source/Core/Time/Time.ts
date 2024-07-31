@@ -171,7 +171,7 @@ namespace FudgeCore {
      */
     public setTimer(_lapse: number, _count: number, _handler: TimerHandler, ..._arguments: Object[]): number {
       // tslint:disable-next-line: no-unused-expression
-      new Timer(this, _lapse, _count, _handler, _arguments);
+      new Timer(this, _lapse, _count, _handler, ..._arguments);
       //this.addTimer(timer);
       return this.idTimerAddedLast;
     }
