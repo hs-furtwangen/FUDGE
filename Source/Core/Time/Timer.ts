@@ -34,7 +34,7 @@ namespace FudgeCore {
     public constructor(_time: Time, _elapse: number, _count: number, _handler: TimerHandler, ..._arguments: Object[]) {
       this.time = _time;
       this.elapse = _elapse;
-      this.event = new EventTimer(this, _arguments);
+      this.event = new EventTimer(this, ..._arguments);
       this.handler = _handler;
       this.count = _count;
 
