@@ -519,8 +519,11 @@ namespace FudgeCore {
       let cmpLights: RecycableArray<ComponentLight> = _lights.get(LightAmbient);
       if (cmpLights) {
         let clrSum: Color = new Color(0, 0, 0, 0);
-        for (let cmpLight of cmpLights)
-          clrSum.add(cmpLight.light.color);
+        for (let cmpLight of cmpLights) {
+          let clrLight: Color = Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+          clrSum.add(clrLight);
+          Recycler.store(clrLight);
+        }
 
         RenderWebGL.crc3.bufferSubData(
           RenderWebGL.crc3.UNIFORM_BUFFER,
@@ -555,7 +558,9 @@ namespace FudgeCore {
           const lightDataOffset: number = iLight * lightDataSize;
 
           // set vctColor
-          lightsData.set(cmpLight.light.color.get(), lightDataOffset + 0);
+          let clrLight: Color = Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+          lightsData.set(clrLight.get(), lightDataOffset + 0);
+          Recycler.store(clrLight);
 
           // set mtxShape
           let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
