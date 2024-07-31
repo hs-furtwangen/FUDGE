@@ -2391,8 +2391,11 @@ var FudgeCore;
             let cmpLights = _lights.get(FudgeCore.LightAmbient);
             if (cmpLights) {
                 let clrSum = new FudgeCore.Color(0, 0, 0, 0);
-                for (let cmpLight of cmpLights)
-                    clrSum.add(cmpLight.light.color);
+                for (let cmpLight of cmpLights) {
+                    let clrLight = FudgeCore.Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+                    clrSum.add(clrLight);
+                    FudgeCore.Recycler.store(clrLight);
+                }
                 RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsVariableOffsets["u_ambient.vctColor"], new Float32Array(clrSum.get()));
             }
             bufferLightsOfType(FudgeCore.LightDirectional, "u_nLightsDirectional", "u_directional");
@@ -2408,7 +2411,9 @@ var FudgeCore;
                 let iLight = 0;
                 for (let cmpLight of cmpLights) {
                     const lightDataOffset = iLight * lightDataSize;
-                    lightsData.set(cmpLight.light.color.get(), lightDataOffset + 0);
+                    let clrLight = FudgeCore.Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+                    lightsData.set(clrLight.get(), lightDataOffset + 0);
+                    FudgeCore.Recycler.store(clrLight);
                     let mtxTotal = FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
                     if (_type == FudgeCore.LightDirectional) {
                         let zero = FudgeCore.Vector3.ZERO();
@@ -5458,21 +5463,25 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class Light extends FudgeCore.Mutable {
-        constructor(_color = new FudgeCore.Color(1, 1, 1, 1)) {
+        constructor(_color = new FudgeCore.Color(1, 1, 1, 1), _intensity = 1) {
             super();
             this.color = _color;
+            this.intensity = _intensity;
         }
         getType() {
             return this.constructor;
         }
         serialize() {
             let serialization = {
-                color: this.color.serialize()
+                color: this.color.serialize(),
+                intensity: this.intensity
             };
             return serialization;
         }
         async deserialize(_serialization) {
             await this.color.deserialize(_serialization.color);
+            if (_serialization.intensity != undefined)
+                this.intensity = _serialization.intensity;
             return this;
         }
         reduceMutator() { }
@@ -7332,8 +7341,8 @@ var FudgeCore;
         static CSS(_keyword, _alpha) {
             return FudgeCore.Recycler.get(Color).setCSS(_keyword, _alpha);
         }
-        static PRODUCT(_clrA, _clrB) {
-            return _clrA.clone.multiply(_clrB);
+        static PRODUCT(_multiplicant, _multiplier) {
+            return _multiplicant.clone.multiply(_multiplier);
         }
         get clone() {
             return FudgeCore.Recycler.reuse(Color).copy(this);
@@ -7410,11 +7419,19 @@ var FudgeCore;
             this.a += _color.a;
             return this;
         }
-        multiply(_color) {
-            this.r *= _color.r;
-            this.g *= _color.g;
-            this.b *= _color.b;
-            this.a *= _color.a;
+        multiply(_multiplier) {
+            if (_multiplier instanceof Color) {
+                this.r *= _multiplier.r;
+                this.g *= _multiplier.g;
+                this.b *= _multiplier.b;
+                this.a *= _multiplier.a;
+            }
+            else {
+                this.r *= _multiplier;
+                this.g *= _multiplier;
+                this.b *= _multiplier;
+                this.a *= _multiplier;
+            }
             return this;
         }
         toString() {

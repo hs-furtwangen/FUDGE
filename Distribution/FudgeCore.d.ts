@@ -2805,7 +2805,8 @@ declare namespace FudgeCore {
      */
     abstract class Light extends Mutable implements Serializable {
         color: Color;
-        constructor(_color?: Color);
+        intensity: number;
+        constructor(_color?: Color, _intensity?: number);
         /**
          * Returns the {@link TypeOfLight} of this light.
          */
@@ -3781,6 +3782,10 @@ declare namespace FudgeCore {
          */
         static PRODUCT(_clrA: Color, _clrB: Color): Color;
         /**
+         * Computes and retruns the product of a color with a scalar value.
+         */
+        static PRODUCT(_color: Color, _scalar: number): Color;
+        /**
          * Creates and returns a clone of this color.
          */
         get clone(): Color;
@@ -3841,6 +3846,10 @@ declare namespace FudgeCore {
          * Multiplies this with the given color.
          */
         multiply(_color: Color): Color;
+        /**
+         * Multiplies this with the given scalar.
+         */
+        multiply(_scalar: number): Color;
         /**
          * Returns a formatted string representation of this color
          */
