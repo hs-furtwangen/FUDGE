@@ -17688,7 +17688,7 @@ var FudgeCore;
                     if (--this.count == 0)
                         _time.deleteTimerByItsInternalId(this.idWindow);
             };
-            this.idWindow = window.setInterval(callback, this.timeoutReal, _arguments);
+            this.idWindow = window.setInterval(callback, this.timeoutReal, ..._arguments);
             this.active = true;
             _time.addTimer(this);
         }

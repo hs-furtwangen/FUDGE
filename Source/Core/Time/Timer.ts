@@ -63,7 +63,7 @@ namespace FudgeCore {
 
       };
 
-      this.idWindow = window.setInterval(callback, this.timeoutReal, _arguments);
+      this.idWindow = window.setInterval(callback, this.timeoutReal, ..._arguments);
       this.active = true;
       _time.addTimer(this);
     }
