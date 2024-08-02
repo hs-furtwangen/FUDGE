@@ -659,6 +659,9 @@
             "code": "5"
           },
           {
+            "code": "1"
+          },
+          {
             "code": "randomRange(4, 20)"
           },
           {
@@ -674,7 +677,10 @@
             "code": "pow(2.71, -drag * time)"
           },
           {
-            "code": "(1 - timeNormalized) * pow(2.718, -1 * timeNormalized)"
+            "code": "(1 - timeNormalized) * pow(2.718, -decayRateSize * timeNormalized)"
+          },
+          {
+            "code": "max(1 + decayNormalized * 2.5, 1)"
           },
           {
             "code": "randomRange(0.1, 0.3) * decayNormalized"
@@ -682,12 +688,14 @@
         ],
         "variableNames": [
           "drag",
+          "decayRateSize",
           "speed",
           "time",
           "duration",
           "timeNormalized",
           "decay",
           "decayNormalized",
+          "stretch",
           "size"
         ],
         "mtxLocal": [
@@ -726,7 +734,7 @@
                 "value": 1
               },
               {
-                "code": "max(1 + decayNormalized * 2.5, 1)"
+                "code": "stretch"
               }
             ]
           },
@@ -1188,7 +1196,7 @@
         {
           "ƒ.Node": {
             "name": "Sparks",
-            "active": false,
+            "active": true,
             "components": {
               "ComponentMaterial": [
                 {
