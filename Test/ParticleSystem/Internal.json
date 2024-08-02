@@ -1025,7 +1025,7 @@
                     {
                       "ƒ.Node": {
                         "name": "Asteroids",
-                        "active": true,
+                        "active": false,
                         "components": {
                           "ComponentMesh": [
                             {
@@ -1110,7 +1110,7 @@
         {
           "ƒ.Node": {
             "name": "Flame",
-            "active": false,
+            "active": true,
             "components": {
               "ComponentMaterial": [
                 {
@@ -1196,7 +1196,7 @@
         {
           "ƒ.Node": {
             "name": "Sparks",
-            "active": true,
+            "active": false,
             "components": {
               "ComponentMaterial": [
                 {
