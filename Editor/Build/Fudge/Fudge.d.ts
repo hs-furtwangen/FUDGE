@@ -427,6 +427,10 @@ declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
     class ControllerTreeParticleSystem extends ƒui.CustomTreeController<ƒ.ParticleData.Recursive> {
+        static copyPaste: {
+            sources: ƒ.ParticleData.Recursive[];
+            target: ƒ.ParticleData.Recursive;
+        };
         childToParent: Map<ƒ.ParticleData.Recursive, ƒ.ParticleData.Recursive>;
         private data;
         private view;
