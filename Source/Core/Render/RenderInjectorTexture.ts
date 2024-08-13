@@ -5,7 +5,7 @@ namespace FudgeCore {
    * @internal
    */
   export class RenderInjectorTexture extends RenderInjector {
-    public static decorate(_constructor: Function): void {
+    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
       RenderInjector.inject(_constructor, RenderInjectorTexture);
       Object.defineProperty(_constructor.prototype, "deleteRenderData", {
         value: RenderInjectorTexture.deleteRenderData
@@ -53,6 +53,9 @@ namespace FudgeCore {
             crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER, WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR);
             crc3.generateMipmap(WebGL2RenderingContext.TEXTURE_2D);
             break;
+          case MIPMAP.SMOOTH:
+            crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAG_FILTER, WebGL2RenderingContext.LINEAR);
+            crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER, WebGL2RenderingContext.LINEAR);
         }
 
         this.mipmapDirty = false;

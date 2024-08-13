@@ -33,7 +33,6 @@ namespace FudgeCore {
 
     protected static registerSubclass(_subclass: typeof Component): number { return Component.subclasses.push(_subclass) - 1; }
 
-
     public get isActive(): boolean {
       return this.active;
     }
@@ -95,6 +94,7 @@ namespace FudgeCore {
       };
       return serialization;
     }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       this.activate(_serialization.active);
       return this;
@@ -110,6 +110,7 @@ namespace FudgeCore {
       delete _mutator.singleton;
       delete _mutator.mtxWorld;
     }
+
     //#endregion
   }
 }

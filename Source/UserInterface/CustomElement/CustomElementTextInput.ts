@@ -6,14 +6,14 @@ namespace FudgeUserInterface {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-textinput", CustomElementTextInput, String);
 
-    constructor(_attributes: CustomElementAttributes) {
+    public constructor(_attributes: CustomElementAttributes) {
       super(_attributes);
     }
 
     /**
      * Creates the content of the element when connected the first time
      */
-    connectedCallback(): void {
+    public connectedCallback(): void {
       if (this.initialized)
         return;
       this.initialized = true;
@@ -24,7 +24,6 @@ namespace FudgeUserInterface {
       input.id = CustomElement.nextId;
       input.value = this.getAttribute("value");
       this.appendChild(input);
-
     }
 
     /**

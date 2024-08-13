@@ -106,6 +106,10 @@ ul.tree ul {
   padding-left: 1em;
 }
 
+ul.tree fieldset[disabled] {
+  pointer-events: none;
+}
+
 ul.tree input[type=checkbox] {
   appearance: none;
 }
@@ -126,7 +130,7 @@ ul.tree input[type="checkbox"]~ul {
   display: none;
 }
 
-ul.tree input[type="checkbox"]:has(+ fieldset[icon]) {
+ul.tree input[type="checkbox"]:has(+ fieldset>*[icon]) {
   display: none;
 }
 
@@ -204,7 +208,12 @@ input {
   background-color: var(--color-background-content);
   color: var(--color-text);
   border: none;
-  flex: 2;
+}
+
+output.placeholder {
+  background-color: var(--color-background-content);
+  color: var(--color-text);
+  font-style: italic;
 }
 
 *:focus {
@@ -311,7 +320,8 @@ option {
 fudge-boolean, fudge-color, fudge-stepper, fudge-select {
   display: block;
 }
-fudge-textinput {
+
+fudge-textinput, fudge-output {
   display: flex;
 }
 

@@ -87,9 +87,9 @@ declare namespace FudgeUserInterface {
      * label is recommended for labelled elements, key is used if not given.
      */
     interface CustomElementAttributes {
+        [name: string]: string;
         key: string;
         label?: string;
-        [name: string]: string;
     }
     /**
      * Handles the mapping of CustomElements to their HTML-Tags via customElement.define
@@ -234,6 +234,27 @@ declare namespace FudgeUserInterface {
         getMutatorValue(): Object;
         setMutatorValue(_mutator: ƒ.Mutator): void;
         protected connectedCallback(): void;
+    }
+}
+declare namespace FudgeUserInterface {
+    /**
+     * A standard text input field with a label to it.
+     */
+    class CustomElementOutput extends CustomElement {
+        private static customElement;
+        constructor(_attributes: CustomElementAttributes);
+        /**
+         * Creates the content of the element when connected the first time
+         */
+        connectedCallback(): void;
+        /**
+         * Retrieves the content of the input element
+         */
+        getMutatorValue(): string;
+        /**
+         * Sets the content of the input element
+         */
+        setMutatorValue(_value: FudgeCore.General): void;
     }
 }
 declare namespace FudgeUserInterface {
@@ -513,12 +534,12 @@ declare namespace FudgeUserInterface {
          * Override if some objects should not be addable to others
          */
         canAddChildren(_sources: T[], _target: T): boolean;
-        /** Create an HTMLFormElement for the tree item representing the object */
-        abstract createContent(_object: T): HTMLFieldSetElement;
+        /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
+        abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
         abstract getAttributes(_object: T): string;
         /** Process the proposed new value. The id of the html element on which the change occured is passed */
-        abstract setValue(_object: T, _id: string, _new: string): Promise<boolean>;
+        abstract setValue(_object: T, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         /** Return true if the object has children that must be shown when unfolding the tree item */
         abstract hasChildren(_object: T): boolean;
         /** Return the object's children to show when unfolding the tree item */
@@ -576,10 +597,6 @@ declare namespace FudgeUserInterface {
          */
         get content(): HTMLFieldSetElement;
         /**
-         * Set the content representing the attached {@link data}
-         */
-        set content(_content: HTMLFieldSetElement);
-        /**
          * Returns whether this item is expanded, showing it's children, or closed
          */
         get expanded(): boolean;
@@ -616,7 +633,6 @@ declare namespace FudgeUserInterface {
         private create;
         private hndFocus;
         private hndKey;
-        private startTypingInput;
         private hndDblClick;
         private hndChange;
         private hndDragStart;

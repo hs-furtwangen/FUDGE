@@ -36,12 +36,81 @@ namespace FudgeCore {
     return mutator;
   }
 
+  // @ts-ignore - as of now we need to polyfill the symbol to make decorator metadata work, see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata
+  Symbol.metadata ??= Symbol("Symbol.metadata");
+
   /**
-   * Base class for all types being mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.  
-   * Mutables provide a {@link Mutator} that is build by collecting all object-properties that are either of a primitive type or again Mutable.
-   * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator-method.
+   * Association of an attribute with its specified type (constructor).
+   * @see {@link Metadata}.
+   */
+  export type MetaAttributeTypes = Record<string | symbol, Function>;
+
+  /**
+   * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
+   * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
+   */
+  export interface Metadata {
+    /**
+     * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
+     */
+    attributeTypes?: MetaAttributeTypes;
+
+    enumerableKeys?: (string | symbol)[];
+  }
+
+  /**
+   * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+   * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
+   *
+   * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator} 
+   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
+   * will be displayed via their {@link toString} method in the editor.
+   */
+  export function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+    return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
+      let name: string | symbol = _context.name;
+      let metadata: Metadata = _context.metadata;
+      let types: MetaAttributeTypes = metadata.attributeTypes ??= {};
+      types[name] = _constructor;
+    };
+  }
+
+  /**
+   * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
+   * 
+   * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
+  */
+  export function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
+    // _context.addInitializer(function (this: unknown) { // this is run per instance... ideally we would want to run this once per class
+    //   const prototype: unknown = Object.getPrototypeOf(this);
+    //   const descriptor: PropertyDescriptor = Object.getOwnPropertyDescriptor(prototype, _context.name);
+    //   if (descriptor && descriptor.enumerable == false)
+    //     Object.defineProperty(prototype, _context.name, { enumerable: true });
+    // });
+
+    let metadata: Metadata = _context.metadata;
+    if (_context.kind == "getter" || _context.kind == "accessor") {
+      metadata.enumerableKeys ??= [];
+      metadata.enumerableKeys.push(_context.name.toString());
+      return;
+    }
+    if (_context.kind == "class") {
+      metadata.enumerableKeys ??= [];
+      for (const key of metadata.enumerableKeys)
+        Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
+      return;
+    }
+  }
+
+  /**
+   * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
+   * 
+   * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
+   * Using the {@link type}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
+   * 
+   * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
    * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
-   * Otherwise, they will be ignored if not handled by an override of the mutate-method in the subclass and throw errors in an automatically generated user-interface for the object.
+   * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
    */
   export abstract class Mutable extends EventTargetUnified {
     /**
@@ -86,9 +155,9 @@ namespace FudgeCore {
         let value: Object = this[attribute];
         if (value instanceof Function)
           continue;
-        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")))
+        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")) && this.getMetaAttributeTypes()[attribute] == undefined)
           continue;
-        mutator[attribute] = this[attribute];
+        mutator[attribute] = value;
       }
 
       if (!_extendable)
@@ -113,16 +182,18 @@ namespace FudgeCore {
      * Collect the attributes of the instance and their values applicable for animation.
      * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
      */
-    public getMutatorForAnimation(): MutatorForAnimation {
-      return <MutatorForAnimation>this.getMutator();
+    public getMutatorForAnimation(_extendable: boolean = false): MutatorForAnimation {
+      return <MutatorForAnimation>this.getMutator(_extendable);
     }
+   
     /**
      * Collect the attributes of the instance and their values applicable for the user interface.
      * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
      */
-    public getMutatorForUserInterface(): MutatorForUserInterface {
-      return <MutatorForUserInterface>this.getMutator();
+    public getMutatorForUserInterface(_extendable: boolean = false): MutatorForUserInterface {
+      return <MutatorForUserInterface>this.getMutator(_extendable);  // TODO: both of these (this and getMutatorForAnimation) don't really work as they don't recursively call getMutatorForUserInterface on sub-mutable objects, maybe instead implement a reduceMutatorForUserInterface???
     }
+
     /**
      * Collect the attributes of the instance and their values applicable for indiviualization by the component.
      * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
@@ -131,25 +202,43 @@ namespace FudgeCore {
     //     return <MutatorForComponent>this.getMutator();
     // }
     /**
-     * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values
-     * Does not recurse into objects!
+     * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
+     * Does not recurse into objects! This will return the decorated {@link Metadata meta-type} instead of the runtime-type of the object, if available.
      */
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
       let types: MutatorAttributeTypes = {};
+      let metaTypes: MetaAttributeTypes = this.getMetaAttributeTypes();
       for (let attribute in _mutator) {
-        let type: string = null;
-        let value: number | boolean | string | object = _mutator[attribute];
-        if (_mutator[attribute] != undefined)
-          if (typeof (value) == "object")
+        let type: string = metaTypes[attribute]?.name;
+        let value: number | boolean | string | object | Function = _mutator[attribute];
+
+        if (value != undefined && type == undefined)
+          if (typeof value == "object")
             type = (<General>this)[attribute].constructor.name;
-          else if (typeof (value) == "function")
-            type = value["name"];
+          else if (typeof value == "function")
+            type = value.name;
           else
-            type = _mutator[attribute].constructor.name;
+            type = value.constructor.name;
+
         types[attribute] = type;
       }
       return types;
     }
+
+    /**
+     * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class.
+     */
+    public getMetaAttributeTypes(): MetaAttributeTypes {
+      return this.getMetadata().attributeTypes ??= {};
+    }
+
+    /** 
+     * Retrieves the {@link Metadata | metadata} of this instance's class.
+     */
+    public getMetadata(): Metadata {
+      return this.constructor[Symbol.metadata] ??= {};
+    }
+
     /**
      * Updates the values of the given mutator according to the current state of the instance
      * @param _mutator 
@@ -178,13 +267,14 @@ namespace FudgeCore {
      * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
      */
     protected async mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void> {
-      let mutator: Mutator = {};
-      if (!_selection)
-        mutator = _mutator;
-      else
+      let mutator: Mutator = _mutator;
+
+      if (_selection) { // TODO: this doesn't work as it does not recurse into objects
+        mutator = {};
         for (let attribute of _selection) // reduce the mutator to the selection
           if (typeof (_mutator[attribute]) !== "undefined")
             mutator[attribute] = _mutator[attribute];
+      }
 
       for (let attribute in mutator) {
         if (!Reflect.has(this, attribute))

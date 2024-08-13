@@ -1,14 +1,15 @@
 namespace FudgeCore {
+  @enumerable
   export class AnimationSprite extends Animation {
     public static readonly iSubclass: number = Animation.registerSubclass(AnimationSprite);
-    public texture: Texture = TextureDefault.color;
-    private idTexture: string;
     private frames: number = 25;
     private wrapAfter: number = 5;
     private start: Vector2 = new Vector2(0, 0);
     private size: Vector2 = new Vector2(80, 80);
     private next: Vector2 = new Vector2(80, 0);
     private wrap: Vector2 = new Vector2(0, 80);
+
+    #texture: Texture = TextureDefault.color;
 
     // TODO: fps should be a parameter too
     public constructor(_name: string = "AnimationSprite") { //}, _fps: number = 15) {
@@ -17,19 +18,24 @@ namespace FudgeCore {
       this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
     }
 
+    @enumerable
+    @type(Texture)
+    public get texture(): Texture {
+      return this.#texture;
+    }
     /**
      * Sets the texture to be used as the spritesheet
      */
-    public setTexture(_texture: Texture): void {
-      this.texture = _texture;
-      this.idTexture = _texture.idResource;
+    public set texture(_texture: Texture) {
+      this.#texture = _texture;
+      this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
     }
 
     /**
      * Creates this animation sprite from the given arguments
      */
     public create(_texture: Texture, _frames: number, _wrapAfter: number, _start: Vector2, _size: Vector2, _next: Vector2, _wrap: Vector2, _framesPerSecond: number): void {
-      this.setTexture(_texture);
+      this.#texture = _texture;
       this.frames = _frames;
       this.wrapAfter = _wrapAfter;
       this.start = _start;
@@ -51,8 +57,8 @@ namespace FudgeCore {
       for (let frame: number = 0; frame <= this.frames; frame++) {
         let time: number = 1000 * frame / this.framesPerSecond;
         let position: Vector2 = positions[Math.min(frame, this.frames - 1)]; //repeat the last key to give the last frame some time
-        xTranslation.addKey(new AnimationKey(time, position.x / this.texture.texImageSource.width));//, 0, 0, true))
-        yTranslation.addKey(new AnimationKey(time, position.y / this.texture.texImageSource.height));//, 0, 0, true))
+        xTranslation.addKey(new AnimationKey(time, position.x / this.#texture.texImageSource.width));//, 0, 0, true))
+        yTranslation.addKey(new AnimationKey(time, position.y / this.#texture.texImageSource.height));//, 0, 0, true))
       }
 
       this.animationStructure = {
@@ -80,8 +86,8 @@ namespace FudgeCore {
      */
     public getScale(): Vector2 {
       return new Vector2(
-        this.size.x / this.texture.texImageSource.width,
-        this.size.y / this.texture.texImageSource.height
+        this.size.x / this.#texture.texImageSource.width,
+        this.size.y / this.#texture.texImageSource.height
       );
     }
 
@@ -116,7 +122,7 @@ namespace FudgeCore {
     public serialize(): Serialization {
       let serialization: Serialization = {};
       serialization.idResource = this.idResource;
-      serialization.idTexture = this.idTexture;
+      serialization.idTexture = this.#texture.idResource;
       serialization.frames = this.frames;
       serialization.wrapAfter = this.wrapAfter;
       for (let name of ["start", "size", "next", "wrap"])
@@ -130,16 +136,14 @@ namespace FudgeCore {
       return serialization;
     }
 
-    public async deserialize(_s: Serialization): Promise<Serializable> {
-      await super.deserialize(_s[super.constructor.name]);
-      if (_s.idTexture)
-        this.texture = <Texture>await Project.getResource(_s.idTexture);
-      else
-        this.texture = TextureDefault.color;
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization[super.constructor.name]);
+      if (_serialization.idTexture)
+        this.#texture = <Texture>await Project.getResource(_serialization.idTexture);
 
       for (let name of ["start", "size", "next", "wrap"])
-        (<Vector2>Reflect.get(this, name)).deserialize(_s[name]);
-      this.create(this.texture, _s.frames, _s.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
+        (<Vector2>Reflect.get(this, name)).deserialize(_serialization[name]);
+      this.create(this.texture, _serialization.frames, _serialization.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
       return this;
     }
     //#endregion

@@ -43,14 +43,19 @@ namespace FudgeUserInterface {
         let type: Object = mutatorTypes[key];
         let value: Object = mutator[key];
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
+
         if (!element) {
-          let subMutable: ƒ.Mutable;
-          subMutable = Reflect.get(_mutable, key);
-          element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>mutator[key]);
-          if (!element)
-            //Idea: Display an enumerated select here
-            element = new CustomElementTextInput({ key: key, label: key, value: type ? type.toString() : "?" });
+          let subMutable: Object = Reflect.get(_mutable, key);
+          if (subMutable instanceof ƒ.Mutable)
+            element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
         }
+
+        if (!element && type) 
+          element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
+
+        if (!element) // undefined values without a type can't be displayed
+          continue;
+
         div.appendChild(element);
       }
       return div;
@@ -98,7 +103,7 @@ namespace FudgeUserInterface {
           if (!elementType)
             return element;
           // @ts-ignore: instantiate abstract class
-          element = new elementType({ key: _key, label: _key, value: _value.toString() });
+          element = new elementType({ key: _key, label: _key, value: _value?.toString() });
         }
       } catch (_error) {
         ƒ.Debug.fudge(_error);

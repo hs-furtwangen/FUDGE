@@ -52,7 +52,4 @@ void main() {
 
   if (vctFrag.a < 0.01)
     discard;
-
-  // premultiply alpha for blending
-  vctFrag.rgb *= vctFrag.a;
 }

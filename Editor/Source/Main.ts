@@ -9,6 +9,7 @@ namespace Main {
 
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const { app, BrowserWindow, Menu, ipcMain } = require("electron");
+  const { join } = <typeof import("path")>require("path");
 
   // couldn't find type in electron d.ts file
   const remote: { initialize: () => void; enable: (contents: Electron.WebContents) => void } = require("@electron/remote/main");
@@ -66,6 +67,7 @@ namespace Main {
     let window: Electron.BrowserWindow = new BrowserWindow({
       width: _width,
       height: _height,
+      icon: join(__dirname, "../Html/Image/Logo64.png"),
       // fullscreen: true,
       webPreferences: {        // preload: path.join(__dirname, "preload.js"),
         nodeIntegration: true,

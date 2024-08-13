@@ -9,7 +9,7 @@ namespace FudgeUserInterface {
     private static customElement: void = CustomElement.register("fudge-stepper", CustomElementStepper, Number);
     public value: number = 0;
 
-    constructor(_attributes?: CustomElementAttributes) {
+    public constructor(_attributes?: CustomElementAttributes) {
       super(_attributes);
       if (_attributes && _attributes["value"])
         this.value = parseFloat(_attributes["value"]);
@@ -18,7 +18,7 @@ namespace FudgeUserInterface {
     /**
      * Creates the content of the element when connected the first time
      */
-    connectedCallback(): void {
+    public connectedCallback(): void {
       if (this.initialized)
         return;
       this.initialized = true;
@@ -100,6 +100,9 @@ namespace FudgeUserInterface {
      * Sets its value and displays it
      */
     public setMutatorValue(_value: number): void {
+      if (_value == undefined)
+        return;
+      
       this.value = _value;
       this.display();
     }
@@ -153,8 +156,7 @@ namespace FudgeUserInterface {
         if (pos < mantissa.length) {
           let char: string = mantissa.charAt(mantissa.length - 1 - pos);
           digit.textContent = char;
-        }
-        else
+        } else
           digit.innerHTML = "&nbsp;";
       }
     }
@@ -255,7 +257,7 @@ namespace FudgeUserInterface {
         default:
           break;
       }
-    }
+    };
 
     private hndWheel = (_event: WheelEvent): void => {
       _event.stopPropagation();
@@ -263,18 +265,18 @@ namespace FudgeUserInterface {
       let change: number = _event.deltaY < 0 ? +1 : -1;
       this.changeDigitFocussed(change);
       this.dispatchEvent(new Event(EVENT.INPUT, { bubbles: true }));
-    }
+    };
 
     private hndInput = (_event: Event): void => {
       this.openInput(false);
-    }
+    };
 
     private hndFocus = (_event: Event): void => {
       if (this.contains(document.activeElement))
         return;
 
       this.activateInnerTabs(false);
-    }
+    };
 
     private changeDigitFocussed(_amount: number): void {
       let digit: Element = document.activeElement;

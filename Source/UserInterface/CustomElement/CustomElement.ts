@@ -7,9 +7,9 @@ namespace FudgeUserInterface {
    * label is recommended for labelled elements, key is used if not given.
    */
   export interface CustomElementAttributes {
+    [name: string]: string;
     key: string;
     label?: string;
-    [name: string]: string;
   }
 
   /**
@@ -26,7 +26,8 @@ namespace FudgeUserInterface {
       super();
       if (_attributes)
         for (let name in _attributes) {
-          this.setAttribute(name, _attributes[name]);
+          if (_attributes[name] != undefined)
+            this.setAttribute(name, _attributes[name]);
         }
     }
 

@@ -40,8 +40,13 @@ namespace FudgeCore {
     /**
      * Computes and retruns the product of two colors. 
      */
-    public static PRODUCT(_clrA: Color, _clrB: Color): Color {
-      return _clrA.clone.multiply(_clrB);
+    public static PRODUCT(_clrA: Color, _clrB: Color): Color;
+    /**
+     * Computes and retruns the product of a color with a scalar value. 
+     */
+    public static PRODUCT(_color: Color, _scalar: number): Color;
+    public static PRODUCT(_multiplicant: Color, _multiplier: Color | number): Color {
+      return _multiplicant.clone.multiply(<General>_multiplier);
     }
 
     /**
@@ -179,11 +184,23 @@ namespace FudgeCore {
     /**
      * Multiplies this with the given color.
      */
-    public multiply(_color: Color): Color {
-      this.r *= _color.r;
-      this.g *= _color.g;
-      this.b *= _color.b;
-      this.a *= _color.a;
+    public multiply(_color: Color): Color;
+    /**
+     * Multiplies this with the given scalar.
+     */
+    public multiply(_scalar: number): Color;
+    public multiply(_multiplier: Color | number): Color {
+      if (_multiplier instanceof Color) {
+        this.r *= _multiplier.r;
+        this.g *= _multiplier.g;
+        this.b *= _multiplier.b;
+        this.a *= _multiplier.a;
+      } else {
+        this.r *= _multiplier;
+        this.g *= _multiplier;
+        this.b *= _multiplier;
+        this.a *= _multiplier;
+      }
       return this;
     }
 

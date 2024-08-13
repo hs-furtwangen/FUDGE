@@ -39,6 +39,7 @@ namespace Mesh {
 
       let cmpMesh: ƒ.ComponentMesh = new ƒ.ComponentMesh(mesh);
       let math: ƒ.ComponentMaterial = new ƒ.ComponentMaterial(material);
+      math.sortForAlpha = true;
       node.addComponent(new ƒ.ComponentTransform());
       node.mtxLocal.translateX(i * 2.5 - 10);
       node.addComponent(cmpMesh);

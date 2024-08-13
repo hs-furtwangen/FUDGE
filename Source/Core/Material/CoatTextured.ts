@@ -4,7 +4,9 @@ namespace FudgeCore {
    */
   @RenderInjectorCoat.decorate
   export class CoatTextured extends CoatColored {
-    public texture: Texture = null;
+
+    @type(Texture)
+    public texture: Texture;
 
     public constructor(_color: Color = new Color(), _texture: Texture = TextureDefault.color) {
       super(_color);

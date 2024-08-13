@@ -846,10 +846,10 @@ namespace FudgeCore {
     //#endregion
 
     private collisionEnter(_contact: OIMO.Contact): void {
-      let bodyA: ComponentRigidbody = _contact.getShape1().userData;
-      let bodyB: ComponentRigidbody = _contact.getShape2().userData;
+      let bodyA: ComponentRigidbody = _contact.getShape1()?.userData;
+      let bodyB: ComponentRigidbody = _contact.getShape2()?.userData;
 
-      if (bodyA.collisions.includes(bodyB)) // already collided
+      if (!bodyA || !bodyB || bodyA.collisions.includes(bodyB)) // already entered
         return;
 
       bodyA.collisions.push(bodyB);
@@ -874,10 +874,10 @@ namespace FudgeCore {
     }
 
     private collisionExit(_contact: OIMO.Contact): void {
-      let bodyA: ComponentRigidbody = _contact.getShape1().userData;
-      let bodyB: ComponentRigidbody = _contact.getShape2().userData;
+      let bodyA: ComponentRigidbody = _contact.getShape1()?.userData;
+      let bodyB: ComponentRigidbody = _contact.getShape2()?.userData;
 
-      if (!bodyA.collisions.includes(bodyB)) // already exited
+      if (!bodyA || !bodyB || !bodyA.collisions.includes(bodyB)) // already exited
         return;
 
       bodyA.collisions.splice(bodyA.collisions.indexOf(bodyB), 1);
@@ -893,38 +893,23 @@ namespace FudgeCore {
     * on either the trigger or the triggered. (This is only possible with the FUDGE OIMO Fork!)
     */
     private triggerEnter(_contact: OIMO.Contact): void {
-      let objHit: ComponentRigidbody; //collision consisting of 2 bodies, so Hit1/2
-      let objHit2: ComponentRigidbody;
-      let event: EventPhysics;  //The event that will be send and the informations added to it
-      let colPoint: Vector3;
+      let bodyA: ComponentRigidbody = _contact.getShape1()?.userData;
+      let bodyB: ComponentRigidbody = _contact.getShape2()?.userData;
 
-      //ADD NEW Triggering - That just happened
-      let collisionManifold: OIMO.Manifold = _contact.getManifold(); //Manifold = Additional informations about the contact
-      objHit = _contact.getShape1().userData;  //Userdata is used to transfer the ƒ.ComponentRigidbody, it's an empty OimoPhysics Variable
-      //Only register the collision on the actual touch, not on "shadowCollide", to register in the moment of impulse calculation
-      if (objHit == null || _contact.isTouching() == false) // only act if the collision is actual touching, so right at the moment when a impulse is happening, not when shapes overlap
+      if (!bodyA || !bodyB || bodyA.triggerings.includes(bodyB)) // already entered
         return;
-      objHit2 = _contact.getShape2().userData;
-      if (objHit2 == null || _contact.isTouching() == false)
-        return;
-      let points: OIMO.ManifoldPoint[] = collisionManifold.getPoints(); //All points in the collision where the two bodies are touching, used to calculate the full impact
-      let normal: OIMO.Vec3 = collisionManifold.getNormal();
-      if (objHit2.triggerings.indexOf(objHit) == -1) { //Fire, if the hit object is not the Body itself but another and it's not already fired.
-        //THE point of collision is the first touching point (EXTENSION: could be the center of all touching points combined)
-        colPoint = objHit2.collisionCenterPoint(points, collisionManifold.getNumPoints());;
-        // Impulses are 0 since, there are no forces/impulses at work, else this would not be a trigger, but a collision
-        objHit2.triggerings.push(objHit); //Tell the object that the event for this object does not need to be fired again
-        event = new EventPhysics(EVENT_PHYSICS.TRIGGER_ENTER, objHit, 0, 0, 0, colPoint, new Vector3(normal.x, normal.y, normal.z)); //Building the actual event, with what object did collide and informations about it
-        objHit2.dispatchEvent(event); //Sending the given event
-      }
-      if (objHit.triggerings.indexOf(objHit2) == -1) { //Same as the above but for the case the SECOND hit object is not the body itself
-        colPoint = objHit.collisionCenterPoint(points, collisionManifold.getNumPoints());
-        // Impulses are 0 since, there are no forces/impulses at work, else this would not be a trigger, but a collision,
-        // also the event is handled before the actual solving impulse step in OIMO
-        objHit.triggerings.push(objHit2);
-        event = new EventPhysics(EVENT_PHYSICS.TRIGGER_ENTER, objHit2, 0, 0, 0, colPoint, new Vector3(normal.x, normal.y, normal.z));
-        objHit.dispatchEvent(event);
-      }
+
+      bodyA.triggerings.push(bodyB);
+      bodyB.triggerings.push(bodyA);
+
+      let manifold: OIMO.Manifold = _contact.getManifold();
+      let points: OIMO.ManifoldPoint[] = manifold.getPoints(); 
+      let normal: OIMO.Vec3 = manifold.getNormal();
+      let collisionNormal: Vector3 = new Vector3(normal.x, normal.y, normal.z);
+      let collisionCenterPoint: Vector3 = bodyA.collisionCenterPoint(points, manifold.getNumPoints());
+
+      bodyA.dispatchEvent(new EventPhysics(EVENT_PHYSICS.TRIGGER_ENTER, bodyB, 0, 0, 0, collisionCenterPoint, collisionNormal));
+      bodyB.dispatchEvent(new EventPhysics(EVENT_PHYSICS.TRIGGER_ENTER, bodyA, 0, 0, 0, collisionCenterPoint, collisionNormal));
     }
 
     /**
@@ -933,26 +918,17 @@ namespace FudgeCore {
     * on either the trigger or the triggered. (This is only possible with the FUDGE OIMO Fork!)
     */
     private triggerExit(_contact: OIMO.Contact): void {
-      //REMOVE OLD Triggering Body
-      let objHit: ComponentRigidbody; //collision consisting of 2 bodies, so Hit1/2
-      let objHit2: ComponentRigidbody;
-      let event: EventPhysics;  //The event that will be send and the informations added to it
-      objHit = _contact.getShape1().userData;
-      objHit2 = _contact.getShape2().userData;
+      let bodyA: ComponentRigidbody = _contact.getShape1()?.userData;
+      let bodyB: ComponentRigidbody = _contact.getShape2()?.userData;
 
-      // Remove both bodies in both cases, of self and other
-      let index: number = objHit.triggerings.indexOf(objHit2); //Find object in the array
-      if (index != -1) {
-        objHit.triggerings.splice(index); //remove it from the array
-        event = new EventPhysics(EVENT_PHYSICS.TRIGGER_EXIT, objHit2, 0, 0, 0);
-        objHit.dispatchEvent(event);
-      }
-      index = objHit2.triggerings.indexOf(objHit); //Find object in the array
-      if (index != -1) {
-        objHit2.triggerings.splice(index); //remove it from the array
-        event = new EventPhysics(EVENT_PHYSICS.TRIGGER_EXIT, objHit, 0, 0, 0);
-        objHit2.dispatchEvent(event);
-      }
+      if (!bodyA || !bodyB || !bodyA.triggerings.includes(bodyB)) // already exited
+        return;
+
+      bodyA.triggerings.splice(bodyA.collisions.indexOf(bodyB), 1);
+      bodyB.triggerings.splice(bodyB.collisions.indexOf(bodyA), 1);
+
+      bodyA.dispatchEvent(new EventPhysics(EVENT_PHYSICS.TRIGGER_EXIT, bodyB, 0, 0, 0));
+      bodyB.dispatchEvent(new EventPhysics(EVENT_PHYSICS.TRIGGER_EXIT, bodyA, 0, 0, 0));
     }
     //#endregion
   }

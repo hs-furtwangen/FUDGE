@@ -7,6 +7,8 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMesh);
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
+
+    @type(Mesh)
     public mesh: Mesh;
     public skeleton: ComponentSkeleton;
 
@@ -109,12 +111,6 @@ namespace FudgeCore {
       return this;
     }
 
-    public getMutatorForUserInterface(): MutatorForUserInterface {
-      let mutator: MutatorForUserInterface = <MutatorForUserInterface>this.getMutator();
-      // if (!this.mesh)
-      //   mutator.mesh = Mesh;
-      return mutator;
-    }
     //#endregion
 
     public drawGizmosSelected(): void {

@@ -58,18 +58,24 @@ namespace FudgeCore {
      * It's possible to pass an id, but should not be done except by the Serializer.
      */
     public static register(_resource: SerializableResource, _idResource?: string): void {
-      if (_resource.idResource)
-        if (_resource.idResource == _idResource)
-          return;
-        else
-          this.deregister(_resource);
-      _resource.idResource = _idResource || Project.generateId(_resource);
+      if (_resource.idResource && _resource.idResource == _idResource)
+        return;
+
+      if (_resource.idResource) // deregister the old id
+        this.deregister(_resource);
+
+      if (_idResource) {
+        _resource.idResource = _idResource;
+        this.deregister(_resource); // deregister the new id
+      }
+
+      if (!_resource.idResource)
+        _resource.idResource = Project.generateId(_resource);
+
       Project.resources[_resource.idResource] = _resource;
 
       if (_resource instanceof Graph)
-        _resource.addEventListener(EVENT.GRAPH_MUTATED,
-          (_event: Event) => this.dispatchEvent(new CustomEvent(EVENT.GRAPH_MUTATED, { detail: _resource }))
-        );
+        _resource.addEventListener(EVENT.GRAPH_MUTATED, (_event: Event) => this.dispatchEvent(new CustomEvent(EVENT.GRAPH_MUTATED, { detail: _resource })));
     }
 
     /**

@@ -8,9 +8,10 @@ namespace FudgeCore {
     public clrPrimary: Color = Color.CSS("white");
     public clrSecondary: Color = Color.CSS("white");
     public mtxPivot: Matrix3x3 = Matrix3x3.IDENTITY();
+    @type(Material)
     public material: Material;
     /** Support sorting of objects with transparency when rendering, render objects in the back first. When this component is used as a part of a {@link ParticleSystem}, try enabling this when disabling {@link ComponentParticleSystem.depthMask} */
-    public sortForAlpha: boolean = false;
+    public sortForAlpha: boolean = false; // TODO: maybe make this a property of the material?
     // public mutatorCoat: MutatorForComponent;
 
     public constructor(_material: Material = null) {
@@ -19,13 +20,6 @@ namespace FudgeCore {
       // this.mutatorCoat = _material.getCoat().getMutatorForComponent();
     }
 
-    /**
-     * Returns true if the material has any areas (color or texture) with alpha < 1.
-     * ⚠️ CAUTION: Computionally expensive for textured materials, see {@link Texture.hasTransparency}
-     */
-    public get hasTransparency(): boolean {
-      return this.material?.hasTransparency || this.clrPrimary.a < 1;
-    }
 
     //#region Transfer
     public serialize(): Serialization {
@@ -50,11 +44,6 @@ namespace FudgeCore {
       await super.deserialize(_serialization[super.constructor.name]);
       return this;
     }
-
-    // public getMutatorForUserInterface(): MutatorForUserInterface {
-    //   let mutatorCoat: MutatorForComponent = this.material.getCoat().getMutatorForComponent();
-    //   return <MutatorForUserInterface><unknown>mutatorCoat;
-    // }
     //#endregion
   }
 }

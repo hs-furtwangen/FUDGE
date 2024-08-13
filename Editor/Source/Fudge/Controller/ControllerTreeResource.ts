@@ -69,34 +69,30 @@ namespace Fudge {
   }
 
   export class ControllerTreeResource extends ƒui.CustomTreeController<ResourceEntry> {
-    public createContent(_object: ResourceEntry): HTMLFieldSetElement {
-      let content: HTMLFieldSetElement = document.createElement("fieldset");
-      let name: HTMLInputElement = document.createElement("input");
-
-      name.value = _object.name;
-      content.appendChild(name);
-
+    public createContent(_object: ResourceEntry): HTMLElement {
+      let input: HTMLInputElement = document.createElement("input");
+      input.value = _object.name;
 
       if (!(_object instanceof ResourceFolder)) {
-        content.setAttribute("icon", _object.type);
+        input.setAttribute("icon", _object.type);
 
         if ((<ƒ.SerializableResourceExternal>_object).status == ƒ.RESOURCE_STATUS.ERROR) {
-          content.classList.add("error");
-          content.title = "Failed to load resource from file. Check the console for details.";
+          input.classList.add("error");
+          input.title = "Failed to load resource from file. Check the console for details.";
         }
       }
 
-      return content;
+      return input;
     }
 
     public getAttributes(_object: ResourceEntry): string {
       return "";
     }
 
-    public async setValue(_entry: ResourceEntry, _id: string, _new: string): Promise<boolean> {
-      let rename: boolean = _entry.name != _new;
+    public async setValue(_entry: ResourceEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean> {
+      let rename: boolean = _entry.name != _element.value;
       if (rename) {
-        _entry.name = _new;
+        _entry.name = _element.value;
         await (<ƒ.SerializableResourceExternal>_entry).load?.();
       }
 

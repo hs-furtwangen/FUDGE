@@ -1,12 +1,20 @@
 namespace FudgeCore {
+
   /**
    * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
+  @enumerable
   export class Material extends Mutable implements SerializableResource {
     /** The name to call the Material by. */
     public name: string;
     public idResource: string = undefined;
+    
+    /**
+     * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+     */
+    public alphaClip: number = 0.01;
+
     private shaderType: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
 
@@ -26,6 +34,8 @@ namespace FudgeCore {
     /**
      * Returns the currently referenced {@link Coat} instance
      */
+    @type(Coat)
+    @enumerable
     public get coat(): Coat {
       return this.#coat;
     }
@@ -40,15 +50,6 @@ namespace FudgeCore {
           else
             throw (new Error("Shader and coat don't match"));
       this.#coat = _coat;
-    }
-
-    /**
-     * Returns true if the material has any areas (color or texture) with alpha < 1.
-     * ⚠️ CAUTION: Computionally expensive for textured materials, see {@link Texture.hasTransparency}
-     */
-    public get hasTransparency(): boolean {
-      let coat: CoatTextured = <CoatTextured>this.coat;
-      return coat.color?.a < 1 || coat.texture?.hasTransparency;
     }
 
     /**
@@ -85,7 +86,8 @@ namespace FudgeCore {
         name: this.name,
         idResource: this.idResource,
         shader: this.shaderType.name,
-        coat: Serializer.serialize(this.#coat)
+        coat: Serializer.serialize(this.#coat),
+        alphaClip: this.alphaClip
       };
       return serialization;
     }
@@ -95,13 +97,9 @@ namespace FudgeCore {
       this.shaderType = (<General>FudgeCore)[_serialization.shader];
       let coat: Coat = <Coat>await Serializer.deserialize(_serialization.coat);
       this.coat = coat;
+      if (_serialization.alphaClip != undefined)
+        this.alphaClip = _serialization.alphaClip;
       return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.coat = this.coat.getMutator();
-      return mutator;
     }
 
     protected reduceMutator(_mutator: Mutator): void {

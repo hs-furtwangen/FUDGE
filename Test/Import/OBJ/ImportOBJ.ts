@@ -4,9 +4,6 @@ namespace ImportOBJTest {
 
   window.addEventListener("load", init);
   export let viewport: ƒ.Viewport;
-  export let loader: ƒ.GLTFLoader;
-  export let loaded: ƒ.Node;
-  export let cmpAnimator: ƒ.ComponentAnimator;
 
   async function init(): Promise<void> {
     let graphId: string = document.head.querySelector("meta[autoView]").getAttribute("autoView");

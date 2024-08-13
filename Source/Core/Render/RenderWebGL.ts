@@ -55,6 +55,11 @@ namespace FudgeCore {
       UNIFORM: "u_texText", // TODO: add text uniform to shader...
       UNIT: WebGL2RenderingContext.TEXTURE3,
       INDEX: 3
+    },
+    TOON: {
+      UNIFORM: "u_texToon",
+      UNIT: WebGL2RenderingContext.TEXTURE4,
+      INDEX: 4
     }
   } as const;
 
@@ -257,7 +262,6 @@ namespace FudgeCore {
      * Set the blend mode to render with
      */
     public static setBlendMode(_mode: BLEND): void {
-      // ⚠️ CAUTION: all blending is done with premultiplied alpha in the shader, so the blend functions are set accordingly
       switch (_mode) {
         case BLEND.OPAQUE:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
@@ -265,18 +269,18 @@ namespace FudgeCore {
           break;
         case BLEND.TRANSPARENT:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
-          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
-          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
+          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA);
           break;
         case BLEND.ADDITIVE:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
-          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
-          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.DST_ALPHA);
+          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
+          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE);
           break;
         case BLEND.SUBTRACTIVE:
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT);
-          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
-          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.DST_ALPHA);
+          // RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.ONE, WebGL2RenderingContext.ONE);
+          RenderWebGL.crc3.blendFunc(WebGL2RenderingContext.SRC_ALPHA, WebGL2RenderingContext.ONE);
           break;
         case BLEND.MODULATE: // color gets multiplied, tried to copy unitys "Particle Shader: Blending Option: Rendering Mode: Modulate"
           RenderWebGL.crc3.blendEquation(WebGL2RenderingContext.FUNC_ADD);
@@ -562,8 +566,11 @@ namespace FudgeCore {
       let cmpLights: RecycableArray<ComponentLight> = _lights.get(LightAmbient);
       if (cmpLights) {
         let clrSum: Color = new Color(0, 0, 0, 0);
-        for (let cmpLight of cmpLights)
-          clrSum.add(cmpLight.light.color);
+        for (let cmpLight of cmpLights) {
+          let clrLight: Color = Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+          clrSum.add(clrLight);
+          Recycler.store(clrLight);
+        }
 
         RenderWebGL.crc3.bufferSubData(
           RenderWebGL.crc3.UNIFORM_BUFFER,
@@ -598,7 +605,9 @@ namespace FudgeCore {
           const lightDataOffset: number = iLight * lightDataSize;
 
           // set vctColor
-          lightsData.set(cmpLight.light.color.get(), lightDataOffset + 0);
+          let clrLight: Color = Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+          lightsData.set(clrLight.get(), lightDataOffset + 0);
+          Recycler.store(clrLight);
 
           // set mtxShape
           let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
@@ -650,12 +659,11 @@ namespace FudgeCore {
         [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] :
         [WebGL2RenderingContext.COLOR_ATTACHMENT0]
       );
-      RenderWebGL.clear(_cmpCamera.clrBackground);
 
-      // crc3.disable(WebGL2RenderingContext.BLEND);
+      crc3.disable(WebGL2RenderingContext.BLEND);
       for (let node of _nodesOpaque)
         RenderWebGL.drawNode(node, _cmpCamera);
-      // crc3.enable(WebGL2RenderingContext.BLEND);
+      crc3.enable(WebGL2RenderingContext.BLEND);
 
       // ambient occlusion pass
       if (cmpAmbientOcclusion?.isActive)
@@ -816,13 +824,17 @@ namespace FudgeCore {
         RenderWebGL.crc3.uniformMatrix4fv(uniform, false, _cmpCamera.mtxCameraInverse.get());
       }
 
+      uniform = shader.uniforms["u_fAlphaClip"];
+      if (uniform)
+        RenderWebGL.crc3.uniform1f(uniform, cmpMaterial.material.alphaClip);
+
       if (drawParticles)
-        RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers, _node.getComponent(ComponentFaceCamera), cmpMaterial.sortForAlpha);
+        RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers, _node.getComponent(ComponentFaceCamera));
       else
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
     }
 
-    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera, _sortForAlpha: boolean): void {
+    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       crc3.depthMask(_cmpParticleSystem.depthMask);

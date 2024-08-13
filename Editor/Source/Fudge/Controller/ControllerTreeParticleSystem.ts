@@ -20,8 +20,8 @@ namespace Fudge {
       this.view = _view;
     }
 
-    public createContent(_data: ƒ.ParticleData.Recursive): HTMLFieldSetElement {
-      let content: HTMLFieldSetElement = document.createElement("fieldset");
+    public createContent(_data: ƒ.ParticleData.Recursive): HTMLElement {
+      let content: HTMLSpanElement = document.createElement("span");
       let parentData: ƒ.ParticleData.Recursive = this.childToParent.get(_data);
       let key: string = this.getKey(_data);
       
@@ -97,15 +97,15 @@ namespace Fudge {
       return attributes.join(" ");
     }
     
-    public async setValue(_data: ƒ.ParticleData.Recursive, _id: string, _new: string): Promise<boolean> {
-      let inputAsNumber: number = Number.parseFloat(_new);
+    public async setValue(_data: ƒ.ParticleData.Recursive, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean> {
+      let inputAsNumber: number = Number.parseFloat(_element.value);
 
-      if (_id == ID.NAME && ƒ.ParticleData.isExpression(_data)) {
+      if (_element.id == ID.NAME && ƒ.ParticleData.isExpression(_data)) {
         let errors: string[] = [];
-        if (this.data.variableNames.includes(_new))
-          errors.push(`variable "${_new}" already exists`);
-        if (ƒ.ParticleData.PREDEFINED_VARIABLES[_new])
-          errors.push(`variable "${_new}" is a predefined variable and can not be redeclared. Predefined variables: [${Object.keys(ƒ.ParticleData.PREDEFINED_VARIABLES).join(", ")}]`);
+        if (this.data.variableNames.includes(_element.value))
+          errors.push(`variable "${_element}" already exists`);
+        if (ƒ.ParticleData.PREDEFINED_VARIABLES[_element.value])
+          errors.push(`variable "${_element}" is a predefined variable and can not be redeclared. Predefined variables: [${Object.keys(ƒ.ParticleData.PREDEFINED_VARIABLES).join(", ")}]`);
         if (errors.length > 0) {
           ƒui.Warning.display(errors, "Unable to rename", "Please resolve the errors and try again" );
           return false;
@@ -113,23 +113,23 @@ namespace Fudge {
         
         let index: number = this.data.variables.indexOf(_data);
         let name: string = this.data.variableNames[index];
-        this.data.variableNames[index] = _new;
-        this.renameVariable(name, _new);
+        this.data.variableNames[index] = _element.value;
+        this.renameVariable(name, _element.value);
         return true;
       }
 
-      if (_id == ID.FUNCTION && ƒ.ParticleData.isFunction(_data)) {
-        _data.function = <ƒ.ParticleData.FUNCTION>_new;
+      if (_element.id == ID.FUNCTION && ƒ.ParticleData.isFunction(_data)) {
+        _data.function = <ƒ.ParticleData.FUNCTION>_element.value;
         return true;
       }
 
-      if (_id == ID.TRANSFORMATION && ƒ.ParticleData.isTransformation(_data)) {
-        _data.transformation = <ƒ.ParticleData.Transformation["transformation"]>_new;
+      if (_element.id == ID.TRANSFORMATION && ƒ.ParticleData.isTransformation(_data)) {
+        _data.transformation = <ƒ.ParticleData.Transformation["transformation"]>_element.value;
         return true;
       }
 
-      if (_id == ID.VALUE && (ƒ.ParticleData.isVariable(_data) || ƒ.ParticleData.isConstant(_data))) {
-        let input: string | number = Number.isNaN(inputAsNumber) ? _new : inputAsNumber;
+      if (_element.id == ID.VALUE && (ƒ.ParticleData.isVariable(_data) || ƒ.ParticleData.isConstant(_data))) {
+        let input: string | number = Number.isNaN(inputAsNumber) ? _element.value : inputAsNumber;
         if (typeof input == "string" && !ƒ.ParticleData.PREDEFINED_VARIABLES[input] && this.data.variableNames && !this.data.variableNames.includes(input)) 
           return false;
         _data.value = input;
@@ -137,8 +137,8 @@ namespace Fudge {
         return true;
       }
 
-      if (_id == ID.VALUE && (ƒ.ParticleData.isCode(_data))) {
-        _data.code = _new;
+      if (_element.id == ID.VALUE && (ƒ.ParticleData.isCode(_data))) {
+        _data.code = _element.value;
         return true;
       }
     }

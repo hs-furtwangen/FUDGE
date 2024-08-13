@@ -47,6 +47,12 @@ namespace FudgeCore {
 
     public getMutator(): Mutator {
       let mutator: Mutator = super.getMutator(true);
+      delete mutator.diffuse;
+      delete mutator.specular;
+      delete mutator.intensity;
+      mutator.diffuse = this.diffuse;
+      mutator.specular = this.specular;
+      mutator.intensity = this.intensity;
       mutator.metallic = this.metallic;
       return mutator;
     }

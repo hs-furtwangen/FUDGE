@@ -26,8 +26,8 @@ namespace FudgeCore {
       [ParticleData.FUNCTION.POWER]: 2,
       [ParticleData.FUNCTION.POLYNOMIAL3]: 5,
       [ParticleData.FUNCTION.SQUARE_ROOT]: 1,
-      [ParticleData.FUNCTION.RANDOM]: 1,
-      [ParticleData.FUNCTION.RANDOM_RANGE]: 3
+      [ParticleData.FUNCTION.RANDOM]: 0,
+      [ParticleData.FUNCTION.RANDOM_RANGE]: 2
     };
 
     export const PREDEFINED_VARIABLES: { [key: string]: string } = {
@@ -79,15 +79,17 @@ namespace FudgeCore {
         return `sqrt(${x})`;
       },
       [ParticleData.FUNCTION.RANDOM]: (_parameters: string[]) => {
-        return `fetchRandomNumber(int(${_parameters[0]}), iParticleSystemRandomNumbersSize, iParticleSystemRandomNumbersLength)`;
+        return `fetchRandomNumber(${(RenderInjectorShaderParticleSystem.randomNumberIndexOffset++).toFixed(0)}, iParticleSystemRandomNumbersSize, iParticleSystemRandomNumbersLength)`;
       },
       [ParticleData.FUNCTION.RANDOM_RANGE]: (_parameters: string[]) => {
-        return `(${RenderInjectorShaderParticleSystem.FUNCTIONS["random"](_parameters)} * (${_parameters[2]} - ${_parameters[1]}) + ${_parameters[1]})`;
+        return `(${RenderInjectorShaderParticleSystem.FUNCTIONS["random"]()} * (${_parameters[1]} - ${_parameters[0]}) + ${_parameters[0]})`;
       }
     };
 
-    public static override decorate(_constructor: Function): void {
-      super.decorate(_constructor.prototype);
+    private static randomNumberIndexOffset: number = 0;
+
+    public static override decorate(_constructor: Function, _context: ClassDecoratorContext): void {
+      super.decorate(_constructor.prototype, _context);
       Object.defineProperty(_constructor.prototype, "getVertexShaderSource", {
         value: RenderInjectorShaderParticleSystem.getVertexShaderSource
       });
@@ -103,6 +105,8 @@ namespace FudgeCore {
       let data: ParticleData.System = this.data;
       let mtxLocal: ParticleData.Transformation[] = data?.mtxLocal;
       let mtxWorld: ParticleData.Transformation[] = data?.mtxWorld;
+
+      RenderInjectorShaderParticleSystem.randomNumberIndexOffset = 0;
 
       let source: string = this.vertexShaderSource
         .replace("#version 300 es", `#version 300 es\n#define ${this.define[0]}${data.color ? "\n#define PARTICLE_COLOR" : ""}`)

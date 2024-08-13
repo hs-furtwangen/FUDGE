@@ -4,13 +4,15 @@ namespace FudgeCore {
    * Generates a planar Grid and applies a Heightmap-Function to it.
    * @authors Jirka Dell'Oro-Friedl, HFU, 2021 | Moritz Beaugrand, HFU, 2020
    */
+  @enumerable
   export class MeshRelief extends MeshTerrain {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshRelief);
-    private texture: TextureImage = null;
 
-    public constructor(_name: string = "MeshRelief", _texture: TextureImage = null) {
+    #texture: TextureImage;
+
+    public constructor(_name: string = "MeshRelief", _texture?: TextureImage) {
       super(_name, Vector2.ONE(2), undefined, (_x: number, _z: number) => 0);
-      this.setTexture(_texture);
+      this.texture = _texture;
     }
 
     private static createHeightMapFunction(_texture: TextureImage): HeightMapFunction {
@@ -34,13 +36,19 @@ namespace FudgeCore {
       return crc.getImageData(0, 0, _texture.image.width, _texture.image.height).data;
     }
 
-    /**
-     * Sets the texture to be used as heightmap
+    /** 
+     * The texture to be used as the heightmap.
+     * **Caution!** Setting this causes the mesh to be recreated which can be an expensive operation.
      */
-    public setTexture(_texture: TextureImage = null): void {
+    @enumerable
+    @type(TextureImage)
+    public get texture(): TextureImage {
+      return this.#texture;
+    }
+    public set texture(_texture: TextureImage) {
+      this.#texture = _texture;
       if (!_texture)
         return;
-      this.texture = _texture;
       let resolution: Vector2 = _texture ? new Vector2(_texture.image.width - 1, _texture.image.height - 1) : undefined;
       super.create(resolution, resolution, MeshRelief.createHeightMapFunction(_texture));
     }
@@ -52,23 +60,17 @@ namespace FudgeCore {
       delete serialization.scale;
       delete serialization.resolution;
 
-      if (this.texture)
+      if (this.#texture)
         serialization.idTexture = this.texture.idResource;
 
       return serialization;
     }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      if (_serialization.idTexture) {
+      if (_serialization.idTexture) 
         this.texture = <TextureImage>await Project.getResource(_serialization.idTexture);
-        this.setTexture(this.texture);
-      }
+      
       return this;
-    }
-
-    public async mutate(_mutator: Mutator): Promise<void> {
-      if (typeof (_mutator.texture) !== "undefined")
-        this.setTexture(_mutator.texture);
     }
 
     protected reduceMutator(_mutator: Mutator): void {

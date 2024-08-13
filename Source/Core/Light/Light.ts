@@ -6,10 +6,12 @@ namespace FudgeCore {
    */
   export abstract class Light extends Mutable implements Serializable {
     public color: Color;
+    public intensity: number;
 
-    public constructor(_color: Color = new Color(1, 1, 1, 1)) {
+    public constructor(_color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
       super();
       this.color = _color;
+      this.intensity = _intensity;
     }
 
     /**
@@ -21,13 +23,16 @@ namespace FudgeCore {
 
     public serialize(): Serialization {
       let serialization: Serialization = {
-        color: this.color.serialize()
+        color: this.color.serialize(),
+        intensity: this.intensity
       };
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await this.color.deserialize(_serialization.color);
+      if (_serialization.intensity != undefined)
+        this.intensity = _serialization.intensity;
       return this;
     }
 

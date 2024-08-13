@@ -165,7 +165,8 @@ namespace FudgeCore {
         oimoRigidBody._world.removeRigidBody(oimoRigidBody);
       // what if the rigidbodys oimo-world does not belong to the active instance?
       let id: number = Physics.ƒactive.bodyList.indexOf(_cmpRB);
-      Physics.ƒactive.bodyList.splice(id, 1);
+      if (id > -1)
+        Physics.ƒactive.bodyList.splice(id, 1);
     }
 
     /**

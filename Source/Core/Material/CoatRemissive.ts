@@ -1,6 +1,6 @@
 namespace FudgeCore {
   /**
-   * The simplest {@link Coat} providing just a color
+   * A {@link Coat} providing a color and parameters for the phong shading model.
    */
   @RenderInjectorCoat.decorate
   export class CoatRemissive extends CoatColored {
@@ -46,6 +46,12 @@ namespace FudgeCore {
 
     public getMutator(): Mutator {
       let mutator: Mutator = super.getMutator(true);
+      delete mutator.diffuse;
+      delete mutator.specular;
+      delete mutator.intensity;
+      mutator.diffuse = this.diffuse;
+      mutator.specular = this.specular;
+      mutator.intensity = this.intensity;
       mutator.metallic = this.metallic;
       return mutator;
     }

@@ -153,9 +153,9 @@ out vec4 v_vctColor;
     return mat4(xAxis.x, xAxis.y, xAxis.z, 0.0, yAxis.x, yAxis.y, yAxis.z, 0.0, zAxis.x, zAxis.y, zAxis.z, 0.0, _vctTranslation.x, _vctTranslation.y, _vctTranslation.z, 1.0);
   }
 
-  float fetchRandomNumber(int _iIndex, int _iParticleSystemRandomNumbersSize, int _iParticleSystemRandomNumbersLength) {
-    _iIndex = _iIndex % _iParticleSystemRandomNumbersLength;
-    return texelFetch(u_particleSystemRandomNumbers, ivec2(_iIndex % _iParticleSystemRandomNumbersSize, _iIndex / _iParticleSystemRandomNumbersSize), 0).r;
+  float fetchRandomNumber(int _iOffset, int _iParticleSystemRandomNumbersSize, int _iParticleSystemRandomNumbersLength) {
+    _iOffset = gl_InstanceID + _iOffset % _iParticleSystemRandomNumbersLength;
+    return texelFetch(u_particleSystemRandomNumbers, ivec2(_iOffset % _iParticleSystemRandomNumbersSize, _iOffset / _iParticleSystemRandomNumbersSize), 0).r;
   }
 
 #endif
@@ -201,7 +201,12 @@ void main() {
       a_vctWeights.w * u_mtxBones[a_vctBones.w];
 
     mtxMeshToView = u_mtxWorldToView * mtxMeshToWorld;
-    mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
+
+    #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
+
+      mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
+
+    #endif
 
   #endif
 

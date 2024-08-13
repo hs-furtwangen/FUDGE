@@ -10,6 +10,7 @@ namespace FudgeCore {
   export class ComponentAnimator extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimator);
     //TODO: add functionality to blend from one animation to another.
+    @type(Animation)
     public animation: Animation;
     public playmode: ANIMATION_PLAYMODE;
     public quantization: ANIMATION_QUANTIZATION;

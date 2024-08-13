@@ -5,19 +5,17 @@ namespace Fudge {
 
   export class ControllerTreeDirectory extends ƒUi.CustomTreeController<DirectoryEntry> {
 
-    public createContent(_entry: DirectoryEntry): HTMLFieldSetElement {
-      let content: HTMLFieldSetElement = document.createElement("fieldset");
-      let name: HTMLInputElement = document.createElement("input");
-      name.value = _entry.name;
-      content.appendChild(name);
-      return content;
+    public createContent(_entry: DirectoryEntry): HTMLElement {
+      let input: HTMLInputElement = document.createElement("input");
+      input.value = _entry.name;
+      return input;
     }
 
-    public async setValue(_entry: DirectoryEntry, _id: string, _new: string): Promise<boolean> {
+    public async setValue(_entry: DirectoryEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean> {
       try {
-        _entry.name = _new;
+        _entry.name = _element.value;
       } catch (_error) {
-        ƒ.Debug.warn(`Could not rename file '${_entry.name}' to '${_new}'.`, _error);
+        ƒ.Debug.warn(`Could not rename file '${_entry.name}' to '${_element.value}'.`, _error);
         return false;
       }
 

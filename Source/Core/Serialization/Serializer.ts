@@ -265,17 +265,22 @@ namespace FudgeCore {
       public status: RESOURCE_STATUS = RESOURCE_STATUS.PENDING;
 
       /**
-       * Returns a {@link Serialization} of this resource. By default only the data needed to load it from the external source is serialized ("url", "name", "idResource"). Set _super to true to serialize all data.
+       * Returns a {@link Serialization} of this resource. Only the data needed to load it from the external source is serialized ("url", "name", "idResource").
        */
-      public serialize(_super: boolean = false): Serialization {
-        const serialization: Serialization = _super ? super.serialize() : { idResource: this.idResource, name: this.name };
-        serialization.url = this.url.toString();
+      public serialize(): Serialization {
+        const serialization: Serialization = {
+          idResource: this.idResource,
+          name: this.name,
+          type: this.type,
+          url: this.url.toString()
+        }; 
         return serialization;
       }
 
       public async deserialize(_serialization: Serialization): Promise<Serializable> {
+        Project.register(this, _serialization.idResource);
         this.url = _serialization.url;
-        await super.deserialize(_serialization);
+        this.name = _serialization.name;
         return this.load();
       }
 

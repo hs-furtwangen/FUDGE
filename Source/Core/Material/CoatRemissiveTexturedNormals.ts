@@ -6,7 +6,9 @@ namespace FudgeCore {
    */
   @RenderInjectorCoat.decorate
   export class CoatRemissiveTexturedNormals extends CoatRemissiveTextured {
-    public normalMap: Texture = null;
+
+    @type(Texture)
+    public normalMap: Texture;
 
     public constructor(_color: Color = new Color(), _texture: Texture = TextureDefault.color, _normalMap: Texture = TextureDefault.normal, _diffuse?: number, _specular: number = undefined, _intensity: number = undefined, _metallic: number = undefined) {
       super(_color, _texture, _diffuse, _specular, _intensity, _metallic);

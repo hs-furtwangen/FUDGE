@@ -12,10 +12,17 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      const serialization: Serialization = super.serialize(true);
-      delete serialization.components[ComponentSkeleton.name];
-      delete serialization.children;
-      return serialization;
+      const serializationExternal: Serialization = super.serialize();
+      const serializationNode: Serialization = Node.prototype.serialize.call(this); // this is wasteful as we only need the components deserialized
+      delete serializationNode.components[ComponentSkeleton.name];
+      delete serializationNode.children;
+      return { ...serializationNode, ...serializationExternal };
+    }
+
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization);
+      await Graph.prototype.deserialize.call(this, _serialization);
+      return this;
     }
   }
 }

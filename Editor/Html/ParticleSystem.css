@@ -76,60 +76,62 @@ div[view=ViewParticleSystem] #timeslider::-webkit-slider-thumb {
   height: 25px;
 }
 
-div[view=ViewParticleSystem] ul.tree li[attributes~="variable"]>form>input:first-of-type {
+
+
+div[view=ViewParticleSystem] ul.tree li[attributes~="variable"]>fieldset input:first-of-type {
   font-style: italic;
   padding-right: 0.5em;
 }
 
+div[view=ViewParticleSystem] ul.tree li[attributes~="code"]:not([attributes~="variable"])>fieldset input,
+div[view=ViewParticleSystem] ul.tree li[attributes~="code"]>fieldset input:nth-of-type(2) {
+  font-family: monospace;
+}
 
 div[view=ViewParticleSystem] ul.tree li.warning {
   outline: 1px outset var(--color-warning);
 }
 
-div[view=ViewParticleSystem] li[attributes~="random"] > ul.tree > li:nth-of-type(1) > form::before {
-  content: "index: ";
-}
-
-div[view=ViewParticleSystem] li[attributes~="randomRange"] > ul.tree > li:nth-of-type(2) > form::before {
+div[view=ViewParticleSystem] li[attributes~="randomRange"] > ul.tree > li:nth-of-type(1) > fieldset::before {
   content: "min: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="randomRange"] > ul.tree > li:nth-of-type(3) > form::before {
+div[view=ViewParticleSystem] li[attributes~="randomRange"] > ul.tree > li:nth-of-type(2) > fieldset::before {
   content: "max: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="transformation"] > ul.tree > li:nth-of-type(1) > form::before {
+div[view=ViewParticleSystem] li[attributes~="transformation"] > ul.tree > li:nth-of-type(1) > fieldset::before {
   content: "x: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="transformation"] > ul.tree > li:nth-of-type(2) > form::before {
+div[view=ViewParticleSystem] li[attributes~="transformation"] > ul.tree > li:nth-of-type(2) > fieldset::before {
   content: "y: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="transformation"] > ul.tree > li:nth-of-type(3) > form::before {
+div[view=ViewParticleSystem] li[attributes~="transformation"] > ul.tree > li:nth-of-type(3) > fieldset::before {
   content: "z: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(1) > form::before {
+div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(1) > fieldset::before {
   content: "r: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(2) > form::before {
+div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(2) > fieldset::before {
   content: "g: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(3) > form::before {
+div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(3) > fieldset::before {
   content: "b: ";
 }
 
-div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(4) > form::before {
+div[view=ViewParticleSystem] li[attributes~="color"] > ul.tree > li:nth-of-type(4) > fieldset::before {
   content: "a: ";
 }
 
-div[view=ViewParticleSystem] form input {
+div[view=ViewParticleSystem] fieldset input {
   width: 10em;
 }
 
-div[view=ViewParticleSystem] li[attributes~="code"] form input:focus {
+div[view=ViewParticleSystem] li[attributes~="code"] fieldset input:focus {
   width: 20em;
 }

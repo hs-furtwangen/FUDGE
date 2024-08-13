@@ -178,12 +178,14 @@ namespace FudgeCore {
         return;
       }
 
-      let mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(
-        _cmpRigidbody.getPosition(), _cmpRigidbody.getRotation(), null);
+      let mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(_cmpRigidbody.getPosition(), _cmpRigidbody.getRotation());
       mtxWorld.multiply(_cmpRigidbody.mtxPivotInverse);
       _node.mtxWorld.translation = mtxWorld.translation;
       _node.mtxWorld.rotation = mtxWorld.rotation;
-      let mtxLocal: Matrix4x4 = _node.getParent() ? Matrix4x4.RELATIVE(_node.mtxWorld, _node.getParent().mtxWorld) : _node.mtxWorld;
+      let parent: Node = _node.getParent();
+      let mtxLocal: Matrix4x4 = parent ?
+        Matrix4x4.RELATIVE(_node.mtxWorld, parent.mtxWorld, parent.mtxWorldInverse) :
+        _node.mtxWorld.clone;
       _node.mtxLocal.copy(mtxLocal);
       Recycler.store(mtxWorld);
       Recycler.store(mtxLocal);
