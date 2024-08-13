@@ -367,37 +367,29 @@ namespace FudgeAid {
           if (isSnapping)
             angle = ƒ.Calc.snap(angle, this.snapAngle);
 
-          const mtxWorld: ƒ.Matrix4x4 = this.#mtxWorldBase.clone;
-          mtxWorld.scale(mtxWorld.scaling.apply(_value => 1 / Math.abs(_value || 1))); // normalize scaling to 1 without changing directions, so we keep reflections but discard scaling
-
-          const inverse: ƒ.Matrix4x4 = mtxWorld.clone.invert();
-
-          
-          const offsetLocal: ƒ.Vector3 = this.#offset.clone.transform(inverse, false);
-          const directionLocal: ƒ.Vector3 = this.#direction.clone.transform(inverse, false);
-          const axisLocal: ƒ.Vector3 = axis.clone.transform(inverse, false);
-
-          // Determine the direction of rotation
-          const cross: ƒ.Vector3 = ƒ.Vector3.CROSS(offsetLocal, directionLocal);
-          if (ƒ.Vector3.DOT(axisLocal, cross) < 0)
+          const cross: ƒ.Vector3 = ƒ.Vector3.CROSS(this.#offset, this.#direction);
+          if (ƒ.Vector3.DOT(axis, cross) < 0)
             angle = -angle;
 
-          const rotationLocal: ƒ.Quaternion = ƒ.Quaternion.ROTATION(axisLocal, angle);
+          const rotationWorld: ƒ.Quaternion = ƒ.Quaternion.ROTATION(axis, angle);
 
-          if (isSnapping) {
-            this.#direction.copy(offsetLocal);
-            this.#direction.transform(rotationLocal); // rotate offset into snapped direction
-            this.#direction.transform(inverse.invert(), false); // rotate snapped direction back into world space
+          if (isSnapping) { // rotate offset into snapped direction
+            this.#direction.copy(this.#offset);
+            this.#direction.transform(rotationWorld); 
           }
 
-          const mtxRotation: ƒ.Matrix4x4 = ƒ.Matrix4x4.ROTATION(rotationLocal);
-          const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocal.clone;
-          // normalize scaling to 1 without changing directions, so we keep reflections but discard scaling
-          mtxLocal.scale(mtxLocal.scaling.apply(_value => 1 / Math.abs(_value || 1))); 
-          mtxRotation.multiply(mtxLocal, true);
+          const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocalBase.clone;
+          const mtxRotation: ƒ.Matrix4x4 = ƒ.Matrix4x4.ROTATION(rotationWorld);
+
+          // localRotation = worldInverse * worldRotation * world
+          mtxRotation.multiply(ƒ.Matrix4x4.INVERSE(this.#mtxWorldBase), true);
+          mtxRotation.multiply(this.#mtxWorldBase);
+
+          mtxLocal.multiply(mtxRotation);
           // restore scaling directions
-          mtxRotation.scaling = mtxRotation.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocal.scaling[_component]));
-          this.#mtxLocal.quaternion = mtxRotation.quaternion;
+          mtxLocal.scaling = mtxLocal.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocalBase.scaling[_component]));
+
+          this.#mtxLocal.quaternion = mtxLocal.quaternion;
           break;
         case "scale":
           let scale: number = this.camera.getWorldToPixelScale(this.#mtxWorld.translation);
@@ -431,6 +423,7 @@ namespace FudgeAid {
           }
           mtxScaling.multiply(this.#mtxLocal, true);
 
+          // restore scaling directions
           mtxScaling.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocal.scaling[_component]));
 
           for (const selected of <("x" | "y" | "z")[]><ƒ.General>this.selected)
