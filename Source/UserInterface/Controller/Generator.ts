@@ -45,9 +45,8 @@ namespace FudgeUserInterface {
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
         if (!element) {
-          let subMutable: Object = Reflect.get(_mutable, key);
-          if (subMutable instanceof ƒ.Mutable)
-            element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
+          let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
+          element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>mutator[key]);
         }
 
         if (!element && type) 
