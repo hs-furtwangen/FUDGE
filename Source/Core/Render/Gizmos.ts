@@ -8,7 +8,7 @@ namespace FudgeCore {
     /**
      * Implement this to draw visual aids inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
      */
-    drawGizmos?(_cmpCamera?: ComponentCamera): void;
+    drawGizmos?(_cmpCamera?: ComponentCamera, _picking?: boolean): void;
 
     /**
      * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
@@ -108,7 +108,7 @@ namespace FudgeCore {
     /**
      * Are we currently rendering for picking?
      */
-    private static get picking(): boolean {
+    static get #picking(): boolean {
       return this.pickId != null;
     }
 
@@ -129,7 +129,7 @@ namespace FudgeCore {
       Gizmos.posIcons.clear();
 
       for (const gizmo of _gizmos) {
-        gizmo.drawGizmos?.(_cmpCamera);
+        gizmo.drawGizmos?.(_cmpCamera, Gizmos.#picking);
         if (_selected?.includes(gizmo.node))
           gizmo.drawGizmosSelected?.(_cmpCamera);
       }
@@ -151,7 +151,7 @@ namespace FudgeCore {
         let picks: Pick[] = [];
         for (let gizmo of _gizmos) {
           Gizmos.pickId = picks.length;
-          gizmo.drawGizmos(_cmpCamera);
+          gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
           let pick: Pick = new Pick(gizmo.node);
           pick.gizmo = gizmo;
           picks.push(pick);
@@ -299,6 +299,33 @@ namespace FudgeCore {
     }
 
     /**
+     * Draws an arrow at the given world position, facing in the given direction with the given length and width. 
+     * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
+     */
+    public static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null = MeshPyramid, _alphaOccluded: number = Gizmos.alphaOccluded): void {
+      const scaling: Vector3 = Recycler.reuse(Vector3).set(_width, _width, _length - _size);
+      const mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(_position);
+      mtxWorld.scaling = scaling;
+      mtxWorld.lookIn(_direction, _up);
+      mtxWorld.translateZ(0.5);
+      Gizmos.drawCube(mtxWorld, _color, _alphaOccluded);
+      mtxWorld.translateZ(0.5);
+
+      if (_head == MeshPyramid) {
+        const widthHead: number = _size / 2;
+        mtxWorld.scaling = scaling.set(widthHead, widthHead, _size);
+        mtxWorld.rotateX(90); // rotate the pyramid so it points in the right direction
+      } else {
+        mtxWorld.scaling = scaling.set(_size, _size, _size);
+        mtxWorld.translateZ(0.5); // translate cube/sphere so it sits on top of the arrow
+      }
+
+      Gizmos.drawMesh(Gizmos.getMesh(_head), mtxWorld, _color, _alphaOccluded);
+
+      Recycler.storeMultiple(mtxWorld, scaling);
+    }
+
+    /**
      * Draws a solid cube.
      */
     public static drawCube(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
@@ -337,7 +364,7 @@ namespace FudgeCore {
      * Draws a solid mesh.
      */
     public static drawMesh(_mesh: Mesh, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
-      const shader: ShaderInterface = Gizmos.picking ? ShaderPick : ShaderGizmo;
+      const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
       let renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
@@ -356,7 +383,7 @@ namespace FudgeCore {
 
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      const shader: ShaderInterface = Gizmos.picking ? ShaderPickTextured : ShaderGizmoTextured;
+      const shader: ShaderInterface = Gizmos.#picking ? ShaderPickTextured : ShaderGizmoTextured;
       shader.useProgram();
 
       let mtxWorld: Matrix4x4 = _mtxWorld.clone;
@@ -381,33 +408,6 @@ namespace FudgeCore {
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
 
       Recycler.storeMultiple(mtxWorld, color, back, up);
-    }
-
-    /**
-     * Draws an arrow at the given world position, facing in the given direction with the given length and width. 
-     * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
-     */
-    public static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null = MeshPyramid, _alphaOccluded: number = Gizmos.alphaOccluded): void {
-      const scaling: Vector3 = Recycler.reuse(Vector3).set(_width, _width, _length - _size);
-      const mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(_position);
-      mtxWorld.scaling = scaling;
-      mtxWorld.lookIn(_direction, _up);
-      mtxWorld.translateZ(0.5);
-      Gizmos.drawCube(mtxWorld, _color, _alphaOccluded);
-      mtxWorld.translateZ(0.5);
-
-      if (_head == MeshPyramid) {
-        const widthHead: number = _size / 2;
-        mtxWorld.scaling = scaling.set(widthHead, widthHead, _size);
-        mtxWorld.rotateX(90); // rotate the pyramid so it points in the right direction
-      } else {
-        mtxWorld.scaling = scaling.set(_size, _size, _size);
-        mtxWorld.translateZ(0.5); // translate cube/sphere so it sits on top of the arrow
-      }
-
-      Gizmos.drawMesh(_head == MeshPyramid ? Gizmos.getMesh(MeshPyramid) : _head == MeshCube ? Gizmos.getMesh(MeshCube) : Gizmos.getMesh(MeshSphere), mtxWorld, _color, _alphaOccluded);
-
-      Recycler.storeMultiple(mtxWorld, scaling);
     }
 
     private static bufferPositions(_shader: ShaderInterface, _buffer: WebGLBuffer): void {

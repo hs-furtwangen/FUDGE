@@ -6638,7 +6638,7 @@ declare namespace FudgeCore {
         /**
          * Implement this to draw visual aids inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
          */
-        drawGizmos?(_cmpCamera?: ComponentCamera): void;
+        drawGizmos?(_cmpCamera?: ComponentCamera, _picking?: boolean): void;
         /**
          * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
          */
@@ -6662,10 +6662,6 @@ declare namespace FudgeCore {
         private static get wireSphere();
         private static get wireCone();
         private static get wireCube();
-        /**
-         * Are we currently rendering for picking?
-         */
-        private static get picking();
         /**
          * Draws the given gizmos from the point of view of the given camera.
          */
@@ -6704,6 +6700,11 @@ declare namespace FudgeCore {
          */
         static drawWireMesh(_mesh: Mesh, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
         /**
+         * Draws an arrow at the given world position, facing in the given direction with the given length and width.
+         * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
+         */
+        static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head?: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null, _alphaOccluded?: number): void;
+        /**
          * Draws a solid cube.
          */
         static drawCube(_mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
@@ -6731,11 +6732,6 @@ declare namespace FudgeCore {
          * Draws an icon from a {@link Texture} on a {@link MeshQuad}. The icon is affected by the given transform and color.
          */
         static drawIcon(_texture: Texture, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
-        /**
-         * Draws an arrow at the given world position, facing in the given direction with the given length and width.
-         * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
-         */
-        static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head?: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null, _alphaOccluded?: number): void;
         private static bufferPositions;
         private static bufferColor;
         private static bufferMatrix;
