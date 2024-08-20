@@ -6,6 +6,13 @@ namespace Fudge {
 
     public createContent(_object: ƒ.Node): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");
+      if (_object instanceof ƒ.GraphInstance)
+        ƒ.Project.getResource(_object.idSource).then(_graph => {
+          _object.name = _graph.name;
+          input.value = _graph.name;
+          input.disabled = true;
+          input.readOnly = true;
+        });
       input.value = _object.name;
       return input;
     }
@@ -20,6 +27,11 @@ namespace Fudge {
     public async setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean> {
       let rename: boolean = _node.name != _element.value;
       if (rename) {
+        let instance: ƒ.GraphInstance = inGraphInstance(_node);
+        if (instance) {
+          ƒUi.Dialog.prompt(null, true, `Names of nodes in a GraphInstance will be overwritten by those of the original Graph.<br>Edit the graph "${instance.name}" to rename nodes, save and reload the project`, "Press OK to continue", "OK", "");
+          return false;
+        }
         _node.name = _element.value;
         await (<ƒ.GraphGLTF>_node).load?.();
       }
@@ -39,11 +51,20 @@ namespace Fudge {
       // delete selection independend of focussed item
       let deleted: ƒ.Node[] = [];
       let expend: ƒ.Node[] = this.selection.length > 0 ? this.selection : _focussed;
+
+      for (let node of expend) {
+        let instance: ƒ.GraphInstance = inGraphInstance(node);
+        if (instance) {
+          ƒUi.Dialog.prompt(null, true, `Delete nodes in the original Graph.<br>Edit the graph "${instance.name}" to delete "${node.name}", save and reload the project`, "Press OK to continue", "OK", "");
+          return [];
+        }
+      }
       for (let node of expend)
         if (node.getParent()) {
           node.getParent().removeChild(node);
           deleted.push(node);
         }
+
       this.selection.splice(0);
       return deleted;
     }

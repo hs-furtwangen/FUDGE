@@ -251,6 +251,9 @@ namespace Fudge {
       this.controller.dragDrop.sources = resources;
       this.tree.dispatchEvent(new Event(ƒui.EVENT.DROP, { bubbles: false }));
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
+      if (_viewSource instanceof ViewHierarchy)
+        // //@ts-ignore
+        _viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
     }
 
     private hndKeyboardEvent = (_event: KeyboardEvent): void => {

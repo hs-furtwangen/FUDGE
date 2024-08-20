@@ -170,6 +170,10 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
+    function inGraphInstance(_node: ƒ.Node): ƒ.GraphInstance;
+}
+declare namespace Fudge {
+    import ƒ = FudgeCore;
     const ipcRenderer: Electron.IpcRenderer;
     const remote: typeof import("@electron/remote");
     let project: Project;

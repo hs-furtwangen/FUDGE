@@ -113,6 +113,11 @@ namespace Fudge {
 
       switch (Number(_item.id)) {
         case CONTEXTMENU.ADD_NODE:
+          let instance: ƒ.GraphInstance = inGraphInstance(focus);
+          if (instance) {
+            ƒUi.Dialog.prompt(null, true, `Add nodes in the original Graph.<br>Edit the graph "${instance.name}" to add nodes, save and reload the project`, "Press OK to continue", "OK", "");
+            return;
+          }
           let child: ƒ.Node = new ƒ.Node("New Node");
           this.tree.addChildren([child], focus);
           this.tree.findVisible(child).focus();
@@ -126,11 +131,15 @@ namespace Fudge {
           // focus.addChild(child);
           if (!focus)
             return;
-          this.tree.delete([focus]);
-          focus.getParent().removeChild(focus);
-          ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
-          ƒ.Physics.cleanup();
-          this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
+          // this.tree.delete([focus]);
+          this.tree.controller.delete([focus]).then(_deleted => {
+            if (_deleted.length == 0)
+              return;
+            focus.getParent().removeChild(focus);
+            ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
+            ƒ.Physics.cleanup();
+            this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
+          });
           break;
       }
     }
@@ -144,19 +153,18 @@ namespace Fudge {
 
     //#region EventHandlers
     private hndTreeEvent = (_event: CustomEvent): void => {
+      let node: ƒ.Node = _event.detail?.data;
       switch (_event.type) {
         case ƒUi.EVENT.DELETE:
           this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
           break;
         case ƒUi.EVENT.RENAME:
           if (_event.detail.data instanceof ƒ.Graph) {
-            // _event.detail.data.name = (<HTMLInputElement>_event.target).value;
             this.dispatch(EVENT_EDITOR.UPDATE, { bubbles: true });
           }
           break;
         case ƒUi.EVENT.SELECT:
-          //only dispatch the event to focus the node, if the node is in the current and the previous selection  
-          let node: ƒ.Node = _event.detail["data"];
+          //only dispatch the event to focus the node, if the node is in the current and the previous selection 
           if (this.selectionPrevious.includes(node) && this.selection.includes(node))
             this.dispatch(EVENT_EDITOR.FOCUS, { bubbles: true, detail: { node: node, view: this } });
           this.selectionPrevious = this.selection.slice(0);
@@ -178,8 +186,8 @@ namespace Fudge {
           }
           break;
         case EVENT_EDITOR.UPDATE:
-          if (_event.detail.view instanceof ViewInternal && _event.detail.data == this.graph)
-            this.tree.findItem(this.graph)?.refreshContent();
+          if (_event.detail.view instanceof ViewInternal)
+            this.setGraph(this.graph);
           break;
         case EVENT_EDITOR.CLOSE:
           if (this.graph)
