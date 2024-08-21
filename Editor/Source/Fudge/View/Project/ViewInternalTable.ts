@@ -228,6 +228,9 @@ namespace Fudge {
       }
 
       this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+      if (_viewSource instanceof ViewHierarchy)
+        // //@ts-ignore
+        _viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
     }
 
     private hndKeyboardEvent = (_event: KeyboardEvent): void => {
