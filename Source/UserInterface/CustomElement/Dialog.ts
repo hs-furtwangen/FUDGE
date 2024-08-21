@@ -27,7 +27,8 @@ namespace FudgeUserInterface {
       footer.innerHTML = "<p>" + _callToAction + "</p>";
       let btnCancel: HTMLButtonElement = document.createElement("button");
       btnCancel.innerHTML = _cancel;
-      footer.appendChild(btnCancel);
+      if (_cancel != "")
+        footer.appendChild(btnCancel);
       let btnOk: HTMLButtonElement = document.createElement("button");
       btnOk.innerHTML = _ok;
       footer.appendChild(btnOk);

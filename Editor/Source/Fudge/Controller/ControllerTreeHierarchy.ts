@@ -29,7 +29,7 @@ namespace Fudge {
       if (rename) {
         let instance: ƒ.GraphInstance = inGraphInstance(_node);
         if (instance) {
-          ƒUi.Dialog.prompt(null, true, `Names of nodes in a GraphInstance will be overwritten by those of the original Graph.<br>Edit the graph "${instance.name}" to rename nodes, save and reload the project`, "Press OK to continue", "OK", "");
+          ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `Edit the graph "${instance.name}" to rename nodes, save and reload the project<br>Press OK to continue`, "OK", "");
           return false;
         }
         _node.name = _element.value;
@@ -55,7 +55,7 @@ namespace Fudge {
       for (let node of expend) {
         let instance: ƒ.GraphInstance = inGraphInstance(node);
         if (instance) {
-          ƒUi.Dialog.prompt(null, true, `Delete nodes in the original Graph.<br>Edit the graph "${instance.name}" to delete "${node.name}", save and reload the project`, "Press OK to continue", "OK", "");
+          ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `Edit the graph "${instance.name}" to delete "${node.name}", save and reload the project<br>Press OK to continue`, "OK", "");
           return [];
         }
       }

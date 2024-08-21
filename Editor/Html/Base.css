@@ -277,7 +277,7 @@ dialog>div#content {
 
 dialog>h1 {
   color: var(--color-signal);
-  height: 2em;
+  /* height: 2em; */
 }
 
 dialog>footer>p {

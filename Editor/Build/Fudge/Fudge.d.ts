@@ -170,7 +170,7 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    function inGraphInstance(_node: ƒ.Node): ƒ.GraphInstance;
+    function inGraphInstance(_node: ƒ.Node, _excludeNode?: boolean): ƒ.GraphInstance;
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;

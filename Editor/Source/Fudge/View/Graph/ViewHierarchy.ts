@@ -113,9 +113,9 @@ namespace Fudge {
 
       switch (Number(_item.id)) {
         case CONTEXTMENU.ADD_NODE:
-          let instance: ƒ.GraphInstance = inGraphInstance(focus);
+          let instance: ƒ.GraphInstance = inGraphInstance(focus, false);
           if (instance) {
-            ƒUi.Dialog.prompt(null, true, `Add nodes in the original Graph.<br>Edit the graph "${instance.name}" to add nodes, save and reload the project`, "Press OK to continue", "OK", "");
+            ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`,`To add nodes, edit the graph "${instance.name}", then save and reload the project<br>Press OK to continue`, "OK", "");
             return;
           }
           let child: ƒ.Node = new ƒ.Node("New Node");
