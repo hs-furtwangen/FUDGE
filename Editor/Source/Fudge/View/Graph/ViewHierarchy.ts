@@ -121,6 +121,7 @@ namespace Fudge {
           let child: ƒ.Node = new ƒ.Node("New Node");
           this.tree.addChildren([child], focus);
           this.tree.findVisible(child).focus();
+          this.tree.selectInterval(child, child);
           break;
         case CONTEXTMENU.ACTIVATE_NODE:
           focus.activate(!focus.isActive);
