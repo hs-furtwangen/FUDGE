@@ -46,7 +46,7 @@ namespace FudgeUserInterface {
 
         if (!element) {
           let subMutable: Object = Reflect.get(_mutable, key);
-          if (subMutable instanceof ƒ.Mutable)
+          if (subMutable instanceof ƒ.Mutable || subMutable instanceof ƒ.MutableArray) 
             element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
         }
 
