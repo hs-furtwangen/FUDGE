@@ -81,8 +81,8 @@ namespace FudgeAid {
     public constructor(_viewport: ƒ.Viewport) {
       this.viewport = _viewport;
       this.addListeners();
-      this.#torus = new ƒ.MeshTorus("Torus", 0.5 - 0.0005, 0.005, 60, 8);
-      this.#torusPick = new ƒ.MeshTorus("TorusPick", 0.5 - 0.003, 0.03, 60, 8);
+      this.#torus = new ƒ.MeshTorus("Torus", 80, 0.75, 60, 8); // 80 logical pixel ring radius, 0.75 logical pixel tube radius
+      this.#torusPick = new ƒ.MeshTorus("TorusPick", 80, 5, 60, 8);
       ƒ.Project.deregister(this.#torus);
       ƒ.Project.deregister(this.#torusPick);
     }
@@ -144,23 +144,20 @@ namespace FudgeAid {
       this.#undo.length = 0;
     }
 
-    public drawGizmos(_cmpCamera: ƒ.ComponentCamera): void {
+    public drawGizmos(_cmpCamera: ƒ.ComponentCamera, _picking: boolean): void {
       if (!this.#mtxLocal || !this.#mtxWorld)
         return;
 
-      const isPicking: boolean = _cmpCamera != this.camera; // if the camera is not the viewports, it must be the picking camera
       const world2Pixel: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorld.translation);
 
-      const pyramidArrowWidth: number = world2Pixel * (isPicking ? 10 : 1);
-      const pyramidArrowLength: number = world2Pixel * (isPicking ? 90 : 80);
-      const pyramidArrowSize: number = world2Pixel * 14;
+      const translateArrowWidth: number = world2Pixel * (_picking ? 10 : 1);
+      const translateArrowLength: number = world2Pixel * (_picking ? 90 : 80);
+      const translateArrowSize: number = world2Pixel * 14;
 
-      const circleRadius: number = world2Pixel * 80; // 80 pixels radius
-
-      const cubeArrowWidth: number = world2Pixel * (isPicking ? 10 : 1);
-      const cubeArrowLength: number = world2Pixel * (isPicking ? 83 : 73);
-      const cubeArrowHead: number = world2Pixel * 7;
-      const cubeSize: number = world2Pixel * (isPicking ? 20 : 10);
+      const scaleArrowWidth: number = world2Pixel * (_picking ? 10 : 1);
+      const scaleArrowLength: number = world2Pixel * (_picking ? 83 : 73);
+      const scaleArrowSize: number = world2Pixel * 7;
+      const scaleCubeSize: number = world2Pixel * (_picking ? 20 : 10);
 
       const clrAxes: Record<"x" | "y" | "z", ƒ.Color> = {
         x: this.selected == "x" && !this.#isTransforming ? this.#colors.lite.x : this.#colors.base.x,
@@ -174,39 +171,46 @@ namespace FudgeAid {
         yz: this.selected == "yz" && !this.#isTransforming ? this.#colors.planeLite.yz : this.#colors.plane.yz
       };
 
+      const mtxWorldNormalized: ƒ.Matrix4x4 = this.space == "world" ? ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation) : this.#mtxWorld.clone;
+      mtxWorldNormalized.scale(mtxWorldNormalized.scaling.map(_value => 1 / _value));
+
       switch (this.mode) {
         case "translate":
-
           // draw the axes
           for (const axis of ["x", "y", "z"] as const)
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), pyramidArrowLength, pyramidArrowWidth, pyramidArrowSize, ƒ.MeshPyramid, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
 
           // draw the planes
           for (const [axis, plane] of [["z", "xy"], ["y", "xz"], ["x", "yz"]] as const) {
             if (this.#isTransforming && this.selected != plane)
               continue;
 
-            const mtxWorld: ƒ.Matrix4x4 = ƒ.Matrix4x4.LOOK_IN(this.#mtxWorld.translation, this.#axes[axis](), this.#normals[axis]());
-            mtxWorld.translate(new ƒ.Vector3(world2Pixel * 20, world2Pixel * 20, 0)); // move 20 px
-            mtxWorld.scaling = ƒ.Vector3.ONE(world2Pixel * (isPicking ? 20 : 10)); // scale to size of 20 or 10 px          
-            ƒ.Gizmos.drawSprite(mtxWorld, clrPlanes[plane], 1);
+            const mtxQuad: ƒ.Matrix4x4 = mtxWorldNormalized.clone;
+            if (axis == "x")
+              mtxQuad.rotateY(-90);
+            if (axis == "y")
+              mtxQuad.rotateX(90);
+
+            mtxQuad.translate(new ƒ.Vector3(world2Pixel * 20, world2Pixel * 20, 0)); // move 20 px
+            mtxQuad.scale(ƒ.Vector3.ONE(world2Pixel * (_picking ? 20 : 10))); // scale to size of 20 or 10 px
+            ƒ.Gizmos.drawSprite(mtxQuad, clrPlanes[plane], _picking ? 0 : undefined);
           }
 
           // draw afterimages
           if (this.#isTransforming) {
             const world2PixelBase: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorldBase.translation);
             for (const selected of this.selected)  //@ts-ignore
-              ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.#colors.transparent[selected], this.#axes[selected](), this.#normals[selected](), world2PixelBase * 80, world2PixelBase * 1, world2PixelBase * 14, ƒ.MeshPyramid, 1);
+              ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.#colors.transparent[selected], this.#axes[selected](), this.#normals[selected](), world2PixelBase * 80, world2PixelBase * 1, world2PixelBase * 14, ƒ.MeshPyramid, 0);
             // ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, ƒ.Color.CSS("magenta"), this.#normal, this.#axes[this.selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
           }
 
           break;
         case "rotate":
           if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
-            this.drawCircle(this.#torus, this.#colors.base[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), circleRadius, 1);
+            this.drawCircle(this.#torus, this.#colors.base[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), world2Pixel, 0);
             // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.move, this.axes[this.selected], this.move.magnitude, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.base[this.selected], this.#direction, this.#axes[this.selected](), circleRadius, pyramidArrowWidth, pyramidArrowSize, ƒ.MeshPyramid, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.transparent[this.selected], this.#offset, this.#axes[this.selected](), circleRadius, pyramidArrowWidth, pyramidArrowSize, ƒ.MeshPyramid, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.base[this.selected], this.#direction, this.#axes[this.selected](), translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.transparent[this.selected], this.#offset, this.#axes[this.selected](), translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
 
             break;
           }
@@ -214,36 +218,34 @@ namespace FudgeAid {
           // draw an invisible quad to occlude the tori
           const mtxQuad: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
           const direction: ƒ.Vector3 = _cmpCamera.mtxWorld.forward.negate();
-          mtxQuad.scaling = ƒ.Vector3.ONE(circleRadius * 2);
+          mtxQuad.scaling = ƒ.Vector3.ONE(translateArrowLength * 2);
           mtxQuad.lookIn(direction);
-
-          ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.ALWAYS);
           ƒ.Render.setColorWriteMask(false, false, false, false);
           ƒ.Gizmos.drawQuad(mtxQuad, this.#colors.base.x, 0); // color doesn't matter
           ƒ.Render.setColorWriteMask(true, true, true, true);
-          ƒ.Render.setDepthFunction(ƒ.DEPTH_FUNCTION.LESS);
 
           // draw the tori
-          let torus: ƒ.MeshTorus = isPicking ? this.#torusPick : this.#torus;
-          this.drawCircle(torus, clrAxes.x, this.#axes.x(), this.#normals.x(), circleRadius, 0);
-          this.drawCircle(torus, clrAxes.y, this.#axes.y(), this.#normals.y(), circleRadius, 0);
-          this.drawCircle(torus, clrAxes.z, this.#axes.z(), this.#normals.z(), circleRadius, 0);
+          let torus: ƒ.MeshTorus = _picking ? this.#torusPick : this.#torus;
+
+          for (const axis of ["x", "y", "z"] as const)
+            this.drawCircle(torus, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), world2Pixel, 0);
 
           ƒ.Recycler.storeMultiple(mtxQuad, direction);
-
           break;
         case "scale":
           for (const axis of ["x", "y", "z"] as const) {
             const factor: number = this.#mtxLocal.scaling[axis] / this.#mtxLocalBase.scaling[axis];
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), cubeArrowLength * factor, cubeArrowWidth, cubeArrowHead, ƒ.MeshCube, 1);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), scaleArrowLength * factor, scaleArrowWidth, scaleArrowSize, ƒ.MeshCube, 0);
           }
 
-          const mtxCube: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation, this.space == "local" ? this.#mtxWorld.rotation : null);
-          mtxCube.scaling = mtxCube.scaling.set(cubeSize, cubeSize, cubeSize);
+          const mtxCube: ƒ.Matrix4x4 = mtxWorldNormalized.clone;
+          mtxCube.scale(mtxCube.scaling.set(scaleCubeSize, scaleCubeSize, scaleCubeSize));
           ƒ.Gizmos.drawCube(mtxCube, this.selected == "xyz" ? this.#colors.lite.xyz : this.#colors.base.xyz, 1);
           ƒ.Recycler.store(mtxCube);
           break;
       }
+
+      ƒ.Recycler.store(mtxWorldNormalized);
     }
 
     private hndPointerDown = (_event: PointerEvent): void => {
@@ -375,7 +377,7 @@ namespace FudgeAid {
 
           if (isSnapping) { // rotate offset into snapped direction
             this.#direction.copy(this.#offset);
-            this.#direction.transform(rotationWorld); 
+            this.#direction.transform(rotationWorld);
           }
 
           const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocalBase.clone;
@@ -419,8 +421,8 @@ namespace FudgeAid {
             mtxScaling.rotate(rotationInverse, true);
             mtxScaling.rotate(this.#mtxWorldBase.quaternion);
             ƒ.Recycler.store(rotationInverse);
-
           }
+          
           mtxScaling.multiply(this.#mtxLocal, true);
 
           // restore scaling directions
@@ -451,21 +453,18 @@ namespace FudgeAid {
     };
 
     private hndRenderEnd = (): void => {
+      ƒ.Render.clear(undefined, false, true); // clear depth buffer
       ƒ.Gizmos.draw([this], this.viewport.camera);
-      // this.drawGizmos(this.viewport.camera);
     };
 
-    private drawCircle(_torus: ƒ.MeshTorus, _color: ƒ.Color, _direction: ƒ.Vector3, _up: ƒ.Vector3, _radius: number, _alphaOccluded: number): void {
-      const mtxWorld: ƒ.Matrix4x4 = this.#mtxWorld.clone;
-      const vctScaling: ƒ.Vector3 = ƒ.Recycler.reuse(ƒ.Vector3).set(_radius * 2, _radius * 2, _radius * 2);
-
-      mtxWorld.scaling = vctScaling;
+    private drawCircle(_torus: ƒ.MeshTorus, _color: ƒ.Color, _direction: ƒ.Vector3, _up: ƒ.Vector3, _world2Pixel: number, _alphaOccluded: number): void {
+      const mtxWorld: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
+      mtxWorld.scaling.set(_world2Pixel, _world2Pixel, _world2Pixel);
+      mtxWorld.scaling = mtxWorld.scaling;
       mtxWorld.lookIn(_direction, _up); // lookIn orientates the z-axis but the toruse lays on the xz-plane (facing in y-direction),
       mtxWorld.rotateX(90);             // thus we rotate the torus so the circle faces in _direction
-      // ƒ.Gizmos.drawMesh(this.torusPick, mtxWorld, ƒ.Color.CSS("magenta"), _alphaOccluded);
       ƒ.Gizmos.drawMesh(_torus, mtxWorld, _color, _alphaOccluded);
-
-      ƒ.Recycler.storeMultiple(mtxWorld, vctScaling);
+      ƒ.Recycler.storeMultiple(mtxWorld);
     }
 
     private getPoint3D(_event: PointerEvent): ƒ.Vector3 {

@@ -312,7 +312,7 @@ declare namespace FudgeAid {
          * Clear the undo stack
          */
         clearUndo(): void;
-        drawGizmos(_cmpCamera: ƒ.ComponentCamera): void;
+        drawGizmos(_cmpCamera: ƒ.ComponentCamera, _picking: boolean): void;
         private hndPointerDown;
         private hndPointerMove;
         private hndPointerUp;
