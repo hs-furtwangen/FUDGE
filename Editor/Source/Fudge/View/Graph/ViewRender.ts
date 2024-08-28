@@ -67,12 +67,13 @@ namespace Fudge {
 
       item = new remote.MenuItem({
         label: "Transform", submenu: [
-          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: process.platform == "darwin" ? "T" : "T" },
-          { label: "Rotate", id: TRANSFORM.ROTATE, type: "radio", click: _callback, accelerator: process.platform == "darwin" ? "R" : "R" },
-          { label: "Scale", id: TRANSFORM.SCALE, type: "radio", click: _callback, accelerator: process.platform == "darwin" ? "E" : "E" },
+          { label: "None", id: TRANSFORM.NONE, type: "radio", click: _callback, accelerator: "Q" },
+          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: "W" },
+          { label: "Rotate", id: TRANSFORM.ROTATE, type: "radio", click: _callback, accelerator: "E" },
+          { label: "Scale", id: TRANSFORM.SCALE, type: "radio", click: _callback, accelerator: "R" },
           { type: "separator" },
           { label: "World", id: TRANSFORM.WORLD, type: "radio", click: _callback, accelerator: "G" },
-          { label: "Local", id: TRANSFORM.LOCAL, type: "radio", click: _callback, accelerator: "H" }
+          { label: "Local", id: TRANSFORM.LOCAL, type: "radio", click: _callback, accelerator: "G" }
         ]
       });
       menu.append(item);
@@ -102,13 +103,13 @@ namespace Fudge {
       ƒ.Debug.info(`MenuSelect: Item-id=${_item.id}`);
 
       switch (_item.id) {
+        case TRANSFORM.NONE:
         case TRANSFORM.TRANSLATE:
         case TRANSFORM.ROTATE:
         case TRANSFORM.SCALE:
           Page.setTransform(_item.id);
           this.transformator.mode = _item.id;
           this.redraw();
-
           break;
         case TRANSFORM.WORLD:
         case TRANSFORM.LOCAL:
@@ -305,20 +306,20 @@ namespace Fudge {
 
     private hndKey = (_event: KeyboardEvent): void => {
       switch (_event.code) {
-        case ƒ.KEYBOARD_CODE.T:
+        case ƒ.KEYBOARD_CODE.Q:
+          this.contextMenu.getMenuItemById(TRANSFORM.NONE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.W:
           this.contextMenu.getMenuItemById(TRANSFORM.TRANSLATE).click();
           break;
-        case ƒ.KEYBOARD_CODE.R:
+        case ƒ.KEYBOARD_CODE.E:
           this.contextMenu.getMenuItemById(TRANSFORM.ROTATE).click();
           break;
-        case ƒ.KEYBOARD_CODE.E:
+        case ƒ.KEYBOARD_CODE.R:
           this.contextMenu.getMenuItemById(TRANSFORM.SCALE).click();
           break;
         case ƒ.KEYBOARD_CODE.G:
-          this.contextMenu.getMenuItemById(TRANSFORM.WORLD).click();
-          break;
-        case ƒ.KEYBOARD_CODE.H:
-          this.contextMenu.getMenuItemById(TRANSFORM.LOCAL).click();
+          this.contextMenu.getMenuItemById(this.transformator.space == TRANSFORM.LOCAL ? TRANSFORM.WORLD : TRANSFORM.LOCAL).click();
           break;
         case ƒ.KEYBOARD_CODE.Y:
           if (_event.ctrlKey) {

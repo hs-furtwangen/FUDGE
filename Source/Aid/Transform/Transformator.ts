@@ -9,7 +9,7 @@ namespace FudgeAid {
   export class Transformator {
     public readonly viewport: ƒ.Viewport;
 
-    public mode: "translate" | "rotate" | "scale" = "translate";
+    public mode: "none" | "translate" | "rotate" | "scale" = "translate";
     public space: "local" | "world" = "world";
     public selected: "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
 

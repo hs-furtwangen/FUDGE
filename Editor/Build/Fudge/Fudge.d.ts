@@ -80,6 +80,7 @@ declare namespace Fudge {
         PARTICLE_SYSTEM = "ViewParticleSystem"
     }
     enum TRANSFORM {
+        NONE = "none",
         TRANSLATE = "translate",
         ROTATE = "rotate",
         SCALE = "scale",

@@ -286,7 +286,7 @@ declare namespace FudgeAid {
     class Transformator {
         #private;
         readonly viewport: ƒ.Viewport;
-        mode: "translate" | "rotate" | "scale";
+        mode: "none" | "translate" | "rotate" | "scale";
         space: "local" | "world";
         selected: "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
         snapAngle: number;
