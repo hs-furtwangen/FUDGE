@@ -373,25 +373,37 @@ namespace FudgeAid {
           if (ƒ.Vector3.DOT(axis, cross) < 0)
             angle = -angle;
 
-          const rotationWorld: ƒ.Quaternion = ƒ.Quaternion.ROTATION(axis, angle);
+          const qRotation: ƒ.Quaternion = ƒ.Quaternion.ROTATION(axis, angle);
 
           if (isSnapping) { // rotate offset into snapped direction
             this.#direction.copy(this.#offset);
-            this.#direction.transform(rotationWorld);
+            this.#direction.transform(qRotation);
           }
 
-          const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocalBase.clone;
-          const mtxRotation: ƒ.Matrix4x4 = ƒ.Matrix4x4.ROTATION(rotationWorld);
+          const mtxLocalInverse: ƒ.Matrix4x4 = ƒ.Matrix4x4.INVERSE(this.#mtxLocalBase);
+          const mtxParentWorld: ƒ.Matrix4x4 = ƒ.Matrix4x4.PRODUCT(this.#mtxWorldBase, mtxLocalInverse);
 
-          // localRotation = worldInverse * worldRotation * world
-          mtxRotation.multiply(ƒ.Matrix4x4.INVERSE(this.#mtxWorldBase), true);
-          mtxRotation.multiply(this.#mtxWorldBase);
+          const qParentWorld: ƒ.Quaternion = mtxParentWorld.quaternion;
+          const qParentWorldInverse: ƒ.Quaternion  = ƒ.Quaternion.INVERSE(mtxParentWorld.quaternion);
 
-          mtxLocal.multiply(mtxRotation);
-          // restore scaling directions
-          mtxLocal.scaling = mtxLocal.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocalBase.scaling[_component]));
+          qRotation.multiply(qParentWorldInverse, true);
+          qRotation.multiply(qParentWorld);
+          qRotation.multiply(this.#mtxLocalBase.quaternion);
 
-          this.#mtxLocal.quaternion = mtxLocal.quaternion;
+          this.#mtxLocal.quaternion = qRotation;
+
+          // const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocalBase.clone;
+          // const mtxRotation: ƒ.Matrix4x4 = ƒ.Matrix4x4.ROTATION(qRotation);
+
+          // // localRotation = worldInverse * worldRotation * world
+          // mtxRotation.multiply(ƒ.Matrix4x4.INVERSE(this.#mtxWorldBase), true);
+          // mtxRotation.multiply(this.#mtxWorldBase);
+
+          // mtxLocal.multiply(mtxRotation);
+          // // restore scaling directions
+          // mtxLocal.scaling = mtxLocal.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocalBase.scaling[_component]));
+
+          // this.#mtxLocal.quaternion = mtxLocal.quaternion;
           break;
         case "scale":
           let scale: number = this.camera.getWorldToPixelScale(this.#mtxWorld.translation);
@@ -422,7 +434,7 @@ namespace FudgeAid {
             mtxScaling.rotate(this.#mtxWorldBase.quaternion);
             ƒ.Recycler.store(rotationInverse);
           }
-          
+
           mtxScaling.multiply(this.#mtxLocal, true);
 
           // restore scaling directions
