@@ -66,18 +66,30 @@ namespace FudgeUserInterface {
       // _event.preventDefault; 
       let keyDrag: string = (<HTMLElement>_event.currentTarget).getAttribute("key");
       _event.dataTransfer.setData("index", keyDrag);
-      console.log(keyDrag);
+      _event.dataTransfer.setData("key:" + this.getAttribute("key"), "key");
     };
 
     private hndDragOver = (_event: DragEvent): void => {
       _event.preventDefault();
-      if (_event.ctrlKey)
-        _event.dataTransfer.dropEffect = "copy";
-      if (_event.shiftKey)
-        _event.dataTransfer.dropEffect = "link";
+      _event.dataTransfer.dropEffect = "none";
+
+      for (let item of _event.dataTransfer.items) {
+        let key: string;
+        let label: string;
+        [key, label] = item.type.split(":");
+        if (key == "key" && label == this.getAttribute("key")) {
+          _event.dataTransfer.dropEffect = "move";
+          if (_event.ctrlKey)
+            _event.dataTransfer.dropEffect = "copy";
+          if (_event.shiftKey)
+            _event.dataTransfer.dropEffect = "link";
+          // console.log(label == this.getAttribute("key"));
+        }
+      }
     };
 
     private hndDrop = (_event: DragEvent): void => {
+      // console.log(_event);
       let drop: HTMLElement = <HTMLElement>_event.currentTarget;
       let keyDrop: string = drop.getAttribute("key");
       let keyDrag: string = _event.dataTransfer.getData("index");

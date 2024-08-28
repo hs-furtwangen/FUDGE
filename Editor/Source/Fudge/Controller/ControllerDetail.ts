@@ -66,6 +66,7 @@ namespace Fudge {
       let { mutable, key } = this.getTargetMutableAndKey(_event);
       let metaTypes: ƒ.MetaAttributeTypes = (<ƒ.Mutable>mutable).getMetaAttributeTypes?.() ?? {};
       let metaType: Function = metaTypes[key];
+      // console.log(key, metaTypes, metaType);
 
       let sources: Object[] = View.getViewSource(_event).getDragDropSources();
       if (!metaType || (metaType && typeof metaType == "function" && !(sources[0] instanceof metaType)))

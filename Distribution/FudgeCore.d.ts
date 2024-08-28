@@ -6966,7 +6966,7 @@ declare namespace FudgeCore {
          */
         getMutatorForUserInterface(): Mutator;
         /**
-         * Mutate each element of this array by invoking {@link Mutable.mutate} on it
+         * Mutate the elements of this array defined by the _mutator by invoking {@link Mutable.mutate} on it
          */
         mutate(_mutator: Mutator): Promise<void>;
         /**
