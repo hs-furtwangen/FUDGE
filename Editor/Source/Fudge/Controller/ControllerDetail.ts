@@ -104,8 +104,10 @@ namespace Fudge {
 
       let { mutable, key } = this.getTargetMutableAndKey(_event);
 
-      let sources: Object[] = View.getViewSource(_event).getDragDropSources();
-      mutable[key] = sources[0];
+      if (this.#view != View.getViewSource(_event)) {
+        let sources: Object[] = View.getViewSource(_event).getDragDropSources();
+        mutable[key] = sources[0];
+      }
 
       this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     };
