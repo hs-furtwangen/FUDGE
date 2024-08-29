@@ -180,7 +180,9 @@ namespace Fudge {
           if (_event.detail.graph)
             this.setGraph(_event.detail.graph);
           if (_event.detail.node) {
-            this.tree.show(_event.detail.node.getPath());
+            let path: ƒ.Node[] = _event.detail.node.getPath();
+            path = path.slice(path.findIndex((_node => _node instanceof ƒ.Graph)));
+            this.tree.show(path);
             this.tree.controller.selection = [_event.detail.node];
             this.tree.displaySelection(this.tree.controller.selection);
             this.selectionPrevious = this.selection.slice(0);
