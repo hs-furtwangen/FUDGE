@@ -45,12 +45,11 @@ namespace FudgeUserInterface {
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
         if (!element) {
-          let subMutable: Object = Reflect.get(_mutable, key);
-          if (subMutable instanceof ƒ.Mutable || subMutable instanceof ƒ.MutableArray) 
-            element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
+          let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
+          element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
         }
 
-        if (!element && type) 
+        if (!element && type)
           element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
         if (!element) // undefined values without a type can't be displayed

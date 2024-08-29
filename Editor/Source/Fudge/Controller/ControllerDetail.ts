@@ -84,7 +84,7 @@ namespace Fudge {
       }
     };
 
-    private hndDrop = (_event: DragEvent): void => {
+    private hndDrop = async (_event: DragEvent): Promise<void> => {
       let setExternalLink: (_sources: Object[]) => boolean = (_sources: Object[]): boolean => {
         let sources: DirectoryEntry[] = <DirectoryEntry[]>_sources;
         (<HTMLInputElement>_event.target).value = sources[0].pathRelative;
@@ -109,6 +109,7 @@ namespace Fudge {
         mutable[key] = sources[0];
       }
 
+      await this.mutateOnInput(_event);
       this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     };
 
