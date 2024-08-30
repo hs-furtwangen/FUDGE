@@ -88,7 +88,7 @@ namespace FudgeUserInterface {
     public static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
       let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
-      
+
       for (let key in mutator) {
         let element: CustomElement = <CustomElement>Controller.findChildElementByKey(_domElement, key);
         if (!element)
@@ -110,7 +110,7 @@ namespace FudgeUserInterface {
         }
       }
     }
-    
+
     /**
      * Performs a breadth-first search on the given _domElement for an element with the given key.
      */
@@ -184,13 +184,13 @@ namespace FudgeUserInterface {
       for (let target of _event.composedPath()) {
         if (target == this.domElement)
           break;
-        
+
         let key: string = (<HTMLElement>target).getAttribute("key");
         if (key)
           path.push(key);
       }
       path.reverse();
-      this.mutator = this.getMutator(); 
+      this.mutator = this.getMutator();
       await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));
       _event.stopPropagation();
 
@@ -218,6 +218,7 @@ namespace FudgeUserInterface {
 
       // rearrange that mutable
       (<ƒ.MutableArray<ƒ.Mutable>><unknown>mutable).rearrange(sequence);
+      await this.mutable.mutate(this.mutable.getMutator());
     };
 
     protected refresh = (_event: Event): void => {

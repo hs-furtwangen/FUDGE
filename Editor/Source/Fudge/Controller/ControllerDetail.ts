@@ -109,7 +109,6 @@ namespace Fudge {
         mutable[key] = sources[0];
       }
 
-      await this.mutateOnInput(_event);
       this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     };
 
