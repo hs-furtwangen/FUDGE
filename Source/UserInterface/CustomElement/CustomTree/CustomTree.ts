@@ -179,6 +179,7 @@ namespace FudgeUserInterface {
           break;
         case EVENT.PASTE:
           this.addChildren(this.controller.copyPaste.sources, target.data);
+          this.controller.copyPaste.sources = await this.controller.copy(this.controller.copyPaste.sources);
           break;
         case EVENT.CUT:
           this.controller.copyPaste.sources = await this.controller.copy([...this.controller.selection]);
