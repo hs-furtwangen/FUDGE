@@ -109,6 +109,9 @@ namespace Fudge {
       item = new remote.MenuItem({ label: "Delete", id: String(CONTEXTMENU.DELETE_RESOURCE), click: _callback, accelerator: "Delete" });
       menu.append(item);
 
+      item = new remote.MenuItem({ label: "Clone", id: String(CONTEXTMENU.CLONE_RESOURCE), click: _callback, accelerator: "Delete" });
+      menu.append(item);
+
       return menu;
     }
 
@@ -122,17 +125,22 @@ namespace Fudge {
       }
 
       let focus: ResourceEntry = this.tree.getFocussed();
+      let resource: ResourceEntry;
 
       if (choice == CONTEXTMENU.DELETE_RESOURCE) {
         if (((await this.controller.delete([focus])).length > 0))
           this.dispatch(EVENT_EDITOR.DELETE, { bubbles: true });
         return;
       }
+      if (choice == CONTEXTMENU.CLONE_RESOURCE) {
+        resource = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
+        this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+        return;
+      }
 
       if (!(focus instanceof ResourceFolder))
         return;
 
-      let resource: ResourceEntry;
 
       switch (choice) {
         case CONTEXTMENU.CREATE_FOLDER:
@@ -191,6 +199,8 @@ namespace Fudge {
 
       if (item.data == this.resourceFolder)
         this.contextMenu.getMenuItemById(String(CONTEXTMENU.DELETE_RESOURCE)).visible = false;
+      if (item.data instanceof ResourceFolder)
+        this.contextMenu.getMenuItemById(String(CONTEXTMENU.CLONE_RESOURCE)).visible = false;
 
       this.contextMenu.popup();
     };
@@ -302,6 +312,10 @@ namespace Fudge {
 
       this.hndUpdate();
     };
+
+    private hndClone = (): void => {
+
+    }
 
     private hndUpdate = (): void => {
       this.tree.refresh();

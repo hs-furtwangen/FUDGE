@@ -32,17 +32,18 @@ declare namespace Fudge {
         REMOVE_COMPONENT = 14,
         ADD_JOINT = 15,
         DELETE_RESOURCE = 16,
-        ORTHGRAPHIC_CAMERA = 17,
-        RENDER_CONTINUOUSLY = 18,
-        ADD_PROPERTY = 19,
-        DELETE_PROPERTY = 20,
-        CONVERT_ANIMATION = 21,
-        ADD_PARTICLE_PROPERTY = 22,
-        ADD_PARTICLE_FUNCTION = 23,
-        ADD_PARTICLE_CONSTANT = 24,
-        ADD_PARTICLE_CODE = 25,
-        ADD_PARTICLE_TRANSFORMATION = 26,
-        DELETE_PARTICLE_DATA = 27
+        CLONE_RESOURCE = 17,
+        ORTHGRAPHIC_CAMERA = 18,
+        RENDER_CONTINUOUSLY = 19,
+        ADD_PROPERTY = 20,
+        DELETE_PROPERTY = 21,
+        CONVERT_ANIMATION = 22,
+        ADD_PARTICLE_PROPERTY = 23,
+        ADD_PARTICLE_FUNCTION = 24,
+        ADD_PARTICLE_CONSTANT = 25,
+        ADD_PARTICLE_CODE = 26,
+        ADD_PARTICLE_TRANSFORMATION = 27,
+        DELETE_PARTICLE_DATA = 28
     }
     enum MENU {
         QUIT = "quit",
@@ -340,6 +341,7 @@ declare namespace Fudge {
         private hndOpen;
         private hndCreate;
         private hndDelete;
+        private hndClone;
         private hndUpdate;
         private hndEvent;
         private expand;

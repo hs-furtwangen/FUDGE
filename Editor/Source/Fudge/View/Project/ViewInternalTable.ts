@@ -113,6 +113,8 @@ namespace Fudge {
       // item = new remote.MenuItem({ label: "Sync Instances", id: String(CONTEXTMENU.SYNC_INSTANCES), click: _callback, accelerator: "S" });
       // menu.append(item);
 
+      item = new remote.MenuItem({ label: "Clone", id: String(CONTEXTMENU.CLONE_RESOURCE), click: _callback, accelerator: "Delete" });
+      menu.append(item);
 
       // ContextMenu.appendCopyPaste(menu);
       return menu;
@@ -161,6 +163,10 @@ namespace Fudge {
         case CONTEXTMENU.DELETE_RESOURCE:
           await this.table.controller.delete([this.table.getFocussed()]);
           this.dispatch(EVENT_EDITOR.DELETE, { bubbles: true });
+          break;
+        case CONTEXTMENU.CLONE_RESOURCE:
+          await ƒ.Project.cloneResource(this.table.getFocussed()); 
+          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
           break;
       }
     }

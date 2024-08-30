@@ -7058,6 +7058,7 @@ declare namespace FudgeCore {
          * Retrieves the resource stored with the given id
          */
         static getResource(_idResource: string): Promise<SerializableResource>;
+        static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
         /**
          * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
          * @param _node A node to create the resource from

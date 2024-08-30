@@ -164,6 +164,19 @@ namespace FudgeCore {
       return resource;
     }
 
+    public static async cloneResource(_resource: SerializableResource): Promise<SerializableResource> {
+      if (!_resource)
+        return null;
+
+      let serialization: Serialization = Serializer.serialize(_resource);
+      let type: string = <string>Reflect.ownKeys(serialization)[0];
+      delete (serialization[type].idResource);
+      let clone: typeof _resource = await Project.deserializeResource(serialization);
+      Project.register(clone);
+      clone.name += "_clone";
+      return clone;
+    }
+
     /**
      * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
      * @param _node A node to create the resource from
