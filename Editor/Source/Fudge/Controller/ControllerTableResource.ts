@@ -37,7 +37,9 @@ namespace Fudge {
     public async delete(_focussed: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]> {
       console.log(_focussed, this.selection);
       // this.selection = [];
-      let expendables: ƒ.SerializableResource[] = this.selection.concat([]); //_focussed);
+      let expendables: ƒ.SerializableResource[] = this.selection.slice(); //_focussed);
+      if (expendables.length == 0)
+        expendables = _focussed.slice();
       let serializations: ƒ.SerializationOfResources = ƒ.Project.serialize();
       let serializationStrings: Map<ƒ.SerializableResource, string> = new Map();
       let usages: ƒ.Mutator = {};

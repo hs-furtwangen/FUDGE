@@ -109,7 +109,7 @@ namespace Fudge {
       item = new remote.MenuItem({ label: "Delete", id: String(CONTEXTMENU.DELETE_RESOURCE), click: _callback, accelerator: "Delete" });
       menu.append(item);
 
-      item = new remote.MenuItem({ label: "Clone", id: String(CONTEXTMENU.CLONE_RESOURCE), click: _callback, accelerator: "Delete" });
+      item = new remote.MenuItem({ label: "Clone", id: String(CONTEXTMENU.CLONE_RESOURCE), click: _callback, accelerator: "Insert" });
       menu.append(item);
 
       return menu;
@@ -266,7 +266,12 @@ namespace Fudge {
         _viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
     }
 
-    private hndKeyboardEvent = (_event: KeyboardEvent): void => {
+    private hndKeyboardEvent = async(_event: KeyboardEvent): Promise<void> => {
+      if (_event.code == ƒ.KEYBOARD_CODE.INSERT) {
+        await ƒ.Project.cloneResource(<ƒ.SerializableResource>this.tree.getFocussed());
+        this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+      }
+
       if (_event.code != ƒ.KEYBOARD_CODE.F2)
         return;
 
