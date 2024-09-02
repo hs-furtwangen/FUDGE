@@ -74,6 +74,11 @@ namespace Fudge {
           this.tree.controller.dragDrop.sources = _viewSource.getDragDropSources().filter((_source): _source is ƒ.Graph => _source instanceof ƒ.Graph);
         return;
       }
+      if (_viewSource instanceof ViewHierarchy) {
+        if (this.tree)
+          this.tree.controller.dragDrop.sources = _viewSource.getDragDropSources();//.filter((_source): _source is ƒ.Graph => _source instanceof ƒ.Graph);
+        return;
+      }
 
       _event.dataTransfer.dropEffect = "none";
       _event.stopPropagation();
@@ -84,12 +89,14 @@ namespace Fudge {
         return; // continue with standard tree behaviour
 
       _event.stopPropagation();
-      let instances: ƒ.GraphInstance[] = [];
-      for (let graph of this.tree.controller.dragDrop.sources)
-        if (graph instanceof ƒ.Graph)
-          instances.push(await ƒ.Project.createGraphInstance(graph));
+      let nodes: ƒ.Node[] = [];
+      for (let node of this.tree.controller.dragDrop.sources)
+        if (node instanceof ƒ.Graph)
+          nodes.push(await ƒ.Project.createGraphInstance(node));
+        else
+          nodes.push(node);
 
-      this.tree.controller.dragDrop.sources = instances;
+      this.tree.controller.dragDrop.sources = nodes;
       this.tree.dispatchEvent(new Event(ƒUi.EVENT.DROP, { bubbles: false }));
     }
 
