@@ -134,10 +134,10 @@ namespace Fudge {
       }
       if (choice == CONTEXTMENU.CLONE_RESOURCE) {
         resource = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
-        this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-        return;
+        focus = focus.resourceParent;
       }
 
+      console.log(focus.name);
       if (!(focus instanceof ResourceFolder))
         return;
 
@@ -266,10 +266,16 @@ namespace Fudge {
         _viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
     }
 
-    private hndKeyboardEvent = async(_event: KeyboardEvent): Promise<void> => {
+    private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
       if (_event.code == ƒ.KEYBOARD_CODE.INSERT) {
-        await ƒ.Project.cloneResource(<ƒ.SerializableResource>this.tree.getFocussed());
-        this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+        let focus: ResourceEntry = this.tree.getFocussed();
+        if (focus instanceof ResourceFolder)
+          return;
+        let clone: ResourceEntry = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
+        this.tree.addChildren([clone], focus.resourceParent);
+        this.tree.findVisible(clone).focus();
+        this.tree.findVisible(clone).focus();
+        this.dispatchToParent(EVENT_EDITOR.CREATE, { bubbles: true });
       }
 
       if (_event.code != ƒ.KEYBOARD_CODE.F2)
@@ -319,8 +325,8 @@ namespace Fudge {
     };
 
     private hndClone = (): void => {
-
-    }
+      //
+    };
 
     private hndUpdate = (): void => {
       this.tree.refresh();
