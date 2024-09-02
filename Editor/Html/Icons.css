@@ -158,17 +158,24 @@ div.lm_tab[title^="Internal"]::before {
   -webkit-mask: url(../Html/Icon/Internal.svg);
 }
 
+div.lm_tab[title^="Table"]::before {
+  mask: url(../Html/Icon/Table.svg);
+  -webkit-mask: url(../Html/Icon/Table.svg);
+}
+
 div.lm_tab[title^="External"]::before {
   mask: url(../Html/Icon/External.svg);
   -webkit-mask: url(../Html/Icon/External.svg);
 }
 
-div.lm_tab[title^="Preview"]::before, div.lm_tab[title^="Render"]::before {
+div.lm_tab[title^="Preview"]::before,
+div.lm_tab[title^="Render"]::before {
   mask: url(../Html/Icon/Camera.svg);
   -webkit-mask: url(../Html/Icon/Camera.svg);
 }
 
-div.lm_tab[title^="PREVIEW"]::before, div.lm_tab[title^="RENDER"]::before {
+div.lm_tab[title^="PREVIEW"]::before,
+div.lm_tab[title^="RENDER"]::before {
   mask: url(../Html/Icon/Light.svg);
   -webkit-mask: url(../Html/Icon/Light.svg);
 }
@@ -230,7 +237,8 @@ details[type*=Light]>summary::after {
   -webkit-mask: url(../Html/Icon/Light.svg);
 }
 
-details[type*=Animation]>summary::after, details[type^=ComponentAnimator]>summary::after {
+details[type*=Animation]>summary::after,
+details[type^=ComponentAnimator]>summary::after {
   mask: url(../Html/Icon/Animation.svg);
   -webkit-mask: url(../Html/Icon/Animation.svg);
 }
@@ -245,7 +253,8 @@ details[type*=Audio]>summary::after {
   -webkit-mask: url(../Html/Icon/Audio.svg);
 }
 
-details[key^=script]>summary::after, details[key^=ComponentScript]>summary::after {
+details[key^=script]>summary::after,
+details[key^=ComponentScript]>summary::after {
   mask: url(../Html/Icon/Script.svg);
   -webkit-mask: url(../Html/Icon/Script.svg);
 }
@@ -255,7 +264,8 @@ details[type^=ComponentAudioListener]>summary::after {
   -webkit-mask: url(../Html/Icon/Listener.svg);
 }
 
-details[type^=ComponentTransform]>summary::after, details[key^=mtxTransforms]>summary::after {
+details[type^=ComponentTransform]>summary::after,
+details[key^=mtxTransforms]>summary::after {
   mask: url(../Html/Icon/Transform.svg);
   -webkit-mask: url(../Html/Icon/Transform.svg);
 }
@@ -270,7 +280,8 @@ details[key^=Joint]>summary::after {
   -webkit-mask: url(../Html/Icon/Joint.svg);
 }
 
-details[type^=ComponentCamera]>summary::after, details[type^=ComponentVRDevice]>summary::after {
+details[type^=ComponentCamera]>summary::after,
+details[type^=ComponentVRDevice]>summary::after {
   mask: url(../Html/Icon/Camera.svg);
   -webkit-mask: url(../Html/Icon/Camera.svg);
 }
