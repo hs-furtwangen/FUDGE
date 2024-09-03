@@ -94,7 +94,7 @@ namespace Fudge {
         if (node instanceof ƒ.Graph)
           nodes.push(await ƒ.Project.createGraphInstance(node));
         else
-          nodes.push(node);
+          nodes.push((await this.tree.controller.copy([node]))[0]);
 
       this.tree.controller.dragDrop.sources = nodes;
       this.tree.dispatchEvent(new Event(ƒUi.EVENT.DROP, { bubbles: false }));
@@ -122,7 +122,7 @@ namespace Fudge {
         case CONTEXTMENU.ADD_NODE:
           let instance: ƒ.GraphInstance = inGraphInstance(focus, false);
           if (instance) {
-            ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`,`To add nodes, edit the graph "${instance.name}", then save and reload the project<br>Press OK to continue`, "OK", "");
+            ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `To add nodes, edit the graph "${instance.name}", then save and reload the project<br>Press OK to continue`, "OK", "");
             return;
           }
           let child: ƒ.Node = new ƒ.Node("New Node");
