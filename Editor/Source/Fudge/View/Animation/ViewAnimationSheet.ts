@@ -114,6 +114,12 @@ namespace Fudge {
         this.draw();
       };
       this.dom.appendChild(this.eventInput);
+      
+      let title: string = "● Rightclick to switch between dopesheet and curve modes\n";
+      title += "● Adjust the keys by dragging, adjust tangents in curve mode\n";
+      title += "● Rightclick to delete key or press delete\n";
+      title += "● Rightclick below time scale to add or delete labels and events for further programming\n";
+      this.dom.title = title;
     }
 
     private get mode(): SHEET_MODE {

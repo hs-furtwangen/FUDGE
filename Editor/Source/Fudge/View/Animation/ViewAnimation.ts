@@ -27,6 +27,11 @@ namespace Fudge {
       this.setAnimation(null);
       this.createToolbar();
 
+      let title: string = "● Rightclick to add a property to animate\n";
+      title += "● Choose a time in the animation sheet\n";
+      title += "● Manipulate a property to add a keyframe\n";
+      this.dom.title = title;
+
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.DELETE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.MODIFY, this.hndEvent);
