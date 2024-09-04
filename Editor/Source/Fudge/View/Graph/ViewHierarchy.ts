@@ -146,11 +146,10 @@ namespace Fudge {
           // focus.addChild(child);
           if (!focus)
             return;
-          // this.tree.delete([focus]);
           this.tree.controller.delete([focus]).then(_deleted => {
             if (_deleted.length == 0)
               return;
-            focus.getParent().removeChild(focus);
+            this.tree.delete([focus]);
             ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
             ƒ.Physics.cleanup();
             this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
