@@ -514,7 +514,7 @@ declare namespace FudgeUserInterface {
             target: T;
             at?: number;
         };
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
+        /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
         copyPaste: {
             sources: T[];
             target: T;
@@ -695,7 +695,7 @@ declare namespace FudgeUserInterface {
             sources: T[];
             target: T;
         };
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of table */
+        /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
         copyPaste: {
             sources: T[];
             target: T;
@@ -840,7 +840,7 @@ declare namespace FudgeUserInterface {
             sources: T[];
             target: T;
         };
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
+        /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
         copyPaste: {
             sources: T[];
             target: T;

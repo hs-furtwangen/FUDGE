@@ -8,7 +8,7 @@ namespace FudgeUserInterface {
     public selection: T[] = [];
     /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
     public dragDrop: { sources: T[]; target: T; at?: number } = { sources: [], target: null };
-    /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
+    /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
     public copyPaste: { sources: T[]; target: T } = { sources: [], target: null };
 
     /** Used by the tree to indicate the drop position while dragging */

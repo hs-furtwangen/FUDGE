@@ -19,6 +19,9 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
+      this.dom.addEventListener(ƒUi.EVENT.PASTE, this.hndPaste, true);
+      this.dom.addEventListener(ƒUi.EVENT.COPY, this.hndPaste, true);
+      this.dom.addEventListener(ƒUi.EVENT.CUT, this.hndPaste, true);
 
       // a select event will be recived from the panel during reconstruction so we only need to prepare our storage here
       if (_state["graph"] && _state["expanded"] && !this.restoreExpanded(_state["graph"]))
@@ -64,6 +67,10 @@ namespace Fudge {
     public getDragDropSources(): ƒ.Node[] {
       return this.tree.controller.dragDrop.sources;
     }
+    public getCopyPasteSources(): ƒ.Node[] {
+      return this.tree.controller.copyPaste.sources;
+    }
+
 
     protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void {
       if (_viewSource == this)
@@ -179,6 +186,17 @@ namespace Fudge {
           this.dispatchToParent(EVENT_EDITOR.SELECT, { detail: { node: node, view: this } });
           break;
       }
+    };
+
+    private hndPaste = (_event: ClipboardEvent): void => {
+      if (_event.type == "paste") {
+        let sources: Object[] = View.viewSourceCopyPaste.getCopyPasteSources();
+        this.tree.controller.copyPaste.sources = <ƒ.Node[]>sources;
+      } else
+        View.viewSourceCopyPaste = this;
+
+      _event.preventDefault();
+      // _event.stopPropagation();
     };
 
     private hndEvent = (_event: EditorEvent): void => {

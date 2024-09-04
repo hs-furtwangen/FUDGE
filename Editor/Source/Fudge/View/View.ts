@@ -14,6 +14,7 @@ namespace Fudge {
    * @authors Monika Galkewitsch, HFU, 2019 | Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
    */
   export abstract class View {
+    protected static viewSourceCopyPaste: View = null;
     private static views: Views = {};
     private static idCount: number = 0;
 
@@ -96,6 +97,9 @@ namespace Fudge {
     }
 
     public getDragDropSources(): Object[] {
+      return [];
+    }
+    public getCopyPasteSources(): Object[] {
       return [];
     }
 

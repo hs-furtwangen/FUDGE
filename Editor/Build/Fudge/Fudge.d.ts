@@ -273,6 +273,7 @@ declare namespace Fudge {
      */
     abstract class View {
         #private;
+        protected static viewSourceCopyPaste: View;
         private static views;
         private static idCount;
         dom: HTMLElement;
@@ -283,6 +284,7 @@ declare namespace Fudge {
         protected get id(): string;
         setTitle(_title: string): void;
         getDragDropSources(): Object[];
+        getCopyPasteSources(): Object[];
         dispatch(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void;
         dispatchToParent(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void;
         protected openContextMenu: (_event: Event) => void;
@@ -744,12 +746,14 @@ declare namespace Fudge {
         private get selection();
         setGraph(_graph: ƒ.Graph): void;
         getDragDropSources(): ƒ.Node[];
+        getCopyPasteSources(): ƒ.Node[];
         protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void;
         protected hndDropCapture(_event: DragEvent, _viewSource: View): Promise<void>;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected getState(): ViewState;
         private hndTreeEvent;
+        private hndPaste;
         private hndEvent;
         private storeExpanded;
         private restoreExpanded;
