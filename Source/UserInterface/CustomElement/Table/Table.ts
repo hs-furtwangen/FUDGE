@@ -114,7 +114,7 @@ namespace FudgeUserInterface {
     private createHead(_headInfo: TABLE[]): HTMLTableRowElement {
       let tr: HTMLTableRowElement = document.createElement("tr");
       for (let entry of _headInfo) {
-        let th: HTMLTableHeaderCellElement = document.createElement("th");
+        let th: HTMLTableCellElement = document.createElement("th");
         th.textContent = entry.label;
         th.setAttribute("key", entry.key);
 

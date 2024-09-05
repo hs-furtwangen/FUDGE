@@ -1,4 +1,22 @@
 declare namespace FudgeUserInterface {
+    /**
+     * Common clipboards for all drag-drop and copy-paste operations happening in the user interface
+     * @author Jirka Dell'Oro-Friedl, HFU, 2024
+     */
+    import ƒ = FudgeCore;
+    type ClipOperation = EVENT.COPY | EVENT.CUT | EVENT.DRAG_START;
+    class Clipboard {
+        static dragDrop: Clipboard;
+        static copyPaste: Clipboard;
+        objects: ƒ.General[];
+        operation: ClipOperation;
+        source: Object;
+        get<T>(_class?: new () => T | Object, _filter?: boolean): T[];
+        clear(): void;
+        set(_objects: Object[], _source: Object, _operation: ClipOperation): void;
+    }
+}
+declare namespace FudgeUserInterface {
     import ƒ = FudgeCore;
     /**
      * Connects a [[Mutable]] to a DOM-Element and synchronizes that mutable with the mutator stored within.

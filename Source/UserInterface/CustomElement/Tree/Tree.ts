@@ -20,7 +20,7 @@ namespace FudgeUserInterface {
   export class Tree<T> extends TreeList<T> {
     public controller: TreeController<T>;
 
-    constructor(_controller: TreeController<T>, _root: T) {
+    public constructor(_controller: TreeController<T>, _root: T) {
       super([]);
       this.controller = _controller;
       let root: TreeItem<T> = new TreeItem<T>(this.controller, _root);

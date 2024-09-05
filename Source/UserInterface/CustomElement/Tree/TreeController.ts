@@ -7,9 +7,9 @@ namespace FudgeUserInterface {
     /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of tree */
     public selection: T[] = [];
     /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
-    public dragDrop: { sources: T[], target: T } = { sources: [], target: null };
+    public dragDrop: { sources: T[]; target: T } = { sources: [], target: null };
     /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
-    public copyPaste: { sources: T[], target: T } = { sources: [], target: null };
+    public copyPaste: { sources: T[]; target: T } = { sources: [], target: null };
 
     /** Retrieve a string to create a label for the tree item representing the object  */
     public abstract getLabel(_object: T): string;

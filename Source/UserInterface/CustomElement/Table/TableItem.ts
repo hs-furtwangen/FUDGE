@@ -151,7 +151,7 @@ namespace FudgeUserInterface {
           }
           break;
       }
-    }
+    };
 
     private hndDragStart = (_event: DragEvent): void => {
       // _event.stopPropagation();
@@ -161,20 +161,20 @@ namespace FudgeUserInterface {
       else
         this.controller.dragDrop.sources = [this.data];
       _event.dataTransfer.effectAllowed = "all";
-    }
+    };
 
     private hndDragOver = (_event: DragEvent): void => {
       // _event.stopPropagation();
       _event.preventDefault();
       this.controller.dragDrop.target = this.data;
       // _event.dataTransfer.dropEffect = "link";
-    }
+    };
 
     private hndPointerUp = (_event: PointerEvent): void => {
       _event.stopPropagation();
       this.focus();
       this.select(_event.ctrlKey, _event.shiftKey);
-    }
+    };
   }
   customElements.define("table-item", <CustomElementConstructor><unknown>TableItem, { extends: "tr" });
 }
