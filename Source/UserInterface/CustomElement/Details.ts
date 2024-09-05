@@ -47,7 +47,7 @@ namespace FudgeUserInterface {
       if (_event)
         _event.stopPropagation();
       this.dispatchEvent(new Event(this.isExpanded ? EVENT.EXPAND : EVENT.COLLAPSE, { bubbles: true }));
-    }
+    };
 
     private hndFocus = (_event: Event): void => {
       switch (_event.type) {
@@ -81,7 +81,7 @@ namespace FudgeUserInterface {
           }
           break;
       }
-    }
+    };
 
     private hndKey = (_event: KeyboardEvent): void => {
       let passEvent: boolean = false;
@@ -138,7 +138,7 @@ namespace FudgeUserInterface {
 
       if (!passEvent)
         _event.stopPropagation();
-    }
+    };
   }
   // TODO: use CustomElement.register?
   customElements.define("ui-details", Details, { extends: "details" });

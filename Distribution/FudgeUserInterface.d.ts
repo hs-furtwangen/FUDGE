@@ -142,15 +142,15 @@ declare namespace FudgeUserInterface {
         appendLabel(): HTMLLabelElement;
         setLabel(_label: string): void;
         /**
-         * Get the value of this element in a format compatible with [[FudgeCore.Mutator]]
-         */
-        abstract getMutatorValue(): Object;
-        /**
          * Set the value of this element using a format compatible with [[FudgeCore.Mutator]]
          */
         setMutatorValue(_value: Object): void;
         /** Workaround reconnection of clone */
         cloneNode(_deep: boolean): Node;
+        /**
+         * Get the value of this element in a format compatible with [[FudgeCore.Mutator]]
+         */
+        abstract getMutatorValue(): Object;
     }
 }
 declare namespace FudgeUserInterface {
@@ -572,9 +572,9 @@ declare namespace FudgeUserInterface {
         /**
          * Remove the objects to be deleted, e.g. the current selection, from the data structure the tree refers to and
          * return a list of those objects in order for the according {@link CustomTreeItem} to be deleted also
-         * @param _focussed The object currently having focus
+         * @param _expendables The expendable objects
          */
-        abstract delete(_focussed: T[]): Promise<T[]>;
+        abstract delete(_expendables: T[]): Promise<T[]>;
         /**
          * Return a list of copies of the objects given for copy & paste
          * @param _focussed The object currently having focus
@@ -718,11 +718,16 @@ declare namespace FudgeUserInterface {
             sources: T[];
             target: T;
         };
+        /**
+         * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and
+         * return a list of those objects in order for the according [[TableItems]] to be deleted also
+         * @param _expendables The expendable objects
+         */
+        delete(_expendables: T[]): Promise<T[]>;
         /** Retrieve a string to create a label for the table item representing the object (appears not to be called yet)  */
         abstract getLabel(_object: T): string;
         /** Return false if renaming of object is not possibile, or true if the object was renamed */
         abstract rename(_object: T, _new: string): Promise<boolean>;
-        delete(_focussed: T[]): Promise<T[]>;
         /**
          * Return a list of copies of the objects given for copy & paste
          * @param _focussed The object currently having focus
@@ -883,9 +888,9 @@ declare namespace FudgeUserInterface {
         /**
          * Remove the objects to be deleted, e.g. the current selection, from the data structure the tree refers to and
          * return a list of those objects in order for the according [[TreeItems]] to be deleted also
-         * @param _focussed The object currently having focus
+         * @param _expendables The expendable objects
          */
-        abstract delete(_focussed: T[]): T[];
+        abstract delete(_expendables: T[]): T[];
         /**
          * Return a list of copies of the objects given for copy & paste
          * @param _focussed The object currently having focus

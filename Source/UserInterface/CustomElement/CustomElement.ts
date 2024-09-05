@@ -92,10 +92,6 @@ namespace FudgeUserInterface {
         label.textContent = _label;
     }
 
-    /**
-     * Get the value of this element in a format compatible with [[FudgeCore.Mutator]]
-     */
-    public abstract getMutatorValue(): Object;
 
     /**
      * Set the value of this element using a format compatible with [[FudgeCore.Mutator]]
@@ -115,5 +111,10 @@ namespace FudgeUserInterface {
         clone.setAttribute(attribute.name, attribute.value);
       return clone;
     }
+    
+    /**
+     * Get the value of this element in a format compatible with [[FudgeCore.Mutator]]
+     */
+    public abstract getMutatorValue(): Object;
   }
 }

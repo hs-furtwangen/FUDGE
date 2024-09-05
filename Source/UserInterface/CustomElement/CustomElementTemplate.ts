@@ -7,7 +7,7 @@ namespace FudgeUserInterface {
   export abstract class CustomElementTemplate extends CustomElement {
     private static fragment: Map<string, DocumentFragment> = new Map();
 
-    constructor(_attributes?: CustomElementAttributes) {
+    public constructor(_attributes?: CustomElementAttributes) {
       super(_attributes);
     }
 

@@ -8,7 +8,7 @@ namespace FudgeUserInterface {
     private static customElement: void = CustomElement.register("fudge-color", CustomElementColor, ƒ.Color);
     public color: ƒ.Color = new ƒ.Color();
 
-    constructor(_attributes: CustomElementAttributes) {
+    public constructor(_attributes: CustomElementAttributes) {
       super(_attributes);
       if (!_attributes.label)
         this.setAttribute("label", _attributes.key);
@@ -19,7 +19,7 @@ namespace FudgeUserInterface {
     /**
      * Creates the content of the element when connected the first time
      */
-    connectedCallback(): void {
+    public connectedCallback(): void {
       if (this.initialized)
         return;
       this.initialized = true;

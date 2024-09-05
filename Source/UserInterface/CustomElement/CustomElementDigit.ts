@@ -8,7 +8,7 @@ namespace FudgeUserInterface {
     private static customElement: void = CustomElement.register("fudge-digit", CustomElementDigit);
     protected initialized: boolean = false;
 
-    constructor() {
+    public constructor() {
       super();
     }
 
@@ -22,8 +22,8 @@ namespace FudgeUserInterface {
     public get value(): number {
       return parseInt(this.textContent);
     }
-    
-    connectedCallback(): void {
+
+    public connectedCallback(): void {
       if (this.initialized)
         return;
       this.initialized = true;
@@ -48,8 +48,7 @@ namespace FudgeUserInterface {
           prev.add(1);
           this.value = 0;
         }
-      }
-      else {
+      } else {
         if (this.value > 0)
           this.value--;
         else {

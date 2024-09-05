@@ -62,9 +62,9 @@ namespace FudgeUserInterface {
     /** 
      * Remove the objects to be deleted, e.g. the current selection, from the data structure the tree refers to and 
      * return a list of those objects in order for the according {@link CustomTreeItem} to be deleted also   
-     * @param _focussed The object currently having focus
+     * @param _expendables The expendable objects 
      */
-    public abstract delete(_focussed: T[]): Promise<T[]>;
+    public abstract delete(_expendables: T[]): Promise<T[]>;
 
     /** 
      * Return a list of copies of the objects given for copy & paste
