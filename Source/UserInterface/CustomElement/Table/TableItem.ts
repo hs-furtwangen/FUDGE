@@ -76,7 +76,8 @@ namespace FudgeUserInterface {
 
         td.appendChild(input);
         this.appendChild(td);
-        this.setAttribute("icon", icon);
+        if (icon)
+          this.setAttribute("icon", icon);
       }
       this.tabIndex = 0;
     }
