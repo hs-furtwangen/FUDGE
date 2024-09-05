@@ -7,21 +7,22 @@ namespace FudgeUserInterface {
     public data: T = null;
     public controller: TableController<T>;
 
-    public constructor(_controller: TableController<T>, _data: T) {
+    public constructor(_controller: TableController<T>, _data: T, _attIcon: string) {
       super();
       this.controller = _controller;
       this.data = _data;
       // this.display = this.controller.getLabel(_data);
       // TODO: handle cssClasses
-      this.create(this.controller.getHead());
+      this.create(this.controller.getHead(), _attIcon);
       this.className = "table";
 
       this.addEventListener(EVENT.POINTER_UP, this.hndPointerUp);
       this.addEventListener(EVENT.KEY_DOWN, this.hndKey);
       this.addEventListener(EVENT.CHANGE, this.hndChange);
-      // this.addEventListener(EVENT.DOUBLE_CLICK, this.hndDblClick);
-      // this.addEventListener(EVENT_TREE.FOCUS_NEXT, this.hndFocus);
-      // this.addEventListener(EVENT_TREE.FOCUS_PREVIOUS, this.hndFocus);
+
+      this.addEventListener(EVENT.COPY, this.hndCopyPaste, true);
+      this.addEventListener(EVENT.CUT, this.hndCopyPaste, true);
+      this.addEventListener(EVENT.PASTE, this.hndCopyPaste, true);
 
       this.draggable = true;
       this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
@@ -57,9 +58,10 @@ namespace FudgeUserInterface {
       this.dispatchEvent(event);
     }
 
-    private create(_filter: TABLE[]): void {
+    private create(_filter: TABLE[], _attIcon: string): void {
       for (let entry of _filter) {
         let value: string = <string>Reflect.get(this.data, entry.key);
+        let icon: string = <string>Reflect.get(this.data, _attIcon);
         let td: HTMLTableCellElement = document.createElement("td");
         let input: HTMLInputElement = document.createElement("input");
         input.type = "text";
@@ -74,6 +76,7 @@ namespace FudgeUserInterface {
 
         td.appendChild(input);
         this.appendChild(td);
+        this.setAttribute("icon", icon);
       }
       this.tabIndex = 0;
     }
@@ -106,17 +109,8 @@ namespace FudgeUserInterface {
       _event.stopPropagation();
       if (_event.target != this)
         return;
-      // if (!this.label.disabled)
-      //   return;
-      // let content: TreeList<T> = <TreeList<T>>this.querySelector("ul");
 
       switch (_event.code) {
-        // case ƒ.KEYBOARD_CODE.ARROW_RIGHT:
-        //   this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_NEXT, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
-        //   break;
-        // case ƒ.KEYBOARD_CODE.ARROW_LEFT:
-        //   this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
-        //   break;
         case ƒ.KEYBOARD_CODE.ARROW_DOWN:
           this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_NEXT, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
@@ -132,27 +126,12 @@ namespace FudgeUserInterface {
         case ƒ.KEYBOARD_CODE.DELETE:
           this.dispatchEvent(new Event(EVENT.DELETE, { bubbles: true }));
           break;
-        case ƒ.KEYBOARD_CODE.C:
-          if (_event.ctrlKey || _event.metaKey) {
-            _event.preventDefault();
-            this.dispatchEvent(new Event(EVENT.COPY, { bubbles: true }));
-          }
-          break;
-        case ƒ.KEYBOARD_CODE.V:
-          if (_event.ctrlKey || _event.metaKey) {
-            _event.preventDefault();
-            this.dispatchEvent(new Event(EVENT.PASTE, { bubbles: true }));
-          }
-          break;
-        case ƒ.KEYBOARD_CODE.X:
-          if (_event.ctrlKey || _event.metaKey) {
-            _event.preventDefault();
-            this.dispatchEvent(new Event(EVENT.CUT, { bubbles: true }));
-          }
-          break;
       }
     };
 
+    private hndCopyPaste = (_event: ClipboardEvent): void => {
+      Reflect.set(_event, "item", this);
+    };
     private hndDragStart = (_event: DragEvent): void => {
       // _event.stopPropagation();
       this.controller.dragDrop.sources = [];
@@ -169,7 +148,6 @@ namespace FudgeUserInterface {
       this.controller.dragDrop.target = this.data;
       // _event.dataTransfer.dropEffect = "link";
     };
-
     private hndPointerUp = (_event: PointerEvent): void => {
       _event.stopPropagation();
       this.focus();

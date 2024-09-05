@@ -16,6 +16,8 @@ namespace Fudge {
     public constructor(_container: ComponentContainer, _state: ViewState) {
       super(_container, _state);
 
+      ƒui.Clipboard.copyPaste.set(["Hallo"], null, ƒui.EVENT.COPY);
+
       this.dom.addEventListener(EVENT_EDITOR.OPEN, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CREATE, this.hndEvent);

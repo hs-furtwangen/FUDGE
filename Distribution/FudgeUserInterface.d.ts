@@ -4,7 +4,7 @@ declare namespace FudgeUserInterface {
      * @author Jirka Dell'Oro-Friedl, HFU, 2024
      */
     import ƒ = FudgeCore;
-    type ClipOperation = EVENT.COPY | EVENT.CUT | EVENT.DRAG_START;
+    type ClipOperation = EVENT.COPY | EVENT.CUT;
     class Clipboard {
         static dragDrop: Clipboard;
         static copyPaste: Clipboard;
@@ -675,8 +675,8 @@ declare namespace FudgeUserInterface {
     class Table<T extends Object> extends HTMLTableElement {
         controller: TableController<T>;
         data: T[];
-        icon: string;
-        constructor(_controller: TableController<T>, _data: T[], _icon?: string);
+        attIcon: string;
+        constructor(_controller: TableController<T>, _data: T[], _attIcon?: string);
         /**
          * Create the table
          */
@@ -697,6 +697,7 @@ declare namespace FudgeUserInterface {
         private hndSelect;
         private hndDelete;
         private hndEscape;
+        private hndCopyPaste;
         private hndFocus;
     }
 }
@@ -724,15 +725,24 @@ declare namespace FudgeUserInterface {
          * @param _expendables The expendable objects
          */
         delete(_expendables: T[]): Promise<T[]>;
+        /**
+         * Refer objects to the clipboard for copy & paste
+         * @param _objects The objects to refer
+         */
+        copy(_objects: T[], _operation: ClipOperation): void;
+        /**
+         * Retrieve objects from the clipboard, and process and return them to add to the table
+         */
+        paste(_class?: new () => T): Promise<T[]>;
         /** Retrieve a string to create a label for the table item representing the object (appears not to be called yet)  */
         abstract getLabel(_object: T): string;
         /** Return false if renaming of object is not possibile, or true if the object was renamed */
         abstract rename(_object: T, _new: string): Promise<boolean>;
         /**
-         * Return a list of copies of the objects given for copy & paste
-         * @param _focussed The object currently having focus
+         * Return a list of clones of the objects given for copy & paste or drag & drop
+         * @param _originals The objects to clone
          */
-        abstract copy(_originals: T[]): Promise<T[]>;
+        abstract clone(_originals: T[]): Promise<T[]>;
         /**
          * Return a list of TABLE-objects describing the head-titles and according properties
          */
@@ -750,7 +760,7 @@ declare namespace FudgeUserInterface {
     class TableItem<T extends Object> extends HTMLTableRowElement {
         data: T;
         controller: TableController<T>;
-        constructor(_controller: TableController<T>, _data: T);
+        constructor(_controller: TableController<T>, _data: T, _attIcon: string);
         /**
          * Returns attaches or detaches the [[CSS_CLASS.SELECTED]] to this item
          */
@@ -769,6 +779,7 @@ declare namespace FudgeUserInterface {
         private hndInputEvent;
         private hndChange;
         private hndKey;
+        private hndCopyPaste;
         private hndDragStart;
         private hndDragOver;
         private hndPointerUp;

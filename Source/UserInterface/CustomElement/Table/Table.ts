@@ -18,13 +18,13 @@ namespace FudgeUserInterface {
   export class Table<T extends Object> extends HTMLTableElement {
     public controller: TableController<T>;
     public data: T[];
-    public icon: string;
+    public attIcon: string;
 
-    public constructor(_controller: TableController<T>, _data: T[], _icon?: string) {
+    public constructor(_controller: TableController<T>, _data: T[], _attIcon?: string) {
       super();
       this.controller = _controller;
       this.data = _data;
-      this.icon = _icon;
+      this.attIcon = _attIcon;
       this.create();
       this.className = "sortable";
 
@@ -34,12 +34,10 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.FOCUS_PREVIOUS, <EventListener>this.hndFocus);
       this.addEventListener(EVENT.ESCAPE, this.hndEscape);
       this.addEventListener(EVENT.DELETE, this.hndDelete);
-      // this.addEventListener(EVENT_TABLE.CHANGE, this.hndSort);
-      // this.addEventListener(EVENT.CHANGE, this.hndChange);
-      // this.addEventListener(EVENT_TREE.DROP, this.hndDrop);
-      // this.addEventListener(EVENT_TREE.COPY, this.hndCopyPaste);
-      // this.addEventListener(EVENT_TREE.PASTE, this.hndCopyPaste);
-      // this.addEventListener(EVENT_TREE.CUT, this.hndCopyPaste);
+
+      this.addEventListener(EVENT.COPY, this.hndCopyPaste);
+      this.addEventListener(EVENT.CUT, this.hndCopyPaste);
+      this.addEventListener(EVENT.PASTE, this.hndCopyPaste);
     }
 
     /**
@@ -51,12 +49,8 @@ namespace FudgeUserInterface {
 
       this.appendChild(this.createHead(head));
 
-      for (let row of this.data) {
-        // tr = this.createRow(row, head);
-        let item: TableItem<T> = new TableItem<T>(this.controller, row);
-        // TODO: see if icon consideration should move to TableItem
-        if (this.icon)
-          item.setAttribute("icon", <string>Reflect.get(row, this.icon));
+      for (let data of this.data) {
+        let item: TableItem<T> = new TableItem<T>(this.controller, data, this.attIcon);
         this.appendChild(item);
       }
     }
@@ -150,29 +144,6 @@ namespace FudgeUserInterface {
       this.create();
     }
 
-    // private hndEvent(_event: Event): void {
-    //   console.log(_event.currentTarget);
-    //   switch (_event.type) {
-    //     case EVENT.CLICK:
-    //       let event: CustomEvent = new CustomEvent(EVENT.SELECT, { bubbles: true });
-    //       this.dispatchEvent(event);
-    //   }
-    // }
-
-    // private hndRename(_event: Event): void {
-    //   // let item: TreeItem<T> = <TreeItem<T>>(<HTMLInputElement>_event.target).parentNode;
-    //   // let renamed: boolean = this.controller.rename(item.data, item.getLabel());
-    //   // if (renamed)
-    //   //   item.setLabel(this.controller.getLabel(item.data));
-    // }
-
-    // private hndChange = (_event: Event): void => {
-    //   let target: HTMLInputElement = <HTMLInputElement>_event.target;
-    //   console.log(_event);
-    //   _event.stopPropagation();
-    //   target.dispatchEvent(new CustomEvent(EVENT.RENAME, { bubbles: true, detail: {data: this.data} }));
-    // };
-
     private hndSelect(_event: Event): void {
       // _event.stopPropagation();
       let detail: { data: Object; interval: boolean; additive: boolean } = (<CustomEvent>_event).detail;
@@ -214,24 +185,27 @@ namespace FudgeUserInterface {
       this.clearSelection();
     };
 
-    // private hndCopyPaste = async (_event: Event): Promise<void> => {
-    //   // // console.log(_event);
-    //   // _event.stopPropagation();
-    //   // let target: TreeItem<T> = <TreeItem<T>>_event.target;
-    //   // switch (_event.type) {
-    //   //   case EVENT_TREE.COPY:
-    //   //     this.controller.copyPaste.sources = await this.controller.copy([...this.controller.selection]);
-    //   //     break;
-    //   //   case EVENT_TREE.PASTE:
-    //   //     this.addChildren(this.controller.copyPaste.sources, target.data);
-    //   //     break;
-    //   //   case EVENT_TREE.CUT:
-    //   //     this.controller.copyPaste.sources = await this.controller.copy([...this.controller.selection]);
-    //   //     let cut: T[] = this.controller.delete(this.controller.selection);
-    //   //     this.delete(cut);
-    //   //     break;
-    //   // }
-    // }
+    private hndCopyPaste = async (_event: Event): Promise<void> => {
+      console.log(_event);
+      // _event.stopPropagation();
+      // let item: TreeItem<T> = <TreeItem<T>>Reflect.get(_event, "item");
+
+      switch (_event.type) {
+        case EVENT.COPY:
+          this.controller.copy(this.controller.selection, _event.type);
+          break;
+        case EVENT.CUT:
+          this.controller.copy(this.controller.selection, _event.type);
+          break;
+        case EVENT.PASTE:
+          let objects: T[] = await this.controller.paste();
+          for (let object of objects) {
+            let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
+            this.appendChild(item);
+          }
+          break;
+      }
+    };
 
     private hndFocus = (_event: KeyboardEvent): void => {
       _event.stopPropagation();

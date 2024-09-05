@@ -6,19 +6,35 @@ namespace FudgeUserInterface {
   export abstract class TableController<T> {
     /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of table */
     public selection: T[] = [];
-    
+
     /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of table */
     public dragDrop: { sources: T[]; target: T } = { sources: [], target: null };
     /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
     public copyPaste: { sources: T[]; target: T } = { sources: [], target: null };
-    
+
     /** 
      * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and 
      * return a list of those objects in order for the according [[TableItems]] to be deleted also   
      * @param _expendables The expendable objects 
      */
     public async delete(_expendables: T[]): Promise<T[]> { return _expendables; }
-    
+
+    /** 
+     * Refer objects to the clipboard for copy & paste   
+     * @param _objects The objects to refer
+     */
+    public copy(_objects: T[], _operation: ClipOperation): void {
+      Clipboard.copyPaste.set(_objects, null, _operation);
+    }
+
+    /** 
+     * Retrieve objects from the clipboard, and process and return them to add to the table   
+     */
+    public async paste(_class: new () => T = null): Promise<T[]> {
+      let objects: T[] = Clipboard.copyPaste.get(_class, true); // possible to filter for only objects of specific type
+      return objects;
+    }
+
     /** Retrieve a string to create a label for the table item representing the object (appears not to be called yet)  */
     public abstract getLabel(_object: T): string;
 
@@ -27,10 +43,10 @@ namespace FudgeUserInterface {
 
 
     /** 
-     * Return a list of copies of the objects given for copy & paste
-     * @param _focussed The object currently having focus
+     * Return a list of clones of the objects given for copy & paste or drag & drop
+     * @param _originals The objects to clone
      */
-    public abstract /* async */ copy(_originals: T[]): Promise<T[]>;
+    public abstract /* async */ clone(_originals: T[]): Promise<T[]>;
 
     /** 
      * Return a list of TABLE-objects describing the head-titles and according properties

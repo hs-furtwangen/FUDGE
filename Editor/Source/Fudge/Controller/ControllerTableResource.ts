@@ -32,7 +32,17 @@ namespace Fudge {
       return rename;
     }
 
-    public copy(_originals: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]> { return null; }
+    public async paste(_class: new () => ƒ.SerializableResource = null): Promise<ƒ.SerializableResource[]> {
+      let objects: ƒ.SerializableResource[] = await super.paste(); 
+      return this.clone(objects);
+    }
+
+    public async clone(_originals: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]> {
+      let clones: ƒ.SerializableResource[] = [];
+      for (let resource of _originals)
+        clones.push(await ƒ.Project.cloneResource(resource));
+      return clones;
+    }
 
     public async delete(_focussed: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]> {
       console.log(_focussed, this.selection);

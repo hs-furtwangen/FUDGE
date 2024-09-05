@@ -5,8 +5,8 @@ namespace FudgeUserInterface {
    */
 
   import ƒ = FudgeCore;
-  export type ClipOperation = EVENT.COPY | EVENT.CUT | EVENT.DRAG_START;
-  
+  export type ClipOperation = EVENT.COPY | EVENT.CUT;
+
   export class Clipboard {
     public static dragDrop: Clipboard = new Clipboard();
     public static copyPaste: Clipboard = new Clipboard();
@@ -15,8 +15,10 @@ namespace FudgeUserInterface {
     public source: Object = null;
 
     public get<T>(_class: new () => T | Object = Object, _filter: boolean = true): T[] {
-      let result: T[] = this.objects.filter(_object => _object instanceof _class);
-      return result;
+      if (_class)
+        return this.objects.filter(_object => _object instanceof _class);
+      else
+        return this.objects;
     }
 
     public clear(): void {
@@ -24,7 +26,7 @@ namespace FudgeUserInterface {
     }
 
     public set(_objects: Object[], _source: Object, _operation: ClipOperation): void {
-      this.objects = _objects;
+      this.objects = _objects.slice();
       this.source = _source;
       this.operation = _operation;
       console.log(this);
