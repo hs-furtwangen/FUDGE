@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
-
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta charset="utf-8" />
-  <meta type="settings" autoview="Graph|2022-10-12T15:22:44.800Z|84622"
-    project="{'name':'ParticleSystem','graphAutoView':'Graph|2022-10-12T15:22:44.800Z|84622'}"
-    panels="[{'type':'PanelProject','state':{}},{'type':'PanelGraph','state':{'graph':'Graph|2022-10-12T15:22:44.800Z|84622'}},{'type':'PanelParticleSystem','state':{}}]" />
+  <meta type="settings" autoview="Graph|2022-10-12T15:22:44.800Z|84622" project="{'name':'ParticleSystem','graphAutoView':'Graph|2022-10-12T15:22:44.800Z|84622'}" />
 
   <script src="./../../Distribution/FudgeCore.js"></script>
   <script src="./../../Distribution/FudgeAid.js"></script>
@@ -44,6 +41,7 @@
       right: 0;
     }
   </style>
+<title>ParticleSystem</title>
 </head>
 
 <body>
@@ -74,7 +72,8 @@
   <!--Canvas for FUDGE to render to-->
   <canvas class="fullscreen">
   </canvas>
-  <span is="ui-fps" class="ui-canvas"></span>
+  <span is="ui-fps" class="ui-canvas">
+</span>
   <span id="time">
   </span>
   <div id="ui" class="ui-canvas">
@@ -95,7 +94,12 @@
       <label for="stars">Stars</label>
       <input id="starssize" type="number" min="0" hidden="" />
     </div>
+
+    <div>
+      <input id="sparks" type="checkbox" />
+      <label for="sparks">Sparks</label>
+      <input id="sparkssize" type="number" min="0" hidden="" />
+    </div>
   </div>
 </body>
-
 </html>
