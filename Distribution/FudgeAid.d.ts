@@ -292,6 +292,35 @@ declare namespace FudgeAid {
         snapAngle: number;
         snapDistance: number;
         snapScale: number;
+        colors: {
+            base: {
+                x: ƒ.Color;
+                y: ƒ.Color;
+                z: ƒ.Color;
+                xyz: ƒ.Color;
+            };
+            lite: {
+                x: ƒ.Color;
+                y: ƒ.Color;
+                z: ƒ.Color;
+                xyz: ƒ.Color;
+            };
+            transparent: {
+                x: ƒ.Color;
+                y: ƒ.Color;
+                z: ƒ.Color;
+            };
+            plane: {
+                xy: ƒ.Color;
+                xz: ƒ.Color;
+                yz: ƒ.Color;
+            };
+            planeLite: {
+                xy: ƒ.Color;
+                xz: ƒ.Color;
+                yz: ƒ.Color;
+            };
+        };
         constructor(_viewport: ƒ.Viewport);
         set mtxLocal(_mtx: ƒ.Matrix4x4);
         set mtxWorld(_mtx: ƒ.Matrix4x4);
@@ -319,6 +348,7 @@ declare namespace FudgeAid {
         private hndRenderEnd;
         private drawCircle;
         private getPoint3D;
+        private getAxis;
     }
 }
 declare namespace FudgeAid {

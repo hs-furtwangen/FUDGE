@@ -17,35 +17,7 @@ namespace FudgeAid {
     public snapDistance: number = 0.1; // 0.1 units
     public snapScale: number = 0.1; // 10%
 
-    #undo: (() => void)[] = []; // stack of functions to undo the last transformation
-
-    #mtxLocal: ƒ.Matrix4x4; // local matrix of the object to be transformed
-    #mtxWorld: ƒ.Matrix4x4; // world matrix of the object to be transformed
-
-    #mtxLocalBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // local matrix in a state before a transformation starts
-    #mtxWorldBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // world matrix in a state before a transformation starts
-
-    #offset: ƒ.Vector3 = ƒ.Vector3.ZERO(); // offest vector pointing from the world position of the object to where the mouse ray collided with the plane on pointer down
-    #direction: ƒ.Vector3 = ƒ.Vector3.ZERO(); // driection vector pointing from the world position of the object to where the mouse ray collides with the plane (pointer move)
-    // #scaleFactor: number; // current scale factor of the scaling transformation
-
-    #isTransforming: boolean = false;
-
-    #axes: Record<"x" | "y" | "z", () => ƒ.Vector3> = {
-      x: () => this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorldBase.right,
-      y: () => this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorldBase.up,
-      z: () => this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorldBase.forward
-    };
-
-    #normals: Record<"x" | "y" | "z", () => ƒ.Vector3> = {
-      x: () => this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorldBase.forward,
-      y: () => this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorldBase.right,
-      z: () => this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorldBase.up
-    };
-
-    #normal: ƒ.Vector3 = ƒ.Vector3.ZERO();
-
-    #colors = { // eslint-disable-line
+    public colors = { // eslint-disable-line
       base: {
         x: ƒ.Color.CSS("red"),
         y: ƒ.Color.CSS("limegreen"),
@@ -74,6 +46,20 @@ namespace FudgeAid {
         yz: ƒ.Color.CSS("salmon", 0.5)
       }
     };
+
+    #undo: (() => void)[] = []; // stack of functions to undo the last transformation
+
+    #mtxLocal: ƒ.Matrix4x4; // local matrix of the object to be transformed
+    #mtxWorld: ƒ.Matrix4x4; // world matrix of the object to be transformed
+
+    #mtxLocalBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // local matrix in a state before a transformation starts
+    #mtxWorldBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // world matrix in a state before a transformation starts
+    
+    #normal: ƒ.Vector3 = ƒ.Vector3.ZERO(); // the normal of the plane with which the mouse ray collides
+    #offset: ƒ.Vector3 = ƒ.Vector3.ZERO(); // offest vector pointing from the world position of the object to where the mouse ray collided with the plane on pointer down
+    #direction: ƒ.Vector3 = ƒ.Vector3.ZERO(); // direction vector pointing from the world position of the object to where the mouse ray collides with the plane on pointer move
+
+    #isTransforming: boolean = false;
 
     #torus: ƒ.MeshTorus;
     #torusPick: ƒ.MeshTorus;
@@ -148,6 +134,9 @@ namespace FudgeAid {
       if (!this.#mtxLocal || !this.#mtxWorld)
         return;
 
+      if (this.space == "local" && (this.#mtxWorld.scaling.x == 0 || this.#mtxWorld.scaling.y == 0 || this.#mtxWorld.scaling.z == 0))
+        return;
+
       const world2Pixel: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorld.translation);
 
       const translateArrowWidth: number = world2Pixel * (_picking ? 10 : 1);
@@ -160,15 +149,27 @@ namespace FudgeAid {
       const scaleCubeSize: number = world2Pixel * (_picking ? 20 : 10);
 
       const clrAxes: Record<"x" | "y" | "z", ƒ.Color> = {
-        x: this.selected == "x" && !this.#isTransforming ? this.#colors.lite.x : this.#colors.base.x,
-        y: this.selected == "y" && !this.#isTransforming ? this.#colors.lite.y : this.#colors.base.y,
-        z: this.selected == "z" && !this.#isTransforming ? this.#colors.lite.z : this.#colors.base.z
+        x: this.selected == "x" && !this.#isTransforming ? this.colors.lite.x : this.colors.base.x,
+        y: this.selected == "y" && !this.#isTransforming ? this.colors.lite.y : this.colors.base.y,
+        z: this.selected == "z" && !this.#isTransforming ? this.colors.lite.z : this.colors.base.z
       };
 
       const clrPlanes: Record<"xy" | "xz" | "yz", ƒ.Color> = {
-        xy: this.selected == "xy" && !this.#isTransforming ? this.#colors.planeLite.xy : this.#colors.plane.xy,
-        xz: this.selected == "xz" && !this.#isTransforming ? this.#colors.planeLite.xz : this.#colors.plane.xz,
-        yz: this.selected == "yz" && !this.#isTransforming ? this.#colors.planeLite.yz : this.#colors.plane.yz
+        xy: this.selected == "xy" && !this.#isTransforming ? this.colors.planeLite.xy : this.colors.plane.xy,
+        xz: this.selected == "xz" && !this.#isTransforming ? this.colors.planeLite.xz : this.colors.plane.xz,
+        yz: this.selected == "yz" && !this.#isTransforming ? this.colors.planeLite.yz : this.colors.plane.yz
+      };
+
+      const axes: Record<"x" | "y" | "z", ƒ.Vector3> = {
+        x: this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorld.right,
+        y: this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorld.up,
+        z: this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorld.forward
+      };
+
+      const normals: Record<"x" | "y" | "z", ƒ.Vector3> = {
+        x: this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorld.forward,
+        y: this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorld.right,
+        z: this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorld.up
       };
 
       const mtxWorldNormalized: ƒ.Matrix4x4 = this.space == "world" ? ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation) : this.#mtxWorld.clone;
@@ -178,7 +179,7 @@ namespace FudgeAid {
         case "translate":
           // draw the axes
           for (const axis of ["x", "y", "z"] as const)
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], axes[axis], normals[axis], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
 
           // draw the planes
           for (const [axis, plane] of [["z", "xy"], ["y", "xz"], ["x", "yz"]] as const) {
@@ -200,18 +201,15 @@ namespace FudgeAid {
           if (this.#isTransforming) {
             const world2PixelBase: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorldBase.translation);
             for (const selected of this.selected)  //@ts-ignore
-              ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.#colors.transparent[selected], this.#axes[selected](), this.#normals[selected](), world2PixelBase * 80, world2PixelBase * 1, world2PixelBase * 14, ƒ.MeshPyramid, 0);
-            // ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, ƒ.Color.CSS("magenta"), this.#normal, this.#axes[this.selected](), lengthArrow, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
+              ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.colors.transparent[selected], axes[selected], normals[selected], world2PixelBase * 80, world2PixelBase * 1, world2PixelBase * 14, ƒ.MeshPyramid, 0);
           }
 
           break;
         case "rotate":
           if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
-            this.drawCircle(this.#torus, this.#colors.base[this.selected], this.#axes[this.selected](), this.#normals[this.selected](), world2Pixel, 0);
-            // ƒ.Gizmos.drawArrow(this.mtxWorld.translation, this.colorsLight[this.selected], this.move, this.axes[this.selected], this.move.magnitude, widthArrow, sizeHead, ƒ.MeshPyramid, 1);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.base[this.selected], this.#direction, this.#axes[this.selected](), translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.#colors.transparent[this.selected], this.#offset, this.#axes[this.selected](), translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
-
+            this.drawCircle(this.#torus, this.colors.base[this.selected], axes[this.selected], normals[this.selected], world2Pixel, 0);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.colors.base[this.selected], this.#direction, axes[this.selected], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.colors.transparent[this.selected], this.#offset, axes[this.selected], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
             break;
           }
 
@@ -221,26 +219,28 @@ namespace FudgeAid {
           mtxQuad.scaling = ƒ.Vector3.ONE(translateArrowLength * 2);
           mtxQuad.lookIn(direction);
           ƒ.Render.setColorWriteMask(false, false, false, false);
-          ƒ.Gizmos.drawQuad(mtxQuad, this.#colors.base.x, 0); // color doesn't matter
+          ƒ.Gizmos.drawQuad(mtxQuad, this.colors.base.x, 0); // color doesn't matter
           ƒ.Render.setColorWriteMask(true, true, true, true);
 
           // draw the tori
           let torus: ƒ.MeshTorus = _picking ? this.#torusPick : this.#torus;
 
           for (const axis of ["x", "y", "z"] as const)
-            this.drawCircle(torus, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), world2Pixel, 0);
+            this.drawCircle(torus, clrAxes[axis], axes[axis], normals[axis], world2Pixel, 0);
 
           ƒ.Recycler.storeMultiple(mtxQuad, direction);
           break;
         case "scale":
           for (const axis of ["x", "y", "z"] as const) {
-            const factor: number = this.#mtxLocal.scaling[axis] / this.#mtxLocalBase.scaling[axis];
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], this.#axes[axis](), this.#normals[axis](), scaleArrowLength * factor, scaleArrowWidth, scaleArrowSize, ƒ.MeshCube, 0);
+            let factor: number = this.#mtxLocal.scaling[axis] / this.#mtxLocalBase.scaling[axis];
+            if (this.space == "local")
+              factor = Math.abs(factor);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, clrAxes[axis], axes[axis], normals[axis], scaleArrowLength * factor, scaleArrowWidth, scaleArrowSize, ƒ.MeshCube, 0);
           }
 
           const mtxCube: ƒ.Matrix4x4 = mtxWorldNormalized.clone;
           mtxCube.scale(mtxCube.scaling.set(scaleCubeSize, scaleCubeSize, scaleCubeSize));
-          ƒ.Gizmos.drawCube(mtxCube, this.selected == "xyz" ? this.#colors.lite.xyz : this.#colors.base.xyz, 1);
+          ƒ.Gizmos.drawCube(mtxCube, this.selected == "xyz" ? this.colors.lite.xyz : this.colors.base.xyz, 1);
           ƒ.Recycler.store(mtxCube);
           break;
       }
@@ -257,26 +257,17 @@ namespace FudgeAid {
 
       if (this.selected == "x" || this.selected == "y" || this.selected == "z") {
         if (this.mode == "rotate") {
-          this.#normal.copy(this.#axes[this.selected]());
+          this.#normal.copy(this.getAxis(this.selected));
         } else {
-          const mtxNormal: ƒ.Matrix4x4 = ƒ.Matrix4x4.LOOK_AT(this.#mtxWorld.translation, this.camera.mtxWorld.translation, this.#axes[this.selected](), true);
+          const mtxNormal: ƒ.Matrix4x4 = ƒ.Matrix4x4.LOOK_AT(this.#mtxWorld.translation, this.camera.mtxWorld.translation, this.getAxis(this.selected), true);
           this.#normal.copy(mtxNormal.forward); // normal of the plane the mouse ray will collide with
           ƒ.Recycler.store(mtxNormal);
         }
       } else if (this.selected == "xyz") {
         this.#normal.copy(this.camera.mtxWorld.forward.negate());
       } else {
-        switch (this.selected) {
-          case "xy":
-            this.#normal.copy(this.#axes.z());
-            break;
-          case "xz":
-            this.#normal.copy(this.#axes.y());
-            break;
-          case "yz":
-            this.#normal.copy(this.#axes.x());
-            break;
-        }
+        const axis: string = "xyz".replace(this.selected[0], "").replace(this.selected[1], "");
+        this.#normal.copy(this.getAxis(<"x" | "y" | "z">axis));
       }
 
       const point: ƒ.Vector3 = this.getPoint3D(_event);
@@ -287,16 +278,10 @@ namespace FudgeAid {
       // create undo function
       const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocal;
       const mutatorLocal: ƒ.Mutator = mtxLocal.getMutator();
-      // const mtxWorld: ƒ.Matrix4x4 = this.#mtxWorld;
-      // const mutatorWorld: ƒ.Mutator = mtxWorld.getMutator();
       let undo: () => void = () => {
         mtxLocal.mutate(mutatorLocal);
-        // mtxWorld.mutate(mutatorWorld);
         if (this.#mtxLocal == mtxLocal)
           this.#mtxLocalBase.copy(mtxLocal);
-        // TODO: find a way to copy the world matrix after it has been recalculated...
-        // if (this.#mtxWorld == mtxWorld)
-        //   this.#mtxWorldBase.copy(mtxWorld);
       };
       this.#undo.push(undo);
     };
@@ -343,12 +328,12 @@ namespace FudgeAid {
 
       let axis: ƒ.Vector3;
       if (this.selected == "x" || this.selected == "y" || this.selected == "z")
-        axis = this.#axes[this.selected]();
+        axis = this.getAxis(this.selected);
 
       switch (this.mode) {
         case "translate":
           const mtxWorldInverse: ƒ.Matrix4x4 = this.#mtxWorldBase.clone.invert();
-
+          
           const translation: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#direction, axis) : this.#direction.clone;
           const translationOffset: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#offset, axis) : this.#offset.clone;
 
@@ -384,7 +369,7 @@ namespace FudgeAid {
           const mtxParentWorld: ƒ.Matrix4x4 = ƒ.Matrix4x4.PRODUCT(this.#mtxWorldBase, mtxLocalInverse);
 
           const qParentWorld: ƒ.Quaternion = mtxParentWorld.quaternion;
-          const qParentWorldInverse: ƒ.Quaternion  = ƒ.Quaternion.INVERSE(mtxParentWorld.quaternion);
+          const qParentWorldInverse: ƒ.Quaternion = ƒ.Quaternion.INVERSE(mtxParentWorld.quaternion);
 
           qRotation.multiply(qParentWorldInverse, true);
           qRotation.multiply(qParentWorld);
@@ -482,9 +467,25 @@ namespace FudgeAid {
     private getPoint3D(_event: PointerEvent): ƒ.Vector3 {
       const point2D: ƒ.Vector2 = ƒ.Recycler.reuse(ƒ.Vector2).set(_event.offsetX, _event.offsetY);
       const ray: ƒ.Ray = this.viewport.getRayFromClient(point2D);
-
       ƒ.Recycler.store(point2D);
+
       return ray.intersectPlane(this.#mtxWorldBase.translation, this.#normal);
+    }
+
+    private getAxis(_axis: "x" | "y" | "z"): ƒ.Vector3 {
+      if (this.space == "world") {
+        switch (_axis) {
+          case "x": return ƒ.Vector3.X();
+          case "y": return ƒ.Vector3.Y();
+          case "z": return ƒ.Vector3.Z();
+        }
+      } else {
+        switch (_axis) {
+          case "x": return this.#mtxWorldBase.right;
+          case "y": return this.#mtxWorldBase.up;
+          case "z": return this.#mtxWorldBase.forward;
+        }
+      }
     }
   }
 }
