@@ -38,6 +38,10 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.COPY, this.hndCopyPaste);
       this.addEventListener(EVENT.CUT, this.hndCopyPaste);
       this.addEventListener(EVENT.PASTE, this.hndCopyPaste);
+
+      this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragDrop);
+      this.addEventListener(EVENT.DROP, this.hndDragDrop);
     }
 
     /**
@@ -185,20 +189,45 @@ namespace FudgeUserInterface {
       this.clearSelection();
     };
 
-    private hndCopyPaste = async (_event: Event): Promise<void> => {
+    private hndCopyPaste = async (_event: ClipboardEvent): Promise<void> => {
       console.log(_event);
       // _event.stopPropagation();
-      // let item: TreeItem<T> = <TreeItem<T>>Reflect.get(_event, "item");
 
       switch (_event.type) {
         case EVENT.COPY:
-          this.controller.copy(this.controller.selection, _event.type);
+          this.controller.copy(this.getFocussed(), _event.type);
           break;
         case EVENT.CUT:
-          this.controller.copy(this.controller.selection, _event.type);
+          _event.stopPropagation();
+          let cut: T[] = await this.controller.cut(this.getFocussed(), _event.type);
+          if (cut.length)
+            this.dispatchEvent(new Event(EVENT.REMOVE_CHILD, { bubbles: true }));
           break;
         case EVENT.PASTE:
           let objects: T[] = await this.controller.paste();
+          for (let object of objects) {
+            let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
+            this.appendChild(item);
+          }
+          break;
+      }
+    };
+
+    private hndDragDrop = async (_event: DragEvent): Promise<void> => {
+      let item: TreeItem<T> = <TreeItem<T>>Reflect.get(_event, "item");
+      _event.dataTransfer.dropEffect = "none";
+
+      switch (_event.type) {
+        case EVENT.DRAG_START:
+          _event.dataTransfer.effectAllowed = "all";
+          this.controller.dragStart(item.data);
+          break;
+        case EVENT.DRAG_OVER:
+          _event.dataTransfer.dropEffect = "link";//this.controller.dragOver(_event);
+          _event.preventDefault();
+          break;
+        case EVENT.DROP:
+          let objects: T[] = await this.controller.drop();
           for (let object of objects) {
             let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
             this.appendChild(item);

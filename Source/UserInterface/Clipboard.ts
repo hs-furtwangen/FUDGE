@@ -25,7 +25,7 @@ namespace FudgeUserInterface {
       this.objects = [];
     }
 
-    public set(_objects: Object[], _source: Object, _operation: ClipOperation): void {
+    public set(_objects: Object[], _operation?: ClipOperation, _source?: Object): void {
       this.objects = _objects.slice();
       this.source = _source;
       this.operation = _operation;

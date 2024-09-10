@@ -13,7 +13,7 @@ declare namespace FudgeUserInterface {
         source: Object;
         get<T>(_class?: new () => T | Object, _filter?: boolean): T[];
         clear(): void;
-        set(_objects: Object[], _source: Object, _operation: ClipOperation): void;
+        set(_objects: Object[], _operation?: ClipOperation, _source?: Object): void;
     }
 }
 declare namespace FudgeUserInterface {
@@ -698,6 +698,7 @@ declare namespace FudgeUserInterface {
         private hndDelete;
         private hndEscape;
         private hndCopyPaste;
+        private hndDragDrop;
         private hndFocus;
     }
 }
@@ -726,14 +727,32 @@ declare namespace FudgeUserInterface {
          */
         delete(_expendables: T[]): Promise<T[]>;
         /**
-         * Refer objects to the clipboard for copy & paste
-         * @param _objects The objects to refer
+         * Refer items to the clipboard for copy & paste
+         * @param _focus The that has the focus and that will be copied if the selection is empty
          */
-        copy(_objects: T[], _operation: ClipOperation): void;
+        copy(_focus: T, _operation: ClipOperation): T[];
+        /**
+         * Refer objects to the clipboard for copy & paste and delete them from this controller
+         * @param _focus The item that has the focus and that will be cut if the selection is empty
+         */
+        cut(_focus: T, _operation: ClipOperation): Promise<T[]>;
+        /**
+         * Retrieve objects from the clipboard, process and return them to add to the table
+         */
+        paste(_class?: new () => T): Promise<T[]>;
+        /**
+         * Refer objects to the clipboard for drag & drop
+         * @param _focus The item that has the focus and that will be dragged if the selection is empty
+         */
+        dragStart(_focus: T): void;
+        /**
+         * Return allowed dragDrop-effect
+         */
+        dragOver(_event: DragEvent): DROPEFFECT;
         /**
          * Retrieve objects from the clipboard, and process and return them to add to the table
          */
-        paste(_class?: new () => T): Promise<T[]>;
+        drop(_class?: new () => T): Promise<T[]>;
         /** Retrieve a string to create a label for the table item representing the object (appears not to be called yet)  */
         abstract getLabel(_object: T): string;
         /** Return false if renaming of object is not possibile, or true if the object was renamed */
@@ -779,9 +798,7 @@ declare namespace FudgeUserInterface {
         private hndInputEvent;
         private hndChange;
         private hndKey;
-        private hndCopyPaste;
-        private hndDragStart;
-        private hndDragOver;
+        private hndDragDrop;
         private hndPointerUp;
     }
 }
@@ -991,6 +1008,7 @@ declare namespace FudgeUserInterface {
     }
 }
 declare namespace FudgeUserInterface {
+    type DROPEFFECT = "none" | "copy" | "link" | "move";
     const enum EVENT {
         CLICK = "click",
         DOUBLE_CLICK = "dblclick",

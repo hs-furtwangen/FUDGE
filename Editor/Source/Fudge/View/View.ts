@@ -56,7 +56,7 @@ namespace Fudge {
     private static registerViewForDragDrop(_this: View): number {
       View.views[View.idCount] = _this;
 
-      // when drag starts, add identifier to the event in a way that allows dragover to process the soure
+      // when drag starts, add identifier to the event in a way that allows dragover to process the source
       _this.dom.addEventListener(ƒui.EVENT.DRAG_START, (_event: DragEvent) => {
         _event.stopPropagation();
         _event.dataTransfer.setData("SourceView:" + _this.#id.toString(), "typesHack");

@@ -20,13 +20,10 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.KEY_DOWN, this.hndKey);
       this.addEventListener(EVENT.CHANGE, this.hndChange);
 
-      this.addEventListener(EVENT.COPY, this.hndCopyPaste, true);
-      this.addEventListener(EVENT.CUT, this.hndCopyPaste, true);
-      this.addEventListener(EVENT.PASTE, this.hndCopyPaste, true);
-
       this.draggable = true;
-      this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
-      this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
+      this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragDrop);
+      this.addEventListener(EVENT.DROP, this.hndDragDrop);
 
       // this.addEventListener(EVENT.UPDATE, this.hndUpdate);
     }
@@ -127,28 +124,32 @@ namespace FudgeUserInterface {
         case ƒ.KEYBOARD_CODE.DELETE:
           this.dispatchEvent(new Event(EVENT.DELETE, { bubbles: true }));
           break;
+        case ƒ.KEYBOARD_CODE.C:
+          if (_event.ctrlKey || _event.metaKey) {
+            _event.preventDefault();
+            this.dispatchEvent(new Event(EVENT.COPY, { bubbles: true }));
+          }
+          break;
+        case ƒ.KEYBOARD_CODE.V:
+          if (_event.ctrlKey || _event.metaKey) {
+            _event.preventDefault();
+            this.dispatchEvent(new Event(EVENT.PASTE, { bubbles: true }));
+          }
+          break;
+        case ƒ.KEYBOARD_CODE.X:
+          if (_event.ctrlKey || _event.metaKey) {
+            _event.preventDefault();
+            this.dispatchEvent(new Event(EVENT.CUT, { bubbles: true }));
+          }
+          break;
       }
     };
 
-    private hndCopyPaste = (_event: ClipboardEvent): void => {
+    private hndDragDrop = (_event: DragEvent): void => {
+      // store the dragged item in the event for further processing in table
       Reflect.set(_event, "item", this);
     };
-    private hndDragStart = (_event: DragEvent): void => {
-      // _event.stopPropagation();
-      this.controller.dragDrop.sources = [];
-      if (this.selected)
-        this.controller.dragDrop.sources = this.controller.selection;
-      else
-        this.controller.dragDrop.sources = [this.data];
-      _event.dataTransfer.effectAllowed = "all";
-    };
 
-    private hndDragOver = (_event: DragEvent): void => {
-      // _event.stopPropagation();
-      _event.preventDefault();
-      this.controller.dragDrop.target = this.data;
-      // _event.dataTransfer.dropEffect = "link";
-    };
     private hndPointerUp = (_event: PointerEvent): void => {
       _event.stopPropagation();
       this.focus();

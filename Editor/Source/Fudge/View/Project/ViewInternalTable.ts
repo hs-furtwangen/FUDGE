@@ -32,6 +32,10 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.RENAME, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
 
+      this.dom.addEventListener(ƒui.EVENT.COPY, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.CUT, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndEvent);
+
       this.dom.addEventListener("keyup", this.hndKeyboardEvent);
     }
 
@@ -61,7 +65,8 @@ namespace Fudge {
     }
 
     public getDragDropSources(): ƒ.SerializableResource[] {
-      return this.table.controller.dragDrop.sources;
+      // return this.table.controller.dragDrop.sources;
+      return ƒui.Clipboard.dragDrop.get();
     }
 
     // TODO: this is a preparation for syncing a graph with its instances after structural changes
@@ -175,23 +180,29 @@ namespace Fudge {
     //#endregion
 
     protected hndDragOver(_event: DragEvent, _viewSource: View): void {
-      _event.dataTransfer.dropEffect = "none";
-      if (this.dom != _event.target)
-        return;
 
-      if (!(_viewSource instanceof ViewExternal || _viewSource instanceof ViewHierarchy))
+      if (this.dom != _event.target) {
+        _event.dataTransfer.dropEffect = "none";
         return;
+      }
 
-      if (_viewSource instanceof ViewExternal) {
+      if (_viewSource instanceof ViewInternal) {
+        _event.dataTransfer.dropEffect = this.table.controller.dragOver(_event);
+
+      } else if (_viewSource instanceof ViewExternal) {
         let sources: DirectoryEntry[] = _viewSource.getDragDropSources();
         if (sources.some(_source => ![MIME.AUDIO, MIME.IMAGE, MIME.MESH, MIME.GLTF].includes(_source.getMimeType())))
           return;
-        // for (let source of sources)
-        //   if (source.getMimeType() != MIME.AUDIO && source.getMimeType() != MIME.IMAGE && source.getMimeType() != MIME.MESH)
-        //     return;
+        _event.dataTransfer.dropEffect = "link";
+
+      } else if (_viewSource instanceof ViewHierarchy) {
+        _event.dataTransfer.dropEffect = "link";
+
+      } else {
+        _event.dataTransfer.dropEffect = "none";
+        return;
       }
 
-      _event.dataTransfer.dropEffect = "link";
       _event.preventDefault();
       _event.stopPropagation();
     }
@@ -283,6 +294,9 @@ namespace Fudge {
           this.listResources();
           break;
         case ƒui.EVENT.RENAME:
+        case ƒui.EVENT.COPY:
+        case ƒui.EVENT.CUT:
+        case ƒui.EVENT.PASTE:
           this.listResources();
           this.dispatchToParent(EVENT_EDITOR.UPDATE, { bubbles: true, detail: _event.detail });
           break;

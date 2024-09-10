@@ -400,7 +400,6 @@ declare namespace Fudge {
         rename(_object: ScriptInfo, _new: string): Promise<boolean>;
         delete(_focussed: ScriptInfo[]): Promise<ScriptInfo[]>;
         clone(_originals: ScriptInfo[]): Promise<ScriptInfo[]>;
-        copy(_objects: ScriptInfo[], _operation: ƒui.ClipOperation): void;
         paste(_class?: new () => ScriptInfo): Promise<ScriptInfo[]>;
         sort(_data: ScriptInfo[], _key: string, _direction: number): void;
     }
@@ -438,10 +437,6 @@ declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
     class ControllerTreeParticleSystem extends ƒui.CustomTreeController<ƒ.ParticleData.Recursive> {
-        static copyPaste: {
-            sources: ƒ.ParticleData.Recursive[];
-            target: ƒ.ParticleData.Recursive;
-        };
         childToParent: Map<ƒ.ParticleData.Recursive, ƒ.ParticleData.Recursive>;
         private data;
         private view;

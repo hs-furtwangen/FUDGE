@@ -57,6 +57,7 @@ namespace FudgeUserInterface {
         };
         btnCancel.addEventListener(EVENT.CLICK, hndButton);
         btnOk.addEventListener(EVENT.CLICK, hndButton);
+        btnOk.focus();
       });
     }
   }

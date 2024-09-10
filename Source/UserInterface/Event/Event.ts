@@ -1,4 +1,7 @@
 namespace FudgeUserInterface {
+
+  export type DROPEFFECT = "none" | "copy" | "link" | "move";
+
   export const enum EVENT {
     CLICK = "click",
     DOUBLE_CLICK = "dblclick",
