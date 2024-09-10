@@ -223,8 +223,8 @@ namespace FudgeUserInterface {
           this.controller.dragStart(item.data);
           break;
         case EVENT.DRAG_OVER:
-          _event.dataTransfer.dropEffect = "link";//this.controller.dragOver(_event);
-          _event.preventDefault();
+          _event.dataTransfer.dropEffect = this.controller.dragOver(_event);
+          // _event.preventDefault();
           break;
         case EVENT.DROP:
           let objects: T[] = await this.controller.drop();

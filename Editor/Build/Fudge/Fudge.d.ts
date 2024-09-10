@@ -376,6 +376,7 @@ declare namespace Fudge {
         getLabel(_object: ƒ.SerializableResource): string;
         rename(_object: ƒ.SerializableResource, _new: string): Promise<boolean>;
         paste(_class?: new () => ƒ.SerializableResource): Promise<ƒ.SerializableResource[]>;
+        dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         clone(_originals: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]>;
         delete(_focussed: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]>;
         sort(_data: ƒ.SerializableResource[], _key: string, _direction: number): void;

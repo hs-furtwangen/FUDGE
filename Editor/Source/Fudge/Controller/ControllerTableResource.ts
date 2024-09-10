@@ -33,8 +33,15 @@ namespace Fudge {
     }
 
     public async paste(_class: new () => ƒ.SerializableResource = null): Promise<ƒ.SerializableResource[]> {
-      let objects: ƒ.SerializableResource[] = await super.paste(); 
+      let objects: ƒ.SerializableResource[] = await super.paste();
       return this.clone(objects);
+    }
+
+    public dragOver(_event: DragEvent): ƒui.DROPEFFECT {
+      let dropEffect: ƒui.DROPEFFECT = super.dragOver(_event);
+      if (dropEffect == "link")
+        dropEffect = "copy";
+      return dropEffect;
     }
 
     public async clone(_originals: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]> {

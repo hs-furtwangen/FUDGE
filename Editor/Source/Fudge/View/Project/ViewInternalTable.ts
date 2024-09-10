@@ -16,8 +16,6 @@ namespace Fudge {
     public constructor(_container: ComponentContainer, _state: ViewState) {
       super(_container, _state);
 
-      ƒui.Clipboard.copyPaste.set(["Hallo"], null, ƒui.EVENT.COPY);
-
       this.dom.addEventListener(EVENT_EDITOR.OPEN, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CREATE, this.hndEvent);
@@ -35,6 +33,7 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.COPY, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.CUT, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndEvent);
 
       this.dom.addEventListener("keyup", this.hndKeyboardEvent);
     }
@@ -208,6 +207,12 @@ namespace Fudge {
     }
 
     protected async hndDrop(_event: DragEvent, _viewSource: View): Promise<void> {
+      if (_viewSource instanceof ViewInternal) {
+        let dropEffect: ƒui.DROPEFFECT = this.table.controller.dragOver(_event);
+        if (dropEffect == "copy") {
+          await this.table.controller.clone(ƒui.Clipboard.dragDrop.get());
+        }
+      }
       if (_viewSource instanceof ViewHierarchy) {
         let sources: ƒ.Node[] = _viewSource.getDragDropSources();
         for (let source of sources) {
@@ -297,6 +302,7 @@ namespace Fudge {
         case ƒui.EVENT.COPY:
         case ƒui.EVENT.CUT:
         case ƒui.EVENT.PASTE:
+        case ƒui.EVENT.DROP:
           this.listResources();
           this.dispatchToParent(EVENT_EDITOR.UPDATE, { bubbles: true, detail: _event.detail });
           break;
