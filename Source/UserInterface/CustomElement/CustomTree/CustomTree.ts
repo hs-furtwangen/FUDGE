@@ -149,7 +149,6 @@ namespace FudgeUserInterface {
       this.addChildren(this.controller.dragDrop.sources, this.controller.dragDrop.target, this.controller.dragDrop.at);
       this.controller.dragDrop.sources = [];
       this.controller.dragDropIndicator.remove();
-
     }
 
     private hndDragLeave = (_event: DragEvent): void => {
