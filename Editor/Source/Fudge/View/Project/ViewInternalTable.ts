@@ -195,6 +195,9 @@ namespace Fudge {
         _event.dataTransfer.dropEffect = "link";
 
       } else if (_viewSource instanceof ViewHierarchy) {
+        let items: ƒ.Node[] = _viewSource.getDragDropSources();
+        if (items.find(_item => _item instanceof ƒ.GraphInstance))
+          return;
         _event.dataTransfer.dropEffect = "link";
 
       } else {
@@ -216,7 +219,8 @@ namespace Fudge {
       if (_viewSource instanceof ViewHierarchy) {
         let sources: ƒ.Node[] = _viewSource.getDragDropSources();
         for (let source of sources) {
-          await ƒ.Project.registerAsGraph(source, true);
+          if (!(source instanceof ƒ.GraphInstance))
+            await ƒ.Project.registerAsGraph(source, true);
         }
       } else if (_viewSource instanceof ViewExternal) {
         let sources: DirectoryEntry[] = _viewSource.getDragDropSources();
