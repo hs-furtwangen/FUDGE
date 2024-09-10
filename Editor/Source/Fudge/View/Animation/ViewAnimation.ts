@@ -44,7 +44,8 @@ namespace Fudge {
       _event.dataTransfer.dropEffect = "none";
 
       let source: Object = _viewSource.getDragDropSources()[0];
-      if (!(_viewSource instanceof ViewHierarchy) || !(source instanceof ƒ.Node) || !source.getComponent(ƒ.ComponentAnimator)?.animation)
+      if (!(source instanceof ƒ.Node && source.getComponent(ƒ.ComponentAnimator)?.animation))
+        //(!(_viewSource instanceof ViewHierarchy || _viewSource instanceof ViewInternal) ||
         return;
 
       _event.dataTransfer.dropEffect = "link";
