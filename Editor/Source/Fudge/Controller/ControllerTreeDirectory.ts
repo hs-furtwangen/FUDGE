@@ -3,7 +3,7 @@ namespace Fudge {
   import ƒ = FudgeCore;
   import ƒUi = FudgeUserInterface;
 
-  export class ControllerTreeDirectory extends ƒUi.CustomTreeController<DirectoryEntry> {
+  export class ControllerTreeDirectory extends ƒUi.TreeController<DirectoryEntry> {
 
     public sortable: boolean = false;
 

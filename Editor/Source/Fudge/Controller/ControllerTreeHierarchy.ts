@@ -2,7 +2,7 @@ namespace Fudge {
   import ƒ = FudgeCore;
   import ƒUi = FudgeUserInterface;
 
-  export class ControllerTreeHierarchy extends ƒUi.CustomTreeController<ƒ.Node> {
+  export class ControllerTreeHierarchy extends ƒUi.TreeController<ƒ.Node> {
 
     public createContent(_object: ƒ.Node): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");

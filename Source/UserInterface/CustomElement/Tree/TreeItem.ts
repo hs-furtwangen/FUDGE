@@ -2,23 +2,21 @@ namespace FudgeUserInterface {
   import ƒ = FudgeCore;
 
   /**
-   * Extension of li-element that represents an object in a [[TreeList]] with a checkbox and a textinput as content.
-   * Additionally, may hold an instance of [[TreeList]] as branch to display children of the corresponding object.
+   * Extension of li-element that represents an object in a {@link TreeList} with a checkbox and user defined input elements as content.
+   * Additionally, may hold an instance of {@link TreeList} as branch to display children of the corresponding object.
    */
   export class TreeItem<T> extends HTMLLIElement {
-    public display: string = "TreeItem";
     public classes: CSS_CLASS[] = [];
     public data: T = null;
     public controller: TreeController<T>;
 
     private checkbox: HTMLInputElement;
-    private label: HTMLInputElement;
+    #content: HTMLFieldSetElement;
 
     public constructor(_controller: TreeController<T>, _data: T) {
       super();
       this.controller = _controller;
       this.data = _data;
-      this.display = this.controller.getLabel(_data);
       // TODO: handle cssClasses
       this.create();
       this.hasChildren = this.controller.hasChildren(_data);
@@ -30,10 +28,10 @@ namespace FudgeUserInterface {
       // this.addEventListener(EVENT_TREE.FOCUS_NEXT, this.hndFocus);
       // this.addEventListener(EVENT_TREE.FOCUS_PREVIOUS, this.hndFocus);
 
-      this.draggable = true;
+      this.draggable = this.controller.draggable(_data);
       this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
+      this.addEventListener(EVENT.DRAG_ENTER, this.hndDragOver); // this prevents cursor from flickering
       this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
-
       this.addEventListener(EVENT.POINTER_UP, this.hndPointerUp);
       this.addEventListener(EVENT.REMOVE_CHILD, this.hndRemove);
     }
@@ -53,7 +51,14 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Returns attaches or detaches the [[TREE_CLASS.SELECTED]] to this item
+     * Returns true if the {@link CSS_CLASS.SELECTED} is attached to this item
+     */
+    public get selected(): boolean {
+      return this.classList.contains(CSS_CLASS.SELECTED);
+    }
+
+    /**
+     * Attaches or detaches the {@link CSS_CLASS.SELECTED} to this item
      */
     public set selected(_on: boolean) {
       if (_on)
@@ -63,37 +68,33 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Returns true if the [[TREE_CLASSES.SELECTED]] is attached to this item
+     * Returns the content representing the attached {@link data}
      */
-    public get selected(): boolean {
-      return this.classList.contains(CSS_CLASS.SELECTED);
+    public get content(): HTMLFieldSetElement {
+      return this.#content;
     }
 
     /**
-     * Set the label text to show
+     * Returns whether this item is expanded, showing it's children, or closed
      */
-    public setLabel(_text: string): void {
-      this.label.value = _text;
+    public get expanded(): boolean {
+      return this.getBranch() && this.checkbox.checked;
     }
 
-    /**
-     * Get the label text shown
-     */
-    public getLabel(): string {
-      return this.label.value;
-    }
-
-    /**
-     * Get the label text shown
-     */
     public refreshAttributes(): void {
       this.setAttribute("attributes", this.controller.getAttributes(this.data));
     }
 
+    public refreshContent(): void {
+      this.#content.innerHTML = "";
+      this.#content.appendChild(this.controller.createContent(this.data));
+      this.#content.disabled = true;
+    }
+
     /**
-     * Tries to expanding the [[TreeList]] of children, by dispatching [[EVENT.EXPAND]].
+     * Tries to expanding the {@link TreeList} of children, by dispatching {@link EVENT.EXPAND}.
      * The user of the tree needs to add an event listener to the tree 
-     * in order to create that [[TreeList]] and add it as branch to this item
+     * in order to create that {@link TreeList} and add it as branch to this item
      */
     public expand(_expand: boolean): void {
       this.removeBranch();
@@ -101,7 +102,9 @@ namespace FudgeUserInterface {
       if (_expand)
         this.dispatchEvent(new Event(EVENT.EXPAND, { bubbles: true }));
 
-      (<HTMLInputElement>this.querySelector("input[type='checkbox']")).checked = _expand;
+      this.checkbox.checked = _expand;
+      this.hasChildren = this.controller.hasChildren(this.data);
+      // (<HTMLInputElement>this.querySelector("input[type='checkbox']")).checked = _expand;
     }
 
     /**
@@ -116,7 +119,7 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Sets the branch of children of this item. The branch must be a previously compiled [[TreeList]]
+     * Sets the branch of children of this item. The branch must be a previously compiled {@link TreeList}
      */
     public setBranch(_branch: TreeList<T>): void {
       this.removeBranch();
@@ -133,7 +136,7 @@ namespace FudgeUserInterface {
 
 
     /**
-     * Dispatches the [[EVENT.SELECT]] event
+     * Dispatches the {@link EVENT.SELECT} event
      * @param _additive For multiple selection (+Ctrl) 
      * @param _interval For selection over interval (+Shift)
      */
@@ -146,49 +149,54 @@ namespace FudgeUserInterface {
      * Removes the branch of children from this item
      */
     private removeBranch(): void {
-      let content: TreeList<T> = this.getBranch();
-      if (!content)
+      let branch: TreeList<T> = this.getBranch();
+      if (!branch)
         return;
-      this.removeChild(content);
+      this.removeChild(branch);
     }
 
     private create(): void {
       this.checkbox = document.createElement("input");
       this.checkbox.type = "checkbox";
       this.appendChild(this.checkbox);
-
-      this.label = document.createElement("input");
-      this.label.type = "text";
-      this.label.disabled = true;
-      this.label.value = this.display;
-      this.appendChild(this.label);
-
+      this.#content = document.createElement("fieldset");
+      this.appendChild(this.#content);
+      this.refreshContent();
       this.refreshAttributes();
-
       this.tabIndex = 0;
     }
 
+    private hndFocus = (_event: FocusEvent): void => {
+      _event.stopPropagation();
 
-    private hndFocus = (_event: Event): void => {
-      if (_event.target == this.label)
-        this.label.disabled = true;
+      if (_event.target == this.checkbox)
+        return;
+
+      if (_event.target == this)
+        return;
+
+      this.#content.disabled = true;
     };
 
     private hndKey = (_event: KeyboardEvent): void => {
       _event.stopPropagation();
-      if (!this.label.disabled)
+
+      if (!this.#content.disabled) {
+        if (_event.code == ƒ.KEYBOARD_CODE.ESC || _event.code == ƒ.KEYBOARD_CODE.ENTER)
+          this.focus();
+
         return;
-      let content: TreeList<T> = <TreeList<T>>this.querySelector("ul");
+      }
 
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.ARROW_RIGHT:
-          if (this.hasChildren && !content)
+          if (this.hasChildren && !this.expanded)
             this.expand(true);
           else
             this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_NEXT, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.ARROW_LEFT:
-          if (content)
+          if (this.expanded)
             this.expand(false);
           else
             this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
@@ -200,7 +208,12 @@ namespace FudgeUserInterface {
           this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.F2:
-          this.startTypingLabel();
+          const element: HTMLElement = <HTMLElement>this.#content.elements.item(0);
+          if (!element)
+            break;
+
+          this.#content.disabled = false;
+          element.focus();
           break;
         case ƒ.KEYBOARD_CODE.SPACE:
           this.select(_event.ctrlKey, _event.shiftKey);
@@ -232,35 +245,35 @@ namespace FudgeUserInterface {
       }
     };
 
-    private startTypingLabel(): void {
-      this.label.disabled = false;
-      this.label.focus();
-    }
-
-    private hndDblClick = (_event: Event): void => {
+    private hndDblClick = (_event: MouseEvent): void => {
       _event.stopPropagation();
-      if (_event.target != this.checkbox)
-        this.startTypingLabel();
+      if (_event.target == this.checkbox)
+        return;
+
+      this.#content.disabled = false;
+      const element: HTMLElement = <HTMLElement>document.elementFromPoint(_event.pageX, _event.pageY); // disabled elements don't dispatch click events, get the element manually
+      if (!element)
+        return;
+
+      element.focus();
     };
 
-    private hndChange = (_event: Event): void => {
-      let target: HTMLInputElement = <HTMLInputElement>_event.target;
-      let item: HTMLLIElement = <HTMLLIElement>target.parentElement;
+    private hndChange = async (_event: Event): Promise<void> => {
+      let target: HTMLInputElement | HTMLSelectElement = <HTMLInputElement | HTMLSelectElement>_event.target;
       _event.stopPropagation();
 
-      switch (target.type) {
-        case "checkbox":
-          this.expand(target.checked);
-          break;
-        case "text":
-          target.disabled = true;
-          item.focus();
-          target.dispatchEvent(new CustomEvent(EVENT.RENAME, { bubbles: true, detail: { data: this.data } }));
-          break;
-        case "default":
-          // console.log(target);
-          break;
+      if (target instanceof HTMLInputElement && target.type == "checkbox") {
+        this.expand(target.checked);
+        return;
       }
+
+      let renamed: boolean = await this.controller.setValue(this.data, target);
+
+      this.refreshContent();
+      this.refreshAttributes();
+
+      if (renamed)
+        this.dispatchEvent(new CustomEvent(EVENT.RENAME, { bubbles: true, detail: { data: this.data } }));
     };
 
     private hndDragStart = (_event: DragEvent): void => {
@@ -274,22 +287,32 @@ namespace FudgeUserInterface {
       else
         this.controller.dragDrop.sources = [this.data];
       _event.dataTransfer.effectAllowed = "all";
+      _event.dataTransfer.setDragImage(document.createElement("img"), 0, 0);
       this.controller.dragDrop.target = null;
 
       // mark as already processed by this tree item to ignore it in further propagation through the tree
-      _event.dataTransfer.setData("dragstart", this.label.value);
+      _event.dataTransfer.setData("dragstart", "dragstart");
     };
 
     private hndDragOver = (_event: DragEvent): void => {
-      // this.controller.hndDragOver(_event);
-      if (Reflect.get(_event, "dragoverDone"))
+      if (Reflect.get(_event, "dragProcessed"))
         return;
 
-      Reflect.set(_event, "dragoverDone", true);
-      // _event.stopPropagation();
-      _event.preventDefault();
-      this.controller.dragDrop.target = this.data;
-      _event.dataTransfer.dropEffect = "move";
+      let rect: DOMRect = this.#content.getBoundingClientRect();
+      let upper: number = rect.top + rect.height * (1 / 4);
+      let lower: number = rect.top + rect.height * (3 / 4);
+      let offset: number = _event.clientY;
+      if (this.parentElement instanceof Tree || (offset > upper && (offset < lower || this.checkbox.checked)) || !this.controller.sortable) {
+        Reflect.set(_event, "dragProcessed", true);
+        if (_event.type == EVENT.DRAG_OVER)
+          this.controller.dragDropIndicator.remove();
+        if (this.controller.canAddChildren(this.controller.dragDrop.sources, this.data)) {
+          _event.preventDefault();
+          _event.dataTransfer.dropEffect = "move";
+          this.controller.dragDrop.at = null;
+          this.controller.dragDrop.target = this.data;
+        }
+      }
     };
 
     private hndPointerUp = (_event: PointerEvent): void => {
@@ -300,12 +323,13 @@ namespace FudgeUserInterface {
     };
 
     private hndRemove = (_event: Event): void => {
-      if (_event.currentTarget == _event.target)
-        return;
-      _event.stopPropagation();
+      // the views might need to know about this event
+      // if (_event.currentTarget == _event.target)
+      //   return;
+      // _event.stopPropagation();
       this.hasChildren = this.controller.hasChildren(this.data);
     };
   }
 
-  customElements.define("li-tree-item", <CustomElementConstructor><unknown>TreeItem, { extends: "li" });
+  customElements.define("li-tree-item", TreeItem, { extends: "li" });
 }

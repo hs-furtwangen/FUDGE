@@ -17,7 +17,7 @@ namespace Fudge {
     private toolbarIntervalId: number;
     private timeScalePlay: number;
 
-    private tree: ƒui.CustomTree<ƒ.ParticleData.Recursive>;
+    private tree: ƒui.Tree<ƒ.ParticleData.Recursive>;
     private controller: ControllerTreeParticleSystem;
     private errors: [ƒ.ParticleData.Expression, string][] = [];
     private variables: HTMLDataListElement;
@@ -230,7 +230,7 @@ namespace Fudge {
             this.particleSystem.data = JSON.parse(JSON.stringify(this.data)); // our working copy should only be used if it is valid 
           } else {
             this.errors.forEach(([_data, _error]) => {
-              let item: ƒui.CustomTreeItem<ƒ.ParticleData.Recursive> = this.tree.findVisible(_data);
+              let item: ƒui.TreeItem<ƒ.ParticleData.Recursive> = this.tree.findVisible(_data);
               if (!item) return;
               item.classList.add("warning");
               item.title = _error;
@@ -363,7 +363,7 @@ namespace Fudge {
       this.refreshVariables();
       this.dom.appendChild(this.toolbar);
       this.controller = new ControllerTreeParticleSystem(this.data, this);
-      this.tree = new ƒui.CustomTree<ƒ.ParticleData.Recursive>(this.controller, this.data);
+      this.tree = new ƒui.Tree<ƒ.ParticleData.Recursive>(this.controller, this.data);
       this.tree.addEventListener(ƒui.EVENT.RENAME, this.hndEvent);
       this.tree.addEventListener(ƒui.EVENT.DROP, this.hndEvent);
       this.tree.addEventListener(ƒui.EVENT.DELETE, this.hndEvent);

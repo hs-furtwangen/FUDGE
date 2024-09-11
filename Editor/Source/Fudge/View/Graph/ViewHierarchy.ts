@@ -8,7 +8,7 @@ namespace Fudge {
    */
   export class ViewHierarchy extends View {
     private graph: ƒ.Graph;
-    private tree: ƒUi.CustomTree<ƒ.Node>;
+    private tree: ƒUi.Tree<ƒ.Node>;
     private selectionPrevious: ƒ.Node[] = [];
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
@@ -46,7 +46,7 @@ namespace Fudge {
       this.graph = _graph;
       // this.selectedNode = null;
 
-      this.tree = new ƒUi.CustomTree<ƒ.Node>(new ControllerTreeHierarchy(), this.graph);
+      this.tree = new ƒUi.Tree<ƒ.Node>(new ControllerTreeHierarchy(), this.graph);
       // this.tree.addEventListener(ƒUi.EVENT.FOCUS_OUT, this.hndTreeEvent);
       this.tree.addEventListener(ƒUi.EVENT.SELECT, this.hndTreeEvent);
       this.tree.addEventListener(ƒUi.EVENT.DELETE, this.hndTreeEvent);
