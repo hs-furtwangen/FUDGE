@@ -173,16 +173,23 @@ namespace Fudge {
     //#endregion
 
     //#region event handling
+    protected hndDragEnter(_event: DragEvent, _source: View): void { // prevents dropEffect flickering
+      this.hndDragOver(_event, _source);
+    }
+    
     protected hndDragOver(_event: DragEvent, _viewSource: View): void {
-      _event.dataTransfer.dropEffect = "none";
-
+      _event.stopPropagation();
+      if (_viewSource != this)
+        _event.dataTransfer.dropEffect = "none";
+      
       let source: Object = _viewSource.getDragDropSources()[0];
-      if (!(_viewSource instanceof ViewHierarchy) || !(source instanceof ƒ.Node) || !source.getComponent(ƒ.ComponentParticleSystem)?.particleSystem)
+      let isParticleSystem: boolean = _viewSource instanceof ViewHierarchy && source instanceof ƒ.Node && source.getComponent(ƒ.ComponentParticleSystem)?.particleSystem != null && !this.tree?.contains(<Node>_event.target);
+
+      if (!isParticleSystem)
         return;
 
       _event.dataTransfer.dropEffect = "link";
       _event.preventDefault();
-      _event.stopPropagation();
     }
 
     protected hndDrop(_event: DragEvent, _viewSource: View): void {
