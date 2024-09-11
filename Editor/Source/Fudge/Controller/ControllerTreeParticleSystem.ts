@@ -9,7 +9,7 @@ namespace Fudge {
     TRANSFORMATION = "transformation"
   }
 
-  export class ControllerTreeParticleSystem extends ƒui.CustomTreeController<ƒ.ParticleData.Recursive> {
+  export class ControllerTreeParticleSystem extends ƒui.TreeController<ƒ.ParticleData.Recursive> {
     public childToParent: Map<ƒ.ParticleData.Recursive, ƒ.ParticleData.Recursive> = new Map();
     private data: ƒ.ParticleData.System;
     private view: ViewParticleSystem;
@@ -290,5 +290,7 @@ namespace Fudge {
         if (typeof subData == "object")
           this.renameVariable(_name, _new, subData);
     }
+
+
   }
 }

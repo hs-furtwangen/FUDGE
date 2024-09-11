@@ -432,234 +432,6 @@ declare namespace FudgeUserInterface {
     }
 }
 declare namespace FudgeUserInterface {
-    /**
-     * Extension of ul-element that keeps a list of {@link CustomTreeItem}s to represent a branch in a tree
-     */
-    class CustomTreeList<T> extends HTMLUListElement {
-        controller: CustomTreeController<T>;
-        constructor(_controller: CustomTreeController<T>, _items?: CustomTreeItem<T>[]);
-        /**
-         * Expands the tree along the given paths to show the objects the paths include.
-         */
-        expand(_paths: T[][]): void;
-        /**
-         * Expands the tree along the given path to show the objects the path includes.
-         */
-        show(_path: T[]): void;
-        /**
-         * Restructures the list to sync with the given list.
-         * {@link CustomTreeItem}s referencing the same object remain in the list, new items get added in the order of appearance, obsolete ones are deleted.
-         * @param _tree A list to sync this with
-         */
-        restructure(_tree: CustomTreeList<T>): void;
-        /**
-         * Returns the {@link CustomTreeItem} of this list referencing the given object or null, if not found
-         */
-        findItem(_data: T): CustomTreeItem<T>;
-        /**
-         * Adds the given {@link CustomTreeItem}s at the end of this list
-         */
-        addItems(_items: CustomTreeItem<T>[]): void;
-        /**
-         * Returns the content of this list as array of {@link CustomTreeItem}s
-         */
-        getItems(): CustomTreeItem<T>[];
-        displaySelection(_data: T[]): void;
-        selectInterval(_dataStart: T, _dataEnd: T): void;
-        delete(_data: T[]): CustomTreeItem<T>[];
-        findVisible(_data: T): CustomTreeItem<T>;
-        /**
-         * Returns all expanded {@link CustomTreeItem}s that are a descendant of this list.
-         */
-        getExpanded(): CustomTreeItem<T>[];
-        [Symbol.iterator](): Iterator<CustomTreeItem<T>>;
-        private hndDragOver;
-    }
-}
-declare namespace FudgeUserInterface {
-    /**
-     * Extension of {@link CustomTreeList} that represents the root of a tree control
-     * ```text
-     * tree <ul>
-     * ├ treeItem <li>
-     * ├ treeItem <li>
-     * │ └ treeList <ul>
-     * │   ├ treeItem <li>
-     * │   └ treeItem <li>
-     * └ treeItem <li>
-     * ```
-     */
-    class CustomTree<T> extends CustomTreeList<T> {
-        constructor(_controller: CustomTreeController<T>, _root: T);
-        /**
-         * Clear the current selection
-         */
-        clearSelection(): void;
-        /**
-         * Return the object in focus or null if none is focussed
-         */
-        getFocussed(): T;
-        /**
-         * Refresh the whole tree to synchronize with the data the tree is based on
-         */
-        refresh(): void;
-        /**
-         * Adds the given children to the given target at the given index. If no index is given, the children are appended at the end of the list.
-         */
-        addChildren(_children: T[], _target: T, _index?: number): void;
-        private hndExpand;
-        private createBranch;
-        private hndSelect;
-        private hndDrop;
-        private hndDragLeave;
-        private hndDelete;
-        private hndEscape;
-        private hndCopyPaste;
-        private hndFocus;
-    }
-}
-declare namespace FudgeUserInterface {
-    /**
-     * Subclass this to create a broker between your data and a {@link CustomTree} to display and manipulate it.
-     * The {@link CustomTree} doesn't know how your data is structured and how to handle it, the controller implements the methods needed
-     */
-    abstract class CustomTreeController<T> {
-        /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of tree */
-        selection: T[];
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
-        dragDrop: {
-            sources: T[];
-            target: T;
-            at?: number;
-        };
-        /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
-        copyPaste: {
-            sources: T[];
-            target: T;
-        };
-        /** Used by the tree to indicate the drop position while dragging */
-        dragDropIndicator: HTMLHRElement;
-        /**
-         * Override if some objects should not be draggable
-         */
-        draggable(_object: T): boolean;
-        /**
-         * Checks if two objects of are equal. Default is _a == _b. Override for more complex comparisons.
-         * Useful when the underlying data is volatile and changes identity while staying the same.
-         */
-        equals(_a: T, _b: T): boolean;
-        /**
-         * Override if some objects should not be addable to others
-         */
-        canAddChildren(_sources: T[], _target: T): boolean;
-        /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
-        abstract createContent(_object: T): HTMLElement;
-        /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
-        abstract getAttributes(_object: T): string;
-        /** Process the proposed new value. The id of the html element on which the change occured is passed */
-        abstract setValue(_object: T, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
-        /** Return true if the object has children that must be shown when unfolding the tree item */
-        abstract hasChildren(_object: T): boolean;
-        /** Return the object's children to show when unfolding the tree item */
-        abstract getChildren(_object: T): T[];
-        /**
-         * Process the list of source objects to be addedAsChildren when dropping or pasting onto the target item/object,
-         * return the list of objects that should visibly become the children of the target item/object
-         * @param _children A list of objects the tree tries to add to the _target
-         * @param _target The object referenced by the item the drop occurs on
-         */
-        abstract addChildren(_sources: T[], _target: T, _index?: number): T[];
-        /**
-         * Remove the objects to be deleted, e.g. the current selection, from the data structure the tree refers to and
-         * return a list of those objects in order for the according {@link CustomTreeItem} to be deleted also
-         * @param _expendables The expendable objects
-         */
-        abstract delete(_expendables: T[]): Promise<T[]>;
-        /**
-         * Return a list of copies of the objects given for copy & paste
-         * @param _focussed The object currently having focus
-         */
-        abstract copy(_originals: T[]): Promise<T[]>;
-    }
-}
-declare namespace FudgeUserInterface {
-    /**
-     * Extension of li-element that represents an object in a {@link CustomTreeList} with a checkbox and an HTMLElement as content.
-     * Additionally, may hold an instance of {@link CustomTreeList} as branch to display children of the corresponding object.
-     */
-    class CustomTreeItem<T> extends HTMLLIElement {
-        #private;
-        classes: CSS_CLASS[];
-        data: T;
-        controller: CustomTreeController<T>;
-        private checkbox;
-        constructor(_controller: CustomTreeController<T>, _data: T);
-        /**
-         * Returns true, when this item has a visible checkbox in front to expand the subsequent branch
-         */
-        get hasChildren(): boolean;
-        /**
-         * Shows or hides the checkbox for expanding the subsequent branch
-         */
-        set hasChildren(_has: boolean);
-        /**
-         * Returns true if the {@link CSS_CLASS.SELECTED} is attached to this item
-         */
-        get selected(): boolean;
-        /**
-         * Attaches or detaches the {@link CSS_CLASS.SELECTED} to this item
-         */
-        set selected(_on: boolean);
-        /**
-         * Returns the content representing the attached {@link data}
-         */
-        get content(): HTMLFieldSetElement;
-        /**
-         * Returns whether this item is expanded, showing it's children, or closed
-         */
-        get expanded(): boolean;
-        refreshAttributes(): void;
-        refreshContent(): void;
-        /**
-         * Tries to expanding the {@link CustomTreeList} of children, by dispatching {@link EVENT.EXPAND}.
-         * The user of the tree needs to add an event listener to the tree
-         * in order to create that {@link CustomTreeList} and add it as branch to this item
-         */
-        expand(_expand: boolean): void;
-        /**
-         * Returns a list of all data referenced by the items succeeding this
-         */
-        getVisibleData(): T[];
-        /**
-         * Sets the branch of children of this item. The branch must be a previously compiled {@link CustomTreeList}
-         */
-        setBranch(_branch: CustomTreeList<T>): void;
-        /**
-         * Returns the branch of children of this item.
-         */
-        getBranch(): CustomTreeList<T>;
-        /**
-         * Dispatches the {@link EVENT.SELECT} event
-         * @param _additive For multiple selection (+Ctrl)
-         * @param _interval For selection over interval (+Shift)
-         */
-        select(_additive: boolean, _interval?: boolean): void;
-        /**
-         * Removes the branch of children from this item
-         */
-        private removeBranch;
-        private create;
-        private hndFocus;
-        private hndKey;
-        private hndDblClick;
-        private hndChange;
-        private hndDragStart;
-        private hndDragOver;
-        private hndPointerUp;
-        private hndRemove;
-    }
-}
-declare namespace FudgeUserInterface {
     interface TABLE {
         label: string;
         key: string;
@@ -804,38 +576,47 @@ declare namespace FudgeUserInterface {
 }
 declare namespace FudgeUserInterface {
     /**
-    * Extension of ul-element that keeps a list of [[TreeItem]]s to represent a branch in a tree
-    */
+     * Extension of ul-element that keeps a list of {@link TreeItem}s to represent a branch in a tree
+     */
     class TreeList<T> extends HTMLUListElement {
-        constructor(_items?: TreeItem<T>[]);
+        controller: TreeController<T>;
+        constructor(_controller: TreeController<T>, _items?: TreeItem<T>[]);
         /**
-         * Expands the tree along the given path to show the objects the path includes
-         * @param _path An array of objects starting with one being contained in this treelist and following the correct hierarchy of successors
-         * @param _focus If true (default) the last object found in the tree gets the focus
+         * Expands the tree along the given paths to show the objects the paths include.
          */
-        show(_path: T[], _focus?: boolean): void;
+        expand(_paths: T[][]): void;
+        /**
+         * Expands the tree along the given path to show the objects the path includes.
+         */
+        show(_path: T[]): void;
         /**
          * Restructures the list to sync with the given list.
-         * [[TreeItem]]s referencing the same object remain in the list, new items get added in the order of appearance, obsolete ones are deleted.
+         * {@link TreeItem}s referencing the same object remain in the list, new items get added in the order of appearance, obsolete ones are deleted.
          * @param _tree A list to sync this with
          */
         restructure(_tree: TreeList<T>): void;
         /**
-         * Returns the [[TreeItem]] of this list referencing the given object or null, if not found
+         * Returns the {@link TreeItem} of this list referencing the given object or null, if not found
          */
         findItem(_data: T): TreeItem<T>;
         /**
-         * Adds the given [[TreeItem]]s at the end of this list
+         * Adds the given {@link TreeItem}s at the end of this list
          */
         addItems(_items: TreeItem<T>[]): void;
         /**
-         * Returns the content of this list as array of [[TreeItem]]s
+         * Returns the content of this list as array of {@link TreeItem}s
          */
         getItems(): TreeItem<T>[];
         displaySelection(_data: T[]): void;
         selectInterval(_dataStart: T, _dataEnd: T): void;
         delete(_data: T[]): TreeItem<T>[];
         findVisible(_data: T): TreeItem<T>;
+        /**
+         * Returns all expanded {@link TreeItem}s that are a descendant of this list.
+         */
+        getExpanded(): TreeItem<T>[];
+        [Symbol.iterator](): Iterator<TreeItem<T>>;
+        private hndDragOver;
     }
 }
 declare namespace FudgeUserInterface {
@@ -844,7 +625,7 @@ declare namespace FudgeUserInterface {
         INACTIVE = "inactive"
     }
     /**
-     * Extension of [[TreeList]] that represents the root of a tree control
+     * Extension of {@link TreeList} that represents the root of a tree control
      * ```text
      * tree <ul>
      * ├ treeItem <li>
@@ -856,22 +637,28 @@ declare namespace FudgeUserInterface {
      * ```
      */
     class Tree<T> extends TreeList<T> {
-        controller: TreeController<T>;
         constructor(_controller: TreeController<T>, _root: T);
         /**
          * Clear the current selection
          */
         clearSelection(): void;
         /**
-         * Return the object in focus
+         * Return the object in focus or null if none is focussed
          */
         getFocussed(): T;
+        /**
+         * Refresh the whole tree to synchronize with the data the tree is based on
+         */
+        refresh(): void;
+        /**
+         * Adds the given children to the given target at the given index. If no index is given, the children are appended at the end of the list.
+         */
+        addChildren(_children: T[], _target: T, _index?: number): void;
         private hndExpand;
         private createBranch;
-        private hndRename;
         private hndSelect;
         private hndDrop;
-        private addChildren;
+        private hndDragLeave;
         private hndDelete;
         private hndEscape;
         private hndCopyPaste;
@@ -880,8 +667,8 @@ declare namespace FudgeUserInterface {
 }
 declare namespace FudgeUserInterface {
     /**
-     * Subclass this to create a broker between your data and a [[Tree]] to display and manipulate it.
-     * The [[Tree]] doesn't know how your data is structured and how to handle it, the controller implements the methods needed
+     * Subclass this to create a broker between your data and a {@link Tree} to display and manipulate it.
+     * The {@link Tree} doesn't know how your data is structured and how to handle it, the controller implements the methods needed
      */
     abstract class TreeController<T> {
         /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of tree */
@@ -890,18 +677,36 @@ declare namespace FudgeUserInterface {
         dragDrop: {
             sources: T[];
             target: T;
+            at?: number;
         };
         /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
         copyPaste: {
             sources: T[];
             target: T;
         };
-        /** Retrieve a string to create a label for the tree item representing the object  */
-        abstract getLabel(_object: T): string;
+        /** Used by the tree to indicate the drop position while dragging */
+        dragDropIndicator: HTMLHRElement;
+        /** Override to enable tree items to be sortable by the user via drag-and-drop. Default is true. */
+        sortable: boolean;
+        /**
+         * Override if some objects should not be draggable
+         */
+        draggable(_object: T): boolean;
+        /**
+         * Checks if two objects of are equal. Default is _a == _b. Override for more complex comparisons.
+         * Useful when the underlying data is volatile and changes identity while staying the same.
+         */
+        equals(_a: T, _b: T): boolean;
+        /**
+         * Override if some objects should not be addable to others
+         */
+        canAddChildren(_sources: T[], _target: T): boolean;
+        /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
+        abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
         abstract getAttributes(_object: T): string;
-        /** Return false to disallow renaming the item/object, or processes the proposed new label */
-        abstract rename(_object: T, _new: string): boolean;
+        /** Process the proposed new value. The id of the html element on which the change occured is passed */
+        abstract setValue(_object: T, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         /** Return true if the object has children that must be shown when unfolding the tree item */
         abstract hasChildren(_object: T): boolean;
         /** Return the object's children to show when unfolding the tree item */
@@ -912,13 +717,13 @@ declare namespace FudgeUserInterface {
          * @param _children A list of objects the tree tries to add to the _target
          * @param _target The object referenced by the item the drop occurs on
          */
-        abstract addChildren(_sources: T[], _target: T): T[];
+        abstract addChildren(_sources: T[], _target: T, _index?: number): T[];
         /**
          * Remove the objects to be deleted, e.g. the current selection, from the data structure the tree refers to and
-         * return a list of those objects in order for the according [[TreeItems]] to be deleted also
-         * @param _expendables The expendable objects
+         * return a list of those objects in order for the according {@link TreeItem} to be deleted also
+         * @param _focussed The object currently having focus
          */
-        abstract delete(_expendables: T[]): T[];
+        abstract delete(_focussed: T[]): Promise<T[]>;
         /**
          * Return a list of copies of the objects given for copy & paste
          * @param _focussed The object currently having focus
@@ -928,16 +733,15 @@ declare namespace FudgeUserInterface {
 }
 declare namespace FudgeUserInterface {
     /**
-     * Extension of li-element that represents an object in a [[TreeList]] with a checkbox and a textinput as content.
-     * Additionally, may hold an instance of [[TreeList]] as branch to display children of the corresponding object.
+     * Extension of li-element that represents an object in a {@link TreeList} with a checkbox and user defined input elements as content.
+     * Additionally, may hold an instance of {@link TreeList} as branch to display children of the corresponding object.
      */
     class TreeItem<T> extends HTMLLIElement {
-        display: string;
+        #private;
         classes: CSS_CLASS[];
         data: T;
         controller: TreeController<T>;
         private checkbox;
-        private label;
         constructor(_controller: TreeController<T>, _data: T);
         /**
          * Returns true, when this item has a visible checkbox in front to expand the subsequent branch
@@ -948,29 +752,27 @@ declare namespace FudgeUserInterface {
          */
         set hasChildren(_has: boolean);
         /**
-         * Returns attaches or detaches the [[TREE_CLASS.SELECTED]] to this item
-         */
-        set selected(_on: boolean);
-        /**
-         * Returns true if the [[TREE_CLASSES.SELECTED]] is attached to this item
+         * Returns true if the {@link CSS_CLASS.SELECTED} is attached to this item
          */
         get selected(): boolean;
         /**
-         * Set the label text to show
+         * Attaches or detaches the {@link CSS_CLASS.SELECTED} to this item
          */
-        setLabel(_text: string): void;
+        set selected(_on: boolean);
         /**
-         * Get the label text shown
+         * Returns the content representing the attached {@link data}
          */
-        getLabel(): string;
+        get content(): HTMLFieldSetElement;
         /**
-         * Get the label text shown
+         * Returns whether this item is expanded, showing it's children, or closed
          */
+        get expanded(): boolean;
         refreshAttributes(): void;
+        refreshContent(): void;
         /**
-         * Tries to expanding the [[TreeList]] of children, by dispatching [[EVENT.EXPAND]].
+         * Tries to expanding the {@link TreeList} of children, by dispatching {@link EVENT.EXPAND}.
          * The user of the tree needs to add an event listener to the tree
-         * in order to create that [[TreeList]] and add it as branch to this item
+         * in order to create that {@link TreeList} and add it as branch to this item
          */
         expand(_expand: boolean): void;
         /**
@@ -978,7 +780,7 @@ declare namespace FudgeUserInterface {
          */
         getVisibleData(): T[];
         /**
-         * Sets the branch of children of this item. The branch must be a previously compiled [[TreeList]]
+         * Sets the branch of children of this item. The branch must be a previously compiled {@link TreeList}
          */
         setBranch(_branch: TreeList<T>): void;
         /**
@@ -986,7 +788,7 @@ declare namespace FudgeUserInterface {
          */
         getBranch(): TreeList<T>;
         /**
-         * Dispatches the [[EVENT.SELECT]] event
+         * Dispatches the {@link EVENT.SELECT} event
          * @param _additive For multiple selection (+Ctrl)
          * @param _interval For selection over interval (+Shift)
          */
@@ -998,7 +800,6 @@ declare namespace FudgeUserInterface {
         private create;
         private hndFocus;
         private hndKey;
-        private startTypingLabel;
         private hndDblClick;
         private hndChange;
         private hndDragStart;

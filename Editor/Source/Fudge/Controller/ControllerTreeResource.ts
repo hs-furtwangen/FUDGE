@@ -68,7 +68,7 @@ namespace Fudge {
     }
   }
 
-  export class ControllerTreeResource extends ƒui.CustomTreeController<ResourceEntry> {
+  export class ControllerTreeResource extends ƒui.TreeController<ResourceEntry> {
     public createContent(_object: ResourceEntry): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");
       input.value = _object.name;

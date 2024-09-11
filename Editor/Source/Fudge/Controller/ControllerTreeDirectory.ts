@@ -3,7 +3,9 @@ namespace Fudge {
   import ƒ = FudgeCore;
   import ƒUi = FudgeUserInterface;
 
-  export class ControllerTreeDirectory extends ƒUi.CustomTreeController<DirectoryEntry> {
+  export class ControllerTreeDirectory extends ƒUi.TreeController<DirectoryEntry> {
+
+    public sortable: boolean = false;
 
     public createContent(_entry: DirectoryEntry): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");
@@ -48,6 +50,10 @@ namespace Fudge {
       }
       this.selection.splice(0);
       return deleted;
+    }
+
+    public canAddChildren(_sources: DirectoryEntry[], _target: DirectoryEntry): boolean {
+      return _target.isDirectory;
     }
 
     public addChildren(_entries: DirectoryEntry[], _target: DirectoryEntry): DirectoryEntry[] {

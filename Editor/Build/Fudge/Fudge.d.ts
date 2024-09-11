@@ -294,6 +294,7 @@ declare namespace Fudge {
         protected hndDropCapture(_event: DragEvent, _source: View): void;
         protected hndDrop(_event: DragEvent, _source: View): void;
         protected hndDragOverCapture(_event: DragEvent, _source: View): void;
+        protected hndDragEnter(_event: DragEvent, _source: View): void;
         protected hndDragOver(_event: DragEvent, _source: View): void;
         private hndEventCommon;
     }
@@ -407,7 +408,8 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒUi = FudgeUserInterface;
-    class ControllerTreeDirectory extends ƒUi.CustomTreeController<DirectoryEntry> {
+    class ControllerTreeDirectory extends ƒUi.TreeController<DirectoryEntry> {
+        sortable: boolean;
         createContent(_entry: DirectoryEntry): HTMLElement;
         setValue(_entry: DirectoryEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         getAttributes(_object: DirectoryEntry): string;
@@ -415,6 +417,7 @@ declare namespace Fudge {
         getChildren(_entry: DirectoryEntry): DirectoryEntry[];
         equals(_a: DirectoryEntry, _b: DirectoryEntry): boolean;
         delete(_focussed: DirectoryEntry[]): Promise<DirectoryEntry[]>;
+        canAddChildren(_sources: DirectoryEntry[], _target: DirectoryEntry): boolean;
         addChildren(_entries: DirectoryEntry[], _target: DirectoryEntry): DirectoryEntry[];
         copy(_originals: DirectoryEntry[]): Promise<DirectoryEntry[]>;
     }
@@ -422,7 +425,7 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒUi = FudgeUserInterface;
-    class ControllerTreeHierarchy extends ƒUi.CustomTreeController<ƒ.Node> {
+    class ControllerTreeHierarchy extends ƒUi.TreeController<ƒ.Node> {
         createContent(_object: ƒ.Node): HTMLElement;
         getAttributes(_node: ƒ.Node): string;
         setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
@@ -437,7 +440,7 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
-    class ControllerTreeParticleSystem extends ƒui.CustomTreeController<ƒ.ParticleData.Recursive> {
+    class ControllerTreeParticleSystem extends ƒui.TreeController<ƒ.ParticleData.Recursive> {
         childToParent: Map<ƒ.ParticleData.Recursive, ƒ.ParticleData.Recursive>;
         private data;
         private view;
@@ -478,7 +481,7 @@ declare namespace Fudge {
         deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable>;
         [Symbol.iterator](): IterableIterator<ResourceEntry>;
     }
-    class ControllerTreeResource extends ƒui.CustomTreeController<ResourceEntry> {
+    class ControllerTreeResource extends ƒui.TreeController<ResourceEntry> {
         createContent(_object: ResourceEntry): HTMLElement;
         getAttributes(_object: ResourceEntry): string;
         setValue(_entry: ResourceEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
@@ -588,6 +591,7 @@ declare namespace Fudge {
         protected openContextMenu: (_event: Event) => void;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
+        protected hndDragEnter(_event: DragEvent, _source: View): void;
         protected hndDragOver(_event: DragEvent, _viewSource: View): void;
         protected hndDrop(_event: DragEvent, _viewSource: View): void;
         private hndEvent;

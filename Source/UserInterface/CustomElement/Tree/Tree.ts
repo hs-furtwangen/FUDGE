@@ -6,7 +6,7 @@ namespace FudgeUserInterface {
   }
 
   /**
-   * Extension of [[TreeList]] that represents the root of a tree control  
+   * Extension of {@link TreeList} that represents the root of a tree control  
    * ```text
    * tree <ul>
    * ├ treeItem <li>
@@ -18,18 +18,16 @@ namespace FudgeUserInterface {
    * ```
    */
   export class Tree<T> extends TreeList<T> {
-    public controller: TreeController<T>;
 
     public constructor(_controller: TreeController<T>, _root: T) {
-      super([]);
-      this.controller = _controller;
+      super(_controller, []);
       let root: TreeItem<T> = new TreeItem<T>(this.controller, _root);
       this.appendChild(root);
 
       this.addEventListener(EVENT.EXPAND, this.hndExpand);
-      this.addEventListener(EVENT.RENAME, this.hndRename);
       this.addEventListener(EVENT.SELECT, this.hndSelect);
       this.addEventListener(EVENT.DROP, this.hndDrop, true);
+      this.addEventListener(EVENT.DRAG_LEAVE, this.hndDragLeave);
       this.addEventListener(EVENT.DELETE, this.hndDelete);
       this.addEventListener(EVENT.ESCAPE, this.hndEscape);
       this.addEventListener(EVENT.COPY, this.hndCopyPaste);
@@ -50,7 +48,7 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Return the object in focus
+     * Return the object in focus or null if none is focussed
      */
     public getFocussed(): T {
       let items: TreeItem<T>[] = <TreeItem<T>[]>Array.from(this.querySelectorAll("li"));
@@ -61,6 +59,52 @@ namespace FudgeUserInterface {
       return null;
     }
 
+    /**
+     * Refresh the whole tree to synchronize with the data the tree is based on
+     */
+    public refresh(): void {
+      for (const item of this) {
+        if (!item.expanded)
+          continue;
+
+        let branch: TreeList<T> = this.createBranch(this.controller.getChildren(item.data));
+        item.getBranch().restructure(branch);
+        if (!this.controller.hasChildren(item.data))
+          item.expand(false);
+      }
+    }
+
+    /**
+     * Adds the given children to the given target at the given index. If no index is given, the children are appended at the end of the list.
+     */
+    public addChildren(_children: T[], _target: T, _index?: number): void {
+      // if drop target included in children -> refuse
+      if (_children.indexOf(_target) > -1)
+        return;
+
+      // add only the objects the addChildren-method of the controller returns
+      let move: T[] = this.controller.addChildren(_children, _target, _index);
+      if (!move || move.length == 0)
+        return;
+
+      let focus: T = this.getFocussed();
+      // TODO: don't, when copying or coming from another source
+      this.delete(move);
+
+      let targetData: T = <T>_target;
+      let targetItem: TreeItem<T> = this.findVisible(targetData);
+
+      let branch: TreeList<T> = this.createBranch(this.controller.getChildren(targetData));
+      let old: TreeList<T> = targetItem.getBranch();
+      targetItem.hasChildren = true;
+      if (old)
+        old.restructure(branch);
+      else
+        targetItem.expand(true);
+
+      this.findVisible(focus)?.focus();
+    }
+
     private hndExpand(_event: Event): void {
       let item: TreeItem<T> = <TreeItem<T>>_event.target;
       let children: T[] = this.controller.getChildren(item.data);
@@ -69,22 +113,15 @@ namespace FudgeUserInterface {
 
       let branch: TreeList<T> = this.createBranch(children);
       item.setBranch(branch);
-      this.displaySelection(<T[]>this.controller.selection);
+      this.displaySelection(this.controller.selection);
     }
 
     private createBranch(_data: T[]): TreeList<T> {
-      let branch: TreeList<T> = new TreeList<T>([]);
+      let branch: TreeList<T> = new TreeList<T>(this.controller, []);
       for (let child of _data) {
         branch.addItems([new TreeItem(this.controller, child)]);
       }
       return branch;
-    }
-
-    private hndRename(_event: Event): void {
-      let item: TreeItem<T> = <TreeItem<T>>(<HTMLInputElement>_event.target).parentNode;
-      let renamed: boolean = this.controller.rename(item.data, item.getLabel());
-      if (renamed)
-        item.setLabel(this.controller.getLabel(item.data));
     }
 
     // Callback / Eventhandler in Tree
@@ -113,44 +150,21 @@ namespace FudgeUserInterface {
     }
 
     private hndDrop(_event: DragEvent): void {
-      // _event.stopPropagation();
-      // console.log(_event.dataTransfer);
-      this.addChildren(this.controller.dragDrop.sources, this.controller.dragDrop.target);
+      this.addChildren(this.controller.dragDrop.sources, this.controller.dragDrop.target, this.controller.dragDrop.at);
+      this.controller.dragDrop.sources = [];
+      this.controller.dragDropIndicator.remove();
     }
 
-    private addChildren(_children: T[], _target: T): void {
-      // if drop target included in children -> refuse
-      if (_children.indexOf(_target) > -1)
-        return;
+    private hndDragLeave = (_event: DragEvent): void => {
+      let relatedTarget: EventTarget = _event.relatedTarget;
+      if (relatedTarget instanceof HTMLElement && !this.contains(relatedTarget) && !this.contains(relatedTarget.offsetParent)) // offset parent is for weird (invisible) divs which are placed over input elements and trigger leave events... 
+        this.controller.dragDropIndicator.remove();
+    };
 
-      // add only the objects the addChildren-method of the controller returns
-      let move: T[] = this.controller.addChildren(<T[]>_children, <T>_target);
-      if (!move || move.length == 0)
-        return;
-
-      // TODO: don't, when copying or coming from another source
-      this.delete(move);
-
-      let targetData: T = <T>_target;
-      let targetItem: TreeItem<T> = this.findVisible(targetData);
-
-      let branch: TreeList<T> = this.createBranch(this.controller.getChildren(targetData));
-      let old: TreeList<T> = targetItem.getBranch();
-      targetItem.hasChildren = true;
-      if (old)
-        old.restructure(branch);
-      else
-        targetItem.expand(true);
-
-      _children = [];
-      _target = null;
-    }
-
-    private hndDelete = (_event: Event): void => {
+    private hndDelete = async (_event: Event): Promise<void> => {
       let target: TreeItem<T> = <TreeItem<T>>_event.target;
       _event.stopPropagation();
-      let remove: T[] = this.controller.delete([target.data]);
-
+      let remove: T[] = await this.controller.delete([target.data]);
       this.delete(remove);
     };
 
@@ -171,7 +185,7 @@ namespace FudgeUserInterface {
           break;
         case EVENT.CUT:
           this.controller.copyPaste.sources = await this.controller.copy([...this.controller.selection]);
-          let cut: T[] = this.controller.delete(this.controller.selection);
+          let cut: T[] = await this.controller.delete(this.controller.selection);
           this.delete(cut);
           break;
       }
@@ -208,5 +222,5 @@ namespace FudgeUserInterface {
     };
   }
 
-  customElements.define("ul-tree", <CustomElementConstructor><unknown>Tree, { extends: "ul" });
+  customElements.define("ul-tree", Tree, { extends: "ul" });
 }
