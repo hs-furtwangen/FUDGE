@@ -286,7 +286,7 @@ namespace FudgeUserInterface {
         this.controller.dragDrop.sources = this.controller.selection;
       else
         this.controller.dragDrop.sources = [this.data];
-      _event.dataTransfer.effectAllowed = "move";
+      _event.dataTransfer.effectAllowed = "all";
       _event.dataTransfer.setDragImage(document.createElement("img"), 0, 0);
       this.controller.dragDrop.target = null;
 
