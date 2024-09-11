@@ -4,15 +4,15 @@ namespace Fudge {
 
   export class ControllerAnimation {
     private static readonly PROPERTY_COLORS: string[] = [
-      "Red",
-      "Lime",
-      "Blue",
-      "Cyan",
-      "Magenta",
-      "Yellow",
-      "Salmon",
-      "LightGreen",
-      "CornflowerBlue"
+      "red",
+      "limegreen",
+      "blue",
+      "cyan",
+      "magenta",
+      "yellow",
+      "salmon",
+      "lightgreen",
+      "cornflowerblue"
     ];
     private animation: ƒ.Animation;
     private dom: HTMLElement;

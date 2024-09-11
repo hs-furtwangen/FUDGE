@@ -66,23 +66,15 @@ namespace FudgeCore {
         this.attributes = detectAttributes();
         this.uniforms = detectUniforms();
 
-        if (this.define.includes("SKIN")) {
-          const blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.SKIN.NAME);
-          crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.SKIN.BINDING);
-        }
-
-        if (this.define.find(_define => ["FLAT", "GOURAUD", "PHONG"].includes(_define))) {
-          if (!RenderWebGL.uboLights)
-            RenderWebGL.uboLights = createUBOLights();
-          if (!RenderWebGL.uboLightsVariableOffsets)
-            RenderWebGL.uboLightsVariableOffsets = detectUBOLightsVariableOffsets();
-
-          // bind lights UBO to shader program
-          const blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.LIGHTS.NAME);
+        let blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.LIGHTS.NAME);
+        if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
           crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.LIGHTS.BINDING);
-        }
 
-        const blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.FOG.NAME);
+        blockIndex = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.SKIN.NAME);
+        if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
+          crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.SKIN.BINDING);
+
+        blockIndex = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.FOG.NAME);
         if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
           crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.FOG.BINDING);
 
@@ -137,46 +129,6 @@ namespace FudgeCore {
             detectedUniforms[info.name] = RenderWebGL.assert<WebGLUniformLocation>(location);
         }
         return detectedUniforms;
-      }
-
-      function createUBOLights(): WebGLBuffer {
-        const blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.LIGHTS.NAME);
-        const blockSize: number = crc3.getActiveUniformBlockParameter(program, blockIndex, crc3.UNIFORM_BLOCK_DATA_SIZE);
-
-        const ubo: WebGLBuffer = RenderWebGL.assert(crc3.createBuffer());
-        crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, ubo);
-        crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
-        crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.LIGHTS.BINDING, ubo);
-
-        return ubo;
-      }
-
-      function detectUBOLightsVariableOffsets(): typeof RenderWebGL.uboLightsVariableOffsets {
-        const uboVariableNames: string[] = [
-          "u_nLightsDirectional",
-          "u_nLightsPoint",
-          "u_nLightsSpot",
-          "u_ambient.vctColor",
-          "u_directional[0].vctColor",
-          "u_point[0].vctColor",
-          "u_spot[0].vctColor"
-        ];
-
-        const uboVariableIndices: number[] = <number[]>crc3.getUniformIndices(
-          program,
-          uboVariableNames
-        );
-
-        const uboVariableOffsets: number[] = crc3.getActiveUniforms(
-          program,
-          uboVariableIndices,
-          crc3.UNIFORM_OFFSET
-        );
-
-        const uboVariableNameToOffset: typeof RenderWebGL.uboLightsVariableOffsets = {};
-        uboVariableNames.forEach((_name, _index) => uboVariableNameToOffset[_name] = uboVariableOffsets[_index]);
-
-        return uboVariableNameToOffset;
       }
     }
   }

@@ -80,12 +80,12 @@ declare namespace Fudge {
         PARTICLE_SYSTEM = "ViewParticleSystem"
     }
     enum TRANSFORM {
+        NONE = "none",
         TRANSLATE = "translate",
         ROTATE = "rotate",
-        SCALE = "scale"
-    }
-    enum GIZMOS {
-        TRANSFORM = "Transform"
+        SCALE = "scale",
+        WORLD = "world",
+        LOCAL = "local"
     }
 }
 declare namespace Fudge {
@@ -427,10 +427,6 @@ declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
     class ControllerTreeParticleSystem extends ƒui.CustomTreeController<ƒ.ParticleData.Recursive> {
-        static copyPaste: {
-            sources: ƒ.ParticleData.Recursive[];
-            target: ƒ.ParticleData.Recursive;
-        };
         childToParent: Map<ƒ.ParticleData.Recursive, ƒ.ParticleData.Recursive>;
         private data;
         private view;
@@ -769,6 +765,7 @@ declare namespace Fudge {
         private node;
         private nodeLight;
         private redrawId;
+        private transformator;
         constructor(_container: ComponentContainer, _state: ViewState);
         private get gizmosFilter();
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
@@ -776,18 +773,18 @@ declare namespace Fudge {
         protected openContextMenu: (_event: Event) => void;
         protected hndDragOver(_event: DragEvent, _viewSource: View): void;
         protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected getState(): ViewState;
         private createUserInterface;
         private setGraph;
         private setCameraOrthographic;
         private hndPrepare;
         private hndEvent;
+        private hndKey;
         private hndPick;
         private hndPointer;
         private activeViewport;
         private redraw;
         private setRenderContinously;
-        private drawTranslation;
-        protected getState(): ViewState;
     }
 }
 declare namespace Fudge {

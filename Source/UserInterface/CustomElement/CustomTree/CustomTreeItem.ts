@@ -30,8 +30,8 @@ namespace FudgeUserInterface {
 
       this.draggable = this.controller.draggable(_data);
       this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
-      this.addEventListener(EVENT.DRAG_ENTER, this.hndDrag); // this prevents cursor from flickering
-      this.addEventListener(EVENT.DRAG_OVER, this.hndDrag);
+      this.addEventListener(EVENT.DRAG_ENTER, this.hndDragOver); // this prevents cursor from flickering
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
       this.addEventListener(EVENT.POINTER_UP, this.hndPointerUp);
       this.addEventListener(EVENT.REMOVE_CHILD, this.hndRemove);
     }
@@ -284,7 +284,7 @@ namespace FudgeUserInterface {
         this.controller.dragDrop.sources = this.controller.selection;
       else
         this.controller.dragDrop.sources = [this.data];
-      _event.dataTransfer.effectAllowed = "all";
+      _event.dataTransfer.effectAllowed = "move";
       _event.dataTransfer.setDragImage(document.createElement("img"), 0, 0);
       this.controller.dragDrop.target = null;
 
@@ -292,13 +292,16 @@ namespace FudgeUserInterface {
       _event.dataTransfer.setData("dragstart", "dragstart");
     };
 
-    private hndDrag = (_event: DragEvent): void => {
+    private hndDragOver = (_event: DragEvent): void => {
+      if (Reflect.get(_event, "dragProcessed"))
+        return;
+
       let rect: DOMRect = this.#content.getBoundingClientRect();
       let upper: number = rect.top + rect.height * (1 / 4);
       let lower: number = rect.top + rect.height * (3 / 4);
       let offset: number = _event.clientY;
       if (this.parentElement instanceof CustomTree || (offset > upper && (offset < lower || this.checkbox.checked))) {
-        _event.stopPropagation();
+        Reflect.set(_event, "dragProcessed", true);
         if (_event.type == EVENT.DRAG_OVER)
           this.controller.dragDropIndicator.remove();
         if (this.controller.canAddChildren(this.controller.dragDrop.sources, this.data)) {

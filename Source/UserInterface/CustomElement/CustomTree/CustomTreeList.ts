@@ -154,7 +154,11 @@ namespace FudgeUserInterface {
     }
 
     private hndDragOver = (_event: DragEvent): void => {
-      _event.stopPropagation();
+      if (Reflect.get(_event, "dragProcessed"))
+        return;
+
+      Reflect.set(_event, "dragProcessed", true);
+
       let target: T = (<CustomTreeItem<T>>this.parentElement).data;
       if (target == null || !this.controller.canAddChildren(this.controller.dragDrop.sources, target))
         return;

@@ -120,7 +120,7 @@ namespace FudgeCore {
      * Returns the resulting vector attained by addition of all given vectors.
      */
     public static SUM(..._vectors: Vector3[]): Vector3 {
-      let result: Vector3 = Recycler.reuse(Vector3);
+      let result: Vector3 = Recycler.get(Vector3);
       for (let vector of _vectors)
         result.set(result.x + vector.x, result.y + vector.y, result.z + vector.z);
       return result;
@@ -203,8 +203,15 @@ namespace FudgeCore {
      * Return the angle in degrees between the two given vectors
      */
     public static ANGLE(_from: Vector3, _to: Vector3): number {
-      let angle: number = Math.acos(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude));
+      let angle: number = Math.acos(Calc.clamp(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude), -1, 1)); // clamp because of floating point errors when from == to
       return angle * Calc.rad2deg;
+    }
+
+    /**
+     * Return the projection of a onto b
+     */
+    public static PROJECTION(_a: Vector3, _b: Vector3): Vector3 {
+      return _a.clone.project(_b);
     }
     //#endregion
 
@@ -346,6 +353,17 @@ namespace FudgeCore {
     }
 
     /**
+     * Projects this vector onto the given vector
+     */
+    public project(_on: Vector3): Vector3 {
+      let scalar: number = Vector3.DOT(this, _on) / _on.magnitudeSquared;
+      this.x = _on.x * scalar;
+      this.y = _on.y * scalar;
+      this.z = _on.z * scalar;
+      return this;
+    }
+
+    /**
      * Sets the components of this vector and returns it.
      */
     public set(_x: number = 0, _y: number = 0, _z: number = 0): Vector3 {
@@ -430,21 +448,31 @@ namespace FudgeCore {
     }
 
     /**
+     * Uses the standard array.map functionality to perform the given function on all components of this vector
+     * and return a new vector with the results
+     */
+    public map(_function: (_value: number, _index: number, _array: ArrayLike<number>) => number): Vector3 {
+      let copy: Vector3 = Recycler.get(Vector3);
+      copy.set(...[this.x, this.y, this.z].map(_function));
+      return copy;
+    }
+
+    /**
+     * Applies the given function to all components of this vector (modifying it) and returns it.
+     */
+    public apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z") => number): Vector3 {
+      this.x = _function(this.x, 0, "x");
+      this.y = _function(this.y, 1, "y");
+      this.z = _function(this.z, 2, "z");
+      return this;
+    }
+
+    /**
      * Returns a formatted string representation of this vector
      */
     public toString(): string {
       let result: string = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)}, ${this.z.toPrecision(5)})`;
       return result;
-    }
-
-    /**
-     * Uses the standard array.map functionality to perform the given function on all components of this vector
-     * and return a new vector with the results
-     */
-    public map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector3 {
-      let copy: Vector3 = Recycler.get(Vector3);
-      copy.set(...[this.x, this.y, this.z].map(_function));
-      return copy;
     }
 
     //#region Transfer

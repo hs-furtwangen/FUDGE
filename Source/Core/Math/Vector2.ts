@@ -101,7 +101,7 @@ namespace FudgeCore {
      * Returns the resulting vector attained by addition of all given vectors.
      */
     public static SUM(..._vectors: Vector2[]): Vector2 {
-      const result: Vector2 = Recycler.reuse(Vector2);
+      const result: Vector2 = Recycler.get(Vector2);
       for (let vector of _vectors)
         result.set(result.x + vector.x, result.y + vector.y);
       return result;

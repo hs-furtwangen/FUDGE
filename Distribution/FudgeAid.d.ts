@@ -278,8 +278,83 @@ declare namespace FudgeAid {
 }
 declare namespace FudgeAid {
     import ƒ = FudgeCore;
+    /**
+     * Allows to translate, rotate and scale matrices visually by dragging with a pointer.
+     * Installs pointer event listeners on the given {@link ƒ.Viewport}s canvas on construction.
+     * Use {@link addListeners}/{@link removeListeners} to handle the installation manually.
+     */
+    class Transformator {
+        #private;
+        readonly viewport: ƒ.Viewport;
+        mode: "none" | "translate" | "rotate" | "scale";
+        space: "local" | "world";
+        selected: "x" | "y" | "z" | "xy" | "xz" | "yz" | "xyz";
+        snapAngle: number;
+        snapDistance: number;
+        snapScale: number;
+        colors: {
+            base: {
+                x: ƒ.Color;
+                y: ƒ.Color;
+                z: ƒ.Color;
+                xyz: ƒ.Color;
+            };
+            lite: {
+                x: ƒ.Color;
+                y: ƒ.Color;
+                z: ƒ.Color;
+                xyz: ƒ.Color;
+            };
+            transparent: {
+                x: ƒ.Color;
+                y: ƒ.Color;
+                z: ƒ.Color;
+            };
+            plane: {
+                xy: ƒ.Color;
+                xz: ƒ.Color;
+                yz: ƒ.Color;
+            };
+            planeLite: {
+                xy: ƒ.Color;
+                xz: ƒ.Color;
+                yz: ƒ.Color;
+            };
+        };
+        constructor(_viewport: ƒ.Viewport);
+        set mtxLocal(_mtx: ƒ.Matrix4x4);
+        set mtxWorld(_mtx: ƒ.Matrix4x4);
+        private get camera();
+        /**
+         * Add pointer event listeners to the viewport canvas
+         */
+        addListeners: () => void;
+        /**
+         * Remove pointer event listeners from the viewport canvas
+         */
+        removeListeners: () => void;
+        /**
+         * Undo the last transformation
+         */
+        undo(): void;
+        /**
+         * Clear the undo stack
+         */
+        clearUndo(): void;
+        drawGizmos(_cmpCamera: ƒ.ComponentCamera, _picking: boolean): void;
+        private hndPointerDown;
+        private hndPointerMove;
+        private hndPointerUp;
+        private hndRenderEnd;
+        private drawCircle;
+        private getPoint3D;
+        private getAxis;
+    }
+}
+declare namespace FudgeAid {
+    import ƒ = FudgeCore;
     class Viewport {
         static create(_branch: ƒ.Node): ƒ.Viewport;
-        static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus?: boolean, _speedCameraRotation?: number, _speedCameraTranslation?: number, _speedCameraDistance?: number): CameraOrbit;
+        static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus?: boolean, _speedCameraRotation?: number, _speedCameraTranslation?: number, _speedCameraDistance?: number, _redraw?: () => void, _translateOnPick?: () => boolean): CameraOrbit;
     }
 }

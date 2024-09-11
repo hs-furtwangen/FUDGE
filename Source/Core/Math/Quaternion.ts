@@ -41,9 +41,28 @@ namespace FudgeCore {
      * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
      * Rotation occurs around the axis in the order Z-Y-X.
      */
-    public static ROTATION(_eulerAngles: Vector3): Quaternion {
+    public static ROTATION(_eulerAngles: Vector3): Quaternion;
+    /**
+     * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
+     * Axis must be normalized. Angle is in degrees.
+     */
+    public static ROTATION(_axis: Vector3, _angle: number): Quaternion;
+    public static ROTATION(_vector: Vector3, _angle?: number): Quaternion {
       const result: Quaternion = Recycler.get(Quaternion);
-      result.eulerAngles = _eulerAngles;
+      if (_angle == undefined) {
+        result.eulerAngles = _vector;
+      } else {
+        let halfAngle: number = _angle * Calc.deg2rad / 2;
+        let sinHalfAngle: number = Math.sin(halfAngle);
+        
+        result.set(
+          _vector.x * sinHalfAngle,
+          _vector.y * sinHalfAngle,
+          _vector.z * sinHalfAngle,
+          Math.cos(halfAngle)
+        );
+      }
+
       return result;
     }
 
@@ -263,6 +282,17 @@ namespace FudgeCore {
       this.y *= -1;
       this.z *= -1;
       this.resetCache();
+      return this;
+    }
+
+    /**
+     * Rotates this quaternion around the given axis by the given angle.
+     * The rotation is appended to already applied rotations, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
+     */
+    public rotate(_axis: Vector3, _angle: number, _fromLeft: boolean = false): Quaternion {
+      const rotation: Quaternion = Quaternion.ROTATION(_axis, _angle);
+      this.multiply(rotation, _fromLeft);
+      Recycler.store(rotation);
       return this;
     }
 
