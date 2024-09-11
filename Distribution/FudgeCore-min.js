@@ -713,15 +713,9 @@ var FudgeCore;
             let found = this.findChild(_replace);
             if (found < 0)
                 return false;
-            let previousParent = _with.getParent();
-            if (previousParent)
-                previousParent.removeChild(_with);
-            _replace.parent = null;
-            this.children[found] = _with;
-            _with.parent = this;
-            _with.dispatchEvent(new Event("childAppend", { bubbles: true }));
-            if (this.isDescendantOf(FudgeCore.AudioManager.default.getGraphListeningTo()))
-                _with.broadcastEvent(new Event("childAppendToAudioGraph"));
+            _with.getParent()?.removeChild(_with);
+            this.removeChild(_replace);
+            this.addChild(_with, found);
             return true;
         }
         isUpdated(_timestampUpdate) {
@@ -814,6 +808,8 @@ var FudgeCore;
             };
             let components = {};
             for (let type in this.components) {
+                if (this.components[type].length == 0)
+                    continue;
                 components[type] = [];
                 for (let component of this.components[type]) {
                     components[type].push(FudgeCore.Serializer.serialize(component));
@@ -1100,19 +1096,13 @@ var FudgeCore;
                 this.program = program;
                 this.attributes = detectAttributes();
                 this.uniforms = detectUniforms();
-                if (this.define.includes("SKIN")) {
-                    const blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.SKIN.NAME);
-                    crc3.uniformBlockBinding(program, blockIndex, FudgeCore.UNIFORM_BLOCKS.SKIN.BINDING);
-                }
-                if (this.define.find(_define => ["FLAT", "GOURAUD", "PHONG"].includes(_define))) {
-                    if (!FudgeCore.RenderWebGL.uboLights)
-                        FudgeCore.RenderWebGL.uboLights = createUBOLights();
-                    if (!FudgeCore.RenderWebGL.uboLightsVariableOffsets)
-                        FudgeCore.RenderWebGL.uboLightsVariableOffsets = detectUBOLightsVariableOffsets();
-                    const blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.LIGHTS.NAME);
+                let blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.LIGHTS.NAME);
+                if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
                     crc3.uniformBlockBinding(program, blockIndex, FudgeCore.UNIFORM_BLOCKS.LIGHTS.BINDING);
-                }
-                const blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.FOG.NAME);
+                blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.SKIN.NAME);
+                if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
+                    crc3.uniformBlockBinding(program, blockIndex, FudgeCore.UNIFORM_BLOCKS.SKIN.BINDING);
+                blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.FOG.NAME);
                 if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
                     crc3.uniformBlockBinding(program, blockIndex, FudgeCore.UNIFORM_BLOCKS.FOG.BINDING);
             }
@@ -1160,31 +1150,6 @@ var FudgeCore;
                         detectedUniforms[info.name] = FudgeCore.RenderWebGL.assert(location);
                 }
                 return detectedUniforms;
-            }
-            function createUBOLights() {
-                const blockIndex = crc3.getUniformBlockIndex(program, FudgeCore.UNIFORM_BLOCKS.LIGHTS.NAME);
-                const blockSize = crc3.getActiveUniformBlockParameter(program, blockIndex, crc3.UNIFORM_BLOCK_DATA_SIZE);
-                const ubo = FudgeCore.RenderWebGL.assert(crc3.createBuffer());
-                crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, ubo);
-                crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
-                crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCKS.LIGHTS.BINDING, ubo);
-                return ubo;
-            }
-            function detectUBOLightsVariableOffsets() {
-                const uboVariableNames = [
-                    "u_nLightsDirectional",
-                    "u_nLightsPoint",
-                    "u_nLightsSpot",
-                    "u_ambient.vctColor",
-                    "u_directional[0].vctColor",
-                    "u_point[0].vctColor",
-                    "u_spot[0].vctColor"
-                ];
-                const uboVariableIndices = crc3.getUniformIndices(program, uboVariableNames);
-                const uboVariableOffsets = crc3.getActiveUniforms(program, uboVariableIndices, crc3.UNIFORM_OFFSET);
-                const uboVariableNameToOffset = {};
-                uboVariableNames.forEach((_name, _index) => uboVariableNameToOffset[_name] = uboVariableOffsets[_index]);
-                return uboVariableNameToOffset;
             }
         }
     }
@@ -1368,8 +1333,8 @@ var FudgeCore;
             [ParticleData.FUNCTION.POWER]: 2,
             [ParticleData.FUNCTION.POLYNOMIAL3]: 5,
             [ParticleData.FUNCTION.SQUARE_ROOT]: 1,
-            [ParticleData.FUNCTION.RANDOM]: 1,
-            [ParticleData.FUNCTION.RANDOM_RANGE]: 3
+            [ParticleData.FUNCTION.RANDOM]: 0,
+            [ParticleData.FUNCTION.RANDOM_RANGE]: 2
         };
         ParticleData.PREDEFINED_VARIABLES = {
             systemDuration: "u_fParticleSystemDuration",
@@ -1412,13 +1377,14 @@ var FudgeCore;
                     return `sqrt(${x})`;
                 },
                 [ParticleData.FUNCTION.RANDOM]: (_parameters) => {
-                    return `fetchRandomNumber(int(${_parameters[0]}), iParticleSystemRandomNumbersSize, iParticleSystemRandomNumbersLength)`;
+                    return `fetchRandomNumber(${(RenderInjectorShaderParticleSystem.randomNumberIndexOffset++).toFixed(0)}, iParticleSystemRandomNumbersSize, iParticleSystemRandomNumbersLength)`;
                 },
                 [ParticleData.FUNCTION.RANDOM_RANGE]: (_parameters) => {
-                    return `(${RenderInjectorShaderParticleSystem.FUNCTIONS["random"](_parameters)} * (${_parameters[2]} - ${_parameters[1]}) + ${_parameters[1]})`;
+                    return `(${RenderInjectorShaderParticleSystem.FUNCTIONS["random"]()} * (${_parameters[1]} - ${_parameters[0]}) + ${_parameters[0]})`;
                 }
             };
         }
+        static { this.randomNumberIndexOffset = 0; }
         static decorate(_constructor, _context) {
             super.decorate(_constructor.prototype, _context);
             Object.defineProperty(_constructor.prototype, "getVertexShaderSource", {
@@ -1432,6 +1398,7 @@ var FudgeCore;
             let data = this.data;
             let mtxLocal = data?.mtxLocal;
             let mtxWorld = data?.mtxWorld;
+            RenderInjectorShaderParticleSystem.randomNumberIndexOffset = 0;
             let source = this.vertexShaderSource
                 .replace("#version 300 es", `#version 300 es\n#define ${this.define[0]}${data.color ? "\n#define PARTICLE_COLOR" : ""}`)
                 .replace("/*$variables*/", RenderInjectorShaderParticleSystem.generateVariables(data?.variables, data?.variableNames))
@@ -1745,7 +1712,7 @@ var FudgeCore;
             return vector;
         }
         static SUM(..._vectors) {
-            const result = FudgeCore.Recycler.reuse(Vector2);
+            const result = FudgeCore.Recycler.get(Vector2);
             for (let vector of _vectors)
                 result.set(result.x + vector.x, result.y + vector.y);
             return result;
@@ -2068,6 +2035,17 @@ var FudgeCore;
         BLEND[BLEND["SUBTRACTIVE"] = 3] = "SUBTRACTIVE";
         BLEND[BLEND["MODULATE"] = 4] = "MODULATE";
     })(BLEND = FudgeCore.BLEND || (FudgeCore.BLEND = {}));
+    let DEPTH_FUNCTION;
+    (function (DEPTH_FUNCTION) {
+        DEPTH_FUNCTION[DEPTH_FUNCTION["NEVER"] = 0] = "NEVER";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["LESS"] = 1] = "LESS";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["EQUAL"] = 2] = "EQUAL";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["LESS_EQUAL"] = 3] = "LESS_EQUAL";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["GREATER"] = 4] = "GREATER";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["NOT_EQUAL"] = 5] = "NOT_EQUAL";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["GREATER_EQUAL"] = 6] = "GREATER_EQUAL";
+        DEPTH_FUNCTION[DEPTH_FUNCTION["ALWAYS"] = 7] = "ALWAYS";
+    })(DEPTH_FUNCTION = FudgeCore.DEPTH_FUNCTION || (FudgeCore.DEPTH_FUNCTION = {}));
     FudgeCore.UNIFORM_BLOCKS = {
         LIGHTS: {
             NAME: "Lights",
@@ -2135,7 +2113,8 @@ var FudgeCore;
             RenderWebGL.rectRender = RenderWebGL.getCanvasRect();
             RenderWebGL.initializeAttachments();
             RenderWebGL.adjustAttachments();
-            RenderWebGL.uboFog = RenderWebGL.assert(crc3.createBuffer());
+            RenderWebGL.initializeLights();
+            RenderWebGL.initializeFog();
             return crc3;
         }
         static assert(_value, _message = "") {
@@ -2161,9 +2140,16 @@ var FudgeCore;
             RenderWebGL.rectRender.setPositionAndSize(_rect.x, _rect.y, _rect.width, _rect.height);
             RenderWebGL.crc3.viewport(_rect.x, _rect.y, _rect.width, _rect.height);
         }
-        static clear(_color) {
+        static clear(_color, _colors = true, _depth = true, _stencil = true) {
             RenderWebGL.crc3.clearColor(_color?.r ?? 0, _color?.g ?? 0, _color?.b ?? 0, _color?.a ?? 1);
-            RenderWebGL.crc3.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT | WebGL2RenderingContext.STENCIL_BUFFER_BIT);
+            let mask = 0;
+            if (_colors)
+                mask |= WebGL2RenderingContext.COLOR_BUFFER_BIT;
+            if (_depth)
+                mask |= WebGL2RenderingContext.DEPTH_BUFFER_BIT;
+            if (_stencil)
+                mask |= WebGL2RenderingContext.STENCIL_BUFFER_BIT;
+            RenderWebGL.crc3.clear(mask);
         }
         static setFramebufferTarget(_buffer) {
             RenderWebGL.fboTarget = _buffer;
@@ -2180,12 +2166,18 @@ var FudgeCore;
             else
                 RenderWebGL.crc3.disable(WebGL2RenderingContext.DEPTH_TEST);
         }
+        static setDepthFunction(_function = DEPTH_FUNCTION.LESS) {
+            RenderWebGL.crc3.depthFunc(_function + WebGL2RenderingContext.NEVER);
+        }
         static setScissorTest(_test, _x, _y, _width, _height) {
             if (_test)
                 RenderWebGL.crc3.enable(WebGL2RenderingContext.SCISSOR_TEST);
             else
                 RenderWebGL.crc3.disable(WebGL2RenderingContext.SCISSOR_TEST);
             RenderWebGL.crc3.scissor(_x, _y, _width, _height);
+        }
+        static setColorWriteMask(_r, _g, _b, _a) {
+            RenderWebGL.crc3.colorMask(_r, _g, _b, _a);
         }
         static setViewport(_x, _y, _width, _height) {
             RenderWebGL.crc3.viewport(_x, _y, _width, _height);
@@ -2231,14 +2223,26 @@ var FudgeCore;
             RenderWebGL.fboMain = RenderWebGL.assert(RenderWebGL.crc3.createFramebuffer());
             RenderWebGL.fboPost = RenderWebGL.assert(RenderWebGL.crc3.createFramebuffer());
             RenderWebGL.fboTarget = null;
+            RenderWebGL.fboPick = RenderWebGL.assert(RenderWebGL.crc3.createFramebuffer());
             RenderWebGL.texColor = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texPosition = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texNormal = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texDepthStencil = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texNoise = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+            RenderWebGL.texPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+            RenderWebGL.texDepthPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texBloomSamples = new Array(6);
             for (let i = 0; i < RenderWebGL.texBloomSamples.length; i++)
                 RenderWebGL.texBloomSamples[i] = createTexture(WebGL2RenderingContext.LINEAR, WebGL2RenderingContext.CLAMP_TO_EDGE);
+            RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+            RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
+            RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
+            RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
+            RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
+            RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
+            RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
+            RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick, 0);
+            RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
             function createTexture(_filter, _wrap) {
                 const crc3 = RenderWebGL.crc3;
                 const texture = RenderWebGL.assert(crc3.createTexture());
@@ -2264,12 +2268,6 @@ var FudgeCore;
             crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
             crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
             crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
             for (let i = 0, divisor = 1; i < RenderWebGL.texBloomSamples.length; i++, divisor *= 2) {
                 let width = Math.max(Math.round(crc3.canvas.width / divisor), 1);
                 let height = Math.max(Math.round(crc3.canvas.height / divisor), 1);
@@ -2288,43 +2286,39 @@ var FudgeCore;
             crc3.texImage2D(crc3.TEXTURE_2D, 0, crc3.RGBA, width, height, 0, crc3.RGBA, crc3.UNSIGNED_BYTE, noiseData);
             crc3.bindTexture(crc3.TEXTURE_2D, null);
         }
-        static createPickTexture(_size) {
-            const targetTexture = RenderWebGL.assert(FudgeCore.Render.crc3.createTexture());
-            FudgeCore.Render.crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, targetTexture);
-            {
-                const internalFormat = WebGL2RenderingContext.RGBA32I;
-                const format = WebGL2RenderingContext.RGBA_INTEGER;
-                const type = WebGL2RenderingContext.INT;
-                FudgeCore.Render.pickBuffer = new Int32Array(_size * _size * 4);
-                FudgeCore.Render.crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, internalFormat, _size, _size, 0, format, type, FudgeCore.Render.pickBuffer);
-                FudgeCore.Render.crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER, WebGL2RenderingContext.LINEAR);
-                FudgeCore.Render.crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_S, WebGL2RenderingContext.CLAMP_TO_EDGE);
-                FudgeCore.Render.crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_T, WebGL2RenderingContext.CLAMP_TO_EDGE);
-            }
-            const framebuffer = FudgeCore.Render.crc3.createFramebuffer();
-            FudgeCore.Render.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
-            const attachmentPoint = WebGL2RenderingContext.COLOR_ATTACHMENT0;
-            FudgeCore.Render.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, attachmentPoint, WebGL2RenderingContext.TEXTURE_2D, targetTexture, 0);
-            RenderWebGL.sizePick = _size;
-            return targetTexture;
-        }
-        static getPicks(_size, _cmpCamera) {
-            let data = new Int32Array(_size * _size * 4);
-            FudgeCore.Render.crc3.readPixels(0, 0, _size, _size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
-            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
+        static pickFrom(_from, _cmpCamera, _pick) {
+            const size = Math.ceil(Math.sqrt(_from.length));
+            const crc3 = RenderWebGL.getRenderingContext();
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
+            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick);
+            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null);
+            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick);
+            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
+            crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
+            FudgeCore.ShaderPick.useProgram();
+            crc3.uniform2fv(FudgeCore.ShaderPick.uniforms["u_vctSize"], [size, size]);
+            FudgeCore.ShaderPickTextured.useProgram();
+            crc3.uniform2fv(FudgeCore.ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
+            RenderWebGL.setBlendMode(BLEND.OPAQUE);
+            let picks = _pick(_from, _cmpCamera);
+            RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
+            let data = new Int32Array(size * size * 4);
+            FudgeCore.Render.crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
             let picked = [];
-            for (let i = 0; i < FudgeCore.Render.ƒpicked.length; i++) {
+            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
+            for (let i = 0; i < picks.length; i++) {
                 let zBuffer = data[4 * i + 0] + data[4 * i + 1] / 256;
                 if (zBuffer == 0)
                     continue;
-                let pick = FudgeCore.Render.ƒpicked[i];
+                let pick = picks[i];
                 pick.zBuffer = convertInt32toFloat32(data, 4 * i + 0) * 2 - 1;
                 pick.color = convertInt32toColor(data, 4 * i + 1);
-                pick.textureUV = FudgeCore.Recycler.get(FudgeCore.Vector2);
+                pick.textureUV = FudgeCore.Recycler.reuse(FudgeCore.Vector2);
                 pick.textureUV.set(convertInt32toFloat32(data, 4 * i + 2), convertInt32toFloat32(data, 4 * i + 3));
                 pick.mtxViewToWorld = mtxViewToWorld;
                 picked.push(pick);
             }
+            RenderWebGL.resetFramebuffer();
             return picked;
             function convertInt32toFloat32(_int32Array, _index) {
                 let buffer = new ArrayBuffer(4);
@@ -2340,36 +2334,28 @@ var FudgeCore;
                 return color;
             }
         }
-        static pick(_node, _cmpCamera) {
-            try {
-                let cmpMesh = _node.getComponent(FudgeCore.ComponentMesh);
-                let cmpMaterial = _node.getComponent(FudgeCore.ComponentMaterial);
+        static pick(_nodes, _cmpCamera) {
+            let picks = [];
+            for (const node of _nodes) {
+                let cmpMesh = node.getComponent(FudgeCore.ComponentMesh);
+                let cmpMaterial = node.getComponent(FudgeCore.ComponentMaterial);
+                if (!(cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive))
+                    continue;
                 let coat = cmpMaterial.material.coat;
                 let shader = coat instanceof FudgeCore.CoatTextured ? FudgeCore.ShaderPickTextured : FudgeCore.ShaderPick;
                 shader.useProgram();
                 coat.useRenderData(shader, cmpMaterial);
-                let mtxMeshToView = this.calcMeshToView(_node, cmpMesh.mtxWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
-                let sizeUniformLocation = shader.uniforms["u_vctSize"];
-                RenderWebGL.getRenderingContext().uniform2fv(sizeUniformLocation, [RenderWebGL.sizePick, RenderWebGL.sizePick]);
+                let mtxMeshToView = RenderWebGL.calcMeshToView(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
                 let mesh = cmpMesh.mesh;
-                let renderBuffers = mesh.useRenderBuffers(shader, _node.mtxWorld, mtxMeshToView, FudgeCore.Render.ƒpicked.length);
+                let renderBuffers = mesh.useRenderBuffers(shader, node.mtxWorld, mtxMeshToView, picks.length);
                 RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
-                let pick = new FudgeCore.Pick(_node);
-                FudgeCore.Render.ƒpicked.push(pick);
+                picks.push(new FudgeCore.Pick(node));
             }
-            catch (_error) {
-            }
+            return picks;
         }
-        static pickGizmos(_gizmos, _cmpCamera) {
-            const crc3 = RenderWebGL.getRenderingContext();
-            let shader = FudgeCore.ShaderPick;
-            shader.useProgram();
-            crc3.uniform2fv(shader.uniforms["u_vctSize"], [RenderWebGL.sizePick, RenderWebGL.sizePick]);
-            shader = FudgeCore.ShaderPickTextured;
-            shader.useProgram();
-            crc3.uniform2fv(shader.uniforms["u_vctSize"], [RenderWebGL.sizePick, RenderWebGL.sizePick]);
-            crc3.uniformMatrix3fv(shader.uniforms["u_mtxPivot"], false, FudgeCore.Matrix3x3.IDENTITY().get());
-            FudgeCore.Gizmos.pick(_gizmos, _cmpCamera, FudgeCore.Render.ƒpicked);
+        static initializeFog() {
+            RenderWebGL.uboFog = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
+            RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCKS.FOG.BINDING, RenderWebGL.uboFog);
         }
         static bufferFog(_cmpFog) {
             const crc3 = RenderWebGL.getRenderingContext();
@@ -2381,8 +2367,27 @@ var FudgeCore;
                 data.set(_cmpFog.color.get(), 4);
             }
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboFog);
-            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.STATIC_DRAW);
-            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCKS.FOG.BINDING, RenderWebGL.uboFog);
+            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
+        }
+        static initializeLights() {
+            const MAX_LIGHTS_DIRECTIONAL = 15;
+            const MAX_LIGHTS_POINT = 100;
+            const MAX_LIGHTS_SPOT = 100;
+            const BYTES_PER_LIGHT = Float32Array.BYTES_PER_ELEMENT * (4 + 16 + 16);
+            RenderWebGL.uboLightsOffsets = {};
+            RenderWebGL.uboLightsOffsets["u_nLightsDirectional"] = Uint32Array.BYTES_PER_ELEMENT * 0;
+            RenderWebGL.uboLightsOffsets["u_nLightsPoint"] = Uint32Array.BYTES_PER_ELEMENT * 1;
+            RenderWebGL.uboLightsOffsets["u_nLightsSpot"] = Uint32Array.BYTES_PER_ELEMENT * 2;
+            RenderWebGL.uboLightsOffsets["u_ambient"] = Uint32Array.BYTES_PER_ELEMENT * 4;
+            RenderWebGL.uboLightsOffsets["u_directional"] = RenderWebGL.uboLightsOffsets["u_ambient"] + BYTES_PER_LIGHT * 1;
+            RenderWebGL.uboLightsOffsets["u_point"] = RenderWebGL.uboLightsOffsets["u_directional"] + BYTES_PER_LIGHT * MAX_LIGHTS_DIRECTIONAL;
+            RenderWebGL.uboLightsOffsets["u_spot"] = RenderWebGL.uboLightsOffsets["u_point"] + BYTES_PER_LIGHT * MAX_LIGHTS_POINT;
+            const crc3 = RenderWebGL.getRenderingContext();
+            RenderWebGL.uboLights = RenderWebGL.assert(crc3.createBuffer());
+            const blockSize = RenderWebGL.uboLightsOffsets["u_spot"] + BYTES_PER_LIGHT * MAX_LIGHTS_SPOT;
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
+            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
+            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCKS.LIGHTS.BINDING, RenderWebGL.uboLights);
         }
         static bufferLights(_lights) {
             if (!RenderWebGL.uboLights)
@@ -2396,14 +2401,14 @@ var FudgeCore;
                     clrSum.add(clrLight);
                     FudgeCore.Recycler.store(clrLight);
                 }
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsVariableOffsets["u_ambient.vctColor"], new Float32Array(clrSum.get()));
+                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets["u_ambient"], new Float32Array(clrSum.get()));
             }
             bufferLightsOfType(FudgeCore.LightDirectional, "u_nLightsDirectional", "u_directional");
             bufferLightsOfType(FudgeCore.LightPoint, "u_nLightsPoint", "u_point");
             bufferLightsOfType(FudgeCore.LightSpot, "u_nLightsSpot", "u_spot");
             function bufferLightsOfType(_type, _uniName, _uniStruct) {
                 const cmpLights = _lights.get(_type);
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsVariableOffsets[_uniName], new Uint8Array([cmpLights?.length ?? 0]));
+                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets[_uniName], new Uint8Array([cmpLights?.length ?? 0]));
                 if (!cmpLights)
                     return;
                 const lightDataSize = 4 + 16 + 16;
@@ -2429,7 +2434,7 @@ var FudgeCore;
                     FudgeCore.Recycler.store(mtxTotal);
                     iLight++;
                 }
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsVariableOffsets[`${_uniStruct}[0].vctColor`], lightsData);
+                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets[_uniStruct], lightsData);
             }
         }
         static drawNodes(_nodesOpaque, _nodesAlpha, _cmpCamera) {
@@ -5329,6 +5334,23 @@ var FudgeCore;
             rayWorld.scale(1 / w);
             return rayWorld;
         }
+        getWorldToPixelScale(_posWorld) {
+            let distance = this.mtxWorld.translation.getDistance(_posWorld);
+            let scale;
+            let rect = FudgeCore.Render.getRenderRectangle();
+            switch (this.getDirection()) {
+                case FIELD_OF_VIEW.VERTICAL:
+                    scale = 1 / rect.height * window.devicePixelRatio;
+                    break;
+                case FIELD_OF_VIEW.HORIZONTAL:
+                    scale = 1 / rect.width * window.devicePixelRatio;
+                    break;
+                case FIELD_OF_VIEW.DIAGONAL:
+                    scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
+                    break;
+            }
+            return scale * distance;
+        }
         serialize() {
             let serialization = {
                 backgroundColor: this.clrBackground,
@@ -5960,24 +5982,9 @@ var FudgeCore;
             this.mtxWorld.copy(_mtxMeshToWorld);
             let scaling = FudgeCore.Recycler.get(FudgeCore.Vector3);
             if (this.fixedSize) {
-                let scale;
-                let rect = FudgeCore.Render.getRenderRectangle();
-                switch (_cmpCamera.getDirection()) {
-                    case FudgeCore.FIELD_OF_VIEW.VERTICAL:
-                        scale = 1 / rect.height * window.devicePixelRatio;
-                        break;
-                    case FudgeCore.FIELD_OF_VIEW.HORIZONTAL:
-                        scale = 1 / rect.width * window.devicePixelRatio;
-                        break;
-                    case FudgeCore.FIELD_OF_VIEW.DIAGONAL:
-                        scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
-                        break;
-                }
-                let distance = _cmpCamera.mtxWorld.translation.getDistance(_mtxMeshToWorld.translation);
-                scale = scale * distance;
-                scaling.set(this.texture.width * scale, this.texture.height * scale, 1);
-                this.mtxWorld.scaling = scaling;
-                FudgeCore.Recycler.store(distance);
+                let scale = _cmpCamera.getWorldToPixelScale(_mtxMeshToWorld.translation);
+                this.mtxWorld.scaling = scaling.set(this.texture.width * scale, this.texture.height * scale, 1);
+                ;
             }
             else {
                 let pixelsToUnits = 1 / this.texture.height;
@@ -7434,6 +7441,17 @@ var FudgeCore;
             }
             return this;
         }
+        equals(_compare, _tolerance = Number.EPSILON) {
+            if (Math.abs(this.r - _compare.r) > _tolerance)
+                return false;
+            if (Math.abs(this.g - _compare.g) > _tolerance)
+                return false;
+            if (Math.abs(this.b - _compare.b) > _tolerance)
+                return false;
+            if (Math.abs(this.a - _compare.a) > _tolerance)
+                return false;
+            return true;
+        }
         toString() {
             return `(r: ${this.r.toFixed(3)}, g: ${this.g.toFixed(3)}, b: ${this.b.toFixed(3)}, a: ${this.a.toFixed(3)})`;
         }
@@ -7479,6 +7497,9 @@ var FudgeCore;
         }
         static lerp(_a, _b, _f) {
             return _a + (_b - _a) * Calc.clamp(_f, 0, 1);
+        }
+        static snap(_value, _increment, _round = Math.round) {
+            return _round(_value / _increment) * _increment;
         }
     }
     FudgeCore.Calc = Calc;
@@ -8101,7 +8122,7 @@ var FudgeCore;
                 _translation.z,
                 1
             ]);
-            FudgeCore.Recycler.storeMultiple(zAxis, xAxis, yAxis, vctCross);
+            FudgeCore.Recycler.storeMultiple(zAxis, xAxis, vctCross);
             return mtxResult;
         }
         static LOOK_IN(_translation, _direction, _up = FudgeCore.Vector3.Y()) {
@@ -8334,6 +8355,20 @@ var FudgeCore;
         set quaternion(_quaternion) {
             this.mutate({ "rotation": _quaternion });
         }
+        get determinant() {
+            const m = this.data;
+            const det00 = m[10] * m[15] - m[11] * m[14];
+            const det01 = m[9] * m[15] - m[11] * m[13];
+            const det02 = m[9] * m[14] - m[10] * m[13];
+            const det03 = m[8] * m[15] - m[11] * m[12];
+            const det04 = m[8] * m[14] - m[10] * m[12];
+            const det05 = m[8] * m[13] - m[9] * m[12];
+            const det = m[0] * (m[5] * det00 - m[6] * det01 + m[7] * det02) -
+                m[1] * (m[4] * det00 - m[6] * det03 + m[7] * det04) +
+                m[2] * (m[4] * det01 - m[5] * det03 + m[7] * det05) -
+                m[3] * (m[4] * det02 - m[5] * det04 + m[6] * det05);
+            return det;
+        }
         get right() {
             let right = this.getX();
             right.normalize();
@@ -8447,7 +8482,11 @@ var FudgeCore;
         translate(_by, _local = true) {
             if (_local) {
                 let mtxTranslation = Matrix4x4.TRANSLATION(_by);
+                let rotationDirty = this.#rotationDirty;
+                let scalingDirty = this.#scalingDirty;
                 this.multiply(mtxTranslation);
+                this.#rotationDirty = rotationDirty;
+                this.#scalingDirty = scalingDirty;
                 FudgeCore.Recycler.store(mtxTranslation);
             }
             else {
@@ -8502,25 +8541,24 @@ var FudgeCore;
             return this;
         }
         lookAt(_target, _up, _restrict = false) {
-            _up = _up ? FudgeCore.Vector3.NORMALIZATION(_up) : FudgeCore.Vector3.NORMALIZATION(this.up);
+            _up = _up ? FudgeCore.Vector3.NORMALIZATION(_up) : this.up;
             const mtxResult = Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict);
             mtxResult.scale(this.scaling);
             this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
             return this;
         }
-        lookIn(_direction, _up = FudgeCore.Vector3.Y()) {
+        lookIn(_direction, _up = this.up) {
             const mtxResult = Matrix4x4.LOOK_IN(this.translation, _direction, _up);
             mtxResult.scale(this.scaling);
             this.set(mtxResult.data);
             FudgeCore.Recycler.store(mtxResult);
             return this;
         }
-        scale(_by) {
+        scale(_by, _fromLeft = false) {
             const mtxScaling = Matrix4x4.SCALING(_by);
-            const mtxResult = Matrix4x4.PRODUCT(this, mtxScaling);
-            this.set(mtxResult.data);
-            FudgeCore.Recycler.storeMultiple(mtxScaling, mtxResult);
+            this.multiply(mtxScaling, _fromLeft);
+            FudgeCore.Recycler.store(mtxScaling);
             return this;
         }
         scaleX(_by) {
@@ -8557,6 +8595,7 @@ var FudgeCore;
         }
         copy(_original) {
             this.data.set(_original.data);
+            this.mutator = null;
             this.#translationDirty = _original.#translationDirty;
             this.#rotationDirty = _original.#rotationDirty;
             this.#scalingDirty = _original.#scalingDirty;
@@ -9008,9 +9047,16 @@ var FudgeCore;
         static NORMALIZATION(_q) {
             return _q.clone.normalize();
         }
-        static ROTATION(_eulerAngles) {
+        static ROTATION(_vector, _angle) {
             const result = FudgeCore.Recycler.get(Quaternion);
-            result.eulerAngles = _eulerAngles;
+            if (_angle == undefined) {
+                result.eulerAngles = _vector;
+            }
+            else {
+                let halfAngle = _angle * FudgeCore.Calc.deg2rad / 2;
+                let sinHalfAngle = Math.sin(halfAngle);
+                result.set(_vector.x * sinHalfAngle, _vector.y * sinHalfAngle, _vector.z * sinHalfAngle, Math.cos(halfAngle));
+            }
             return result;
         }
         static PRODUCT(_qLeft, _qRight) {
@@ -9115,6 +9161,12 @@ var FudgeCore;
             this.y *= -1;
             this.z *= -1;
             this.resetCache();
+            return this;
+        }
+        rotate(_axis, _angle, _fromLeft = false) {
+            const rotation = Quaternion.ROTATION(_axis, _angle);
+            this.multiply(rotation, _fromLeft);
+            FudgeCore.Recycler.store(rotation);
             return this;
         }
         multiply(_other, _fromLeft = false) {
@@ -9307,7 +9359,7 @@ var FudgeCore;
             return vector;
         }
         static SUM(..._vectors) {
-            let result = FudgeCore.Recycler.reuse(Vector3);
+            let result = FudgeCore.Recycler.get(Vector3);
             for (let vector of _vectors)
                 result.set(result.x + vector.x, result.y + vector.y, result.z + vector.z);
             return result;
@@ -9350,8 +9402,11 @@ var FudgeCore;
             return vector;
         }
         static ANGLE(_from, _to) {
-            let angle = Math.acos(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude));
+            let angle = Math.acos(FudgeCore.Calc.clamp(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude), -1, 1));
             return angle * FudgeCore.Calc.rad2deg;
+        }
+        static PROJECTION(_a, _b) {
+            return _a.clone.project(_b);
         }
         get magnitude() {
             return Math.hypot(this.x, this.y, this.z);
@@ -9434,6 +9489,13 @@ var FudgeCore;
             this.z = -this.z;
             return this;
         }
+        project(_on) {
+            let scalar = Vector3.DOT(this, _on) / _on.magnitudeSquared;
+            this.x = _on.x * scalar;
+            this.y = _on.y * scalar;
+            this.z = _on.z * scalar;
+            return this;
+        }
         set(_x = 0, _y = 0, _z = 0) {
             this.x = _x;
             this.y = _y;
@@ -9480,14 +9542,20 @@ var FudgeCore;
             this.z = Math.max(this.z, _compare.z);
             return this;
         }
-        toString() {
-            let result = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)}, ${this.z.toPrecision(5)})`;
-            return result;
-        }
         map(_function) {
             let copy = FudgeCore.Recycler.get(Vector3);
             copy.set(...[this.x, this.y, this.z].map(_function));
             return copy;
+        }
+        apply(_function) {
+            this.x = _function(this.x, 0, "x");
+            this.y = _function(this.y, 1, "y");
+            this.z = _function(this.z, 2, "z");
+            return this;
+        }
+        toString() {
+            let result = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)}, ${this.z.toPrecision(5)})`;
+            return result;
         }
         serialize() {
             let serialization = this.getMutator();
@@ -10423,43 +10491,46 @@ var FudgeCore;
 (function (FudgeCore) {
     class MeshTorus extends FudgeCore.MeshRotation {
         static { this.iSubclass = FudgeCore.Mesh.registerSubclass(MeshTorus); }
-        constructor(_name = "MeshTorus", _size = 0.25, _longitudes = 8, _latitudes = 6) {
-            super(_name, MeshTorus.getShape(_size, Math.max(3, _latitudes)), _longitudes);
-            this.size = 0.25;
+        constructor(_name = "MeshTorus", _radiusRing = 0.5 - 0.125, _radiusTube = 0.125, _longitudes = 8, _latitudes = 6) {
+            super(_name, MeshTorus.getShape(_radiusRing, _radiusTube, Math.max(3, _latitudes)), _longitudes);
             this.latitudes = 12;
-            this.size = _size;
+            this.radiusRing = 0.5 - 0.125;
+            this.radiusTube = 0.125;
+            this.radiusTube = _radiusTube;
+            this.radiusRing = _radiusRing;
             this.longitudes = _longitudes;
             this.latitudes = Math.max(3, _latitudes);
         }
-        static getShape(_size, _latitudes) {
+        static getShape(_radiusRing, _radiusTube, _latitudes) {
             let shape = [];
-            let radius = _size / 2;
-            let center = new FudgeCore.Vector2(0.25 + radius, 0);
+            let center = new FudgeCore.Vector2(_radiusRing, 0);
             for (let latitude = 0; latitude <= _latitudes; latitude++) {
                 let angle = 2 * Math.PI * latitude / _latitudes;
-                shape.push(FudgeCore.Vector2.SUM(center, new FudgeCore.Vector2(radius * -Math.cos(angle), radius * Math.sin(angle))));
+                shape.push(FudgeCore.Vector2.SUM(center, new FudgeCore.Vector2(_radiusTube * -Math.cos(angle), _radiusTube * Math.sin(angle))));
             }
             return shape;
         }
-        create(_size = 0.25, _longitudes = 8, _latitudes = 6) {
-            this.size = _size;
+        create(_radiusRing = 0.5 - 0.125, _radiusTube = 0.125, _longitudes = 8, _latitudes = 6) {
+            this.radiusTube = _radiusTube;
             this.latitudes = Math.max(3, _latitudes);
-            super.rotate(MeshTorus.getShape(_size, _latitudes), _longitudes);
+            this.radiusRing = _radiusRing;
+            super.rotate(MeshTorus.getShape(_radiusRing, _radiusTube, _latitudes), _longitudes);
         }
         serialize() {
             let serialization = super.serialize();
             serialization.latitudes = this.latitudes;
-            serialization.size = this.size;
+            serialization.radiusRing = this.radiusRing;
+            serialization.radiusTube = this.radiusTube;
             return serialization;
         }
         async deserialize(_serialization) {
             await super.deserialize(_serialization);
-            this.create(_serialization.size, _serialization.longitudes, _serialization.latitudes);
+            this.create(_serialization.radiusRing, _serialization.radiusTube, _serialization.longitudes, _serialization.latitudes);
             return this;
         }
         async mutate(_mutator, _selection = null, _dispatchMutate = true) {
             super.mutate(_mutator, _selection, _dispatchMutate);
-            this.create(this.size, this.longitudes, this.latitudes);
+            this.create(this.radiusRing, this.radiusTube, this.longitudes, this.latitudes);
         }
         reduceMutator(_mutator) {
             super.reduceMutator(_mutator);
@@ -12823,15 +12894,19 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class Picker {
-        static pickRay(_nodes, _ray, _min, _max, _pickGizmos = false, _gizmosFilter) {
+        static pickRay(_from, _ray, _min, _max) {
+            if (_from.length == 0)
+                return [];
             let cmpCameraPick = new FudgeCore.ComponentCamera();
             cmpCameraPick.mtxPivot.translation = _ray.origin;
             cmpCameraPick.mtxPivot.lookAt(FudgeCore.Vector3.SUM(_ray.origin, _ray.direction));
             cmpCameraPick.projectCentral(1, 0.001, FudgeCore.FIELD_OF_VIEW.DIAGONAL, _min, _max);
-            let picks = FudgeCore.Render.pickBranch(_nodes, cmpCameraPick, _pickGizmos, _gizmosFilter);
-            return picks;
+            if (_from[0] instanceof FudgeCore.Node)
+                return FudgeCore.Render.pick(_from, cmpCameraPick);
+            else
+                return FudgeCore.Gizmos.pick(_from, cmpCameraPick);
         }
-        static pickCamera(_nodes, _cmpCamera, _posProjection, _pickGizmos = false, _gizmosFilter) {
+        static pickCamera(_from, _cmpCamera, _posProjection) {
             let ray = new FudgeCore.Ray(new FudgeCore.Vector3(-_posProjection.x, _posProjection.y, 1));
             let length = ray.direction.magnitude;
             if (_cmpCamera.node) {
@@ -12841,13 +12916,15 @@ var FudgeCore;
             }
             else
                 ray.transform(_cmpCamera.mtxPivot);
-            let picks = Picker.pickRay(_nodes, ray, length * _cmpCamera.getNear(), length * _cmpCamera.getFar(), _pickGizmos, _gizmosFilter);
+            let picks = Picker.pickRay(_from, ray, length * _cmpCamera.getNear(), length * _cmpCamera.getFar());
             return picks;
         }
         static pickViewport(_viewport, _posClient) {
             let posProjection = _viewport.pointClientToProjection(_posClient);
             let nodes = Array.from(_viewport.getBranch().getIterator(true));
-            let picks = Picker.pickCamera(nodes, _viewport.camera, posProjection, _viewport.gizmosEnabled, _viewport.gizmosFilter);
+            let picks = Picker.pickCamera(nodes, _viewport.camera, posProjection);
+            if (_viewport.gizmosEnabled)
+                picks = picks.concat(Picker.pickCamera(_viewport.getGizmos(nodes), _viewport.camera, posProjection));
             return picks;
         }
     }
@@ -12893,31 +12970,11 @@ var FudgeCore;
 (function (FudgeCore) {
     class Gizmos {
         static { this.alphaOccluded = 0.3; }
-        static { this.posIcons = new Set(); }
         static { this.arrayBuffer = FudgeCore.RenderWebGL.assert(FudgeCore.RenderWebGL.getRenderingContext().createBuffer()); }
         static { this.indexBuffer = FudgeCore.RenderWebGL.assert(FudgeCore.RenderWebGL.getRenderingContext().createBuffer()); }
+        static { this.posIcons = new Set(); }
         static #camera;
-        static get camera() {
-            return Gizmos.#camera;
-        }
-        static get quad() {
-            let quad = new FudgeCore.MeshQuad("GizmoQuad");
-            FudgeCore.Project.deregister(quad);
-            Reflect.defineProperty(Gizmos, "quad", { value: quad });
-            return Gizmos.quad;
-        }
-        static get cube() {
-            let cube = new FudgeCore.MeshCube("GizmoCube");
-            FudgeCore.Project.deregister(cube);
-            Reflect.defineProperty(Gizmos, "cube", { value: cube });
-            return Gizmos.cube;
-        }
-        static get sphere() {
-            let sphere = new FudgeCore.MeshSphere("GizmoSphere", 6, 6);
-            FudgeCore.Project.deregister(sphere);
-            Reflect.defineProperty(Gizmos, "sphere", { value: sphere });
-            return Gizmos.sphere;
-        }
+        static #meshes = {};
         static get wireCircle() {
             const radius = 0.5;
             const segments = 45;
@@ -12974,32 +13031,41 @@ var FudgeCore;
             Reflect.defineProperty(Gizmos, "wireCube", { value: lines });
             return Gizmos.wireCube;
         }
-        static get picking() {
+        static get #picking() {
             return this.pickId != null;
         }
-        static draw(_viewport) {
-            Gizmos.#camera = _viewport.camera;
-            Gizmos.posIcons.clear();
-            for (const gizmo of FudgeCore.Render.gizmos)
-                Reflect.set(gizmo.node, "zCamera", _viewport.camera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
-            const sorted = FudgeCore.Render.gizmos.getSorted((_a, _b) => Reflect.get(_b.node, "zCamera") - Reflect.get(_a.node, "zCamera"));
-            for (const gizmo of sorted) {
-                gizmo.drawGizmos?.();
-                if (_viewport.gizmosSelected?.includes(gizmo.node))
-                    gizmo.drawGizmosSelected?.();
-            }
-        }
-        static pick(_gizmos, _cmpCamera, _picked) {
+        static draw(_gizmos, _cmpCamera, _selected) {
+            for (const gizmo of _gizmos)
+                if (gizmo.node)
+                    Reflect.set(gizmo.node, "zCamera", _cmpCamera.pointWorldToClip(gizmo.node.mtxWorld.translation).z);
+            _gizmos = _gizmos.sort((_a, _b) => (_b.node ? Reflect.get(_b.node, "zCamera") : 2) -
+                (_a.node ? Reflect.get(_a.node, "zCamera") : 2));
             Gizmos.#camera = _cmpCamera;
             Gizmos.posIcons.clear();
-            for (let gizmo of _gizmos) {
-                Gizmos.pickId = _picked.length;
-                gizmo.drawGizmos();
-                let pick = new FudgeCore.Pick(gizmo.node);
-                pick.gizmo = gizmo;
-                _picked.push(pick);
+            for (const gizmo of _gizmos) {
+                gizmo.drawGizmos?.(_cmpCamera, Gizmos.#picking);
+                if (_selected?.includes(gizmo.node))
+                    gizmo.drawGizmosSelected?.(_cmpCamera);
             }
-            Gizmos.pickId = null;
+        }
+        static pick(_gizmos, _cmpCamera) {
+            return FudgeCore.RenderWebGL.pickFrom(_gizmos, _cmpCamera, pick);
+            function pick(_gizmos, _cmpCamera) {
+                const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+                crc3.uniformMatrix3fv(FudgeCore.ShaderPickTextured.uniforms["u_mtxPivot"], false, FudgeCore.Matrix3x3.IDENTITY().get());
+                Gizmos.#camera = _cmpCamera;
+                Gizmos.posIcons.clear();
+                let picks = [];
+                for (let gizmo of _gizmos) {
+                    Gizmos.pickId = picks.length;
+                    gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
+                    let pick = new FudgeCore.Pick(gizmo.node);
+                    pick.gizmo = gizmo;
+                    picks.push(pick);
+                }
+                Gizmos.pickId = null;
+                return picks;
+            }
         }
         static drawWireFrustum(_aspect, _fov, _near, _far, _direction, _mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
             const f = Math.tan(FudgeCore.Calc.deg2rad * _fov / 2);
@@ -13087,14 +13153,43 @@ var FudgeCore;
             Gizmos.bufferMatrix(shader, _mtxWorld);
             Gizmos.drawGizmos(shader, Gizmos.drawElementsLines, indices.length, _color, _alphaOccluded);
         }
+        static drawArrow(_position, _color, _direction, _up, _length, _width, _size, _head = FudgeCore.MeshPyramid, _alphaOccluded = Gizmos.alphaOccluded) {
+            const scaling = FudgeCore.Recycler.reuse(FudgeCore.Vector3).set(_width, _width, _length - _size);
+            const mtxWorld = FudgeCore.Matrix4x4.COMPOSITION(_position);
+            mtxWorld.scaling = scaling;
+            mtxWorld.lookIn(_direction, _up);
+            mtxWorld.translateZ(0.5);
+            Gizmos.drawCube(mtxWorld, _color, _alphaOccluded);
+            mtxWorld.translateZ(0.5);
+            if (_head == FudgeCore.MeshPyramid) {
+                const widthHead = _size / 2;
+                mtxWorld.scaling = scaling.set(widthHead, widthHead, _size);
+                mtxWorld.rotateX(90);
+            }
+            else {
+                mtxWorld.scaling = scaling.set(_size, _size, _size);
+                mtxWorld.translateZ(0.5);
+            }
+            Gizmos.drawMesh(Gizmos.getMesh(_head), mtxWorld, _color, _alphaOccluded);
+            FudgeCore.Recycler.storeMultiple(mtxWorld, scaling);
+        }
         static drawCube(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
-            Gizmos.drawMesh(Gizmos.cube, _mtxWorld, _color, _alphaOccluded);
+            Gizmos.drawMesh(Gizmos.getMesh(FudgeCore.MeshCube), _mtxWorld, _color, _alphaOccluded);
         }
         static drawSphere(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
-            Gizmos.drawMesh(Gizmos.sphere, _mtxWorld, _color, _alphaOccluded);
+            Gizmos.drawMesh(Gizmos.getMesh(FudgeCore.MeshSphere), _mtxWorld, _color, _alphaOccluded);
+        }
+        static drawQuad(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
+            Gizmos.drawMesh(Gizmos.getMesh(FudgeCore.MeshQuad), _mtxWorld, _color, _alphaOccluded);
+        }
+        static drawSprite(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
+            Gizmos.drawMesh(Gizmos.getMesh(FudgeCore.MeshSprite), _mtxWorld, _color, _alphaOccluded);
+        }
+        static drawPyramid(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
+            Gizmos.drawMesh(Gizmos.getMesh(FudgeCore.MeshPyramid), _mtxWorld, _color, _alphaOccluded);
         }
         static drawMesh(_mesh, _mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
-            const shader = Gizmos.picking ? FudgeCore.ShaderPick : FudgeCore.ShaderGizmo;
+            const shader = Gizmos.#picking ? FudgeCore.ShaderPick : FudgeCore.ShaderGizmo;
             shader.useProgram();
             let renderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
             Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
@@ -13105,7 +13200,7 @@ var FudgeCore;
                 return;
             Gizmos.posIcons.add(position);
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
-            const shader = Gizmos.picking ? FudgeCore.ShaderPickTextured : FudgeCore.ShaderGizmoTextured;
+            const shader = Gizmos.#picking ? FudgeCore.ShaderPickTextured : FudgeCore.ShaderGizmoTextured;
             shader.useProgram();
             let mtxWorld = _mtxWorld.clone;
             let color = _color.clone;
@@ -13119,7 +13214,7 @@ var FudgeCore;
                 distance = (distance - fadeNear) / (fadeFar - fadeNear);
                 color.a = FudgeCore.Calc.lerp(0, color.a, distance);
             }
-            let renderBuffers = Gizmos.quad.useRenderBuffers(shader, mtxWorld, FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
+            let renderBuffers = Gizmos.getMesh(FudgeCore.MeshQuad).useRenderBuffers(shader, mtxWorld, FudgeCore.Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
             _texture.useRenderData(FudgeCore.TEXTURE_LOCATION.COLOR.UNIT);
             crc3.uniform1i(shader.uniforms[FudgeCore.TEXTURE_LOCATION.COLOR.UNIFORM], FudgeCore.TEXTURE_LOCATION.COLOR.INDEX);
             Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
@@ -13142,22 +13237,19 @@ var FudgeCore;
         }
         static drawGizmos(_shader, _draw, _count, _color, _alphaOccluded = Gizmos.alphaOccluded) {
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
-            let color = _color.clone;
-            Gizmos.bufferColor(_shader, color);
-            crc3.clear(WebGL2RenderingContext.STENCIL_BUFFER_BIT);
-            crc3.stencilFunc(WebGL2RenderingContext.ALWAYS, 1, 0xFF);
-            crc3.stencilOp(WebGL2RenderingContext.KEEP, WebGL2RenderingContext.KEEP, WebGL2RenderingContext.REPLACE);
-            crc3.enable(WebGL2RenderingContext.STENCIL_TEST);
+            if (_alphaOccluded > 0) {
+                let color = _color.clone;
+                color.a *= _alphaOccluded;
+                crc3.depthFunc(WebGL2RenderingContext.GEQUAL);
+                crc3.depthMask(false);
+                Gizmos.bufferColor(_shader, color);
+                _draw(_count);
+                crc3.depthFunc(WebGL2RenderingContext.LESS);
+                crc3.depthMask(true);
+                FudgeCore.Recycler.store(color);
+            }
+            Gizmos.bufferColor(_shader, _color);
             _draw(_count);
-            color.a *= _alphaOccluded;
-            Gizmos.bufferColor(_shader, color);
-            crc3.stencilFunc(WebGL2RenderingContext.EQUAL, 0, 0xFF);
-            crc3.stencilOp(WebGL2RenderingContext.KEEP, WebGL2RenderingContext.KEEP, WebGL2RenderingContext.KEEP);
-            FudgeCore.Render.setDepthTest(false);
-            _draw(_count);
-            FudgeCore.Render.setDepthTest(true);
-            crc3.disable(WebGL2RenderingContext.STENCIL_TEST);
-            FudgeCore.Recycler.store(color);
         }
         static drawElementsTrianlges(_count) {
             FudgeCore.RenderWebGL.getRenderingContext().drawElements(WebGL2RenderingContext.TRIANGLES, _count, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
@@ -13167,6 +13259,16 @@ var FudgeCore;
         }
         static drawArrays(_count) {
             FudgeCore.RenderWebGL.getRenderingContext().drawArrays(WebGL2RenderingContext.LINES, 0, _count);
+        }
+        static getMesh(_constructor) {
+            let key = _constructor.name;
+            let mesh = Gizmos.#meshes[key];
+            if (mesh)
+                return mesh;
+            mesh = new _constructor(key);
+            FudgeCore.Project.deregister(mesh);
+            Gizmos.#meshes[key] = mesh;
+            return mesh;
         }
     }
     FudgeCore.Gizmos = Gizmos;
@@ -13178,7 +13280,6 @@ var FudgeCore;
         static { this.nodesPhysics = new FudgeCore.RecycableArray(); }
         static { this.componentsPick = new FudgeCore.RecycableArray(); }
         static { this.lights = new Map(); }
-        static { this.gizmos = new FudgeCore.RecycableArray(); }
         static { this.nodesSimple = new FudgeCore.RecycableArray(); }
         static { this.nodesAlpha = new FudgeCore.RecycableArray(); }
         static { this.componentsSkeleton = new FudgeCore.RecycableArray(); }
@@ -13193,8 +13294,6 @@ var FudgeCore;
                 Render.componentsPick.reset();
                 Render.componentsSkeleton.reset();
                 Render.lights.forEach(_array => _array.reset());
-                if (_options?.gizmosEnabled)
-                    Render.gizmos.reset();
                 _branch.dispatchEvent(new Event("renderPrepareStart"));
             }
             if (!_branch.isActive)
@@ -13244,11 +13343,6 @@ var FudgeCore;
             for (let cmpSkeleton of cmpSkeletons)
                 if (cmpSkeleton && cmpSkeleton.isActive)
                     Render.componentsSkeleton.push(cmpSkeleton);
-            if (_options?.gizmosEnabled && _options?.gizmosFilter) {
-                for (const component of _branch.getAllComponents())
-                    if (component.isActive && _options.gizmosFilter.get(component.type))
-                        Render.gizmos.push(component);
-            }
             for (let child of _branch.getChildren()) {
                 Render.prepare(child, _options, _branch.mtxWorld, _shadersUsed);
                 _branch.nNodesInBranch += child.nNodesInBranch;
@@ -13280,31 +13374,8 @@ var FudgeCore;
                 lightsOfType.push(cmpLight);
             }
         }
-        static pickBranch(_nodes, _cmpCamera, _pickGizmos = false, _gizmosFilter) {
-            Render.ƒpicked = [];
-            let size = Math.ceil(Math.sqrt(_nodes.length + Render.gizmos.length));
-            Render.createPickTexture(size);
-            Render.setBlendMode(FudgeCore.BLEND.OPAQUE);
-            let gizmos = [];
-            for (let node of _nodes) {
-                let cmpMesh = node.getComponent(FudgeCore.ComponentMesh);
-                let cmpMaterial = node.getComponent(FudgeCore.ComponentMaterial);
-                if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive)
-                    Render.pick(node, _cmpCamera);
-                if (_pickGizmos && _gizmosFilter) {
-                    for (let gizmo of node.getAllComponents()) {
-                        if (!gizmo.isActive || !_gizmosFilter.get(gizmo.type) || !gizmo.drawGizmos)
-                            continue;
-                        gizmos.push(gizmo);
-                    }
-                }
-            }
-            if (_pickGizmos)
-                Render.pickGizmos(gizmos, _cmpCamera);
-            Render.setBlendMode(FudgeCore.BLEND.TRANSPARENT);
-            let picks = Render.getPicks(size, _cmpCamera);
-            Render.resetFramebuffer();
-            return picks;
+        static pick(_nodes, _cmpCamera) {
+            return Render.pickFrom(_nodes, _cmpCamera, super.pick);
         }
         static draw(_cmpCamera) {
             for (let node of Render.nodesAlpha)
@@ -13511,7 +13582,7 @@ var FudgeCore;
             this.adjustingCamera = true;
             this.physicsDebugMode = FudgeCore.PHYSICS_DEBUGMODE.NONE;
             this.gizmosEnabled = false;
-            this.gizmosFilter = new Map(FudgeCore.Component.subclasses
+            this.gizmosFilter = Object.fromEntries(FudgeCore.Component.subclasses
                 .filter((_class) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
                 .map((_class) => [_class.name, true]));
             this.componentsPick = new FudgeCore.RecycableArray();
@@ -13563,7 +13634,7 @@ var FudgeCore;
             if (this.physicsDebugMode != FudgeCore.PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY) {
                 FudgeCore.Render.draw(this.camera);
                 if (this.gizmosEnabled)
-                    FudgeCore.Gizmos.draw(this);
+                    FudgeCore.Gizmos.draw(this.getGizmos(), this.camera, this.gizmosSelected);
             }
             if (this.physicsDebugMode != FudgeCore.PHYSICS_DEBUGMODE.NONE) {
                 FudgeCore.Physics.draw(this.camera, this.physicsDebugMode);
@@ -13589,7 +13660,7 @@ var FudgeCore;
             if (this.#branch.getParent())
                 mtxRoot = this.#branch.getParent().mtxWorld;
             this.dispatchEvent(new Event("renderPrepareStart"));
-            FudgeCore.Render.prepare(this.#branch, { gizmosEnabled: this.gizmosEnabled, gizmosFilter: this.gizmosFilter }, mtxRoot);
+            FudgeCore.Render.prepare(this.#branch, {}, mtxRoot);
             this.dispatchEvent(new Event("renderPrepareEnd"));
             this.componentsPick = FudgeCore.Render.componentsPick;
         }
@@ -13604,7 +13675,7 @@ var FudgeCore;
                 else
                     otherPicks.push(cmpPick);
             if (cameraPicks.length) {
-                let picks = FudgeCore.Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient), this.gizmosEnabled, this.gizmosFilter);
+                let picks = FudgeCore.Picker.pickCamera(cameraPicks, this.camera, this.pointClientToProjection(posClient));
                 for (let pick of picks) {
                     Reflect.set(_event, "pick", pick);
                     pick.node.dispatchEvent(_event);
@@ -13693,6 +13764,11 @@ var FudgeCore;
         pointClientToScreen(_client) {
             let screen = new FudgeCore.Vector2(this.#canvas.offsetLeft + _client.x, this.#canvas.offsetTop + _client.y);
             return screen;
+        }
+        getGizmos(_nodes = Array.from(this.#branch.getIterator(true))) {
+            return _nodes
+                .flatMap(_node => _node.getAllComponents())
+                .filter(_component => _component.isActive && _component.drawGizmos && this.gizmosFilter[_component.type]);
         }
     }
     FudgeCore.Viewport = Viewport;
@@ -16341,17 +16417,15 @@ precision highp int;
  *  t == texture coordinate
  */
 
-uniform float u_width;
-uniform float u_height;
-uniform vec2 u_vctResolution;
+// uniform vec2 u_vctResolution;
 
 out vec2 v_vctTexture;
 
-#ifdef SAMPLE
+// #ifdef SAMPLE
 
-  flat out vec2[9] v_vctOffsets;
+//   flat out vec2[9] v_vctOffsets;
 
-#endif
+// #endif
 
 void main() {
   float x = float((gl_VertexID % 2) * 4); // 0, 4, 0
@@ -16359,16 +16433,16 @@ void main() {
   gl_Position = vec4(x - 1.0, y - 1.0, 0.0, 1.0); // (-1, -1), (3, -1), (-1, 3)
   v_vctTexture = vec2(x / 2.0, y / 2.0);  // (0, 0), (2, 0), (0, 2) -> interpolation will yield (0, 0), (1, 0), (0, 1) as the positions are double the size of the screen
 
-  #ifdef SAMPLE
+  // #ifdef SAMPLE
 
-    vec2 offset = vec2(1.0 / u_vctResolution.x, 1.0 / u_vctResolution.y);
-    v_vctOffsets = vec2[](
-      vec2(-offset.x, offset.y),  vec2(0.0, offset.y),  vec2(offset.x, offset.y),
-      vec2(-offset.x, 0.0),       vec2(0.0, 0.0),       vec2(offset.x, 0.0),
-      vec2(-offset.x, -offset.y), vec2(0.0, -offset.y),  vec2(offset.x, -offset.y)
-    );
+  //   vec2 offset = vec2(1.0 / u_vctResolution.x, 1.0 / u_vctResolution.y);
+  //   v_vctOffsets = vec2[](
+  //     vec2(-offset.x, offset.y),  vec2(0.0, offset.y),  vec2(offset.x, offset.y),
+  //     vec2(-offset.x, 0.0),       vec2(0.0, 0.0),       vec2(offset.x, 0.0),
+  //     vec2(-offset.x, -offset.y), vec2(0.0, -offset.y),  vec2(offset.x, -offset.y)
+  //   );
 
-  #endif
+  // #endif
 }`;
     FudgeCore.shaderSources["ShaderUniversal.frag"] = `#version 300 es
 /**
@@ -16815,9 +16889,9 @@ out vec4 v_vctColor;
     return mat4(xAxis.x, xAxis.y, xAxis.z, 0.0, yAxis.x, yAxis.y, yAxis.z, 0.0, zAxis.x, zAxis.y, zAxis.z, 0.0, _vctTranslation.x, _vctTranslation.y, _vctTranslation.z, 1.0);
   }
 
-  float fetchRandomNumber(int _iIndex, int _iParticleSystemRandomNumbersSize, int _iParticleSystemRandomNumbersLength) {
-    _iIndex = _iIndex % _iParticleSystemRandomNumbersLength;
-    return texelFetch(u_particleSystemRandomNumbers, ivec2(_iIndex % _iParticleSystemRandomNumbersSize, _iIndex / _iParticleSystemRandomNumbersSize), 0).r;
+  float fetchRandomNumber(int _iOffset, int _iParticleSystemRandomNumbersSize, int _iParticleSystemRandomNumbersLength) {
+    _iOffset = gl_InstanceID + _iOffset % _iParticleSystemRandomNumbersLength;
+    return texelFetch(u_particleSystemRandomNumbers, ivec2(_iOffset % _iParticleSystemRandomNumbersSize, _iOffset / _iParticleSystemRandomNumbersSize), 0).r;
   }
 
 #endif

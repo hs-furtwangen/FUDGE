@@ -293,17 +293,10 @@ namespace FudgeCore {
       if (found < 0)
         return false;
 
-      let previousParent: Node = _with.getParent();
-      if (previousParent)
-        previousParent.removeChild(_with);
+      _with.getParent()?.removeChild(_with);
+      this.removeChild(_replace);
 
-      _replace.parent = null;
-      this.children[found] = _with;
-      _with.parent = this;
-
-      _with.dispatchEvent(new Event(EVENT.CHILD_APPEND, { bubbles: true }));
-      if (this.isDescendantOf(AudioManager.default.getGraphListeningTo()))
-        _with.broadcastEvent(new Event(EVENT_AUDIO.CHILD_APPEND));
+      this.addChild(_with, found);
 
       return true;
     }
