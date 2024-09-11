@@ -14,6 +14,9 @@ namespace FudgeUserInterface {
     /** Used by the tree to indicate the drop position while dragging */
     public dragDropIndicator: HTMLHRElement = document.createElement("hr");
 
+    /** Override to enable tree items to be sortable by the user via drag-and-drop. Default is true. */
+    public sortable: boolean = true;
+
     /**
      * Override if some objects should not be draggable
      */

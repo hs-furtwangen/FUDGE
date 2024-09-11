@@ -302,7 +302,7 @@ namespace FudgeUserInterface {
       let upper: number = rect.top + rect.height * (1 / 4);
       let lower: number = rect.top + rect.height * (3 / 4);
       let offset: number = _event.clientY;
-      if (this.parentElement instanceof CustomTree || (offset > upper && (offset < lower || this.checkbox.checked))) {
+      if (this.parentElement instanceof CustomTree || (offset > upper && (offset < lower || this.checkbox.checked)) || !this.controller.sortable) {
         Reflect.set(_event, "dragProcessed", true);
         if (_event.type == EVENT.DRAG_OVER)
           this.controller.dragDropIndicator.remove();

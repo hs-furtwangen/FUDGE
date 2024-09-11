@@ -397,6 +397,7 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒUi = FudgeUserInterface;
     class ControllerTreeDirectory extends ƒUi.CustomTreeController<DirectoryEntry> {
+        sortable: boolean;
         createContent(_entry: DirectoryEntry): HTMLElement;
         setValue(_entry: DirectoryEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         getAttributes(_object: DirectoryEntry): string;
@@ -404,6 +405,7 @@ declare namespace Fudge {
         getChildren(_entry: DirectoryEntry): DirectoryEntry[];
         equals(_a: DirectoryEntry, _b: DirectoryEntry): boolean;
         delete(_focussed: DirectoryEntry[]): Promise<DirectoryEntry[]>;
+        canAddChildren(_sources: DirectoryEntry[], _target: DirectoryEntry): boolean;
         addChildren(_entries: DirectoryEntry[], _target: DirectoryEntry): DirectoryEntry[];
         copy(_originals: DirectoryEntry[]): Promise<DirectoryEntry[]>;
     }
