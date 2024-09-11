@@ -15,6 +15,9 @@ namespace Fudge {
     private node: ƒ.Node;
     private nodeLight: ƒ.Node = new ƒ.Node("Illumination"); // keeps light components for dark graphs
     private redrawId: number;
+
+    private transformator: ƒAid.Transformator;
+
     #pointerMoved: boolean = false;
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
@@ -38,19 +41,23 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
+      this.dom.addEventListener(ƒUi.EVENT.KEY_DOWN, this.hndKey);
       this.dom.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener("pointermove", this.hndPointer);
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
 
       if (_state["gizmosFilter"]) {
-        let gizmosFilter: Map<string, boolean> = new Map(_state["gizmosFilter"]);
-        for (const [key, value] of gizmosFilter)
-          if (this.gizmosFilter.has(key))
-            this.gizmosFilter.set(key, value);
+        let gizmosFilter: ƒ.Viewport["gizmosFilter"] = _state["gizmosFilter"];
+        for (const gizmo in gizmosFilter) // validate the saved state
+          if (gizmo in this.gizmosFilter)
+            this.gizmosFilter[gizmo] = gizmosFilter[gizmo];
       }
+
+      if (_state["renderContinuously"])
+        this.setRenderContinously(_state["renderContinuously"]);
     }
 
-    private get gizmosFilter(): Map<string, boolean> {
+    private get gizmosFilter(): ƒ.Viewport["gizmosFilter"] {
       return this.viewport?.gizmosFilter;
     }
 
@@ -59,12 +66,19 @@ namespace Fudge {
       const menu: Electron.Menu = new remote.Menu();
       let item: Electron.MenuItem;
 
-      item = new remote.MenuItem({ label: "Translate", id: TRANSFORM.TRANSLATE, click: _callback, accelerator: process.platform == "darwin" ? "T" : "T" });
+      item = new remote.MenuItem({
+        label: "Transform", submenu: [
+          { label: "None", id: TRANSFORM.NONE, type: "radio", click: _callback, accelerator: "Q" },
+          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: "W" },
+          { label: "Rotate", id: TRANSFORM.ROTATE, type: "radio", click: _callback, accelerator: "E" },
+          { label: "Scale", id: TRANSFORM.SCALE, type: "radio", click: _callback, accelerator: "R" },
+          { type: "separator" },
+          { label: "World", id: TRANSFORM.WORLD, type: "radio", click: _callback, accelerator: "G" },
+          { label: "Local", id: TRANSFORM.LOCAL, type: "radio", click: _callback, accelerator: "G" }
+        ]
+      });
       menu.append(item);
-      item = new remote.MenuItem({ label: "Rotate", id: TRANSFORM.ROTATE, click: _callback, accelerator: process.platform == "darwin" ? "R" : "R" });
-      menu.append(item);
-      item = new remote.MenuItem({ label: "Scale", id: TRANSFORM.SCALE, click: _callback, accelerator: process.platform == "darwin" ? "E" : "E" });
-      menu.append(item);
+
       item = new remote.MenuItem({
         label: "Physics Debug", submenu: [
           { "label": "None", id: String(ƒ.PHYSICS_DEBUGMODE[0]), click: _callback },
@@ -90,10 +104,17 @@ namespace Fudge {
       ƒ.Debug.info(`MenuSelect: Item-id=${_item.id}`);
 
       switch (_item.id) {
+        case TRANSFORM.NONE:
         case TRANSFORM.TRANSLATE:
         case TRANSFORM.ROTATE:
         case TRANSFORM.SCALE:
           Page.setTransform(_item.id);
+          this.transformator.mode = _item.id;
+          this.redraw();
+          break;
+        case TRANSFORM.WORLD:
+        case TRANSFORM.LOCAL:
+          this.transformator.space = _item.id;
           break;
         case ƒ.PHYSICS_DEBUGMODE[ƒ.PHYSICS_DEBUGMODE.NONE]:
         case ƒ.PHYSICS_DEBUGMODE[ƒ.PHYSICS_DEBUGMODE.COLLIDERS]:
@@ -111,10 +132,10 @@ namespace Fudge {
           this.setRenderContinously(_item.checked);
           break;
         default:
-          if (!this.gizmosFilter.has(_item.id))
+          if (!(_item.id in this.gizmosFilter))
             break;
 
-          this.gizmosFilter.set(_item.id, _item.checked);
+          this.gizmosFilter[_item.id] = _item.checked;
           this.redraw();
           break;
       }
@@ -122,8 +143,8 @@ namespace Fudge {
 
     protected openContextMenu = (_event: Event): void => {
       if (!this.#pointerMoved) {
-        for (const [filter, active] of this.gizmosFilter)
-          this.contextMenu.getMenuItemById(filter).checked = active;
+        for (const gizmo in this.gizmosFilter)
+          this.contextMenu.getMenuItemById(gizmo).checked = this.gizmosFilter[gizmo];
         this.contextMenu.popup();
       }
       this.#pointerMoved = false;
@@ -158,6 +179,13 @@ namespace Fudge {
       }
     }
 
+    protected getState(): ViewState {
+      let state: ViewState = super.getState();
+      state["gizmosFilter"] = this.gizmosFilter;
+      state["renderContinuously"] = this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked;
+      return state;
+    }
+
     private createUserInterface(): void {
       ƒAid.addStandardLightComponents(this.nodeLight);
 
@@ -170,23 +198,23 @@ namespace Fudge {
       this.viewport = new ƒ.Viewport();
       this.viewport.gizmosEnabled = true;
       // add default values for view render gizmos
-      this.gizmosFilter.set(GIZMOS.TRANSFORM, true);
-      this.viewport.initialize("ViewNode_Viewport", this.graph, cmpCamera, this.canvas);
-      try {
-        this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false);
-      } catch (_error: unknown) { /* view should load even if rendering fails... */ };
+      this.viewport.initialize("ViewNode_Viewport", null, cmpCamera, this.canvas);
+      const redraw = (): void => { if (this.redrawId == undefined && this.graph) this.redraw(); };
+      const translateOnPick = (): boolean => this.transformator.selected == null;
+
+      this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false, undefined, undefined, undefined, redraw, translateOnPick);
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.addEventListener(ƒ.EVENT.RENDER_PREPARE_START, this.hndPrepare);
-      this.viewport.addEventListener(ƒ.EVENT.RENDER_END, this.drawTranslation);
 
       this.setGraph(null);
 
+      this.transformator = new ƒAid.Transformator(this.viewport);
       this.canvas.addEventListener("pointerdown", this.activeViewport);
       this.canvas.addEventListener("pick", this.hndPick);
 
       let submenu: Electron.MenuItemConstructorOptions[] = [];
-      for (const [filter] of this.gizmosFilter)
-        submenu.push({ label: filter, id: filter, type: "checkbox", click: this.contextMenuCallback.bind(this) });
+      for (const gizmo in this.gizmosFilter)
+        submenu.push({ label: gizmo, id: gizmo, type: "checkbox", click: this.contextMenuCallback.bind(this) });
 
       this.contextMenu.append(new remote.MenuItem({
         label: "Gizmos", submenu: submenu
@@ -205,7 +233,6 @@ namespace Fudge {
       }
 
       this.graph = _node;
-
       ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
       ƒ.Physics.cleanup();
       this.graph.broadcastEvent(new Event(ƒ.EVENT.DISCONNECT_JOINT));
@@ -213,6 +240,9 @@ namespace Fudge {
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.setBranch(this.graph);
       this.viewport.camera = this.cmrOrbit.cmpCamera;
+      this.transformator.mtxLocal = null;
+      this.transformator.mtxWorld = null;
+      this.transformator.clearUndo();
       ƒ.Render.prepare(this.graph);
     }
 
@@ -254,6 +284,9 @@ namespace Fudge {
           }
           if (detail.node) {
             this.node = detail.node;
+            this.transformator.mtxLocal = this.node.mtxLocal;
+            this.transformator.mtxWorld = this.node.mtxWorld;
+
             this.viewport.gizmosSelected = [this.node];
           }
           break;
@@ -263,7 +296,6 @@ namespace Fudge {
           break;
         case EVENT_EDITOR.CLOSE:
           this.setRenderContinously(false);
-          this.viewport.removeEventListener(ƒ.EVENT.RENDER_END, this.drawTranslation);
           this.viewport.gizmosSelected = null;
           break;
         case EVENT_EDITOR.UPDATE:
@@ -273,11 +305,39 @@ namespace Fudge {
       this.redraw();
     };
 
+    private hndKey = (_event: KeyboardEvent): void => {
+      switch (_event.code) {
+        case ƒ.KEYBOARD_CODE.Q:
+          this.contextMenu.getMenuItemById(TRANSFORM.NONE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.W:
+          this.contextMenu.getMenuItemById(TRANSFORM.TRANSLATE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.E:
+          this.contextMenu.getMenuItemById(TRANSFORM.ROTATE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.R:
+          this.contextMenu.getMenuItemById(TRANSFORM.SCALE).click();
+          break;
+        case ƒ.KEYBOARD_CODE.G:
+          this.contextMenu.getMenuItemById(this.transformator.space == TRANSFORM.LOCAL ? TRANSFORM.WORLD : TRANSFORM.LOCAL).click();
+          break;
+        case ƒ.KEYBOARD_CODE.Y:
+          if (_event.ctrlKey) {
+            this.transformator.undo();
+            break;
+          }
+      }
+    };
+
     private hndPick = (_event: EditorEvent): void => {
-      let picked: ƒ.Node = _event.detail.node;
+      if (this.transformator.selected)
+        return;
+
+      let pick: ƒ.Pick = <ƒ.Pick>_event.detail;
 
       //TODO: watch out, two selects
-      this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: picked } });
+      this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: pick.node } });
       // this.dom.dispatchEvent(new CustomEvent(ƒUi.EVENT.SELECT, { bubbles: true, detail: { data: picked } }));
     };
 
@@ -292,7 +352,10 @@ namespace Fudge {
 
       this.dom.focus({ preventScroll: true });
       let restriction: string;
-      if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.X]))
+
+      if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.CTRL_LEFT, ƒ.KEYBOARD_CODE.CTRL_RIGHT]))
+        restriction = null;
+      else if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.X]))
         restriction = "x";
       else if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.Y]))
         restriction = "z";
@@ -325,6 +388,7 @@ namespace Fudge {
         this.viewport.draw();
       } catch (_error: unknown) {
         this.setRenderContinously(false);
+        ƒ.Debug.error(_error);
         // console.error(_error);
         //nop
       }
@@ -340,33 +404,6 @@ namespace Fudge {
         this.redrawId = null;
       }
       this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked = _on;
-    }
-
-    private drawTranslation = (): void => {
-      if (!this.node || !this.gizmosFilter.get(GIZMOS.TRANSFORM))
-        return;
-
-      const scaling: ƒ.Vector3 = ƒ.Vector3.ONE(ƒ.Vector3.DIFFERENCE(ƒ.Gizmos.camera.mtxWorld.translation, this.node.mtxWorld.translation).magnitude * 0.1);
-      const origin: ƒ.Vector3 = ƒ.Vector3.ZERO();
-      const vctX: ƒ.Vector3 = ƒ.Vector3.X(1);
-      const vctY: ƒ.Vector3 = ƒ.Vector3.Y(1);
-      const vctZ: ƒ.Vector3 = ƒ.Vector3.Z(1);
-      let mtxWorld: ƒ.Matrix4x4 = this.node.mtxWorld.clone;
-      mtxWorld.scaling = scaling;
-      let color: ƒ.Color = ƒ.Color.CSS("red");
-      ƒ.Gizmos.drawLines([origin, vctX], mtxWorld, color);
-      color.setCSS("lime");
-      ƒ.Gizmos.drawLines([origin, vctY], mtxWorld, color);
-      color.setCSS("blue");
-      ƒ.Gizmos.drawLines([origin, vctZ], mtxWorld, color);
-
-      ƒ.Recycler.storeMultiple(vctX, vctY, vctZ, origin, mtxWorld, color, scaling);
-    };
-
-    protected getState(): ViewState {
-      let state: ViewState = super.getState();
-      state["gizmosFilter"] = Array.from(this.gizmosFilter.entries());
-      return state;
     }
   }
 }

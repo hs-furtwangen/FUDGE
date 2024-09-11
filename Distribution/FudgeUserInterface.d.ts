@@ -654,7 +654,7 @@ declare namespace FudgeUserInterface {
         private hndDblClick;
         private hndChange;
         private hndDragStart;
-        private hndDrag;
+        private hndDragOver;
         private hndPointerUp;
         private hndRemove;
     }

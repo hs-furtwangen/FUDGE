@@ -15,7 +15,7 @@ namespace FudgeAid {
       return viewport;
     }
 
-    public static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus: boolean = true, _speedCameraRotation: number = 1, _speedCameraTranslation: number = 0.01, _speedCameraDistance: number = 0.001): CameraOrbit {
+    public static expandCameraToInteractiveOrbit(_viewport: ƒ.Viewport, _showFocus: boolean = true, _speedCameraRotation: number = 1, _speedCameraTranslation: number = 0.01, _speedCameraDistance: number = 0.001, _redraw: () => void = () => _viewport.draw(), _translateOnPick: () => boolean = () => true): CameraOrbit {
       // _viewport.setFocus(true);
       // _viewport.activatePointerEvent(ƒ.EVENT_POINTER.DOWN, true);
       // _viewport.activatePointerEvent(ƒ.EVENT_POINTER.UP, true);
@@ -73,7 +73,6 @@ namespace FudgeAid {
       const activePointers: Map<number, PointerEvent> = new Map();
       let prevPointer: PointerEvent;
       let prevDistance: number;
-
 
       redraw();
       return camera;
@@ -191,7 +190,9 @@ namespace FudgeAid {
         // camera.mtxLocal.translation = picks[0].posWorld;
         // // ƒ.Render.prepare(camera);
         // camera.positionCamera(posCamera);
-        camera.mtxLocal.translation = picks[0].posWorld;
+        // if (!(picks[0].gizmo instanceof ComponentTranslator))
+        if (_translateOnPick())
+          camera.mtxLocal.translation = picks[0].posWorld;
         redraw();
 
         _viewport.canvas.dispatchEvent(new CustomEvent("pick", { detail: picks[0], bubbles: true }));
@@ -218,7 +219,8 @@ namespace FudgeAid {
         if (focus)
           focus.mtxLocal.translation = camera.mtxLocal.translation;
         ƒ.Render.prepare(camera);
-        _viewport.draw();
+        _redraw();
+        // _viewport.draw();
       }
     }
   }

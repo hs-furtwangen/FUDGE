@@ -18,7 +18,8 @@
           "intensity": 0,
           "metallic": 0
         }
-      }
+      },
+      "alphaClip": 0.01
     }
   },
   "MeshCube|2023-11-13T11:55:20.977Z|84193": {
@@ -53,7 +54,8 @@
         "ƒ.CoatColored": {
           "color": "[1, 1, 1, 1]"
         }
-      }
+      },
+      "alphaClip": 0.01
     }
   },
   "Material|2023-11-30T14:32:25.187Z|98497": {
@@ -69,7 +71,8 @@
           "intensity": 0.7,
           "metallic": 0
         }
-      }
+      },
+      "alphaClip": 0.01
     }
   },
   "Material|2023-11-30T15:12:06.992Z|39015": {
@@ -81,7 +84,8 @@
         "ƒ.CoatTextured": {
           "color": "[1, 1, 1, 1]"
         }
-      }
+      },
+      "alphaClip": 0.01
     }
   },
   "ParticleSystem|2023-12-04T14:21:17.204Z|57904": {
@@ -121,7 +125,7 @@
             "code": "systemDuration / 1000"
           },
           {
-            "code": "randomRange(particleId, 1, 1.5)"
+            "code": "randomRange(1, 1.5)"
           },
           {
             "code": "mod(randomRange(particleId + 1, 0, systemDurationSeconds) + systemTimeSeconds, systemDurationSeconds)"
@@ -138,7 +142,7 @@
                 "value": 0
               },
               {
-                "code": "randomRange(particleId + 2, 0, 360)"
+                "code": "randomRange(0, 360)"
               }
             ]
           },
@@ -146,7 +150,7 @@
             "transformation": "translate",
             "parameters": [
               {
-                "code": "randomRange(particleId + 3, 0, 0.5)"
+                "code": "randomRange(0, 0.5)"
               }
             ]
           },
@@ -160,7 +164,7 @@
                 "value": 0
               },
               {
-                "code": "randomRange(particleId + 4, 0, -5)"
+                "code": "randomRange(0, -5)"
               }
             ]
           },
@@ -413,7 +417,8 @@
                     },
                     "light": {
                       "ƒ.LightDirectional": {
-                        "color": "[0.5294117647058824, 0.5294117647058824, 0.5294117647058824, 1]"
+                        "color": "[0.5294117647058824, 0.5294117647058824, 0.5294117647058824, 1]",
+                        "intensity": 1
                       }
                     },
                     "Component": {
@@ -430,7 +435,8 @@
                     },
                     "light": {
                       "ƒ.LightAmbient": {
-                        "color": "[0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1]"
+                        "color": "[0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1]",
+                        "intensity": 1
                       }
                     },
                     "Component": {

@@ -225,6 +225,31 @@ namespace FudgeCore {
       return rayWorld;
     }
 
+    /**
+     * Returns a scaling factor that, given a position in world space, 
+     * scales an object at that position so that one unit equals one (logical) pixel on the screen 
+     * when seen through this camera.
+     * e.g., after setting the scaling, 1 unit in the world equals one (logical) pixel on the screen.
+     */
+    public getWorldToPixelScale(_posWorld: Vector3): number {
+      let distance: number = this.mtxWorld.translation.getDistance(_posWorld);
+      let scale: number;
+      let rect: Rectangle = Render.getRenderRectangle();
+      switch (this.getDirection()) {
+        case FIELD_OF_VIEW.VERTICAL:
+          scale = 1 / rect.height * window.devicePixelRatio;
+          break;
+        case FIELD_OF_VIEW.HORIZONTAL:
+          scale = 1 / rect.width * window.devicePixelRatio;
+          break;
+        case FIELD_OF_VIEW.DIAGONAL:
+          scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
+          break;
+      }
+
+      return scale * distance;
+    }
+
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = {

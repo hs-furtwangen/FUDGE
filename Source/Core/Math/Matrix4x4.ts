@@ -147,7 +147,7 @@ namespace FudgeCore {
         _translation.z,
         1
       ]);
-      Recycler.storeMultiple(zAxis, xAxis, yAxis, vctCross);
+      Recycler.storeMultiple(zAxis, xAxis, vctCross); // don't store yAxis, it might be _up
       return mtxResult;
     }
 
@@ -477,6 +477,10 @@ namespace FudgeCore {
           Math.hypot(this.data[4], this.data[5], this.data[6]), //* (this.data[5] < 0 ? -1 : 1),
           Math.hypot(this.data[8], this.data[9], this.data[10]) // * (this.data[10] < 0 ? -1 : 1)
         );
+
+        // if (this.determinant < 0) // ⚠️EXPERMINETAL from three js: if determinant is negative, invert one scale
+        //   this.#scaling.x = -this.#scaling.x;
+
         this.#scalingDirty = false;
       }
       return this.#scaling;
@@ -500,6 +504,28 @@ namespace FudgeCore {
     }
     public set quaternion(_quaternion: Quaternion) {
       this.mutate({ "rotation": _quaternion });
+    }
+
+    /**
+     * Returns the determinant of this matrix. Computational heavy operation, not cached so use with care.
+     */
+    public get determinant(): number {
+      const m: Float32Array = this.data;
+
+      const det00: number = m[10] * m[15] - m[11] * m[14];
+      const det01: number = m[9] * m[15] - m[11] * m[13];
+      const det02: number = m[9] * m[14] - m[10] * m[13];
+      const det03: number = m[8] * m[15] - m[11] * m[12];
+      const det04: number = m[8] * m[14] - m[10] * m[12];
+      const det05: number = m[8] * m[13] - m[9] * m[12];
+
+      const det: number =
+        m[0] * (m[5] * det00 - m[6] * det01 + m[7] * det02) -
+        m[1] * (m[4] * det00 - m[6] * det03 + m[7] * det04) +
+        m[2] * (m[4] * det01 - m[5] * det03 + m[7] * det05) -
+        m[3] * (m[4] * det02 - m[5] * det04 + m[6] * det05);
+
+      return det;
     }
 
     /**
@@ -658,7 +684,11 @@ namespace FudgeCore {
     public translate(_by: Vector3, _local: boolean = true): Matrix4x4 {
       if (_local) {
         let mtxTranslation: Matrix4x4 = Matrix4x4.TRANSLATION(_by);
+        let rotationDirty: boolean = this.#rotationDirty; // preserve dirty flags for rotation and scaling as they are not affected by translation
+        let scalingDirty: boolean = this.#scalingDirty;
         this.multiply(mtxTranslation);
+        this.#rotationDirty = rotationDirty;
+        this.#scalingDirty = scalingDirty;
         Recycler.store(mtxTranslation);
       } else {
         this.data[12] += _by.x;
@@ -711,7 +741,7 @@ namespace FudgeCore {
      * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
      * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
      */
-    public rotate(_by: Vector3, _fromLeft: boolean = false): Matrix4x4 {
+    public rotate(_by: Vector3 | Quaternion, _fromLeft: boolean = false): Matrix4x4 {
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION(_by);
       this.multiply(mtxRotation, _fromLeft);
       Recycler.store(mtxRotation);
@@ -754,7 +784,7 @@ namespace FudgeCore {
      * The pitch may be restricted to the up-vector to only calculate yaw.
      */
     public lookAt(_target: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
-      _up = _up ? Vector3.NORMALIZATION(_up) : Vector3.NORMALIZATION(this.up);
+      _up = _up ? Vector3.NORMALIZATION(_up) : this.up;
 
       const mtxResult: Matrix4x4 = Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict);
       mtxResult.scale(this.scaling);
@@ -765,9 +795,9 @@ namespace FudgeCore {
 
     /**
      * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
-     * Up should be perpendicular to the given direction. If no up-vector is provided, (0, 1, 0) is used.
+     * Up should be perpendicular to the given direction. If no up-vector is provided, {@link up} is used.
      */
-    public lookIn(_direction: Vector3, _up: Vector3 = Vector3.Y()): Matrix4x4 {
+    public lookIn(_direction: Vector3, _up: Vector3 = this.up): Matrix4x4 {
       const mtxResult: Matrix4x4 = Matrix4x4.LOOK_IN(this.translation, _direction, _up);
       mtxResult.scale(this.scaling);
       this.set(mtxResult.data);
@@ -817,11 +847,10 @@ namespace FudgeCore {
     /**
      * Adds a scaling by the given {@link Vector3} to this matrix.
      */
-    public scale(_by: Vector3): Matrix4x4 {
+    public scale(_by: Vector3, _fromLeft: boolean = false): Matrix4x4 {
       const mtxScaling: Matrix4x4 = Matrix4x4.SCALING(_by);
-      const mtxResult: Matrix4x4 = Matrix4x4.PRODUCT(this, mtxScaling);
-      this.set(mtxResult.data);
-      Recycler.storeMultiple(mtxScaling, mtxResult);
+      this.multiply(mtxScaling, _fromLeft);
+      Recycler.store(mtxScaling);
       return this;
     }
 
@@ -916,6 +945,7 @@ namespace FudgeCore {
      */
     public copy(_original: Matrix4x4): Matrix4x4 {
       this.data.set(_original.data);
+      this.mutator = null;
       this.#translationDirty = _original.#translationDirty;
       this.#rotationDirty = _original.#rotationDirty;
       this.#scalingDirty = _original.#scalingDirty;

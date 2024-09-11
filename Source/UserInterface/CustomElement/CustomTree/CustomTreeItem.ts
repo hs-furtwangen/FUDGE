@@ -30,8 +30,8 @@ namespace FudgeUserInterface {
 
       this.draggable = this.controller.draggable(_data);
       this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
-      this.addEventListener(EVENT.DRAG_ENTER, this.hndDrag); // this prevents cursor from flickering
-      this.addEventListener(EVENT.DRAG_OVER, this.hndDrag);
+      this.addEventListener(EVENT.DRAG_ENTER, this.hndDragOver); // this prevents cursor from flickering
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
       this.addEventListener(EVENT.POINTER_UP, this.hndPointerUp);
       this.addEventListener(EVENT.REMOVE_CHILD, this.hndRemove);
     }
@@ -149,10 +149,10 @@ namespace FudgeUserInterface {
      * Removes the branch of children from this item
      */
     private removeBranch(): void {
-      let content: CustomTreeList<T> = this.getBranch();
-      if (!content)
+      let branch: CustomTreeList<T> = this.getBranch();
+      if (!branch)
         return;
-      this.removeChild(content);
+      this.removeChild(branch);
     }
 
     private create(): void {
@@ -180,21 +180,23 @@ namespace FudgeUserInterface {
 
     private hndKey = (_event: KeyboardEvent): void => {
       _event.stopPropagation();
-      if (!this.#content.disabled)
-        return;
 
-      let content: CustomTreeList<T> = <CustomTreeList<T>>this.querySelector("ul");
+      if (!this.#content.disabled) {
+        if (_event.code == ƒ.KEYBOARD_CODE.ESC || _event.code == ƒ.KEYBOARD_CODE.ENTER)
+          this.focus();
+
+        return;
+      }
 
       switch (_event.code) {
-        // TODO: repair arrow key navigation
         case ƒ.KEYBOARD_CODE.ARROW_RIGHT:
-          if (this.hasChildren && !content)
+          if (this.hasChildren && !this.expanded)
             this.expand(true);
           else
             this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_NEXT, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.ARROW_LEFT:
-          if (content)
+          if (this.expanded)
             this.expand(false);
           else
             this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
@@ -211,7 +213,7 @@ namespace FudgeUserInterface {
             break;
 
           this.#content.disabled = false;
-          element?.focus();
+          element.focus();
           break;
         case ƒ.KEYBOARD_CODE.SPACE:
           this.select(_event.ctrlKey, _event.shiftKey);
@@ -292,13 +294,16 @@ namespace FudgeUserInterface {
       _event.dataTransfer.setData("dragstart", "dragstart");
     };
 
-    private hndDrag = (_event: DragEvent): void => {
+    private hndDragOver = (_event: DragEvent): void => {
+      if (Reflect.get(_event, "dragProcessed"))
+        return;
+
       let rect: DOMRect = this.#content.getBoundingClientRect();
       let upper: number = rect.top + rect.height * (1 / 4);
       let lower: number = rect.top + rect.height * (3 / 4);
       let offset: number = _event.clientY;
       if (this.parentElement instanceof CustomTree || (offset > upper && (offset < lower || this.checkbox.checked))) {
-        _event.stopPropagation();
+        Reflect.set(_event, "dragProcessed", true);
         if (_event.type == EVENT.DRAG_OVER)
           this.controller.dragDropIndicator.remove();
         if (this.controller.canAddChildren(this.controller.dragDrop.sources, this.data)) {
