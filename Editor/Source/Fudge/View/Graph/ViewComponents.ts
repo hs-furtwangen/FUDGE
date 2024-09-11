@@ -278,7 +278,7 @@ namespace Fudge {
           let controller: ControllerDetail = Reflect.get(_event.target, "controller");
           let mutable: ƒ.Component = <ƒ.Component>controller.getMutable();
           if (mutable instanceof ƒ.ComponentRigidbody) {
-            mutable.initialize();
+            // mutable.initialize();  
             this.dispatch(EVENT_EDITOR.UPDATE, { bubbles: true, detail: { node: this.node } }); // TODO: check if this was necessary, EVENT_EDITOR.UPDATE gets broadcasted by project on ƒ.EVENT.GRAPH_MUTATED, so this was causing a double broadcast of EVENT_EDITOR.UPDATE to ALL views on any change to any component
           }
           break;
