@@ -220,6 +220,12 @@ namespace FudgeCore {
       return mutator;
     }
 
+    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
+      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
+      types.nameChildToConnect = "String";
+      return types;
+    }
+
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       if (typeof (_mutator.anchor) !== "undefined")
         this.anchor = new Vector3(...<number[]>(Object.values(_mutator.anchor)));
