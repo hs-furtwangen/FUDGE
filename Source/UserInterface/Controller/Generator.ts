@@ -52,8 +52,10 @@ namespace FudgeUserInterface {
         if (!element && type)
           element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
-        if (!element) // undefined values without a type can't be displayed
+        if (!element) { // undefined values without a type can't be displayed
+          console.warn("No interface created for ", _mutable.constructor.name, key);
           continue;
+        }
 
         div.appendChild(element);
       }
