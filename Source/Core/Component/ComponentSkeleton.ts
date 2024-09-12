@@ -104,7 +104,7 @@ namespace FudgeCore {
 
       const hndNodeDeserialized: EventListenerUnified = () => {
         this.bones = _serialization.bones.map((_path: string) => {
-          let bone: Node = Node.FIND(this, _path) as Node;
+          let bone: Node = Node.FIND(this, _path);
           if (!bone)
             throw new Error(`${Node.name} "${this.node.name}" ${ComponentSkeleton.name}: Could not find bone ${_path}`);
           return bone;
