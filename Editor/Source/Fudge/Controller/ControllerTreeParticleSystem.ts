@@ -227,13 +227,13 @@ namespace Fudge {
       return move;
     }
 
-    public async copy(_originals: ƒ.ParticleData.Recursive[]): Promise<ƒ.ParticleData.Recursive[]> {
-      let copies: (ƒ.ParticleData.Recursive)[] = [];
-      if (_originals.every(_original => ƒ.ParticleData.isExpression(_original)) || _originals.every(_original => ƒ.ParticleData.isTransformation(_original)))
-        _originals.forEach(_original => copies.push(JSON.parse(JSON.stringify(_original))));
+    // public async copy(_originals: ƒ.ParticleData.Recursive[]): Promise<ƒ.ParticleData.Recursive[]> {
+    //   let copies: (ƒ.ParticleData.Recursive)[] = [];
+    //   if (_originals.every(_original => ƒ.ParticleData.isExpression(_original)) || _originals.every(_original => ƒ.ParticleData.isTransformation(_original)))
+    //     _originals.forEach(_original => copies.push(JSON.parse(JSON.stringify(_original))));
 
-      return copies;
-    }
+    //   return copies;
+    // }
 
     public override draggable(_target: ƒ.ParticleData.Recursive): boolean {
       return ƒ.ParticleData.isExpression(_target) || ƒ.ParticleData.isTransformation(_target);

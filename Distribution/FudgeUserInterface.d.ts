@@ -707,6 +707,20 @@ declare namespace FudgeUserInterface {
          * @param _expendables The expendable objects
          */
         delete(_expendables: T[]): Promise<T[]>;
+        /**
+         * Refer items to the clipboard for copy & paste
+         * @param _focus The that has the focus and that will be copied if the selection is empty
+         */
+        copy(_focus: T, _operation: ClipOperation): T[];
+        /**
+         * Refer objects to the clipboard for copy & paste and delete them from this controller
+         * @param _focus The item that has the focus and that will be cut if the selection is empty
+         */
+        cut(_focus: T, _operation: ClipOperation): Promise<T[]>;
+        /**
+         * Retrieve objects from the clipboard, process and return them to add to the table
+         */
+        paste(_class?: new () => T): Promise<T[]>;
         /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
         abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
@@ -724,11 +738,6 @@ declare namespace FudgeUserInterface {
          * @param _target The object referenced by the item the drop occurs on
          */
         abstract addChildren(_sources: T[], _target: T, _index?: number): T[];
-        /**
-         * Return a list of copies of the objects given for copy & paste
-         * @param _focussed The object currently having focus
-         */
-        abstract copy(_originals: T[]): Promise<T[]>;
     }
 }
 declare namespace FudgeUserInterface {

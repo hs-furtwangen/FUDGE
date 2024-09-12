@@ -101,7 +101,7 @@ namespace Fudge {
         if (node instanceof ƒ.Graph)
           nodes.push(await ƒ.Project.createGraphInstance(node));
         else
-          nodes.push((await this.tree.controller.copy([node]))[0]);
+          nodes.push((this.tree.controller.copy(node, ƒUi.EVENT.COPY))[0]);
 
       this.tree.controller.dragDrop.sources = nodes;
       this.tree.dispatchEvent(new Event(ƒUi.EVENT.DROP, { bubbles: false }));

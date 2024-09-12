@@ -70,9 +70,9 @@ namespace Fudge {
       return move;
     }
 
-    public async copy(_originals: DirectoryEntry[]): Promise<DirectoryEntry[]> {
-      // copies can not be created at this point, but when copying the files. See addChildren
-      return _originals;
-    }
+    // public async copy(_originals: DirectoryEntry[]): Promise<DirectoryEntry[]> {
+    //   // copies can not be created at this point, but when copying the files. See addChildren
+    //   return _originals;
+    // }
   }
 }

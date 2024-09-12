@@ -150,15 +150,18 @@ namespace Fudge {
         if (expendable instanceof ResourceFolder) {
           let usage: string[] = [];
           for (const entry of expendable.entries)
-            usage.push(entry.name);
+            if (entry instanceof ResourceFolder)
+              usage.push(entry.name + " " + entry.type);
+            else
+              usage.push(entry.name + " " + entry.idResource);
 
           usages[expendables.indexOf(expendable) + " " + expendable.name] = usage;
         } else {
-          usages[expendable.idResource] = [];
+          let usage: string[] = usages[expendable.name + " " + expendable.idResource] = [];
           for (let resource of serializationStrings.keys())
             if (resource.idResource != expendable.idResource)
               if (serializationStrings.get(resource).indexOf(expendable.idResource) > -1)
-                usages[expendable.idResource].push(resource.name + " " + resource.type);
+                usage.push(resource.name + " " + resource.idResource);
         }
       }
 
@@ -194,8 +197,20 @@ namespace Fudge {
       }
     }
 
-    public async copy(_originals: ResourceEntry[]): Promise<ResourceEntry[]> {
-      return [];
+    /** 
+     * Retrieve objects from the clipboard, process and return them to add to the table   
+     */
+    public async paste(_class: new () => ResourceEntry = null): Promise<ResourceEntry[]> {
+      let objects: ResourceEntry[] = await super.paste();
+      return this.clone(objects);
+    }
+
+    public async clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]> {
+      let clones: ResourceEntry[] = [];
+      for (let resource of _originals)
+        if (!(resource instanceof ResourceFolder))
+          clones.push(await ƒ.Project.cloneResource(resource));
+      return clones;
     }
 
     public getPath(_resource: ResourceEntry): ResourceEntry[] {

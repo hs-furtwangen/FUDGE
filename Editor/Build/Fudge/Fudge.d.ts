@@ -419,7 +419,6 @@ declare namespace Fudge {
         delete(_focussed: DirectoryEntry[]): Promise<DirectoryEntry[]>;
         canAddChildren(_sources: DirectoryEntry[], _target: DirectoryEntry): boolean;
         addChildren(_entries: DirectoryEntry[], _target: DirectoryEntry): DirectoryEntry[];
-        copy(_originals: DirectoryEntry[]): Promise<DirectoryEntry[]>;
     }
 }
 declare namespace Fudge {
@@ -433,7 +432,6 @@ declare namespace Fudge {
         getChildren(_node: ƒ.Node): ƒ.Node[];
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
         addChildren(_children: ƒ.Node[], _target: ƒ.Node, _index?: number): ƒ.Node[];
-        copy(_originals: ƒ.Node[]): Promise<ƒ.Node[]>;
         canAddChildren(_sources: ƒ.Node[], _target: ƒ.Node): boolean;
     }
 }
@@ -452,7 +450,6 @@ declare namespace Fudge {
         getChildren(_data: ƒ.ParticleData.Recursive): ƒ.ParticleData.Recursive[];
         delete(_focused: (ƒ.ParticleData.Recursive)[]): Promise<ƒ.ParticleData.Recursive[]>;
         addChildren(_children: ƒ.ParticleData.Recursive[], _target: ƒ.ParticleData.Recursive, _at?: number): ƒ.ParticleData.Recursive[];
-        copy(_originals: ƒ.ParticleData.Recursive[]): Promise<ƒ.ParticleData.Recursive[]>;
         draggable(_target: ƒ.ParticleData.Recursive): boolean;
         generateNewVariableName(): string;
         private getKey;
@@ -489,7 +486,11 @@ declare namespace Fudge {
         getChildren(_entry: ResourceEntry): ResourceEntry[];
         addChildren(_sources: ResourceEntry[], _target: ResourceEntry, _index?: number): ResourceEntry[];
         delete(_focussed: ResourceEntry[]): Promise<ResourceEntry[]>;
-        copy(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;
+        /**
+         * Retrieve objects from the clipboard, process and return them to add to the table
+         */
+        paste(_class?: new () => ResourceEntry): Promise<ResourceEntry[]>;
+        clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;
         getPath(_resource: ResourceEntry): ResourceEntry[];
         remove(_resource: ResourceEntry): void;
     }

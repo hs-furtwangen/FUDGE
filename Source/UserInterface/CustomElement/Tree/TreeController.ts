@@ -48,6 +48,34 @@ namespace FudgeUserInterface {
       return _expendables;
     }
     
+    /** 
+     * Refer items to the clipboard for copy & paste   
+     * @param _focus The that has the focus and that will be copied if the selection is empty
+     */
+    public copy(_focus: T, _operation: ClipOperation): T[] {
+      let items: T[] = this.selection.length ? this.selection : [_focus];
+      Clipboard.copyPaste.set(items, _operation, null);
+      return items;
+    }
+    
+    /** 
+     * Refer objects to the clipboard for copy & paste and delete them from this controller   
+     * @param _focus The item that has the focus and that will be cut if the selection is empty
+     */
+    public async cut(_focus: T, _operation: ClipOperation): Promise<T[]> {
+      let items: T[] = this.copy(_focus, _operation);
+      items = await this.delete(items);
+      return items;
+    }
+
+    /** 
+     * Retrieve objects from the clipboard, process and return them to add to the table   
+     */
+    public async paste(_class: new () => T = null): Promise<T[]> {
+      let objects: T[] = Clipboard.copyPaste.get(_class, true); // possible to filter for only objects of specific type
+      return objects;
+    }
+
     /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
     public abstract createContent(_object: T): HTMLElement;
 
@@ -70,11 +98,5 @@ namespace FudgeUserInterface {
      * @param _target The object referenced by the item the drop occurs on
      */
     public abstract addChildren(_sources: T[], _target: T, _index?: number): T[];
-
-    /** 
-     * Return a list of copies of the objects given for copy & paste
-     * @param _focussed The object currently having focus
-     */
-    public abstract /* async */ copy(_originals: T[]): Promise<T[]>;
   }
 }

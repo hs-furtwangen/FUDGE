@@ -198,7 +198,7 @@ namespace FudgeUserInterface {
           this.controller.copy(this.getFocussed(), _event.type);
           break;
         case EVENT.CUT:
-          _event.stopPropagation();
+          _event.stopPropagation();  
           let cut: T[] = await this.controller.cut(this.getFocussed(), _event.type);
           if (cut.length)
             this.dispatchEvent(new Event(EVENT.REMOVE_CHILD, { bubbles: true }));
