@@ -224,7 +224,7 @@ namespace FudgeCore {
       let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
       types.nameChildToConnect = "String";
       return types;
-    }
+    } 
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       if (typeof (_mutator.anchor) !== "undefined")
