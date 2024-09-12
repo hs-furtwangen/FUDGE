@@ -670,7 +670,7 @@ namespace FudgeCore {
           // this.addEventListener(EVENT.COMPONENT_ACTIVATE, this.addRigidbodyToWorld);
           this.addEventListener(EVENT.COMPONENT_DEACTIVATE, this.removeRigidbodyFromWorld);
           // this.node.addEventListener(EVENT.NODE_ACTIVATE, this.addRigidbodyToWorld, true); // use capture to react to broadcast!
-          this.node.addEventListener(EVENT.NODE_DEACTIVATE, this.removeRigidbodyFromWorld, true);
+          this.node.addEventListener(EVENT.NODE_DEACTIVATE, this.hndNodeDeactivate, true);
           if (!this.node.cmpTransform)
             Debug.warn("ComponentRigidbody attached to node missing ComponentTransform", this.node);
           break;
@@ -678,7 +678,7 @@ namespace FudgeCore {
           // this.removeEventListener(EVENT.COMPONENT_ADD, this.addRigidbodyToWorld);
           this.removeEventListener(EVENT.COMPONENT_REMOVE, this.removeRigidbodyFromWorld);
           // this.node.removeEventListener(EVENT.NODE_ACTIVATE, this.addRigidbodyToWorld, true); // use capture to react to broadcast!
-          this.node.removeEventListener(EVENT.NODE_DEACTIVATE, this.removeRigidbodyFromWorld, true);
+          this.node.removeEventListener(EVENT.NODE_DEACTIVATE, this.hndNodeDeactivate, true);
           this.removeRigidbodyFromWorld();
           break;
         case EVENT.NODE_DESERIALIZED:
@@ -819,12 +819,21 @@ namespace FudgeCore {
         Physics.addRigidbody(this);
     };
 
+    /**
+     * Capture only events that are broadcast to this node directly. Don't capture events that get send to descendants
+     */
+    private hndNodeDeactivate = (_event: Event): void => {
+      if (_event.target != this.node)
+        return;
+
+      this.removeRigidbodyFromWorld();
+    };
+
     /** Removing this ComponentRigidbody from the Physiscs.world taking the informations from the oimoPhysics system */
     private removeRigidbodyFromWorld = (): void => {
       Physics.removeRigidbody(this);
       this.isInitialized = false;
     };
-
 
     //#region private EVENT functions
     //Calculating the center of a collision as a singular point - in case there is more than one point - by getting the geometrical center of all colliding points
