@@ -143,35 +143,42 @@ namespace Fudge {
       let serializations: ƒ.SerializationOfResources = ƒ.Project.serialize();
       let serializationStrings: Map<ƒ.SerializableResource, string> = new Map();
       let usages: ƒ.Mutator = {};
+      let dependency: Map<ResourceEntry, ResourceEntry[]> = new Map();
       for (let idResource in serializations)
         serializationStrings.set(ƒ.Project.resources[idResource], JSON.stringify(serializations[idResource]));
 
       for (let expendable of expendables) {
-        if (expendable instanceof ResourceFolder) {
-          let usage: string[] = [];
-          for (const entry of expendable.entries)
-            if (entry instanceof ResourceFolder)
-              usage.push(entry.name + " " + entry.type);
-            else
-              usage.push(entry.name + " " + entry.idResource);
-
-          usages[expendables.indexOf(expendable) + " " + expendable.name] = usage;
-        } else {
-          let usage: string[] = usages[expendable.name + " " + expendable.idResource] = [];
+        if (expendable instanceof ResourceFolder)
+          dependency.set(expendable, expendable.entries)
+        else {
+          let depend: ResourceEntry[] = [];
           for (let resource of serializationStrings.keys())
             if (resource.idResource != expendable.idResource)
               if (serializationStrings.get(resource).indexOf(expendable.idResource) > -1)
-                usage.push(resource.name + " " + resource.idResource);
+                depend.push(resource);
+          dependency.set(expendable, depend)
         }
       }
+
+      for (let expendable of expendables) {
+        let usage: string[] = usages[expendables.indexOf(expendable) + ". " + expendable.name + " " + expendable.type] = [];
+        for (let dependend of dependency.get(expendable))
+          if (expendable instanceof ResourceFolder) {
+            if (dependend instanceof ResourceFolder)
+              usage.push(". " + dependend.name + " " + dependend.type);
+            else
+              usage.push(". " + dependend.name + " " + dependend.idResource);
+          } else
+            usage.push(". " + dependend.name + " " + (<ResourceFile>dependend).idResource);
+      }
+
 
       if (expendables.length > 0 && await openDialog()) {
         let deleted: ResourceEntry[] = [];
 
-        for (const selected of expendables) {
-          let key: string = selected instanceof ResourceFolder ? this.selection.indexOf(selected) + " " + selected.name : selected.idResource;
-          if (usages[key].length == 0)  // delete only unused
-            deleted.push(selected);
+        for (const expendable of expendables) {
+          if (dependency.get(expendable).length == 0)
+            deleted.push(expendable);
         }
 
         for (let resource of deleted) {

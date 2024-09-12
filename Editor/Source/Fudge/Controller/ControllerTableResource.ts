@@ -60,24 +60,33 @@ namespace Fudge {
       let serializations: ƒ.SerializationOfResources = ƒ.Project.serialize();
       let serializationStrings: Map<ƒ.SerializableResource, string> = new Map();
       let usages: ƒ.Mutator = {};
+      let dependency: Map<ƒ.SerializableResource, ƒ.SerializableResource[]> = new Map();
       for (let idResource in serializations)
         serializationStrings.set(ƒ.Project.resources[idResource], JSON.stringify(serializations[idResource]));
 
       for (let expendable of expendables) {
-        usages[expendable.idResource] = [];
+        let depend: ƒ.SerializableResource[] = [];
         for (let resource of serializationStrings.keys())
           if (resource.idResource != expendable.idResource)
             if (serializationStrings.get(resource).indexOf(expendable.idResource) > -1)
-              usages[expendable.idResource].push(resource.name + " " + resource.type);
+              depend.push(resource);
+        dependency.set(expendable, depend);
+      }
+
+      for (let expendable of expendables) {
+        let usage: string[] = usages[expendables.indexOf(expendable) + ". " + expendable.name + " " + expendable.type] = [];
+        for (let dependend of dependency.get(expendable))
+          usage.push(". " + dependend.name + " " + dependend.idResource);
       }
 
       if (await openDialog()) {
         let deleted: ƒ.SerializableResource[] = [];
-        for (let usage in usages)
-          if (usages[usage].length == 0) { // delete only unused
-            deleted.push(ƒ.Project.resources[usage]);
-            ƒ.Project.deregister(ƒ.Project.resources[usage]);
+        for (const expendable of expendables) {
+          if (dependency.get(expendable).length == 0) {
+            deleted.push(expendable);
+            ƒ.Project.deregister(ƒ.Project.resources[expendable.idResource]);
           }
+        }
         return deleted;
       }
 

@@ -35,16 +35,6 @@ fudge-boolean input[type="checkbox"]:checked:before {
   -webkit-mask: url(../Html/Icon/SwitchOn.svg);
 }
 
-
-details>summary::after {
-  margin-right: 0px;
-  margin-left: 5px;
-  /* default icon for scripts */
-  mask: url(../Html/Icon/Script.svg);
-  -webkit-mask: url(../Html/Icon/Script.svg);
-  vertical-align: bottom;
-}
-
 /* View controls */
 .lm_controls .lm_close::before {
   mask: url(../Html/Icon/Close.svg);
@@ -211,6 +201,19 @@ div.lm_tab[title^="Curves"]::before {
 }
 
 /* Properties */
+details>summary::after {
+  margin-right: 0px;
+  margin-left: 5px;
+  /* default icon for scripts */
+  mask: url(../Html/Icon/Script.svg);
+  -webkit-mask: url(../Html/Icon/Script.svg);
+  vertical-align: bottom;
+}
+
+details[type=Details]>summary::after {
+  width: 0px;
+}
+
 details[key^=coat]>summary::after {
   /* show no icon for coat */
   width: 0px;
