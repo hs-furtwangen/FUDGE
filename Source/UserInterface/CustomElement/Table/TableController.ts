@@ -16,10 +16,12 @@ namespace FudgeUserInterface {
 
     /** 
      * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and 
-     * return a list of those objects in order for the according [[TableItems]] to be deleted also   
+     * return a list of those objects in order for the according {@link TableItems} to be deleted also   
      * @param _expendables The expendable objects 
      */
-    public async delete(_expendables: T[]): Promise<T[]> { return _expendables; }
+    public async delete(_expendables: T[]): Promise<T[]> {
+      return _expendables;
+    }
 
     /** 
      * Refer items to the clipboard for copy & paste   

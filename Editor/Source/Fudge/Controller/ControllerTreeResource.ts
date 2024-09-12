@@ -22,10 +22,10 @@ namespace Fudge {
      * Returns true if this or any of its descendants contain the given resource.
      */
     public contains(_resource: ƒ.SerializableResource): boolean {
-      for (let entry of this.entries) 
+      for (let entry of this.entries)
         if (entry == _resource || entry instanceof ResourceFolder && entry.contains(_resource))
           return true;
-      
+
       return false;
     }
 
@@ -130,10 +130,15 @@ namespace Fudge {
     }
 
     public async delete(_focussed: ResourceEntry[]): Promise<ResourceEntry[]> {
-      // TODO: add delete selection isntead of _focussed? Why doesn't the Tree class handle this?
-      let iRoot: number = _focussed.indexOf(project.resourceFolder);
+      // TODO: add delete selection instead of _focussed? Why doesn't the Tree class handle this? -> delete might be used in other context...
+
+      let expendables: ResourceEntry[] = this.selection.slice();
+      if (expendables.length == 0)
+        expendables = _focussed.slice();
+
+      let iRoot: number = expendables.indexOf(project.resourceFolder);
       if (iRoot > -1)
-        _focussed.splice(iRoot, 1);
+        expendables.splice(iRoot, 1);
 
       let serializations: ƒ.SerializationOfResources = ƒ.Project.serialize();
       let serializationStrings: Map<ƒ.SerializableResource, string> = new Map();
@@ -141,13 +146,13 @@ namespace Fudge {
       for (let idResource in serializations)
         serializationStrings.set(ƒ.Project.resources[idResource], JSON.stringify(serializations[idResource]));
 
-      for (let expendable of _focussed) {
+      for (let expendable of expendables) {
         if (expendable instanceof ResourceFolder) {
           let usage: string[] = [];
           for (const entry of expendable.entries)
             usage.push(entry.name);
 
-          usages[_focussed.indexOf(expendable) + " " + expendable.name] = usage;
+          usages[expendables.indexOf(expendable) + " " + expendable.name] = usage;
         } else {
           usages[expendable.idResource] = [];
           for (let resource of serializationStrings.keys())
@@ -157,10 +162,10 @@ namespace Fudge {
         }
       }
 
-      if (_focussed.length > 0 && await openDialog()) {
+      if (expendables.length > 0 && await openDialog()) {
         let deleted: ResourceEntry[] = [];
 
-        for (const selected of _focussed) {
+        for (const selected of expendables) {
           let key: string = selected instanceof ResourceFolder ? this.selection.indexOf(selected) + " " + selected.name : selected.idResource;
           if (usages[key].length == 0)  // delete only unused
             deleted.push(selected);

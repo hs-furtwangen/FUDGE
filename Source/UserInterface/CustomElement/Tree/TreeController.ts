@@ -39,6 +39,15 @@ namespace FudgeUserInterface {
       return true;
     }
 
+    /** 
+     * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and 
+     * return a list of those objects in order for the according {@link TreeItems} to be deleted also   
+     * @param _expendables The expendable objects 
+     */
+    public async delete(_expendables: T[]): Promise<T[]> {
+      return _expendables;
+    }
+    
     /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
     public abstract createContent(_object: T): HTMLElement;
 
@@ -61,13 +70,6 @@ namespace FudgeUserInterface {
      * @param _target The object referenced by the item the drop occurs on
      */
     public abstract addChildren(_sources: T[], _target: T, _index?: number): T[];
-
-    /** 
-     * Remove the objects to be deleted, e.g. the current selection, from the data structure the tree refers to and 
-     * return a list of those objects in order for the according {@link TreeItem} to be deleted also   
-     * @param _focussed The object currently having focus
-     */
-    public abstract delete(_focussed: T[]): Promise<T[]>;
 
     /** 
      * Return a list of copies of the objects given for copy & paste
