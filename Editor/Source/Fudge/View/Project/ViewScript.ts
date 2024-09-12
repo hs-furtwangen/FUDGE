@@ -39,7 +39,7 @@ namespace Fudge {
     }
 
     public getDragDropSources(): ScriptInfo[] {
-      return this.table.controller.dragDrop.sources;
+      return ƒui.Clipboard.dragDrop.get();
     }
 
     // #region  ContextMenu
