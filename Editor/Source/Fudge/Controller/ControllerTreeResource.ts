@@ -208,7 +208,7 @@ namespace Fudge {
      */
     public async paste(_class: new () => ResourceEntry = null): Promise<ResourceEntry[]> {
       let objects: ResourceEntry[] = await super.paste();
-      return this.clone(objects);
+      return await this.clone(objects);
     }
 
     public async clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]> {

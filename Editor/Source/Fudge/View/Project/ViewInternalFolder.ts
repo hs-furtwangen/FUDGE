@@ -34,6 +34,8 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.REMOVE_CHILD, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.RENAME, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.SELECT, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.CUT, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
 
       this.dom.addEventListener("keyup", this.hndKeyboardEvent);
@@ -350,6 +352,8 @@ namespace Fudge {
           this.dispatchToParent(EVENT_EDITOR.DELETE, {});
           break;
         case ƒui.EVENT.RENAME:
+        case ƒui.EVENT.CUT:
+        case ƒui.EVENT.PASTE:
           this.dispatchToParent(EVENT_EDITOR.UPDATE, { bubbles: true, detail: _event.detail });
           break;
       }

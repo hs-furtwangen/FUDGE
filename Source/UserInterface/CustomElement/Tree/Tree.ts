@@ -181,13 +181,15 @@ namespace FudgeUserInterface {
           this.controller.copy(this.getFocussed(), _event.type);
           break;
         case EVENT.CUT:
-          let cut: T[] = await this.controller.cut(this.getFocussed(), _event.type);          
+          let cut: T[] = await this.controller.cut(this.getFocussed(), _event.type);
           // let cut: T[] = await this.controller.delete(this.controller.selection);
           this.delete(cut);
           break;
         case EVENT.PASTE:
+          _event.stopPropagation();
           let objects: T[] = await this.controller.paste();
           this.addChildren(objects, target.data);
+          this.parentElement.dispatchEvent(new Event(EVENT.PASTE, { bubbles: true }));
           break;
       }
     };
