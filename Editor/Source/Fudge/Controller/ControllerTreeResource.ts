@@ -72,10 +72,9 @@ namespace Fudge {
     public createContent(_object: ResourceEntry): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");
       input.value = _object.name;
+      input.setAttribute("icon", _object.type);
 
       if (!(_object instanceof ResourceFolder)) {
-        input.setAttribute("icon", _object.type);
-
         if ((<ƒ.SerializableResourceExternal>_object).status == ƒ.RESOURCE_STATUS.ERROR) {
           input.classList.add("error");
           input.title = "Failed to load resource from file. Check the console for details.";
@@ -149,14 +148,14 @@ namespace Fudge {
 
       for (let expendable of expendables) {
         if (expendable instanceof ResourceFolder)
-          dependency.set(expendable, expendable.entries)
+          dependency.set(expendable, expendable.entries);
         else {
           let depend: ResourceEntry[] = [];
           for (let resource of serializationStrings.keys())
             if (resource.idResource != expendable.idResource)
               if (serializationStrings.get(resource).indexOf(expendable.idResource) > -1)
                 depend.push(resource);
-          dependency.set(expendable, depend)
+          dependency.set(expendable, depend);
         }
       }
 

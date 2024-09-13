@@ -20,14 +20,11 @@
      id="defs2" />
   <sodipodi:namedview
      id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="16"
-     inkscape:cx="-0.46875"
-     inkscape:cy="8.25"
+     inkscape:zoom="22.627417"
+     inkscape:cx="3.822796"
+     inkscape:cy="11.313708"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -41,7 +38,11 @@
      inkscape:showpageshadow="2"
      inkscape:deskcolor="#d1d1d1"
      showguides="true"
-     inkscape:lockguides="true">
+     inkscape:lockguides="true"
+     showborder="true"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25">
     <inkscape:grid
        id="grid1"
        units="px"
