@@ -350,7 +350,7 @@ namespace Fudge {
         case ƒui.EVENT.REMOVE_CHILD:
           _event.stopPropagation();
           this.dispatchToParent(EVENT_EDITOR.DELETE, {});
-          break;
+          // break;
         case ƒui.EVENT.RENAME:
         case ƒui.EVENT.CUT:
         case ƒui.EVENT.PASTE:
