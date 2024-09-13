@@ -150,6 +150,9 @@ namespace FudgeCore {
 
         let picks: Pick[] = [];
         for (let gizmo of _gizmos) {
+          if (!gizmo.drawGizmos)
+            continue;
+
           Gizmos.pickId = picks.length;
           gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
           let pick: Pick = new Pick(gizmo.node);
