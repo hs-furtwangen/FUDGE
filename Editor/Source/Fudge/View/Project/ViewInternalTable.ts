@@ -30,7 +30,6 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.RENAME, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
 
-      this.dom.addEventListener(ƒui.EVENT.COPY, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.CUT, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndEvent);
@@ -303,7 +302,6 @@ namespace Fudge {
           this.listResources();
           break;
         case ƒui.EVENT.RENAME:
-        case ƒui.EVENT.COPY:
         case ƒui.EVENT.CUT:
         case ƒui.EVENT.PASTE:
         case ƒui.EVENT.DROP:

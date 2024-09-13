@@ -204,10 +204,12 @@ namespace FudgeUserInterface {
             this.dispatchEvent(new Event(EVENT.REMOVE_CHILD, { bubbles: true }));
           break;
         case EVENT.PASTE:
+          _event.stopPropagation();
           let objects: T[] = await this.controller.paste();
           for (let object of objects) {
             let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
             this.appendChild(item);
+            this.parentElement.dispatchEvent(new Event(EVENT.PASTE, { bubbles: true }));
           }
           break;
       }
