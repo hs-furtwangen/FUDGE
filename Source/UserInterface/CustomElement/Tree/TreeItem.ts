@@ -30,11 +30,14 @@ namespace FudgeUserInterface {
 
       this.draggable = this.controller.draggable(_data);
       // this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
-      this.addEventListener(EVENT.DRAG_ENTER, this.hndDragOver); // this prevents cursor from flickering
-      this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
       this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
+      this.addEventListener(EVENT.DRAG_ENTER, this.hndDragOver); // this prevents cursor from flickering
       this.addEventListener(EVENT.DRAG_ENTER, this.hndDragDrop); // this prevents cursor from flickering
       this.addEventListener(EVENT.DRAG_OVER, this.hndDragDrop);
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
+
+      this.addEventListener(EVENT.DROP, this.hndDragDrop);
+
       this.addEventListener(EVENT.POINTER_UP, this.hndPointerUp);
       this.addEventListener(EVENT.REMOVE_CHILD, this.hndRemove);
     }
@@ -280,11 +283,12 @@ namespace FudgeUserInterface {
     };
 
     private hndDragDrop = (_event: DragEvent): void => {
-      if (_event.dataTransfer.getData("dragstart"))
+      // if (_event.type == EVENT.DROP)
+      //   debugger;
+      if (Reflect.get(_event, "item"))
         return;
       // store the dragged item in the event for further processing in table
       Reflect.set(_event, "item", this);
-      _event.dataTransfer.setData("dragstart", "dragstart");
     };
 
     // private hndDragStart = (_event: DragEvent): void => {
@@ -317,11 +321,9 @@ namespace FudgeUserInterface {
         Reflect.set(_event, "dragProcessed", true);
         if (_event.type == EVENT.DRAG_OVER)
           this.controller.dragDropIndicator.remove();
-        if (this.controller.canAddChildren(this.controller.dragDrop.sources, this.data)) {
+        if (this.controller.canAddChildren(Clipboard.dragDrop.get(), this.data)) {
           _event.preventDefault();
           _event.dataTransfer.dropEffect = "move";
-          this.controller.dragDrop.at = null;
-          this.controller.dragDrop.target = this.data;
         }
       }
     };

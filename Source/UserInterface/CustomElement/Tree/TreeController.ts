@@ -85,6 +85,14 @@ namespace FudgeUserInterface {
       let items: T[] = this.selection.indexOf(_focus) < 0 ? [_focus] : this.selection;
       Clipboard.dragDrop.set(items);
     }
+    
+    /** 
+     * Retrieve objects from the clipboard, and process and return them to add to the table   
+     */
+    public async drop(_class: new () => T = null): Promise<T[]> {
+      let objects: T[] = Clipboard.dragDrop.get(_class, true); // possible to filter for only objects of specific type
+      return objects;
+    }
 
     /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
     public abstract createContent(_object: T): HTMLElement;

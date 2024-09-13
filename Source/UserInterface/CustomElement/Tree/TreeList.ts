@@ -181,11 +181,6 @@ namespace FudgeUserInterface {
               targetItem.after(this.controller.dragDropIndicator);
         }
       }
-
-      this.controller.dragDrop.at = this.controller.dragDropIndicator.isConnected ?
-        Array.from(this.children).indexOf(this.controller.dragDropIndicator) :
-        this.controller.dragDrop.at = null;
-      this.controller.dragDrop.target = target;
     };
   }
 

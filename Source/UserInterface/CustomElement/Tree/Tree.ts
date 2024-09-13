@@ -32,11 +32,11 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.COPY, this.hndCopyPaste);
       this.addEventListener(EVENT.PASTE, this.hndCopyPaste);
       this.addEventListener(EVENT.CUT, this.hndCopyPaste);
-      
-      this.addEventListener(EVENT.DROP, this.hndDrop, true);
+
+      this.addEventListener(EVENT.DROP, this.hndDragDrop);
       this.addEventListener(EVENT.DRAG_LEAVE, this.hndDragLeave);
       this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
-      
+
       // @ts-ignore
       this.addEventListener(EVENT.FOCUS_NEXT, this.hndFocus);
       // @ts-ignore
@@ -155,7 +155,7 @@ namespace FudgeUserInterface {
 
     private hndDragDrop = async (_event: DragEvent): Promise<void> => {
       let item: TreeItem<T> = <TreeItem<T>>Reflect.get(_event, "item");
-      _event.dataTransfer.dropEffect = "none";
+      // _event.dataTransfer.dropEffect = "none";
 
       switch (_event.type) {
         case EVENT.DRAG_START:
@@ -167,20 +167,15 @@ namespace FudgeUserInterface {
           // _event.preventDefault();
           break;
         case EVENT.DROP:
-          // let objects: T[] = await this.controller.drop();
-          // for (let object of objects) {
-          //   let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
-          //   this.appendChild(item);
-          // }
+          let objects: T[] = await this.controller.drop();
+          let at: number = this.controller.dragDropIndicator.isConnected ?
+            Array.from(item.parentElement.children).indexOf(this.controller.dragDropIndicator) :
+            null;
+          this.addChildren(objects, item.data, at);
+          this.controller.dragDropIndicator.remove();
           break;
       }
     };
-
-    private hndDrop(_event: DragEvent): void {
-      this.addChildren(this.controller.dragDrop.sources, this.controller.dragDrop.target, this.controller.dragDrop.at);
-      this.controller.dragDrop.sources = [];
-      this.controller.dragDropIndicator.remove();
-    }
 
     private hndDragLeave = (_event: DragEvent): void => {
       let relatedTarget: EventTarget = _event.relatedTarget;

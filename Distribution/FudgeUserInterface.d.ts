@@ -658,7 +658,6 @@ declare namespace FudgeUserInterface {
         private createBranch;
         private hndSelect;
         private hndDragDrop;
-        private hndDrop;
         private hndDragLeave;
         private hndDelete;
         private hndEscape;
@@ -727,6 +726,10 @@ declare namespace FudgeUserInterface {
          * @param _focus The item that has the focus and that will be dragged if the selection is empty
          */
         dragStart(_focus: T): void;
+        /**
+         * Retrieve objects from the clipboard, and process and return them to add to the table
+         */
+        drop(_class?: new () => T): Promise<T[]>;
         /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
         abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
