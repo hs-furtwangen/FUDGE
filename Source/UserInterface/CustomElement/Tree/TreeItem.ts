@@ -29,9 +29,12 @@ namespace FudgeUserInterface {
       // this.addEventListener(EVENT_TREE.FOCUS_PREVIOUS, this.hndFocus);
 
       this.draggable = this.controller.draggable(_data);
-      this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
+      // this.addEventListener(EVENT.DRAG_START, this.hndDragStart);
       this.addEventListener(EVENT.DRAG_ENTER, this.hndDragOver); // this prevents cursor from flickering
       this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
+      this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
+      this.addEventListener(EVENT.DRAG_ENTER, this.hndDragDrop); // this prevents cursor from flickering
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragDrop);
       this.addEventListener(EVENT.POINTER_UP, this.hndPointerUp);
       this.addEventListener(EVENT.REMOVE_CHILD, this.hndRemove);
     }
@@ -276,23 +279,31 @@ namespace FudgeUserInterface {
         this.dispatchEvent(new CustomEvent(EVENT.RENAME, { bubbles: true, detail: { data: this.data } }));
     };
 
-    private hndDragStart = (_event: DragEvent): void => {
-      // _event.stopPropagation();
+    private hndDragDrop = (_event: DragEvent): void => {
       if (_event.dataTransfer.getData("dragstart"))
         return;
-
-      this.controller.dragDrop.sources = [];
-      if (this.selected)
-        this.controller.dragDrop.sources = this.controller.selection;
-      else
-        this.controller.dragDrop.sources = [this.data];
-      _event.dataTransfer.effectAllowed = "all";
-      _event.dataTransfer.setDragImage(document.createElement("img"), 0, 0);
-      this.controller.dragDrop.target = null;
-
-      // mark as already processed by this tree item to ignore it in further propagation through the tree
+      // store the dragged item in the event for further processing in table
+      Reflect.set(_event, "item", this);
       _event.dataTransfer.setData("dragstart", "dragstart");
     };
+
+    // private hndDragStart = (_event: DragEvent): void => {
+    //   // _event.stopPropagation();
+    //   // if (_event.dataTransfer.getData("dragstart"))
+    //   //   return;
+
+    //   this.controller.dragDrop.sources = [];
+    //   if (this.selected)
+    //     this.controller.dragDrop.sources = this.controller.selection;
+    //   else
+    //     this.controller.dragDrop.sources = [this.data];
+    //   _event.dataTransfer.effectAllowed = "all";
+    //   // _event.dataTransfer.setDragImage(document.createElement("img"), 0, 0);
+    //   this.controller.dragDrop.target = null;
+
+    //   // mark as already processed by this tree item to ignore it in further propagation through the tree
+    //   // _event.dataTransfer.setData("dragstart", "dragstart");
+    // };
 
     private hndDragOver = (_event: DragEvent): void => {
       if (Reflect.get(_event, "dragProcessed"))

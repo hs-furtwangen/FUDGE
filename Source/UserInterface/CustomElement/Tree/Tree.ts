@@ -26,13 +26,17 @@ namespace FudgeUserInterface {
 
       this.addEventListener(EVENT.EXPAND, this.hndExpand);
       this.addEventListener(EVENT.SELECT, this.hndSelect);
-      this.addEventListener(EVENT.DROP, this.hndDrop, true);
-      this.addEventListener(EVENT.DRAG_LEAVE, this.hndDragLeave);
       this.addEventListener(EVENT.DELETE, this.hndDelete);
       this.addEventListener(EVENT.ESCAPE, this.hndEscape);
+
       this.addEventListener(EVENT.COPY, this.hndCopyPaste);
       this.addEventListener(EVENT.PASTE, this.hndCopyPaste);
       this.addEventListener(EVENT.CUT, this.hndCopyPaste);
+      
+      this.addEventListener(EVENT.DROP, this.hndDrop, true);
+      this.addEventListener(EVENT.DRAG_LEAVE, this.hndDragLeave);
+      this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
+      
       // @ts-ignore
       this.addEventListener(EVENT.FOCUS_NEXT, this.hndFocus);
       // @ts-ignore
@@ -148,6 +152,29 @@ namespace FudgeUserInterface {
 
       this.displaySelection(<T[]>this.controller.selection);
     }
+
+    private hndDragDrop = async (_event: DragEvent): Promise<void> => {
+      let item: TreeItem<T> = <TreeItem<T>>Reflect.get(_event, "item");
+      _event.dataTransfer.dropEffect = "none";
+
+      switch (_event.type) {
+        case EVENT.DRAG_START:
+          _event.dataTransfer.effectAllowed = "all";
+          this.controller.dragStart(item.data);
+          break;
+        case EVENT.DRAG_OVER:
+          // _event.dataTransfer.dropEffect = this.controller.dragOver(_event);
+          // _event.preventDefault();
+          break;
+        case EVENT.DROP:
+          // let objects: T[] = await this.controller.drop();
+          // for (let object of objects) {
+          //   let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
+          //   this.appendChild(item);
+          // }
+          break;
+      }
+    };
 
     private hndDrop(_event: DragEvent): void {
       this.addChildren(this.controller.dragDrop.sources, this.controller.dragDrop.target, this.controller.dragDrop.at);

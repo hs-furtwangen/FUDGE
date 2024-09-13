@@ -47,7 +47,7 @@ namespace FudgeUserInterface {
     public async delete(_expendables: T[]): Promise<T[]> {
       return _expendables;
     }
-    
+
     /** 
      * Refer items to the clipboard for copy & paste   
      * @param _focus The that has the focus and that will be copied if the selection is empty
@@ -57,7 +57,7 @@ namespace FudgeUserInterface {
       Clipboard.copyPaste.set(items, _operation, null);
       return items;
     }
-    
+
     /** 
      * Refer objects to the clipboard for copy & paste and delete them from this controller   
      * @param _focus The item that has the focus and that will be cut if the selection is empty
@@ -74,6 +74,16 @@ namespace FudgeUserInterface {
     public async paste(_class: new () => T = null): Promise<T[]> {
       let objects: T[] = Clipboard.copyPaste.get(_class, true); // possible to filter for only objects of specific type
       return objects;
+    }
+
+    /** 
+     * Refer objects to the clipboard for drag & drop   
+     * @param _focus The item that has the focus and that will be dragged if the selection is empty
+     */
+    public dragStart(_focus: T): void {
+      // if the focussed item is in the selection, drag the whole selection
+      let items: T[] = this.selection.indexOf(_focus) < 0 ? [_focus] : this.selection;
+      Clipboard.dragDrop.set(items);
     }
 
     /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
