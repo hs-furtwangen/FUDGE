@@ -292,10 +292,13 @@ namespace Fudge {
     };
 
     private hndDelete = (): void => {
-      // remove resources that are no longer registered in the project
-      for (const descendant of this.resourceFolder)
+      const files: ResourceFile[] = []; // collect files that are no longer registered in the project
+      for (const descendant of this.resourceFolder) 
         if (!(descendant instanceof ResourceFolder) && !ƒ.Project.resources[descendant.idResource])
-          this.controller.remove(descendant);
+          files.push(descendant);
+
+      for (const file of files) // remove them 
+        this.controller.remove(file);
 
       this.hndUpdate();
     };
