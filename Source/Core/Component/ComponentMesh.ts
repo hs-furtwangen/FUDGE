@@ -97,11 +97,9 @@ namespace FudgeCore {
           const hndGraphDeserialized: EventListenerUnified = () => {
             this.skeleton = Node.FIND(this, _serialization.skeleton);
             this.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-            this.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
             this.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
           };
           this.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-          this.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
         };
         this.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
       }
