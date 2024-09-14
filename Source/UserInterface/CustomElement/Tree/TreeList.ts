@@ -155,7 +155,7 @@ namespace FudgeUserInterface {
     }
 
     private hndDrop = (_event: DragEvent): void => {
-      if (Reflect.get(_event, "index"))
+      if (Reflect.has(_event, "index"))
         return;
 
       let target: T = (<TreeItem<T>>this.parentElement).data;
