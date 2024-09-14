@@ -616,6 +616,7 @@ declare namespace FudgeUserInterface {
          */
         getExpanded(): TreeItem<T>[];
         [Symbol.iterator](): Iterator<TreeItem<T>>;
+        private hndDrop;
         private hndDragOver;
     }
 }

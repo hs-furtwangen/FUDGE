@@ -168,10 +168,9 @@ namespace FudgeUserInterface {
           break;
         case EVENT.DROP:
           let objects: T[] = await this.controller.drop();
-          let at: number = this.controller.dragDropIndicator.isConnected ?
-            Array.from(item.parentElement.children).indexOf(this.controller.dragDropIndicator) :
-            null;
-          this.addChildren(objects, item.data, at);
+          let index: number = Reflect.get(_event, "index");
+          let parent: T = Reflect.get(_event, "parent");
+          this.addChildren(objects, parent, index);
           this.controller.dragDropIndicator.remove();
           break;
       }

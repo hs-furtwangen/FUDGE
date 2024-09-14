@@ -11,6 +11,7 @@ namespace FudgeUserInterface {
       this.controller = _controller;
       this.addItems(_items);
       this.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
+      this.addEventListener(EVENT.DROP, this.hndDrop);
       this.className = "tree";
     }
 
@@ -32,7 +33,7 @@ namespace FudgeUserInterface {
         let item: TreeItem<T> = currentTree.findItem(data);
         if (!item)
           break;
-        
+
         if (!item.expanded)
           item.expand(true);
 
@@ -152,6 +153,17 @@ namespace FudgeUserInterface {
       for (let i: number = 0; i < items.length; i++)
         yield items[i];
     }
+
+    private hndDrop = (_event: DragEvent): void => {
+      if (Reflect.get(_event, "index"))
+        return;
+
+      let target: T = (<TreeItem<T>>this.parentElement).data;
+      Reflect.set(_event, "index", this.controller.dragDropIndicator.isConnected ?
+        Array.from(this.children).indexOf(this.controller.dragDropIndicator) :
+        null);
+      Reflect.set(_event, "parent", target);
+    };
 
     private hndDragOver = (_event: DragEvent): void => {
       if (Reflect.get(_event, "dragProcessed"))
