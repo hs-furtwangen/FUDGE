@@ -170,7 +170,7 @@ namespace FudgeUserInterface {
           let objects: T[] = await this.controller.drop();
           let index: number = Reflect.get(_event, "index");
           let parent: T = Reflect.get(_event, "parent");
-          this.addChildren(objects, parent, index);
+          this.addChildren(objects, index == null ? item.data : parent, index);
           this.controller.dragDropIndicator.remove();
           break;
       }
