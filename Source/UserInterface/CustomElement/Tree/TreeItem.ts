@@ -291,24 +291,6 @@ namespace FudgeUserInterface {
       Reflect.set(_event, "item", this);
     };
 
-    // private hndDragStart = (_event: DragEvent): void => {
-    //   // _event.stopPropagation();
-    //   // if (_event.dataTransfer.getData("dragstart"))
-    //   //   return;
-
-    //   this.controller.dragDrop.sources = [];
-    //   if (this.selected)
-    //     this.controller.dragDrop.sources = this.controller.selection;
-    //   else
-    //     this.controller.dragDrop.sources = [this.data];
-    //   _event.dataTransfer.effectAllowed = "all";
-    //   // _event.dataTransfer.setDragImage(document.createElement("img"), 0, 0);
-    //   this.controller.dragDrop.target = null;
-
-    //   // mark as already processed by this tree item to ignore it in further propagation through the tree
-    //   // _event.dataTransfer.setData("dragstart", "dragstart");
-    // };
-
     private hndDragOver = (_event: DragEvent): void => {
       if (Reflect.get(_event, "dragProcessed"))
         return;

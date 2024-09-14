@@ -63,7 +63,6 @@ namespace Fudge {
     }
 
     public getDragDropSources(): ƒ.SerializableResource[] {
-      // return this.table.controller.dragDrop.sources;
       return ƒui.Clipboard.dragDrop.get();
     }
 

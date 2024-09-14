@@ -172,11 +172,6 @@ namespace FudgeUserInterface {
       this.displaySelection(<T[]>this.controller.selection);
     }
 
-    // private hndDrop(_event: DragEvent): void {
-    //   // _event.stopPropagation();
-    //   // this.addChildren(this.controller.dragDrop.sources, this.controller.dragDrop.target);
-    // }
-
     private hndDelete = async (_event: Event): Promise<void> => {
       let target: TableItem<T> = <TableItem<T>>_event.target;
       _event.stopPropagation();

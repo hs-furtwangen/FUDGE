@@ -172,7 +172,7 @@ namespace FudgeUserInterface {
       Reflect.set(_event, "dragProcessed", true);
 
       let target: T = (<TreeItem<T>>this.parentElement).data;
-      if (target == null || !this.controller.canAddChildren(this.controller.dragDrop.sources, target))
+      if (target == null || !this.controller.canAddChildren(Clipboard.dragDrop.get(), target))
         return;
 
       _event.preventDefault();
