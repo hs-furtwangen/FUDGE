@@ -573,41 +573,6 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     /**
-     * View and edit a particle system attached to a node.
-     * @authors Jonas Plotzky, HFU, 2022
-     */
-    class ViewParticleSystem extends View {
-        static readonly PROPERTY_KEYS: (keyof ƒ.ParticleData.System)[];
-        private cmpParticleSystem;
-        private particleSystem;
-        private data;
-        private toolbar;
-        private toolbarIntervalId;
-        private timeScalePlay;
-        private tree;
-        private controller;
-        private errors;
-        private variables;
-        constructor(_container: ComponentContainer, _state: ViewState);
-        protected openContextMenu: (_event: Event) => void;
-        protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
-        protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
-        protected hndDragEnter(_event: DragEvent, _source: View): void;
-        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
-        protected hndDrop(_event: DragEvent, _viewSource: View): void;
-        private hndEvent;
-        private createToolbar;
-        private setTime;
-        private setTimeScale;
-        private setParticleSystem;
-        private validateData;
-        private enableSave;
-        private refreshVariables;
-    }
-}
-declare namespace Fudge {
-    import ƒ = FudgeCore;
-    /**
      * View and edit the animatable properties of a node with an attached component animation.
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022 | Jirka Dell'Oro-Friedl, HFU, 2023
      */
@@ -803,6 +768,41 @@ declare namespace Fudge {
         private activeViewport;
         private redraw;
         private setRenderContinously;
+    }
+}
+declare namespace Fudge {
+    import ƒ = FudgeCore;
+    /**
+     * View and edit a particle system attached to a node.
+     * @authors Jonas Plotzky, HFU, 2022
+     */
+    class ViewParticleSystem extends View {
+        static readonly PROPERTY_KEYS: (keyof ƒ.ParticleData.System)[];
+        private cmpParticleSystem;
+        private particleSystem;
+        private data;
+        private toolbar;
+        private toolbarIntervalId;
+        private timeScalePlay;
+        private tree;
+        private controller;
+        private errors;
+        private variables;
+        constructor(_container: ComponentContainer, _state: ViewState);
+        protected openContextMenu: (_event: Event) => void;
+        protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
+        protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
+        protected hndDragEnter(_event: DragEvent, _source: View): void;
+        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
+        protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        private hndEvent;
+        private createToolbar;
+        private setTime;
+        private setTimeScale;
+        private setParticleSystem;
+        private validateData;
+        private enableSave;
+        private refreshVariables;
     }
 }
 declare namespace Fudge {

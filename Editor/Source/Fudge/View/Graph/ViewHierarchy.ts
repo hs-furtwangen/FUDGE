@@ -65,10 +65,10 @@ namespace Fudge {
     }
 
     public getDragDropSources(): ƒ.Node[] {
-      return this.tree.controller.dragDrop.sources;
+      return ƒUi.Clipboard.dragDrop.get();
     }
     public getCopyPasteSources(): ƒ.Node[] {
-      return this.tree.controller.copyPaste.sources;
+      return ƒUi.Clipboard.copyPaste.get();
     }
 
 

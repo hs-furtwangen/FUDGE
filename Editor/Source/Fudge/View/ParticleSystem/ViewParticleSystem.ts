@@ -182,8 +182,8 @@ namespace Fudge {
       if (_viewSource != this)
         _event.dataTransfer.dropEffect = "none";
       
-      let source: Object = _viewSource.getDragDropSources()[0];
-      let isParticleSystem: boolean = _viewSource instanceof ViewHierarchy && source instanceof ƒ.Node && source.getComponent(ƒ.ComponentParticleSystem)?.particleSystem != null && !this.tree?.contains(<Node>_event.target);
+      let source: Object = ƒui.Clipboard.dragDrop.get()[0];
+      let isParticleSystem: boolean = source instanceof ƒ.Node && source.getComponent(ƒ.ComponentParticleSystem)?.particleSystem != null && !this.tree?.contains(<Node>_event.target);
 
       if (!isParticleSystem)
         return;
