@@ -10,10 +10,9 @@ declare namespace FudgeUserInterface {
         static copyPaste: Clipboard;
         objects: ƒ.General[];
         operation: ClipOperation;
-        source: Object;
-        get<T>(_class?: new () => T | Object, _filter?: boolean): T[];
+        get<T>(): T[];
         clear(): void;
-        set(_objects: Object[], _operation?: ClipOperation, _source?: Object): void;
+        set(_objects: Object[], _operation?: ClipOperation): void;
     }
 }
 declare namespace FudgeUserInterface {
@@ -511,7 +510,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve objects from the clipboard, process and return them to add to the table
          */
-        paste(_class?: new () => T): Promise<T[]>;
+        paste(): Promise<T[]>;
         /**
          * Refer objects to the clipboard for drag & drop
          * @param _focus The item that has the focus and that will be dragged if the selection is empty
@@ -524,7 +523,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve objects from the clipboard, and process and return them to add to the table
          */
-        drop(_class?: new () => T): Promise<T[]>;
+        drop(): Promise<T[]>;
         /** Retrieve a string to create a label for the table item representing the object (appears not to be called yet)  */
         abstract getLabel(_object: T): string;
         /** Return false if renaming of object is not possibile, or true if the object was renamed */
@@ -721,7 +720,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve objects from the clipboard, process and return them to add to the table
          */
-        paste(_class?: new () => T): Promise<T[]>;
+        paste(): Promise<T[]>;
         /**
          * Refer objects to the clipboard for drag & drop
          * @param _focus The item that has the focus and that will be dragged if the selection is empty
@@ -730,7 +729,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve objects from the clipboard, and process and return them to add to the table
          */
-        drop(_class?: new () => T): Promise<T[]>;
+        drop(): Promise<T[]>;
         /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
         abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */

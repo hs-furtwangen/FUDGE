@@ -54,7 +54,7 @@ namespace FudgeUserInterface {
      */
     public copy(_focus: T, _operation: ClipOperation): T[] {
       let items: T[] = this.selection.length ? this.selection : [_focus];
-      Clipboard.copyPaste.set(items, _operation, null);
+      Clipboard.copyPaste.set(items, _operation);
       return items;
     }
 
@@ -71,8 +71,8 @@ namespace FudgeUserInterface {
     /** 
      * Retrieve objects from the clipboard, process and return them to add to the table   
      */
-    public async paste(_class: new () => T = null): Promise<T[]> {
-      let objects: T[] = Clipboard.copyPaste.get(_class, true); // possible to filter for only objects of specific type
+    public async paste(): Promise<T[]> {
+      let objects: T[] = Clipboard.copyPaste.get(); // possible to filter for only objects of specific type
       return objects;
     }
 
@@ -89,8 +89,8 @@ namespace FudgeUserInterface {
     /** 
      * Retrieve objects from the clipboard, and process and return them to add to the table   
      */
-    public async drop(_class: new () => T = null): Promise<T[]> {
-      let objects: T[] = Clipboard.dragDrop.get(_class, true); // possible to filter for only objects of specific type
+    public async drop(): Promise<T[]> {
+      let objects: T[] = Clipboard.dragDrop.get(); // possible to filter for only objects of specific type
       return objects;
     }
 

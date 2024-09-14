@@ -56,7 +56,7 @@ namespace Fudge {
     }
 
     public getDragDropSources(): ƒ.SerializableResource[] {
-      return <ƒ.SerializableResource[]>this.controller.dragDrop.sources.filter(_source => !(_source instanceof ResourceFolder));
+      return ƒui.Clipboard.dragDrop.get<ƒ.SerializableResource>().filter(_source => !(_source instanceof ResourceFolder));
     }
 
     // TODO: this is a preparation for syncing a graph with its instances after structural changes
@@ -350,7 +350,7 @@ namespace Fudge {
         case ƒui.EVENT.REMOVE_CHILD:
           _event.stopPropagation();
           this.dispatchToParent(EVENT_EDITOR.DELETE, {});
-          // break;
+        // break;
         case ƒui.EVENT.RENAME:
         case ƒui.EVENT.CUT:
         case ƒui.EVENT.PASTE:
