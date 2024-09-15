@@ -343,7 +343,6 @@ declare namespace Fudge {
         private hndOpen;
         private hndCreate;
         private hndDelete;
-        private hndClone;
         private hndUpdate;
         private hndEvent;
         private expand;
@@ -433,6 +432,10 @@ declare namespace Fudge {
         * Retrieve objects from the clipboard, process and return them to add to the table
         */
         paste(): Promise<ƒ.Node[]>;
+        /**
+        * Retrieve objects from the clipboard, and process and return them to add to the tree
+        */
+        drop(): Promise<ƒ.Node[]>;
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
         addChildren(_children: ƒ.Node[], _target: ƒ.Node, _index?: number): ƒ.Node[];
         clone(_originals: ƒ.Node[]): Promise<ƒ.Node[]>;
@@ -725,7 +728,6 @@ declare namespace Fudge {
         setGraph(_graph: ƒ.Graph): void;
         getDragDropSources(): ƒ.Node[];
         getCopyPasteSources(): ƒ.Node[];
-        protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected getState(): ViewState;

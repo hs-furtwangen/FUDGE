@@ -72,24 +72,24 @@ namespace Fudge {
     }
 
 
-    protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void {
-      if (_viewSource == this)
-        return; // continue with standard tree behaviour
+    // protected hndDropCapture(_event: DragEvent, _viewSource: View): void {
+    //   if (_viewSource == this)
+    //     return; // continue with standard tree behaviour 
 
-      if (_viewSource instanceof ViewInternal) {
-        if (this.tree)
-          this.tree.controller.dragDrop.sources = _viewSource.getDragDropSources().filter((_source): _source is ƒ.Graph => _source instanceof ƒ.Graph);
-        return;
-      }
-      if (_viewSource instanceof ViewHierarchy) {
-        if (this.tree)
-          this.tree.controller.dragDrop.sources = _viewSource.getDragDropSources();//.filter((_source): _source is ƒ.Graph => _source instanceof ƒ.Graph);
-        return;
-      }
+    //   if (_viewSource instanceof ViewInternal) {
+    //     if (this.tree)
+    //       this.tree.controller.dragDrop.sources = _viewSource.getDragDropSources().filter((_source): _source is ƒ.Graph => _source instanceof ƒ.Graph);
+    //     return;
+    //   }
+    //   if (_viewSource instanceof ViewHierarchy) {
+    //     if (this.tree)
+    //       this.tree.controller.dragDrop.sources = _viewSource.getDragDropSources();//.filter((_source): _source is ƒ.Graph => _source instanceof ƒ.Graph);
+    //     return;
+    //   }
 
-      _event.dataTransfer.dropEffect = "none";
-      _event.stopPropagation();
-    }
+    //   _event.dataTransfer.dropEffect = "none";
+    //   _event.stopPropagation();
+    // }
 
 
     //#region  ContextMenu

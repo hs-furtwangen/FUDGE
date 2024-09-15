@@ -324,10 +324,6 @@ namespace Fudge {
       this.hndUpdate();
     };
 
-    private hndClone = (): void => {
-      //
-    };
-
     private hndUpdate = (): void => {
       this.tree.refresh();
       Object.values(ƒ.Project.resources)
