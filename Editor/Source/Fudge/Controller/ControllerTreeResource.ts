@@ -213,7 +213,9 @@ namespace Fudge {
 
     public dragOver(_event: DragEvent): ƒui.DROPEFFECT {
       let dropEffect: ƒui.DROPEFFECT = super.dragOver(_event);
-      if (dropEffect == "link")
+      if (View.getViewSource(_event) instanceof ViewExternal) {
+        dropEffect = "link";
+      } else if (dropEffect == "link")
         dropEffect = "copy";
       return dropEffect;
     }
