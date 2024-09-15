@@ -32,7 +32,7 @@ namespace Fudge {
       return rename;
     }
 
-    public async paste(_class: new () => ƒ.SerializableResource = null): Promise<ƒ.SerializableResource[]> {
+    public async paste(): Promise<ƒ.SerializableResource[]> {
       let objects: ƒ.SerializableResource[] = await super.paste();
       return this.clone(objects);
     }

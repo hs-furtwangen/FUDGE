@@ -731,7 +731,7 @@ declare namespace FudgeUserInterface {
          */
         dragOver(_event: DragEvent): DROPEFFECT;
         /**
-         * Retrieve objects from the clipboard, and process and return them to add to the table
+         * Retrieve objects from the clipboard, and process and return them to add to the tree
          */
         drop(): Promise<T[]>;
         /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */

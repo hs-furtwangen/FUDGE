@@ -206,7 +206,7 @@ namespace Fudge {
     /** 
      * Retrieve objects from the clipboard, process and return them to add to the table   
      */
-    public async paste(_class: new () => ResourceEntry = null): Promise<ResourceEntry[]> {
+    public async paste(): Promise<ResourceEntry[]> {
       let objects: ResourceEntry[] = await super.paste();
       return await this.clone(objects);
     }

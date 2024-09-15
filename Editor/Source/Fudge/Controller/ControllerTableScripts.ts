@@ -43,7 +43,7 @@ namespace Fudge {
     public delete(_focussed: ScriptInfo[]): Promise<ScriptInfo[]> { return null; }
     public clone(_originals: ScriptInfo[]): Promise<ScriptInfo[]> { return null; }
     // public copy(_objects: ScriptInfo[], _operation: ƒui.ClipOperation): ScriptInfo[] { /* */ }
-    public async paste(_class: new () => ScriptInfo = null): Promise<ScriptInfo[]> { return []; };
+    public async paste(): Promise<ScriptInfo[]> { return []; };
 
     public sort(_data: ScriptInfo[], _key: string, _direction: number): void {
       function compare(_a: ScriptInfo, _b: ScriptInfo): number {

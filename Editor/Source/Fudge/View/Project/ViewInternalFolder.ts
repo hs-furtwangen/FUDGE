@@ -229,7 +229,6 @@ namespace Fudge {
       if (!(_viewSource instanceof ViewExternal || _viewSource instanceof ViewHierarchy))
         return;
 
-      _event.stopPropagation();
       let resources: ƒ.SerializableResource[] = [];
       for (const source of _viewSource.getDragDropSources()) {
         if (source instanceof ƒ.Node) {
@@ -261,7 +260,6 @@ namespace Fudge {
       }
 
       ƒui.Clipboard.dragDrop.set(resources);
-      this.tree.dispatchEvent(new Event(ƒui.EVENT.DROP, { bubbles: false }));
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
       if (_viewSource instanceof ViewHierarchy)
         // //@ts-ignore

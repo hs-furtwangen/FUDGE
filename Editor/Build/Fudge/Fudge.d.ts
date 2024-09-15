@@ -376,7 +376,7 @@ declare namespace Fudge {
         getHead(): ƒui.TABLE[];
         getLabel(_object: ƒ.SerializableResource): string;
         rename(_object: ƒ.SerializableResource, _new: string): Promise<boolean>;
-        paste(_class?: new () => ƒ.SerializableResource): Promise<ƒ.SerializableResource[]>;
+        paste(): Promise<ƒ.SerializableResource[]>;
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         clone(_originals: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]>;
         delete(_focussed: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]>;
@@ -402,7 +402,7 @@ declare namespace Fudge {
         rename(_object: ScriptInfo, _new: string): Promise<boolean>;
         delete(_focussed: ScriptInfo[]): Promise<ScriptInfo[]>;
         clone(_originals: ScriptInfo[]): Promise<ScriptInfo[]>;
-        paste(_class?: new () => ScriptInfo): Promise<ScriptInfo[]>;
+        paste(): Promise<ScriptInfo[]>;
         sort(_data: ScriptInfo[], _key: string, _direction: number): void;
     }
 }
@@ -489,7 +489,7 @@ declare namespace Fudge {
         /**
          * Retrieve objects from the clipboard, process and return them to add to the table
          */
-        paste(_class?: new () => ResourceEntry): Promise<ResourceEntry[]>;
+        paste(): Promise<ResourceEntry[]>;
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;
         getPath(_resource: ResourceEntry): ResourceEntry[];
