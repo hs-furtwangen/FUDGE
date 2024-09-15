@@ -1,6 +1,6 @@
 namespace Fudge {
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
 
   /**
    * View the hierarchy of a graph as tree-control
@@ -8,7 +8,7 @@ namespace Fudge {
    */
   export class ViewHierarchy extends View {
     private graph: ƒ.Graph;
-    private tree: ƒUi.Tree<ƒ.Node>;
+    private tree: ƒui.Tree<ƒ.Node>;
     private selectionPrevious: ƒ.Node[] = [];
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
@@ -19,9 +19,9 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
-      this.dom.addEventListener(ƒUi.EVENT.PASTE, this.hndPaste, true);
-      this.dom.addEventListener(ƒUi.EVENT.COPY, this.hndPaste, true);
-      this.dom.addEventListener(ƒUi.EVENT.CUT, this.hndPaste, true);
+      // this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndPaste, true);
+      // this.dom.addEventListener(ƒui.EVENT.COPY, this.hndPaste, true);
+      // this.dom.addEventListener(ƒui.EVENT.CUT, this.hndPaste, true);
 
       // a select event will be recived from the panel during reconstruction so we only need to prepare our storage here
       if (_state["graph"] && _state["expanded"] && !this.restoreExpanded(_state["graph"]))
@@ -49,12 +49,12 @@ namespace Fudge {
       this.graph = _graph;
       // this.selectedNode = null;
 
-      this.tree = new ƒUi.Tree<ƒ.Node>(new ControllerTreeHierarchy(), this.graph);
-      // this.tree.addEventListener(ƒUi.EVENT.FOCUS_OUT, this.hndTreeEvent);
-      this.tree.addEventListener(ƒUi.EVENT.SELECT, this.hndTreeEvent);
-      this.tree.addEventListener(ƒUi.EVENT.DELETE, this.hndTreeEvent);
-      this.tree.addEventListener(ƒUi.EVENT.RENAME, this.hndTreeEvent);
-      this.tree.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
+      this.tree = new ƒui.Tree<ƒ.Node>(new ControllerTreeHierarchy(), this.graph);
+      // this.tree.addEventListener(ƒui.EVENT.FOCUS_OUT, this.hndTreeEvent);
+      this.tree.addEventListener(ƒui.EVENT.SELECT, this.hndTreeEvent);
+      this.tree.addEventListener(ƒui.EVENT.DELETE, this.hndTreeEvent);
+      this.tree.addEventListener(ƒui.EVENT.RENAME, this.hndTreeEvent);
+      this.tree.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.append(this.tree);
       this.dom.title = "● Right click on existing node to create child node.\n● Use Copy/Paste to duplicate nodes.";
       this.tree.title = "Select node to edit or duplicate.";
@@ -65,10 +65,10 @@ namespace Fudge {
     }
 
     public getDragDropSources(): ƒ.Node[] {
-      return ƒUi.Clipboard.dragDrop.get();
+      return ƒui.Clipboard.dragDrop.get();
     }
     public getCopyPasteSources(): ƒ.Node[] {
-      return ƒUi.Clipboard.copyPaste.get();
+      return ƒui.Clipboard.copyPaste.get();
     }
 
 
@@ -95,16 +95,16 @@ namespace Fudge {
       if (_viewSource == this || _event.target == this.tree)
         return; // continue with standard tree behaviour
 
-      _event.stopPropagation();
+      // _event.stopPropagation();
       let nodes: ƒ.Node[] = [];
       for (let node of this.tree.controller.dragDrop.sources)
         if (node instanceof ƒ.Graph)
           nodes.push(await ƒ.Project.createGraphInstance(node));
         else
-          nodes.push((this.tree.controller.copy(node, ƒUi.EVENT.COPY))[0]);
+          nodes.push((this.tree.controller.copy(node, ƒui.EVENT.COPY))[0]);
 
-      this.tree.controller.dragDrop.sources = nodes;
-      this.tree.dispatchEvent(new Event(ƒUi.EVENT.DROP, { bubbles: false }));
+      ƒui.Clipboard.dragDrop.set(nodes);
+      // this.tree.dispatchEvent(new Event(ƒui.EVENT.DROP, { bubbles: false }));
     }
 
     //#region  ContextMenu
@@ -129,7 +129,7 @@ namespace Fudge {
         case CONTEXTMENU.ADD_NODE:
           let instance: ƒ.GraphInstance = inGraphInstance(focus, false);
           if (instance) {
-            ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `To add nodes, edit the graph "${instance.name}", then save and reload the project<br>Press OK to continue`, "OK", "");
+            ƒui.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `To add nodes, edit the graph "${instance.name}", then save and reload the project<br>Press OK to continue`, "OK", "");
             return;
           }
           let child: ƒ.Node = new ƒ.Node("New Node");
@@ -169,15 +169,15 @@ namespace Fudge {
     private hndTreeEvent = (_event: CustomEvent): void => {
       let node: ƒ.Node = _event.detail?.data;
       switch (_event.type) {
-        case ƒUi.EVENT.DELETE:
+        case ƒui.EVENT.DELETE:
           this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
           break;
-        case ƒUi.EVENT.RENAME:
+        case ƒui.EVENT.RENAME:
           if (_event.detail.data instanceof ƒ.Graph) {
             this.dispatch(EVENT_EDITOR.UPDATE, { bubbles: true });
           }
           break;
-        case ƒUi.EVENT.SELECT:
+        case ƒui.EVENT.SELECT:
           //only dispatch the event to focus the node, if the node is in the current and the previous selection 
           if (this.selectionPrevious.includes(node) && this.selection.includes(node))
             this.dispatch(EVENT_EDITOR.FOCUS, { bubbles: true, detail: { node: node, view: this } });
@@ -187,16 +187,16 @@ namespace Fudge {
       }
     };
 
-    private hndPaste = (_event: ClipboardEvent): void => {
-      if (_event.type == "paste") {
-        let sources: Object[] = View.viewSourceCopyPaste.getCopyPasteSources();
-        this.tree.controller.copyPaste.sources = <ƒ.Node[]>sources;
-      } else
-        View.viewSourceCopyPaste = this;
+    // private hndPaste = (_event: ClipboardEvent): void => {
+    //   if (_event.type == "paste") {
+    //     let sources: Object[] = View.viewSourceCopyPaste.getCopyPasteSources();
+    //     this.tree.controller.copyPaste.sources = <ƒ.Node[]>sources;
+    //   } else
+    //     View.viewSourceCopyPaste = this;
 
-      _event.preventDefault();
-      // _event.stopPropagation();
-    };
+    //   _event.preventDefault();
+    //   // _event.stopPropagation();
+    // };
 
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {

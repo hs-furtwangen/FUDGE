@@ -4,7 +4,7 @@
 
 namespace Fudge {
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
 
   interface DragDropFilter {
     onKeyAttribute?: string;
@@ -22,17 +22,17 @@ namespace Fudge {
     UrlOnMeshGLTF: { fromViews: [ViewExternal], onKeyAttribute: "url", onTypeAttribute: "MeshGLTF", ofType: DirectoryEntry, dropEffect: "link" }
   };
 
-  export class ControllerDetail extends ƒUi.Controller {
+  export class ControllerDetail extends ƒui.Controller {
     #view: View;
 
     public constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View) {
       super(_mutable, _domElement);
       this.#view = _view;
-      this.domElement.addEventListener(ƒUi.EVENT.DRAG_OVER, this.hndDragOver);
-      this.domElement.addEventListener(ƒUi.EVENT.DRAG_ENTER, this.hndDragOver);
-      this.domElement.addEventListener(ƒUi.EVENT.DROP, this.hndDrop);
-      this.domElement.addEventListener(ƒUi.EVENT.KEY_DOWN, this.hndKey);
-      this.domElement.addEventListener(ƒUi.EVENT.INSERT, this.hndInsert);
+      this.domElement.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
+      this.domElement.addEventListener(ƒui.EVENT.DRAG_ENTER, this.hndDragOver);
+      this.domElement.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
+      this.domElement.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndKey);
+      this.domElement.addEventListener(ƒui.EVENT.INSERT, this.hndInsert);
     }
 
     private hndInsert = (_event: CustomEvent): void => {
@@ -48,7 +48,7 @@ namespace Fudge {
       _event.stopPropagation();
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.DELETE:
-          this.domElement.dispatchEvent(new CustomEvent(ƒUi.EVENT.DELETE, { bubbles: true, detail: this }));
+          this.domElement.dispatchEvent(new CustomEvent(ƒui.EVENT.DELETE, { bubbles: true, detail: this }));
           break;
       }
     };

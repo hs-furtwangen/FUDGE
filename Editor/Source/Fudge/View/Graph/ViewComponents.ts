@@ -1,6 +1,6 @@
 namespace Fudge {
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
 
   enum MENU {
     COMPONENTMENU = "Add Components"
@@ -32,13 +32,13 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.MODIFY, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.TRANSFORM, this.hndTransform);
-      this.dom.addEventListener(ƒUi.EVENT.DELETE, this.hndEvent);
-      this.dom.addEventListener(ƒUi.EVENT.EXPAND, this.hndEvent);
-      this.dom.addEventListener(ƒUi.EVENT.COLLAPSE, this.hndEvent);
-      this.dom.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
-      this.dom.addEventListener(ƒUi.EVENT.CLICK, this.hndEvent, true);
-      this.dom.addEventListener(ƒUi.EVENT.KEY_DOWN, this.hndEvent, true);
-      this.dom.addEventListener(ƒUi.EVENT.MUTATE, this.hndEvent, true);
+      this.dom.addEventListener(ƒui.EVENT.DELETE, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.EXPAND, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.COLLAPSE, this.hndEvent);
+      this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
+      this.dom.addEventListener(ƒui.EVENT.CLICK, this.hndEvent, true);
+      this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndEvent, true);
+      this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent, true);
     }
 
     public getDragDropSources(): ƒ.ComponentCamera[] {
@@ -107,18 +107,18 @@ namespace Fudge {
       //@ts-ignore
       let cmpNew: ƒ.Component = new component();
       if ((cmpNew instanceof ƒ.ComponentRigidbody || cmpNew instanceof ƒ.ComponentVRDevice || cmpNew instanceof ƒ.ComponentWalker) && !this.node.cmpTransform) {
-        ƒUi.Dialog.prompt(null, true, "ComponentTransform mandatory", `To attach a ${cmpNew.type}, first attach a ${ƒ.ComponentTransform.name}.`, "OK", "");
+        ƒui.Dialog.prompt(null, true, "ComponentTransform mandatory", `To attach a ${cmpNew.type}, first attach a ${ƒ.ComponentTransform.name}.`, "OK", "");
         return;
       }
       if (cmpNew instanceof ƒ.ComponentGraphFilter && !(this.node instanceof ƒ.Graph)) {
-        ƒUi.Dialog.prompt(null, true, "Root node only", `Attach ${ƒ.ComponentGraphFilter.name} to the root node of a graph`, "OK", "");
+        ƒui.Dialog.prompt(null, true, "Root node only", `Attach ${ƒ.ComponentGraphFilter.name} to the root node of a graph`, "OK", "");
         // console.log(this.node);
         return;
       }
       if (cmpNew instanceof ƒ.ComponentFog || cmpNew instanceof ƒ.ComponentAmbientOcclusion || cmpNew instanceof ƒ.ComponentBloom) {
         let camera: ƒ.ComponentCamera = this.node.getComponent(ƒ.ComponentCamera) ?? this.node.getComponent(ƒ.ComponentVRDevice);
         if (!camera) {
-          ƒUi.Dialog.prompt(null, true, "Post-Process effect", `To attach a ${cmpNew.type}, first attach a ${ƒ.ComponentCamera.name} or ${ƒ.ComponentVRDevice.name}.`, "OK", "");
+          ƒui.Dialog.prompt(null, true, "Post-Process effect", `To attach a ${cmpNew.type}, first attach a ${ƒ.ComponentCamera.name} or ${ƒ.ComponentVRDevice.name}.`, "OK", "");
           return;
         }
       }
@@ -171,7 +171,7 @@ namespace Fudge {
       let check: ƒ.Node = this.node;
       do {
         if (check instanceof ƒ.GraphInstance) {
-          ƒUi.Dialog.prompt(null, true, "Structural change on instance", `Edit the original graph "${check.name}" to make changes to its structure, then save and reload the project`, "OK", "");
+          ƒui.Dialog.prompt(null, true, "Structural change on instance", `Edit the original graph "${check.name}" to make changes to its structure, then save and reload the project`, "OK", "");
           return true;
         }
         check = check.getParent();
@@ -203,7 +203,7 @@ namespace Fudge {
       }
 
       for (let component of components) {
-        let details: ƒUi.Details = ƒUi.Generator.createDetailsFromMutable(component);
+        let details: ƒui.Details = ƒui.Generator.createDetailsFromMutable(component);
         let controller: ControllerDetail = new ControllerDetail(component, details, this);
         Reflect.set(details, "controller", controller); // insert a link back to the controller
         details.expand(this.expanded[component.type]);
@@ -216,7 +216,7 @@ namespace Fudge {
           let pivot: HTMLElement = controller.domElement.querySelector("[key='mtxPivot'");
           let opacity: string = pivot.style.opacity;
           setPivotOpacity(null);
-          controller.domElement.addEventListener(ƒUi.EVENT.MUTATE, setPivotOpacity);
+          controller.domElement.addEventListener(ƒui.EVENT.MUTATE, setPivotOpacity);
           function setPivotOpacity(_event: Event): void {
             let initialization: ƒ.BODY_INIT = controller.getMutator({ initialization: 0 }).initialization;
             pivot.style.opacity = initialization == ƒ.BODY_INIT.TO_PIVOT ? opacity : "0.3";
@@ -226,7 +226,7 @@ namespace Fudge {
           let up: HTMLElement = controller.domElement.querySelector("[key='up'");
           let opacity: string = up.style.opacity;
           setUpOpacity(null);
-          controller.domElement.addEventListener(ƒUi.EVENT.MUTATE, setUpOpacity);
+          controller.domElement.addEventListener(ƒui.EVENT.MUTATE, setUpOpacity);
           function setUpOpacity(_event: Event): void {
             let upLocal: boolean = controller.getMutator({ upLocal: true }).upLocal;
             up.style.opacity = !upLocal ? opacity : "0.3";
@@ -244,20 +244,20 @@ namespace Fudge {
         case EVENT_EDITOR.MODIFY:
           this.fillContent();
           break;
-        case ƒUi.EVENT.DELETE:
+        case ƒui.EVENT.DELETE:
           if (this.protectGraphInstance())
             return;
           let component: ƒ.Component = <ƒ.Component>_event.detail.mutable;
           this.node.removeComponent(component);
           this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
           break;
-        case ƒUi.EVENT.KEY_DOWN:
-        case ƒUi.EVENT.CLICK:
+        case ƒui.EVENT.KEY_DOWN:
+        case ƒui.EVENT.CLICK:
           if (_event instanceof KeyboardEvent && _event.code != ƒ.KEYBOARD_CODE.SPACE)
             break;
-          let target: ƒUi.Details = <ƒUi.Details>_event.target;
+          let target: ƒui.Details = <ƒui.Details>_event.target;
           if (target.tagName == "SUMMARY")
-            target = <ƒUi.Details>target.parentElement;
+            target = <ƒui.Details>target.parentElement;
           if (!(_event.target instanceof HTMLDetailsElement || (<HTMLElement>_event.target)))
             break;
           try {
@@ -270,11 +270,11 @@ namespace Fudge {
             }
           } catch (_e: unknown) { /* */ }
           break;
-        case ƒUi.EVENT.EXPAND:
-        case ƒUi.EVENT.COLLAPSE:
-          this.expanded[(<ƒUi.Details>_event.target).getAttribute("type")] = (_event.type == ƒUi.EVENT.EXPAND);
+        case ƒui.EVENT.EXPAND:
+        case ƒui.EVENT.COLLAPSE:
+          this.expanded[(<ƒui.Details>_event.target).getAttribute("type")] = (_event.type == ƒui.EVENT.EXPAND);
           break;
-        case ƒUi.EVENT.MUTATE:
+        case ƒui.EVENT.MUTATE:
           let controller: ControllerDetail = Reflect.get(_event.target, "controller");
           let mutable: ƒ.Component = <ƒ.Component>controller.getMutable();
           if (mutable instanceof ƒ.ComponentRigidbody) {
@@ -282,7 +282,7 @@ namespace Fudge {
             this.dispatch(EVENT_EDITOR.UPDATE, { bubbles: true, detail: { node: this.node } }); // TODO: check if this was necessary, EVENT_EDITOR.UPDATE gets broadcasted by project on ƒ.EVENT.GRAPH_MUTATED, so this was causing a double broadcast of EVENT_EDITOR.UPDATE to ALL views on any change to any component
           }
           break;
-        // case ƒUi.EVENT.REARRANGE_ARRAY: // no listener for this event
+        // case ƒui.EVENT.REARRANGE_ARRAY: // no listener for this event
         //   this.fillContent();
         //   break;
         default:
@@ -371,7 +371,7 @@ namespace Fudge {
       }
     }
 
-    private select(_details: ƒUi.Details, _focus: boolean = true): void {
+    private select(_details: ƒui.Details, _focus: boolean = true): void {
       for (let child of this.dom.children)
         child.classList.remove("selected");
       _details.classList.add("selected");
@@ -380,10 +380,10 @@ namespace Fudge {
         _details.focus();
     }
 
-    private getSelected(): ƒUi.Details {
+    private getSelected(): ƒui.Details {
       for (let child of this.dom.children)
         if (child.classList.contains("selected"))
-          return <ƒUi.Details>child;
+          return <ƒui.Details>child;
     }
 
     private createComponent(_resource: Object): ƒ.Component {

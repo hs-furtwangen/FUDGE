@@ -1,8 +1,8 @@
 namespace Fudge {
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
 
-  export class ControllerTreeHierarchy extends ƒUi.TreeController<ƒ.Node> {
+  export class ControllerTreeHierarchy extends ƒui.TreeController<ƒ.Node> {
 
     public createContent(_object: ƒ.Node): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");
@@ -29,7 +29,7 @@ namespace Fudge {
       if (rename) {
         let instance: ƒ.GraphInstance = inGraphInstance(_node);
         if (instance) {
-          ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `Edit the graph "${instance.name}" to rename nodes, save and reload the project<br>Press OK to continue`, "OK", "");
+          ƒui.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `Edit the graph "${instance.name}" to rename nodes, save and reload the project<br>Press OK to continue`, "OK", "");
           return false;
         }
         _node.name = _element.value;
@@ -47,6 +47,14 @@ namespace Fudge {
       return _node.getChildren();
     }
 
+    /** 
+    * Retrieve objects from the clipboard, process and return them to add to the table   
+    */
+    public async paste(): Promise<ƒ.Node[]> {
+      let objects: ƒ.Node[] = await super.paste();
+      return await this.clone(objects);
+    }
+
     public async delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]> {
       // delete selection independend of focussed item
       let deleted: ƒ.Node[] = [];
@@ -55,7 +63,7 @@ namespace Fudge {
       for (let node of expend) {
         let instance: ƒ.GraphInstance = inGraphInstance(node);
         if (instance) {
-          ƒUi.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `Edit the graph "${instance.name}" to delete "${node.name}", save and reload the project<br>Press OK to continue`, "OK", "");
+          ƒui.Dialog.prompt(null, true, `A <i>graph instance</i> gets recreated from the original graph`, `Edit the graph "${instance.name}" to delete "${node.name}", save and reload the project<br>Press OK to continue`, "OK", "");
           return [];
         }
       }

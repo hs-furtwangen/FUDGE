@@ -354,8 +354,8 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    import ƒUi = FudgeUserInterface;
-    class ControllerDetail extends ƒUi.Controller {
+    import ƒui = FudgeUserInterface;
+    class ControllerDetail extends ƒui.Controller {
         #private;
         constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View);
         private hndInsert;
@@ -407,8 +407,8 @@ declare namespace Fudge {
     }
 }
 declare namespace Fudge {
-    import ƒUi = FudgeUserInterface;
-    class ControllerTreeDirectory extends ƒUi.TreeController<DirectoryEntry> {
+    import ƒui = FudgeUserInterface;
+    class ControllerTreeDirectory extends ƒui.TreeController<DirectoryEntry> {
         sortable: boolean;
         createContent(_entry: DirectoryEntry): HTMLElement;
         setValue(_entry: DirectoryEntry, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
@@ -423,8 +423,8 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    import ƒUi = FudgeUserInterface;
-    class ControllerTreeHierarchy extends ƒUi.TreeController<ƒ.Node> {
+    import ƒui = FudgeUserInterface;
+    class ControllerTreeHierarchy extends ƒui.TreeController<ƒ.Node> {
         createContent(_object: ƒ.Node): HTMLElement;
         getAttributes(_node: ƒ.Node): string;
         setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;

@@ -1,6 +1,6 @@
 namespace Fudge {
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
   import ƒAid = FudgeAid;
 
   /**
@@ -39,7 +39,7 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.MODIFY, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.DELETE, this.hndEvent);
-      this.dom.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
+      this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener("wheel", this.hndMouse);
       this.dom.addEventListener("mousemove", this.hndMouse);
     }

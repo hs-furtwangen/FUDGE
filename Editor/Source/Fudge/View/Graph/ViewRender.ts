@@ -1,6 +1,6 @@
 namespace Fudge {
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
   import ƒAid = FudgeAid;
 
   /**
@@ -41,8 +41,8 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
-      this.dom.addEventListener(ƒUi.EVENT.KEY_DOWN, this.hndKey);
-      this.dom.addEventListener(ƒUi.EVENT.CONTEXTMENU, this.openContextMenu);
+      this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndKey);
+      this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener("pointermove", this.hndPointer);
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
 
@@ -338,7 +338,7 @@ namespace Fudge {
 
       //TODO: watch out, two selects
       this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: pick.node } });
-      // this.dom.dispatchEvent(new CustomEvent(ƒUi.EVENT.SELECT, { bubbles: true, detail: { data: picked } }));
+      // this.dom.dispatchEvent(new CustomEvent(ƒui.EVENT.SELECT, { bubbles: true, detail: { data: picked } }));
     };
 
     // private animate = (_e: Event) => {

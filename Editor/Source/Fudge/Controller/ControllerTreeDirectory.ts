@@ -1,9 +1,9 @@
 namespace Fudge {
 
   import ƒ = FudgeCore;
-  import ƒUi = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
 
-  export class ControllerTreeDirectory extends ƒUi.TreeController<DirectoryEntry> {
+  export class ControllerTreeDirectory extends ƒui.TreeController<DirectoryEntry> {
 
     public sortable: boolean = false;
 
