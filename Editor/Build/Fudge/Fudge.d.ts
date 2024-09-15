@@ -273,7 +273,6 @@ declare namespace Fudge {
      */
     abstract class View {
         #private;
-        protected static viewSourceCopyPaste: View;
         private static views;
         private static idCount;
         dom: HTMLElement;
@@ -430,8 +429,13 @@ declare namespace Fudge {
         setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         hasChildren(_node: ƒ.Node): boolean;
         getChildren(_node: ƒ.Node): ƒ.Node[];
+        /**
+        * Retrieve objects from the clipboard, process and return them to add to the table
+        */
+        paste(): Promise<ƒ.Node[]>;
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
         addChildren(_children: ƒ.Node[], _target: ƒ.Node, _index?: number): ƒ.Node[];
+        clone(_originals: ƒ.Node[]): Promise<ƒ.Node[]>;
         canAddChildren(_sources: ƒ.Node[], _target: ƒ.Node): boolean;
     }
 }
@@ -722,12 +726,10 @@ declare namespace Fudge {
         getDragDropSources(): ƒ.Node[];
         getCopyPasteSources(): ƒ.Node[];
         protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void;
-        protected hndDropCapture(_event: DragEvent, _viewSource: View): Promise<void>;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected getState(): ViewState;
         private hndTreeEvent;
-        private hndPaste;
         private hndEvent;
         private storeExpanded;
         private restoreExpanded;

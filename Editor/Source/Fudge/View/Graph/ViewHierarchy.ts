@@ -91,21 +91,6 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected async hndDropCapture(_event: DragEvent, _viewSource: View): Promise<void> {
-      if (_viewSource == this || _event.target == this.tree)
-        return; // continue with standard tree behaviour
-
-      // _event.stopPropagation();
-      let nodes: ƒ.Node[] = [];
-      for (let node of this.tree.controller.dragDrop.sources)
-        if (node instanceof ƒ.Graph)
-          nodes.push(await ƒ.Project.createGraphInstance(node));
-        else
-          nodes.push((this.tree.controller.copy(node, ƒui.EVENT.COPY))[0]);
-
-      ƒui.Clipboard.dragDrop.set(nodes);
-      // this.tree.dispatchEvent(new Event(ƒui.EVENT.DROP, { bubbles: false }));
-    }
 
     //#region  ContextMenu
     protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu {
@@ -186,17 +171,6 @@ namespace Fudge {
           break;
       }
     };
-
-    // private hndPaste = (_event: ClipboardEvent): void => {
-    //   if (_event.type == "paste") {
-    //     let sources: Object[] = View.viewSourceCopyPaste.getCopyPasteSources();
-    //     this.tree.controller.copyPaste.sources = <ƒ.Node[]>sources;
-    //   } else
-    //     View.viewSourceCopyPaste = this;
-
-    //   _event.preventDefault();
-    //   // _event.stopPropagation();
-    // };
 
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {

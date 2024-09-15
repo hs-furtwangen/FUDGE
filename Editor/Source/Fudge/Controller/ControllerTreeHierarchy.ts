@@ -91,16 +91,20 @@ namespace Fudge {
       return move;
     }
 
-    // public async copy(_originals: ƒ.Node[]): Promise<ƒ.Node[]> {
-    //   // try to create copies and return them for paste operation
-    //   let copies: ƒ.Node[] = [];
-    //   for (let original of _originals) {
-    //     let serialization: ƒ.Serialization = ƒ.Serializer.serialize(original);
-    //     let copy: ƒ.Node = <ƒ.Node>await ƒ.Serializer.deserialize(serialization);
-    //     copies.push(copy);
-    //   }
-    //   return copies;
-    // }
+    public async clone(_originals: ƒ.Node[]): Promise<ƒ.Node[]> {
+      // try to create copies and return them for paste operation
+      let clones: ƒ.Node[] = [];
+      for (let original of _originals) {
+        if (original instanceof ƒ.Graph)
+          clones.push(await ƒ.Project.createGraphInstance(original));
+        else {
+          let serialization: ƒ.Serialization = ƒ.Serializer.serialize(original);
+          let copy: ƒ.Node = <ƒ.Node>await ƒ.Serializer.deserialize(serialization);
+          clones.push(copy);
+        }
+      }
+      return clones;
+    }
 
     public canAddChildren(_sources: ƒ.Node[], _target: ƒ.Node): boolean {
       if (_sources.length == 0)
