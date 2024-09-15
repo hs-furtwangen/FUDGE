@@ -85,6 +85,18 @@ namespace FudgeUserInterface {
       let items: T[] = this.selection.indexOf(_focus) < 0 ? [_focus] : this.selection;
       Clipboard.dragDrop.set(items);
     }
+
+    /** 
+     * Return allowed dragDrop-effect   
+     */
+    public dragOver(_event: DragEvent): DROPEFFECT {
+      let dropEffect: DROPEFFECT = "move";
+      if (_event.ctrlKey)
+        dropEffect = "copy";
+      if (_event.shiftKey)
+        dropEffect = "link";
+      return dropEffect;
+    }
     
     /** 
      * Retrieve objects from the clipboard, and process and return them to add to the table   

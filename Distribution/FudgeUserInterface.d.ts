@@ -727,6 +727,10 @@ declare namespace FudgeUserInterface {
          */
         dragStart(_focus: T): void;
         /**
+         * Return allowed dragDrop-effect
+         */
+        dragOver(_event: DragEvent): DROPEFFECT;
+        /**
          * Retrieve objects from the clipboard, and process and return them to add to the table
          */
         drop(): Promise<T[]>;

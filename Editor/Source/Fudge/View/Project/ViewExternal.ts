@@ -42,7 +42,7 @@ namespace Fudge {
     }
 
     public getDragDropSources(): DirectoryEntry[] {
-      return this.tree.controller.dragDrop.sources;
+      return ƒui.Clipboard.dragDrop.get();
     }
 
     protected getState(): ViewState {

@@ -36,6 +36,7 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.DROP, this.hndDragDrop);
       this.addEventListener(EVENT.DRAG_LEAVE, this.hndDragLeave);
       this.addEventListener(EVENT.DRAG_START, this.hndDragDrop);
+      this.addEventListener(EVENT.DRAG_OVER, this.hndDragDrop);
 
       // @ts-ignore
       this.addEventListener(EVENT.FOCUS_NEXT, this.hndFocus);
@@ -163,7 +164,7 @@ namespace FudgeUserInterface {
           this.controller.dragStart(item.data);
           break;
         case EVENT.DRAG_OVER:
-          // _event.dataTransfer.dropEffect = this.controller.dragOver(_event);
+          _event.dataTransfer.dropEffect = this.controller.dragOver(_event);
           // _event.preventDefault();
           break;
         case EVENT.DROP:
@@ -177,9 +178,9 @@ namespace FudgeUserInterface {
     };
 
     private hndDragLeave = (_event: DragEvent): void => {
-      let relatedTarget: EventTarget = _event.relatedTarget;
-      if (relatedTarget instanceof HTMLElement && !this.contains(relatedTarget) && !this.contains(relatedTarget.offsetParent)) // offset parent is for weird (invisible) divs which are placed over input elements and trigger leave events... 
-        this.controller.dragDropIndicator.remove();
+      // let relatedTarget: EventTarget = _event.relatedTarget;
+      // if (relatedTarget instanceof HTMLElement && !this.contains(relatedTarget) && !this.contains(relatedTarget.offsetParent)) // offset parent is for weird (invisible) divs which are placed over input elements and trigger leave events... 
+      //   this.controller.dragDropIndicator.remove();
     };
 
     private hndDelete = async (_event: Event): Promise<void> => {

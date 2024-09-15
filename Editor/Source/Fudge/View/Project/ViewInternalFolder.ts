@@ -260,7 +260,7 @@ namespace Fudge {
         }
       }
 
-      this.controller.dragDrop.sources = resources;
+      ƒui.Clipboard.dragDrop.set(resources);
       this.tree.dispatchEvent(new Event(ƒui.EVENT.DROP, { bubbles: false }));
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
       if (_viewSource instanceof ViewHierarchy)

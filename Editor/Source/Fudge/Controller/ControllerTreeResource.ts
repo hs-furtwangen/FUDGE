@@ -211,6 +211,13 @@ namespace Fudge {
       return await this.clone(objects);
     }
 
+    public dragOver(_event: DragEvent): ƒui.DROPEFFECT {
+      let dropEffect: ƒui.DROPEFFECT = super.dragOver(_event);
+      if (dropEffect == "link")
+        dropEffect = "copy";
+      return dropEffect;
+    }
+
     public async clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]> {
       let clones: ResourceEntry[] = [];
       for (let resource of _originals)

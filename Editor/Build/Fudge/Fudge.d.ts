@@ -490,6 +490,7 @@ declare namespace Fudge {
          * Retrieve objects from the clipboard, process and return them to add to the table
          */
         paste(_class?: new () => ResourceEntry): Promise<ResourceEntry[]>;
+        dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;
         getPath(_resource: ResourceEntry): ResourceEntry[];
         remove(_resource: ResourceEntry): void;
