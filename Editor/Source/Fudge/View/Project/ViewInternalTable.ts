@@ -35,8 +35,6 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndEvent);
 
       this.dom.addEventListener("keyup", this.hndKeyboardEvent);
-      this.dom.addEventListener("keypress", this.hndKeyboardEvent);
-      this.dom.addEventListener("keydown", this.hndKeyboardEvent);
       this.dom.tabIndex = 0;
     }
 
@@ -263,10 +261,6 @@ namespace Fudge {
     }
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
-      _event.preventDefault();
-      if (_event.type == "keydown")
-        return;
-
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.INSERT:
           await ƒ.Project.cloneResource(this.table.getFocussed());
@@ -281,6 +275,7 @@ namespace Fudge {
           break;
         case ƒ.KEYBOARD_CODE.A:
           if (_event.ctrlKey) {
+            this.table.clearSelection();
             this.table.selectAll();
           }
           break;

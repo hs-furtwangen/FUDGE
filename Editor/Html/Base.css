@@ -18,6 +18,7 @@ object {
 .lm_goldenlayout, body {
   background-color: var(--color-background-main);
   color: var(--color-text);
+  user-select: none;
 }
 
 .lm_content {
