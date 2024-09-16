@@ -101,7 +101,7 @@ namespace FudgeUserInterface {
     /** 
      * Retrieve objects from the clipboard, and process and return them to add to the tree   
      */
-    public async drop(): Promise<T[]> {
+    public async drop(_event: DragEvent): Promise<T[]> {
       let objects: T[] = Clipboard.dragDrop.get(); // possible to filter for only objects of specific type
       return objects;
     }

@@ -168,7 +168,7 @@ namespace FudgeUserInterface {
           // _event.preventDefault();
           break;
         case EVENT.DROP:
-          let objects: T[] = await this.controller.drop();
+          let objects: T[] = await this.controller.drop(_event);
           let index: number = Reflect.get(_event, "index");
           let parent: T = Reflect.get(_event, "parent");
           this.addChildren(objects, index == null ? item.data : parent, index);

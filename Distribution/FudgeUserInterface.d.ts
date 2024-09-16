@@ -733,7 +733,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve objects from the clipboard, and process and return them to add to the tree
          */
-        drop(): Promise<T[]>;
+        drop(_event: DragEvent): Promise<T[]>;
         /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
         abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */

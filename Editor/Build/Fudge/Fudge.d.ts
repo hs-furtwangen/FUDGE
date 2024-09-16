@@ -435,7 +435,8 @@ declare namespace Fudge {
         /**
         * Retrieve objects from the clipboard, and process and return them to add to the tree
         */
-        drop(): Promise<ƒ.Node[]>;
+        drop(_event: DragEvent): Promise<ƒ.Node[]>;
+        dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
         addChildren(_children: ƒ.Node[], _target: ƒ.Node, _index?: number): ƒ.Node[];
         clone(_originals: ƒ.Node[]): Promise<ƒ.Node[]>;

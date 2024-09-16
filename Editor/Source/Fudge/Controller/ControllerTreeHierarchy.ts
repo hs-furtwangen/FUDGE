@@ -60,9 +60,21 @@ namespace Fudge {
     /** 
     * Retrieve objects from the clipboard, and process and return them to add to the tree   
     */
-    public async drop(): Promise<ƒ.Node[]> {
-      let objects: ƒ.Node[] = await super.drop();
-      return await this.clone(objects);
+    public async drop(_event: DragEvent): Promise<ƒ.Node[]> {
+      let objects: ƒ.Node[] = await super.drop(_event);
+      if (this.dragOver(_event) == "copy")
+        return await this.clone(objects);
+      else
+        return objects;
+    }
+
+    public dragOver(_event: DragEvent): ƒui.DROPEFFECT {
+      let dropEffect: ƒui.DROPEFFECT = super.dragOver(_event);
+      if (View.getViewSource(_event) instanceof ViewInternal)
+        dropEffect = "link";
+      else
+        dropEffect = dropEffect == "copy" ? "copy" : "move";
+      return dropEffect;
     }
 
     public async delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]> {
