@@ -428,14 +428,7 @@ declare namespace Fudge {
         setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         hasChildren(_node: ƒ.Node): boolean;
         getChildren(_node: ƒ.Node): ƒ.Node[];
-        /**
-        * Retrieve objects from the clipboard, process and return them to add to the table
-        */
         paste(): Promise<ƒ.Node[]>;
-        /**
-        * Retrieve objects from the clipboard, and process and return them to add to the tree
-        */
-        drop(_event: DragEvent): Promise<ƒ.Node[]>;
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
         addChildren(_children: ƒ.Node[], _target: ƒ.Node, _index?: number): ƒ.Node[];

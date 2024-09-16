@@ -30,6 +30,7 @@ namespace FudgeUserInterface {
 
       this.addEventListener(EVENT.SORT, <EventListener>this.hndSort);
       this.addEventListener(EVENT.SELECT, this.hndSelect);
+      this.addEventListener(EVENT.SELECT_ALL, this.selectAll);
       this.addEventListener(EVENT.FOCUS_NEXT, <EventListener>this.hndFocus);
       this.addEventListener(EVENT.FOCUS_PREVIOUS, <EventListener>this.hndFocus);
       this.addEventListener(EVENT.ESCAPE, this.hndEscape);
@@ -79,6 +80,10 @@ namespace FudgeUserInterface {
       return null;
     }
 
+    public selectAll(): void {
+      this.selectInterval(this.data[0], this.data[this.data.length-1]);
+    }
+
     public selectInterval(_dataStart: T, _dataEnd: T): void {
       let items: NodeListOf<TableItem<T>> = <NodeListOf<TableItem<T>>>this.querySelectorAll("tr");
       let selecting: boolean = false;
@@ -99,7 +104,6 @@ namespace FudgeUserInterface {
             break;
         }
       }
-      // console.log(_dataStart, _dataEnd);
     }
 
     public displaySelection(_data: T[]): void {
@@ -193,7 +197,7 @@ namespace FudgeUserInterface {
           this.controller.copy(this.getFocussed(), _event.type);
           break;
         case EVENT.CUT:
-          _event.stopPropagation();  
+          _event.stopPropagation();
           let cut: T[] = await this.controller.cut(this.getFocussed(), _event.type);
           if (cut.length)
             this.dispatchEvent(new Event(EVENT.REMOVE_CHILD, { bubbles: true }));
@@ -224,7 +228,7 @@ namespace FudgeUserInterface {
           // _event.preventDefault();
           break;
         case EVENT.DROP:
-          let objects: T[] = await this.controller.drop();
+          let objects: T[] = await this.controller.drop(_event);
           for (let object of objects) {
             let item: TableItem<T> = new TableItem<T>(this.controller, object, this.attIcon);
             this.appendChild(item);

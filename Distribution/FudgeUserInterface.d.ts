@@ -369,6 +369,61 @@ declare namespace FudgeUserInterface {
     }
 }
 declare namespace FudgeUserInterface {
+    /**
+     * Baseclass for complex ui-controllers handling data in tables, trees or other structures
+     */
+    class DataController<T> {
+        /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of table */
+        selection: T[];
+        /**
+         * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and
+         * return a list of those objects in order for the according {@link TableItems} to be deleted also
+         * @param _expendables The expendable objects
+         */
+        delete(_expendables: T[]): Promise<T[]>;
+        /**
+         * Refer items to the clipboard for copy & paste
+         * @param _focus The item has the focus and that will be copied if the selection is empty,
+         * otherwise the current selection is referred
+         */
+        copy(_focus: T, _operation: ClipOperation): T[];
+        /**
+         * Refer objects to the clipboard for copy & paste and delete them from this controller
+         * @param _focus The item that has the focus and that will be cut if the selection is empty,
+         * otherwise the whole selection gets referred and deleted
+         */
+        cut(_focus: T, _operation: ClipOperation): Promise<T[]>;
+        /**
+         * Retrieve objects from the clipboard, process and return them to add to the table
+         * Standard behaviour: if the copyPaste clipboard was filled using copy, return an array of clones,
+         * otherwise the content of the clipboard
+         */
+        paste(): Promise<T[]>;
+        /**
+         * Refer objects to the clipboard for drag & drop
+         * @param _focus The item that has the focus and that will be dragged if the selection is empty,
+         * otherwise the current selection is referred
+         */
+        dragStart(_focus: T): void;
+        /**
+         * Return allowed dragDrop-effect
+         * Standard behaviour: check the ctrlKey for "copy" and shiftKey for "link", otherwise return "move"
+         */
+        dragOver(_event: DragEvent): DROPEFFECT;
+        /**
+         * Retrieve objects from the clipboard, process and return them to add to the tree.
+         * Standard behaviour: if {@link: dragOver} yields "copy", return an array of clones of the objects in,
+         * otherwise the content of the dragDrop-clipboard.
+         */
+        drop(_event: DragEvent): Promise<T[]>;
+        /**
+         * Clone objects and return an array with references to the clones
+         * Standard behaviour: use Object.create to clone the objects
+         */
+        clone(_objects: T[]): Promise<T[]>;
+    }
+}
+declare namespace FudgeUserInterface {
     class Details extends HTMLDetailsElement {
         content: HTMLDivElement;
         constructor(_legend: string, _type: string);
@@ -460,6 +515,7 @@ declare namespace FudgeUserInterface {
          * Return the object in focus
          */
         getFocussed(): T;
+        selectAll(): void;
         selectInterval(_dataStart: T, _dataEnd: T): void;
         displaySelection(_data: T[]): void;
         private createHead;
@@ -478,61 +534,11 @@ declare namespace FudgeUserInterface {
      * Subclass this to create a broker between your data and a [[Table]] to display and manipulate it.
      * The [[Table]] doesn't know how your data is structured and how to handle it, the controller implements the methods needed
      */
-    abstract class TableController<T> {
-        /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of table */
-        selection: T[];
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of table */
-        dragDrop: {
-            sources: T[];
-            target: T;
-        };
-        /** Stores references to objects being copied or cut, and objects to paste to. Override with references in outer scope, if copy&paste should operate outside of tree */
-        copyPaste: {
-            sources: T[];
-            target: T;
-        };
-        /**
-         * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and
-         * return a list of those objects in order for the according {@link TableItems} to be deleted also
-         * @param _expendables The expendable objects
-         */
-        delete(_expendables: T[]): Promise<T[]>;
-        /**
-         * Refer items to the clipboard for copy & paste
-         * @param _focus The that has the focus and that will be copied if the selection is empty
-         */
-        copy(_focus: T, _operation: ClipOperation): T[];
-        /**
-         * Refer objects to the clipboard for copy & paste and delete them from this controller
-         * @param _focus The item that has the focus and that will be cut if the selection is empty
-         */
-        cut(_focus: T, _operation: ClipOperation): Promise<T[]>;
-        /**
-         * Retrieve objects from the clipboard, process and return them to add to the table
-         */
-        paste(): Promise<T[]>;
-        /**
-         * Refer objects to the clipboard for drag & drop
-         * @param _focus The item that has the focus and that will be dragged if the selection is empty
-         */
-        dragStart(_focus: T): void;
-        /**
-         * Return allowed dragDrop-effect
-         */
-        dragOver(_event: DragEvent): DROPEFFECT;
-        /**
-         * Retrieve objects from the clipboard, and process and return them to add to the table
-         */
-        drop(): Promise<T[]>;
+    abstract class TableController<T> extends DataController<T> {
         /** Retrieve a string to create a label for the table item representing the object (appears not to be called yet)  */
         abstract getLabel(_object: T): string;
         /** Return false if renaming of object is not possibile, or true if the object was renamed */
         abstract rename(_object: T, _new: string): Promise<boolean>;
-        /**
-         * Return a list of clones of the objects given for copy & paste or drag & drop
-         * @param _originals The objects to clone
-         */
-        abstract clone(_originals: T[]): Promise<T[]>;
         /**
          * Return a list of TABLE-objects describing the head-titles and according properties
          */
@@ -670,20 +676,7 @@ declare namespace FudgeUserInterface {
      * Subclass this to create a broker between your data and a {@link Tree} to display and manipulate it.
      * The {@link Tree} doesn't know how your data is structured and how to handle it, the controller implements the methods needed
      */
-    abstract class TreeController<T> {
-        /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of tree */
-        selection: T[];
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
-        dragDrop: {
-            sources: T[];
-            target: T;
-            at?: number;
-        };
-        /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
-        copyPaste: {
-            sources: T[];
-            target: T;
-        };
+    abstract class TreeController<T> extends DataController<T> {
         /** Used by the tree to indicate the drop position while dragging */
         dragDropIndicator: HTMLHRElement;
         /** Override to enable tree items to be sortable by the user via drag-and-drop. Default is true. */
@@ -701,39 +694,6 @@ declare namespace FudgeUserInterface {
          * Override if some objects should not be addable to others
          */
         canAddChildren(_sources: T[], _target: T): boolean;
-        /**
-         * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and
-         * return a list of those objects in order for the according {@link TreeItems} to be deleted also
-         * @param _expendables The expendable objects
-         */
-        delete(_expendables: T[]): Promise<T[]>;
-        /**
-         * Refer items to the clipboard for copy & paste
-         * @param _focus The that has the focus and that will be copied if the selection is empty
-         */
-        copy(_focus: T, _operation: ClipOperation): T[];
-        /**
-         * Refer objects to the clipboard for copy & paste and delete them from this controller
-         * @param _focus The item that has the focus and that will be cut if the selection is empty
-         */
-        cut(_focus: T, _operation: ClipOperation): Promise<T[]>;
-        /**
-         * Retrieve objects from the clipboard, process and return them to add to the table
-         */
-        paste(): Promise<T[]>;
-        /**
-         * Refer objects to the clipboard for drag & drop
-         * @param _focus The item that has the focus and that will be dragged if the selection is empty
-         */
-        dragStart(_focus: T): void;
-        /**
-         * Return allowed dragDrop-effect
-         */
-        dragOver(_event: DragEvent): DROPEFFECT;
-        /**
-         * Retrieve objects from the clipboard, and process and return them to add to the tree
-         */
-        drop(_event: DragEvent): Promise<T[]>;
         /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
         abstract createContent(_object: T): HTMLElement;
         /** Retrieve a space separated string of attributes to add to the list item representing the object for further styling  */
@@ -867,6 +827,7 @@ declare namespace FudgeUserInterface {
         REARRANGE_ARRAY = "rearrangeArray",
         TOGGLE = "toggle",
         POINTER_MOVE = "pointermove",
-        INSERT = "insert"
+        INSERT = "insert",
+        SELECT_ALL = "selectAll"
     }
 }

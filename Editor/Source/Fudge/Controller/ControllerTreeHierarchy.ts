@@ -47,25 +47,10 @@ namespace Fudge {
       return _node.getChildren();
     }
 
-    /** 
-    * Retrieve objects from the clipboard, process and return them to add to the table   
-    */
+    // always clone for now. TODO: may be optimized
     public async paste(): Promise<ƒ.Node[]> {
       let objects: ƒ.Node[] = await super.paste();
-      // if (ƒui.Clipboard.copyPaste.operation == ƒui.EVENT.COPY)
       return await this.clone(objects);
-      // else
-      //   return objects;
-    }
-    /** 
-    * Retrieve objects from the clipboard, and process and return them to add to the tree   
-    */
-    public async drop(_event: DragEvent): Promise<ƒ.Node[]> {
-      let objects: ƒ.Node[] = await super.drop(_event);
-      if (this.dragOver(_event) == "copy")
-        return await this.clone(objects);
-      else
-        return objects;
     }
 
     public dragOver(_event: DragEvent): ƒui.DROPEFFECT {

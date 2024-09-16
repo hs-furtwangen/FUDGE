@@ -1,16 +1,10 @@
+///<reference path="../DataController.ts"/>
 namespace FudgeUserInterface {
   /**
    * Subclass this to create a broker between your data and a {@link Tree} to display and manipulate it.
    * The {@link Tree} doesn't know how your data is structured and how to handle it, the controller implements the methods needed
    */
-  export abstract class TreeController<T> {
-    /** Stores references to selected objects. Override with a reference in outer scope, if selection should also operate outside of tree */
-    public selection: T[] = [];
-    /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
-    public dragDrop: { sources: T[]; target: T; at?: number } = { sources: [], target: null };
-    /** Stores references to objects being dragged, and objects to drop on. Override with a reference in outer scope, if drag&drop should operate outside of tree */
-    public copyPaste: { sources: T[]; target: T } = { sources: [], target: null };
-
+  export abstract class TreeController<T> extends DataController<T> {
     /** Used by the tree to indicate the drop position while dragging */
     public dragDropIndicator: HTMLHRElement = document.createElement("hr");
 
@@ -38,74 +32,7 @@ namespace FudgeUserInterface {
     public canAddChildren(_sources: T[], _target: T): boolean {
       return true;
     }
-
-    /** 
-     * Remove the objects to be deleted, e.g. the current selection, from the data structure the table refers to and 
-     * return a list of those objects in order for the according {@link TreeItems} to be deleted also   
-     * @param _expendables The expendable objects 
-     */
-    public async delete(_expendables: T[]): Promise<T[]> {
-      return _expendables;
-    }
-
-    /** 
-     * Refer items to the clipboard for copy & paste   
-     * @param _focus The that has the focus and that will be copied if the selection is empty
-     */
-    public copy(_focus: T, _operation: ClipOperation): T[] {
-      let items: T[] = this.selection.length ? this.selection : [_focus];
-      Clipboard.copyPaste.set(items, _operation);
-      return items;
-    }
-
-    /** 
-     * Refer objects to the clipboard for copy & paste and delete them from this controller   
-     * @param _focus The item that has the focus and that will be cut if the selection is empty
-     */
-    public async cut(_focus: T, _operation: ClipOperation): Promise<T[]> {
-      let items: T[] = this.copy(_focus, _operation);
-      items = await this.delete(items);
-      return items;
-    }
-
-    /** 
-     * Retrieve objects from the clipboard, process and return them to add to the table   
-     */
-    public async paste(): Promise<T[]> {
-      let objects: T[] = Clipboard.copyPaste.get(); // possible to filter for only objects of specific type
-      return objects;
-    }
-
-    /** 
-     * Refer objects to the clipboard for drag & drop   
-     * @param _focus The item that has the focus and that will be dragged if the selection is empty
-     */
-    public dragStart(_focus: T): void {
-      // if the focussed item is in the selection, drag the whole selection
-      let items: T[] = this.selection.indexOf(_focus) < 0 ? [_focus] : this.selection;
-      Clipboard.dragDrop.set(items);
-    }
-
-    /** 
-     * Return allowed dragDrop-effect   
-     */
-    public dragOver(_event: DragEvent): DROPEFFECT {
-      let dropEffect: DROPEFFECT = "move";
-      if (_event.ctrlKey)
-        dropEffect = "copy";
-      if (_event.shiftKey)
-        dropEffect = "link";
-      return dropEffect;
-    }
-    
-    /** 
-     * Retrieve objects from the clipboard, and process and return them to add to the tree   
-     */
-    public async drop(_event: DragEvent): Promise<T[]> {
-      let objects: T[] = Clipboard.dragDrop.get(); // possible to filter for only objects of specific type
-      return objects;
-    }
-
+   
     /** Create an HTMLElement for the tree item representing the object. e.g. an HTMLInputElement */
     public abstract createContent(_object: T): HTMLElement;
 
