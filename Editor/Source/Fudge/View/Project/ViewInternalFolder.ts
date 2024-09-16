@@ -39,6 +39,7 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
 
       this.dom.addEventListener("keyup", this.hndKeyboardEvent);
+      this.dom.tabIndex = 0;
 
       this.#expanded = _state["expanded"];
     }
@@ -267,26 +268,31 @@ namespace Fudge {
     }
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
-      if (_event.code == ƒ.KEYBOARD_CODE.INSERT) {
-        let focus: ResourceEntry = this.tree.getFocussed();
-        if (focus instanceof ResourceFolder)
-          return;
-        let clone: ResourceEntry = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
-        this.tree.addChildren([clone], focus.resourceParent);
-        this.tree.findVisible(clone).focus();
-        this.tree.findVisible(clone).focus();
-        this.dispatchToParent(EVENT_EDITOR.CREATE, { bubbles: true });
+      switch (_event.code) {
+        case ƒ.KEYBOARD_CODE.INSERT:
+          let focus: ResourceEntry = this.tree.getFocussed();
+          if (focus instanceof ResourceFolder)
+            return;
+          let clone: ResourceEntry = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
+          this.tree.addChildren([clone], focus.resourceParent);
+          this.tree.findVisible(clone).focus();
+          this.tree.findVisible(clone).focus();
+          this.dispatchToParent(EVENT_EDITOR.CREATE, { bubbles: true });
+          break;
+        case ƒ.KEYBOARD_CODE.F2:
+          let input: HTMLInputElement = document.activeElement.querySelector("input");
+          if (!input)
+            return;
+          input.readOnly = false;
+          input.focus();
+          break;
+        case ƒ.KEYBOARD_CODE.A:
+          if (_event.ctrlKey) {
+            this.tree.clearSelection();
+            this.tree.selectAll();
+          }
+          break;
       }
-
-      if (_event.code != ƒ.KEYBOARD_CODE.F2)
-        return;
-
-      let input: HTMLInputElement = document.activeElement.querySelector("input");
-      if (!input)
-        return;
-
-      input.readOnly = false;
-      input.focus();
     };
 
     private hndOpen = (): void => {

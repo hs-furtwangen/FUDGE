@@ -119,6 +119,10 @@ namespace FudgeUserInterface {
         }
       }
     }
+    public selectAll(): void {
+      let items: NodeListOf<TreeItem<T>> = <NodeListOf<TreeItem<T>>>this.querySelectorAll("li");
+      this.selectInterval(items[0].data, items[items.length - 1].data);
+    }
 
     public delete(_data: T[]): TreeItem<T>[] {
       let items: NodeListOf<TreeItem<T>> = <NodeListOf<TreeItem<T>>>this.querySelectorAll("li");

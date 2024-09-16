@@ -614,6 +614,7 @@ declare namespace FudgeUserInterface {
         getItems(): TreeItem<T>[];
         displaySelection(_data: T[]): void;
         selectInterval(_dataStart: T, _dataEnd: T): void;
+        selectAll(): void;
         delete(_data: T[]): TreeItem<T>[];
         findVisible(_data: T): TreeItem<T>;
         /**
