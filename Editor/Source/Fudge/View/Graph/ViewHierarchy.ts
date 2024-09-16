@@ -19,9 +19,8 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
-      // this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndPaste, true);
-      // this.dom.addEventListener(ƒui.EVENT.COPY, this.hndPaste, true);
-      // this.dom.addEventListener(ƒui.EVENT.CUT, this.hndPaste, true);
+      this.dom.addEventListener("keyup", this.hndKeyboardEvent);
+      this.dom.tabIndex = 0;
 
       // a select event will be recived from the panel during reconstruction so we only need to prepare our storage here
       if (_state["graph"] && _state["expanded"] && !this.restoreExpanded(_state["graph"]))
@@ -147,6 +146,20 @@ namespace Fudge {
             this.dispatch(EVENT_EDITOR.FOCUS, { bubbles: true, detail: { node: node, view: this } });
           this.selectionPrevious = this.selection.slice(0);
           this.dispatchToParent(EVENT_EDITOR.SELECT, { detail: { node: node, view: this } });
+          break;
+      }
+    };
+
+    private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
+      switch (_event.code) {
+        case ƒ.KEYBOARD_CODE.A:
+          if (_event.ctrlKey) {
+            this.tree.clearSelection();
+            this.tree.selectAll();
+          }
+          break;
+        case ƒ.KEYBOARD_CODE.DELETE:
+          this.tree.delete(await this.tree.controller.delete(null));
           break;
       }
     };

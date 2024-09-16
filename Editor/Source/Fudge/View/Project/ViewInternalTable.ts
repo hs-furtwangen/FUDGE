@@ -279,6 +279,10 @@ namespace Fudge {
             this.table.selectAll();
           }
           break;
+        case ƒ.KEYBOARD_CODE.DELETE:
+          await this.table.controller.delete(null);
+          this.dom.dispatchEvent(new Event(ƒui.EVENT.REMOVE_CHILD, { bubbles: true }));
+          break;
       }
     };
 

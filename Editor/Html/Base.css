@@ -270,6 +270,7 @@ dialog {
   transform: translateX(-50%) translateY(-50%);
   z-index: 1000;
   padding: 2em;
+  user-select: none;
 }
 
 dialog>div#content {

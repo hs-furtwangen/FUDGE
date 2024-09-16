@@ -726,6 +726,7 @@ declare namespace Fudge {
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected getState(): ViewState;
         private hndTreeEvent;
+        private hndKeyboardEvent;
         private hndEvent;
         private storeExpanded;
         private restoreExpanded;

@@ -292,6 +292,9 @@ namespace Fudge {
             this.tree.selectAll();
           }
           break;
+        case ƒ.KEYBOARD_CODE.DELETE:
+          this.tree.delete(await this.tree.controller.delete(null));
+          break;
       }
     };
 
