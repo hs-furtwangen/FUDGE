@@ -138,11 +138,17 @@ namespace FudgeUserInterface {
     public static async save(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator: ƒ.Mutator): Promise<void> {
       Controller.history.push([_mutable, _mutator]);
     };
-    
+
     public static async undo(): Promise<void> {
       let undo: [ƒ.Mutable | ƒ.MutableArray<ƒ.General>, ƒ.Mutator] = Controller.history.pop();
-      if (undo)
-        await undo[0].mutate(undo[1]);
+      if (undo) {
+        let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.General> = undo[0];
+        await mutable.mutate(undo[1]);
+        if (mutable instanceof ƒ.ComponentRigidbody) {
+          mutable.isInitialized = false;
+          mutable.mutate({}); // just to dispatch mutation event again
+        }
+      }
     }
 
     // public static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement {
@@ -202,7 +208,7 @@ namespace FudgeUserInterface {
           path.push(key);
       }
       path.reverse();
-      let mutator: ƒ.Mutator = this.mutable.getMutator(); 
+      let mutator: ƒ.Mutator = this.mutable.getMutator();
       Controller.save(this.mutable, ƒ.Mutable.getMutatorFromPath(mutator, path));
       this.mutator = this.getMutator();
       await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));
