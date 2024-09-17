@@ -43,6 +43,10 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndKey);
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
+      
+      this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
+      
       this.dom.addEventListener("pointermove", this.hndPointer);
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
       this.dom.addEventListener("startTransform", this.hndEvent); // hack to evaluate common undo system
@@ -152,7 +156,7 @@ namespace Fudge {
     };
     //#endregion
 
-    protected hndDragOver(_event: DragEvent): void {
+    protected hndDragOver = (_event: DragEvent): void =>  {
       _event.dataTransfer.dropEffect = "none";
 
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
@@ -163,7 +167,7 @@ namespace Fudge {
       }
     }
 
-    protected hndDrop(_event: DragEvent): void {
+    protected hndDrop = (_event: DragEvent): void =>  {
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       if (source instanceof ƒ.ComponentCamera) {
         // this.setCameraOrthographic(false);

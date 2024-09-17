@@ -30,6 +30,9 @@ namespace Fudge {
 
       this.dom.addEventListener(ƒui.EVENT.CUT, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndEvent);
+
+      this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndEvent);
 
       this.dom.addEventListener("keyup", this.hndKeyboardEvent);
@@ -175,7 +178,7 @@ namespace Fudge {
     }
     //#endregion
 
-    protected hndDragOver(_event: DragEvent): void {
+    protected hndDragOver = (_event: DragEvent): void => {
       let viewSource: View = View.getViewSource(_event);
 
       if (this.dom != _event.target) {
@@ -207,7 +210,7 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected async hndDrop(_event: DragEvent): Promise<void> {
+    protected hndDrop = async (_event: DragEvent): Promise<void> => {
       let viewSource: View = View.getViewSource(_event);
 
       if (viewSource instanceof ViewInternal) {

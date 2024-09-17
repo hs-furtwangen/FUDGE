@@ -38,9 +38,12 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener(ƒui.EVENT.INPUT, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.FOCUS_IN, this.hndEvent);
+      
+      this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
     }
 
-    protected hndDragOver(_event: DragEvent): void {
+    protected hndDragOver = (_event: DragEvent): void =>  {
       _event.dataTransfer.dropEffect = "none";
 
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
@@ -52,7 +55,7 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected hndDrop(_event: DragEvent): void {
+    protected hndDrop = (_event: DragEvent): void => {
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: <ƒ.Node>source } });
     }

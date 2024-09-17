@@ -48,6 +48,8 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.TRANSFORM, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
+      
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop); //TODO: remove this
 
       this.restoreGraph().then(_graph => {
         if (_graph) {
@@ -74,7 +76,7 @@ namespace Fudge {
     }
 
     // TODO: this should be done in ViewRender, drop shouldn't be passed to Panel
-    protected hndDrop(_event: DragEvent): void {
+    protected hndDrop = (_event: DragEvent): void =>  {
       if (!this.views.find(_view => _view instanceof ViewRender).dom.contains(<Node>_event.target)) // accept drop only from render view
         return;
 

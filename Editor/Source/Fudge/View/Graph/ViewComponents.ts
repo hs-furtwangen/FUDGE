@@ -39,6 +39,9 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.CLICK, this.hndEvent, true);
       this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndEvent, true);
       this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent, true);
+      
+      this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
     }
 
     //#region  ContextMenu
@@ -126,7 +129,7 @@ namespace Fudge {
     }
     //#endregion
 
-    protected hndDragOver(_event: DragEvent): void {
+    protected hndDragOver = (_event: DragEvent): void =>  {
       if (!this.node)
         return;
       if (this.dom != _event.target)
@@ -148,7 +151,7 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected hndDrop(_event: DragEvent): void {
+    protected hndDrop = (_event: DragEvent): void =>  {
       if (this.protectGraphInstance())
         return;
       for (let source of ƒui.Clipboard.dragDrop.get()) {
