@@ -54,12 +54,13 @@ namespace FudgeAid {
 
     #mtxLocalBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // local matrix in a state before a transformation starts
     #mtxWorldBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // world matrix in a state before a transformation starts
-    
+
     #normal: ƒ.Vector3 = ƒ.Vector3.ZERO(); // the normal of the plane with which the mouse ray collides
     #offset: ƒ.Vector3 = ƒ.Vector3.ZERO(); // offest vector pointing from the world position of the object to where the mouse ray collided with the plane on pointer down
     #direction: ƒ.Vector3 = ƒ.Vector3.ZERO(); // direction vector pointing from the world position of the object to where the mouse ray collides with the plane on pointer move
 
     #isTransforming: boolean = false;
+    #startTransform: boolean = false;
 
     #torus: ƒ.MeshTorus;
     #torusPick: ƒ.MeshTorus;
@@ -284,6 +285,7 @@ namespace FudgeAid {
           this.#mtxLocalBase.copy(mtxLocal);
       };
       this.#undo.push(undo);
+      this.#startTransform = true;
     };
 
     private hndPointerMove = (_event: PointerEvent): void => {
@@ -322,6 +324,10 @@ namespace FudgeAid {
       const isSnapping: boolean = ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.CTRL_LEFT, ƒ.KEYBOARD_CODE.CTRL_RIGHT]);
 
       this.#isTransforming = true;
+      if (this.#startTransform == true) {
+        this.#startTransform = false;
+        this.viewport.canvas.dispatchEvent(new Event("startTransform", { bubbles: true }));
+      }
 
       this.#direction.copy(this.getPoint3D(_event).subtract(this.#mtxWorldBase.translation));
       this.#mtxLocal.copy(this.#mtxLocalBase); // reset
@@ -333,7 +339,7 @@ namespace FudgeAid {
       switch (this.mode) {
         case "translate":
           const mtxWorldInverse: ƒ.Matrix4x4 = this.#mtxWorldBase.clone.invert();
-          
+
           const translation: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#direction, axis) : this.#direction.clone;
           const translationOffset: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#offset, axis) : this.#offset.clone;
 
@@ -447,6 +453,7 @@ namespace FudgeAid {
         this.selected = null;
       if (this.#isTransforming)
         this.#isTransforming = false;
+      this.#startTransform = false;
     };
 
     private hndRenderEnd = (): void => {

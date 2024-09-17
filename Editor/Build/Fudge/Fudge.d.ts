@@ -765,7 +765,7 @@ declare namespace Fudge {
         private hndKey;
         private hndPick;
         private hndPointer;
-        private activeViewport;
+        private hndPointerDown;
         private redraw;
         private setRenderContinously;
     }

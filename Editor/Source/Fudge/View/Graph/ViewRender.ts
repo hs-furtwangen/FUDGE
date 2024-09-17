@@ -45,6 +45,7 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
       this.dom.addEventListener("pointermove", this.hndPointer);
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
+      this.dom.addEventListener("startTransform", this.hndEvent); // hack to evaluate common undo system
 
       if (_state["gizmosFilter"]) {
         let gizmosFilter: ƒ.Viewport["gizmosFilter"] = _state["gizmosFilter"];
@@ -209,7 +210,7 @@ namespace Fudge {
       this.setGraph(null);
 
       this.transformator = new ƒAid.Transformator(this.viewport);
-      this.canvas.addEventListener("pointerdown", this.activeViewport);
+      this.canvas.addEventListener("pointerdown", this.hndPointerDown);
       this.canvas.addEventListener("pick", this.hndPick);
 
       let submenu: Electron.MenuItemConstructorOptions[] = [];
@@ -277,6 +278,9 @@ namespace Fudge {
     private hndEvent = (_event: EditorEvent): void => {
       let detail: EventDetail = <EventDetail>_event.detail;
       switch (_event.type) {
+        case "startTransform":
+          ƒui.Controller.save(this.node.cmpTransform, this.node.cmpTransform.getMutator());
+          break;
         case EVENT_EDITOR.SELECT:
           if (detail.graph) {
             this.setGraph(detail.graph);
@@ -322,12 +326,12 @@ namespace Fudge {
         case ƒ.KEYBOARD_CODE.G:
           this.contextMenu.getMenuItemById(this.transformator.space == TRANSFORM.LOCAL ? TRANSFORM.WORLD : TRANSFORM.LOCAL).click();
           break;
-        case ƒ.KEYBOARD_CODE.Y:
-          if (_event.ctrlKey) {
-            this.transformator.undo();
-            this.redraw();
-            break;
-          }
+        // case ƒ.KEYBOARD_CODE.Y:
+        //   if (_event.ctrlKey) {
+        //     this.transformator.undo();
+        //     this.redraw();
+        //     break;
+        //   }
       }
     };
 
@@ -375,9 +379,9 @@ namespace Fudge {
       this.redraw();
     };
 
-    private activeViewport = (_event: MouseEvent): void => {
+    private hndPointerDown = (_event: MouseEvent): void => {
       ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
-      _event.cancelBubble = true;
+      _event.stopPropagation();
     };
 
     private redraw = (): void => {
