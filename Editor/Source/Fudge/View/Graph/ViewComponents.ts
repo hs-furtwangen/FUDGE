@@ -126,14 +126,11 @@ namespace Fudge {
     }
     //#endregion
 
-    protected hndDragOver(_event: DragEvent, _viewSource: View): void {
+    protected hndDragOver(_event: DragEvent): void {
       if (!this.node)
         return;
       if (this.dom != _event.target)
         return;
-
-      // if (!(_viewSource instanceof ViewInternal || _viewSource instanceof ViewScript))
-      //   return;
  
       for (let source of ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ScriptInfo) {
@@ -151,7 +148,7 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected hndDrop(_event: DragEvent, _viewSource: View): void {
+    protected hndDrop(_event: DragEvent): void {
       if (this.protectGraphInstance())
         return;
       for (let source of ƒui.Clipboard.dragDrop.get()) {

@@ -22,8 +22,6 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.UPDATE, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.DELETE, this.hndEvent);
 
-      // this.dom.addEventListener(EVENT_EDITOR.MODIFY, this.hndEvent);
-      // this.dom.addEventListener(EVENT_EDITOR.TEST, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.SELECT, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.REMOVE_CHILD, this.hndEvent);
@@ -177,7 +175,7 @@ namespace Fudge {
     }
     //#endregion
 
-    protected hndDragOver(_event: DragEvent, _viewSource: View): void {
+    protected hndDragOver(_event: DragEvent): void {
       let viewSource: View = View.getViewSource(_event);
 
       if (this.dom != _event.target) {
@@ -209,7 +207,7 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected async hndDrop(_event: DragEvent, _viewSource: View): Promise<void> {
+    protected async hndDrop(_event: DragEvent): Promise<void> {
       let viewSource: View = View.getViewSource(_event);
 
       if (viewSource instanceof ViewInternal) {
@@ -260,7 +258,7 @@ namespace Fudge {
       this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
       if (viewSource instanceof ViewHierarchy)
         // //@ts-ignore
-        viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
+        viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this } });
     }
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {

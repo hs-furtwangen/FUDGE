@@ -152,7 +152,7 @@ namespace Fudge {
     };
     //#endregion
 
-    protected hndDragOver(_event: DragEvent, _viewSource: View): void {
+    protected hndDragOver(_event: DragEvent): void {
       _event.dataTransfer.dropEffect = "none";
 
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
@@ -163,7 +163,7 @@ namespace Fudge {
       }
     }
 
-    protected hndDrop(_event: DragEvent, _viewSource: View): void {
+    protected hndDrop(_event: DragEvent): void {
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       if (source instanceof ƒ.ComponentCamera) {
         // this.setCameraOrthographic(false);

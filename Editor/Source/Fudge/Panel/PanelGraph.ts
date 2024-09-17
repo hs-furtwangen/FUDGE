@@ -74,7 +74,7 @@ namespace Fudge {
     }
 
     // TODO: this should be done in ViewRender, drop shouldn't be passed to Panel
-    protected hndDrop(_event: DragEvent, _viewSource: View): void {
+    protected hndDrop(_event: DragEvent): void {
       if (!this.views.find(_view => _view instanceof ViewRender).dom.contains(<Node>_event.target)) // accept drop only from render view
         return;
 

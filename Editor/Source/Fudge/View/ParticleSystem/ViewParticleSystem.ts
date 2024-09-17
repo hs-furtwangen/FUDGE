@@ -173,11 +173,11 @@ namespace Fudge {
     //#endregion
 
     //#region event handling
-    protected hndDragEnter(_event: DragEvent, _source: View): void { // prevents dropEffect flickering
-      this.hndDragOver(_event, _source);
+    protected hndDragEnter(_event: DragEvent): void { // prevents dropEffect flickering
+      this.hndDragOver(_event);
     }
 
-    protected hndDragOver(_event: DragEvent, _viewSource: View): void {
+    protected hndDragOver(_event: DragEvent): void {
       _event.stopPropagation();
       if (View.getViewSource(_event) != this)
         _event.dataTransfer.dropEffect = "none";
@@ -192,7 +192,7 @@ namespace Fudge {
       _event.preventDefault();
     }
 
-    protected hndDrop(_event: DragEvent, _viewSource: View): void {
+    protected hndDrop(_event: DragEvent): void {
       this.cmpParticleSystem = <ƒ.ComponentParticleSystem>(<ƒ.Node>ƒui.Clipboard.dragDrop.get()[0]).getComponent(ƒ.ComponentParticleSystem);
       this.timeScalePlay = this.cmpParticleSystem.timeScale;
       this.setTime(0);

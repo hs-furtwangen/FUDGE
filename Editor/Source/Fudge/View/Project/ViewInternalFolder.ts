@@ -209,7 +209,7 @@ namespace Fudge {
     };
     //#endregion
 
-    protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void {
+    protected hndDragOverCapture(_event: DragEvent): void {
       let viewSource: View = View.getViewSource(_event);
       if (viewSource == this || viewSource instanceof ViewHierarchy)
         return;
@@ -224,7 +224,7 @@ namespace Fudge {
       _event.stopPropagation();
     }
 
-    protected async hndDropCapture(_event: DragEvent, _viewSource: View): Promise<void> {
+    protected async hndDropCapture(_event: DragEvent): Promise<void> {
       let viewSource: View = View.getViewSource(_event);
       if (viewSource == this || _event.target == this.tree)
         return;
@@ -266,7 +266,7 @@ namespace Fudge {
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
       if (viewSource instanceof ViewHierarchy)
         // //@ts-ignore
-        viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
+        viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this } });
     }
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {

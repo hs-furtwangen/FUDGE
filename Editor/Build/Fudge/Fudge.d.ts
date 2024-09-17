@@ -334,8 +334,8 @@ declare namespace Fudge {
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
         protected openContextMenu: (_event: Event) => void;
-        protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void;
-        protected hndDropCapture(_event: DragEvent, _viewSource: View): Promise<void>;
+        protected hndDragOverCapture(_event: DragEvent): void;
+        protected hndDropCapture(_event: DragEvent): Promise<void>;
         private hndKeyboardEvent;
         private hndOpen;
         private hndCreate;
@@ -532,7 +532,7 @@ declare namespace Fudge {
         #private;
         constructor(_container: ComponentContainer, _state: ViewState);
         protected getState(): ViewState;
-        protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected hndDrop(_event: DragEvent): void;
         private hndEvent;
         private storeNode;
         private restoreNode;
@@ -588,8 +588,8 @@ declare namespace Fudge {
         private time;
         private idInterval;
         constructor(_container: ComponentContainer, _state: ViewState);
-        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
-        protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected hndDragOver(_event: DragEvent): void;
+        protected hndDrop(_event: DragEvent): void;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         private getNodeSubmenu;
@@ -688,8 +688,8 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
-        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
-        protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected hndDragOver(_event: DragEvent): void;
+        protected hndDrop(_event: DragEvent): void;
         private protectGraphInstance;
         private fillContent;
         private hndEvent;
@@ -748,8 +748,8 @@ declare namespace Fudge {
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected openContextMenu: (_event: Event) => void;
-        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
-        protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected hndDragOver(_event: DragEvent): void;
+        protected hndDrop(_event: DragEvent): void;
         protected getState(): ViewState;
         private createUserInterface;
         private setGraph;
@@ -786,9 +786,9 @@ declare namespace Fudge {
         protected openContextMenu: (_event: Event) => void;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
-        protected hndDragEnter(_event: DragEvent, _source: View): void;
-        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
-        protected hndDrop(_event: DragEvent, _viewSource: View): void;
+        protected hndDragEnter(_event: DragEvent): void;
+        protected hndDragOver(_event: DragEvent): void;
+        protected hndDrop(_event: DragEvent): void;
         private hndEvent;
         private createToolbar;
         private setTime;
@@ -813,8 +813,8 @@ declare namespace Fudge {
         getSelection(): ƒ.SerializableResource[];
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
-        protected hndDragOver(_event: DragEvent, _viewSource: View): void;
-        protected hndDrop(_event: DragEvent, _viewSource: View): Promise<void>;
+        protected hndDragOver(_event: DragEvent): void;
+        protected hndDrop(_event: DragEvent): Promise<void>;
         private hndKeyboardEvent;
         private hndEvent;
     }
