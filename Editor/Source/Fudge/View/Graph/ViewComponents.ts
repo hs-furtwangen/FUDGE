@@ -300,6 +300,9 @@ namespace Fudge {
       if (!mtxTransform)
         return;
 
+      ƒui.Controller.save(component, component.getMutator());
+    
+
       let dtl: ƒ.General = _event.detail.transform;
       let mtxCamera: ƒ.Matrix4x4 = (<ƒ.ComponentCamera>dtl.camera).node.mtxWorld;
       let distance: number = mtxCamera.getTranslationTo(this.node.mtxWorld).magnitude;

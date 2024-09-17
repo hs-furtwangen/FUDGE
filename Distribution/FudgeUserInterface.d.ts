@@ -22,6 +22,7 @@ declare namespace FudgeUserInterface {
      * Updates the mutable on interaction with the element and the element in time intervals.
      */
     class Controller {
+        static history: [ƒ.Mutable | ƒ.MutableArray<ƒ.General>, ƒ.Mutator][];
         domElement: HTMLElement;
         protected timeUpdate: number;
         /** Refererence to the [[FudgeCore.Mutable]] this ui refers to */
@@ -51,6 +52,8 @@ declare namespace FudgeUserInterface {
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
+        static save(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator: ƒ.Mutator): Promise<void>;
+        static undo(): Promise<void>;
         /**
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */

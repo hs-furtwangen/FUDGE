@@ -325,6 +325,7 @@ namespace Fudge {
         case ƒ.KEYBOARD_CODE.Y:
           if (_event.ctrlKey) {
             this.transformator.undo();
+            this.redraw();
             break;
           }
       }

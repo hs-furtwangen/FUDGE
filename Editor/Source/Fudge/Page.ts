@@ -1,10 +1,10 @@
-///<reference types="../../../node_modules/electron/Electron"/>
+// /<reference types="../../../node_modules/electron/Electron"/>
 ///<reference path="Definition.ts"/>
 
 namespace Fudge {
   import ƒ = FudgeCore;
   // import ƒaid = FudgeAid;
-  // import ƒui = FudgeUserInterface;
+  import ƒui = FudgeUserInterface;
 
   export const ipcRenderer: Electron.IpcRenderer = require("electron").ipcRenderer; // Replace with:
   export const remote: typeof import("@electron/remote") = require("@electron/remote");
@@ -147,7 +147,7 @@ namespace Fudge {
       }
     }
 
-    private static hndKey = (_event: KeyboardEvent): void => {
+    private static hndKey = async (_event: KeyboardEvent): Promise<void> => {
       document.exitPointerLock();
 
       switch (_event.code) {
@@ -160,6 +160,9 @@ namespace Fudge {
         case ƒ.KEYBOARD_CODE.E:
           // TODO: don't switch to scale mode when using fly-camera and pressing E
           Page.setTransform(TRANSFORM.SCALE);
+          break;
+        case ƒ.KEYBOARD_CODE.Z:
+          await ƒui.Controller.undo();
           break;
       }
     };

@@ -1,4 +1,4 @@
-/// <reference types="../../../node_modules/electron/electron" />
+/// <reference types="electron" />
 /// <reference types="node" />
 /// <reference types="../../GoldenLayout/golden-layout" />
 declare namespace Fudge {
