@@ -279,7 +279,7 @@ namespace Fudge {
           let mutable: ƒ.Component = <ƒ.Component>controller.getMutable();
           if (mutable instanceof ƒ.ComponentRigidbody) {
             // mutable.initialize(); 
-            mutable.isInitialized = false;  
+            mutable.isInitialized = false;
             this.dispatch(EVENT_EDITOR.UPDATE, { bubbles: true, detail: { node: this.node } }); // TODO: check if this was necessary, EVENT_EDITOR.UPDATE gets broadcasted by project on ƒ.EVENT.GRAPH_MUTATED, so this was causing a double broadcast of EVENT_EDITOR.UPDATE to ALL views on any change to any component
           }
           break;
@@ -302,7 +302,7 @@ namespace Fudge {
         return;
 
       ƒui.Controller.save(component, component.getMutator());
-    
+
 
       let dtl: ƒ.General = _event.detail.transform;
       let mtxCamera: ƒ.Matrix4x4 = (<ƒ.ComponentCamera>dtl.camera).node.mtxWorld;
@@ -314,7 +314,7 @@ namespace Fudge {
       value.x = (dtl.restriction == "x" ? !dtl.inverted : dtl.inverted) ? dtl.x : undefined;
       value.y = (dtl.restriction == "y" ? !dtl.inverted : dtl.inverted) ? -dtl.y : undefined;
       value.z = (dtl.restriction == "z" ? !dtl.inverted : dtl.inverted) ?
-        ((value.x == undefined) ? -dtl.y : dtl.x) : undefined;
+        ((value.y == undefined) ? -dtl.y : dtl.x) : undefined; 
       value = value.map((_c: number) => _c || 0);
 
       if (mtxTransform instanceof ƒ.Matrix4x4)
