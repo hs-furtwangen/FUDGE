@@ -37,9 +37,9 @@ namespace Fudge {
         this.expand(this.#expanded);
     }
 
-    public getSelection(): DirectoryEntry[] {
-      return this.tree.controller.selection;
-    }
+    // public getSelection(): DirectoryEntry[] {
+    //   return this.tree.controller.selection;
+    // }
 
     // public getDragDropSources(): DirectoryEntry[] {
     //   return ƒui.Clipboard.dragDrop.get();

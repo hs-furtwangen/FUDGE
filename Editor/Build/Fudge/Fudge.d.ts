@@ -307,7 +307,6 @@ declare namespace Fudge {
         private tree;
         constructor(_container: ComponentContainer, _state: ViewState);
         setProject(): void;
-        getSelection(): DirectoryEntry[];
         protected getState(): ViewState;
         private hndEvent;
         private getExpanded;
@@ -315,7 +314,6 @@ declare namespace Fudge {
     }
 }
 declare namespace Fudge {
-    import ƒ = FudgeCore;
     abstract class ViewInternal extends View {
         static readonly gltfImportSettings: Record<string, boolean>;
     }
@@ -329,7 +327,6 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         get controller(): ControllerTreeResource;
         get resourceFolder(): ResourceFolder;
-        getSelection(): ƒ.SerializableResource[];
         protected getState(): ViewState;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
@@ -810,7 +807,6 @@ declare namespace Fudge {
         private table;
         constructor(_container: ComponentContainer, _state: ViewState);
         listResources(): void;
-        getSelection(): ƒ.SerializableResource[];
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
         protected hndDragOver(_event: DragEvent): void;
@@ -876,7 +872,6 @@ declare namespace Fudge {
         private table;
         constructor(_container: ComponentContainer, _state: ViewState);
         listScripts(): void;
-        getSelection(): ScriptInfo[];
         private hndEvent;
     }
 }

@@ -52,9 +52,9 @@ namespace Fudge {
       return project.resourceFolder;
     }
 
-    public getSelection(): ƒ.SerializableResource[] {
-      return <ƒ.SerializableResource[]>this.controller.selection.filter(_element => !(_element instanceof ResourceFolder));
-    }
+    // public getSelection(): ƒ.SerializableResource[] {
+    //   return <ƒ.SerializableResource[]>this.controller.selection.filter(_element => !(_element instanceof ResourceFolder));
+    // }
 
     // public getDragDropSources(): ƒ.SerializableResource[] {
     //   return ƒui.Clipboard.dragDrop.get<ƒ.SerializableResource>().filter(_source => !(_source instanceof ResourceFolder));

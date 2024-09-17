@@ -57,9 +57,9 @@ namespace Fudge {
       }
     }
 
-    public getSelection(): ƒ.SerializableResource[] {
-      return this.table.controller.selection;
-    }
+    // public getSelection(): ƒ.SerializableResource[] {
+    //   return this.table.controller.selection;
+    // }
 
     // public getDragDropSources(): ƒ.SerializableResource[] {
     //   return ƒui.Clipboard.dragDrop.get();

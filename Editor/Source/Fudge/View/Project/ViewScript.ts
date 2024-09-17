@@ -34,9 +34,9 @@ namespace Fudge {
       this.dom.appendChild(this.table);
     }
 
-    public getSelection(): ScriptInfo[] {
-      return this.table.controller.selection;
-    }
+    // public getSelection(): ScriptInfo[] {
+    //   return this.table.controller.selection;
+    // }
 
     // public getDragDropSources(): ScriptInfo[] {
     //   return ƒui.Clipboard.dragDrop.get();
