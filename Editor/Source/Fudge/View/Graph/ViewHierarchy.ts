@@ -42,10 +42,15 @@ namespace Fudge {
         this.dom.removeChild(this.tree);
       this.dom.innerHTML = "";
 
-      if (this.graph)
+      if (this.graph) {
         this.storeExpanded(this.graph.idResource, this.getExpanded());
+        this.graph.removeEventListener(ƒ.EVENT.CHILD_APPEND, this.hndEvent);
+        this.graph.removeEventListener(ƒ.EVENT.CHILD_REMOVE, this.hndEvent);
+      }
 
       this.graph = _graph;
+      this.graph.addEventListener(ƒ.EVENT.CHILD_APPEND, this.hndEvent);
+      this.graph.addEventListener(ƒ.EVENT.CHILD_REMOVE, this.hndEvent);
       // this.selectedNode = null;
 
       this.tree = new ƒui.Tree<ƒ.Node>(new ControllerTreeHierarchy(), this.graph);
@@ -166,6 +171,10 @@ namespace Fudge {
 
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {
+        case ƒ.EVENT.CHILD_APPEND:
+        case ƒ.EVENT.CHILD_REMOVE:
+          console.log(_event.type);
+          break;
         case EVENT_EDITOR.SELECT:
           if (_event.detail.graph)
             this.setGraph(_event.detail.graph);
