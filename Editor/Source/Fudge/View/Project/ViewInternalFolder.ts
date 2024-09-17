@@ -56,9 +56,9 @@ namespace Fudge {
       return <ƒ.SerializableResource[]>this.controller.selection.filter(_element => !(_element instanceof ResourceFolder));
     }
 
-    public getDragDropSources(): ƒ.SerializableResource[] {
-      return ƒui.Clipboard.dragDrop.get<ƒ.SerializableResource>().filter(_source => !(_source instanceof ResourceFolder));
-    }
+    // public getDragDropSources(): ƒ.SerializableResource[] {
+    //   return ƒui.Clipboard.dragDrop.get<ƒ.SerializableResource>().filter(_source => !(_source instanceof ResourceFolder));
+    // }
 
     // TODO: this is a preparation for syncing a graph with its instances after structural changes
     // protected openContextMenu = (_event: Event): void => {
@@ -210,11 +210,12 @@ namespace Fudge {
     //#endregion
 
     protected hndDragOverCapture(_event: DragEvent, _viewSource: View): void {
-      if (_viewSource == this || _viewSource instanceof ViewHierarchy)
+      let viewSource: View = View.getViewSource(_event);
+      if (viewSource == this || viewSource instanceof ViewHierarchy)
         return;
 
-      if (_viewSource instanceof ViewExternal) {
-        let sources: DirectoryEntry[] = _viewSource.getDragDropSources();
+      if (viewSource instanceof ViewExternal) {
+        let sources: DirectoryEntry[] = ƒui.Clipboard.dragDrop.get();
         if (sources.some(_source => [MIME.AUDIO, MIME.IMAGE, MIME.MESH, MIME.GLTF].includes(_source.getMimeType())))
           return;
       }
@@ -224,14 +225,15 @@ namespace Fudge {
     }
 
     protected async hndDropCapture(_event: DragEvent, _viewSource: View): Promise<void> {
-      if (_viewSource == this || _event.target == this.tree)
+      let viewSource: View = View.getViewSource(_event);
+      if (viewSource == this || _event.target == this.tree)
         return;
 
-      if (!(_viewSource instanceof ViewExternal || _viewSource instanceof ViewHierarchy))
+      if (!(viewSource instanceof ViewExternal || viewSource instanceof ViewHierarchy))
         return;
 
       let resources: ƒ.SerializableResource[] = [];
-      for (const source of _viewSource.getDragDropSources()) {
+      for (const source of <DirectoryEntry[] | ƒ.Node[]>ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ƒ.Node) {
           resources.push(await ƒ.Project.registerAsGraph(source, true));
           continue;
@@ -262,9 +264,9 @@ namespace Fudge {
 
       ƒui.Clipboard.dragDrop.set(resources);
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
-      if (_viewSource instanceof ViewHierarchy)
+      if (viewSource instanceof ViewHierarchy)
         // //@ts-ignore
-        _viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
+        viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
     }
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {

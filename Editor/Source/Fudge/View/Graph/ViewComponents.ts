@@ -41,10 +41,6 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent, true);
     }
 
-    public getDragDropSources(): ƒ.ComponentCamera[] {
-      return this.drag ? [this.drag] : [];
-    }
-
     //#region  ContextMenu
     protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu {
       const menu: Electron.Menu = new remote.Menu();
@@ -136,10 +132,10 @@ namespace Fudge {
       if (this.dom != _event.target)
         return;
 
-      if (!(_viewSource instanceof ViewInternal || _viewSource instanceof ViewScript))
-        return;
-
-      for (let source of _viewSource.getDragDropSources()) {
+      // if (!(_viewSource instanceof ViewInternal || _viewSource instanceof ViewScript))
+      //   return;
+ 
+      for (let source of ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ScriptInfo) {
           if (!source.isComponent)
             return;
@@ -158,7 +154,7 @@ namespace Fudge {
     protected hndDrop(_event: DragEvent, _viewSource: View): void {
       if (this.protectGraphInstance())
         return;
-      for (let source of _viewSource.getDragDropSources()) {
+      for (let source of ƒui.Clipboard.dragDrop.get()) {
         let cmpNew: ƒ.Component = this.createComponent(source);
         this.node.addComponent(cmpNew);
         this.expanded[cmpNew.type] = true;
@@ -210,7 +206,8 @@ namespace Fudge {
         this.dom.append(details);
         if (component instanceof ƒ.ComponentCamera) {
           details.draggable = true;
-          details.addEventListener("dragstart", (_event: Event) => { this.drag = <ƒ.ComponentCamera>component; });
+          // details.addEventListener("dragstart", (_event: Event) => { this.drag = <ƒ.ComponentCamera>component; });
+          details.addEventListener("dragstart", () => ƒui.Clipboard.dragDrop.set([component]));
         }
         if (component instanceof ƒ.ComponentRigidbody) {
           let pivot: HTMLElement = controller.domElement.querySelector("[key='mtxPivot'");

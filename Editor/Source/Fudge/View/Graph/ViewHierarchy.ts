@@ -68,9 +68,9 @@ namespace Fudge {
         this.expand(expanded);
     }
 
-    public getDragDropSources(): ƒ.Node[] {
-      return ƒui.Clipboard.dragDrop.get();
-    }
+    // public getDragDropSources(): ƒ.Node[] {
+    //   return ƒui.Clipboard.dragDrop.get();
+    // }
     public getCopyPasteSources(): ƒ.Node[] {
       return ƒui.Clipboard.copyPaste.get();
     }

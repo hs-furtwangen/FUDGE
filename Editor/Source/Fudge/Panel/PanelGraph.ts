@@ -73,11 +73,12 @@ namespace Fudge {
       return state;
     }
 
+    // TODO: this should be done in ViewRender, drop shouldn't be passed to Panel
     protected hndDrop(_event: DragEvent, _viewSource: View): void {
       if (!this.views.find(_view => _view instanceof ViewRender).dom.contains(<Node>_event.target)) // accept drop only from render view
         return;
 
-      let source: Object = _viewSource.getDragDropSources()[0];
+      let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       if (source instanceof ƒ.Graph)
         this.dispatch(EVENT_EDITOR.SELECT, { detail: { graph: source, node: this.restoreNode(source) } });
     }

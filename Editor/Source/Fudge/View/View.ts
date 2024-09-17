@@ -96,9 +96,6 @@ namespace Fudge {
       this.#container.setTitle(_title);
     }
 
-    public getDragDropSources(): Object[] {
-      return [];
-    }
     public getCopyPasteSources(): Object[] {
       return [];
     }

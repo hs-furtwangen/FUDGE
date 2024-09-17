@@ -38,9 +38,9 @@ namespace Fudge {
       return this.table.controller.selection;
     }
 
-    public getDragDropSources(): ScriptInfo[] {
-      return ƒui.Clipboard.dragDrop.get();
-    }
+    // public getDragDropSources(): ScriptInfo[] {
+    //   return ƒui.Clipboard.dragDrop.get();
+    // }
 
     // #region  ContextMenu
     // protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu {

@@ -43,7 +43,7 @@ namespace Fudge {
     protected hndDragOver(_event: DragEvent, _viewSource: View): void {
       _event.dataTransfer.dropEffect = "none";
 
-      let source: Object = _viewSource.getDragDropSources()[0];
+      let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       if (!(source instanceof ƒ.Node && source.getComponent(ƒ.ComponentAnimator)?.animation))
         //(!(_viewSource instanceof ViewHierarchy || _viewSource instanceof ViewInternal) ||
         return;
@@ -54,7 +54,7 @@ namespace Fudge {
     }
 
     protected hndDrop(_event: DragEvent, _viewSource: View): void {
-      let source: Object = _viewSource.getDragDropSources()[0];
+      let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: <ƒ.Node>source } });
     }
 

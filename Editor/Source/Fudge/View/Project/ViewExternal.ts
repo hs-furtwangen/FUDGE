@@ -41,9 +41,9 @@ namespace Fudge {
       return this.tree.controller.selection;
     }
 
-    public getDragDropSources(): DirectoryEntry[] {
-      return ƒui.Clipboard.dragDrop.get();
-    }
+    // public getDragDropSources(): DirectoryEntry[] {
+    //   return ƒui.Clipboard.dragDrop.get();
+    // }
 
     protected getState(): ViewState {
       let state: ViewState = super.getState();

@@ -117,6 +117,9 @@ namespace Fudge {
       if (_sources.length == 0)
         return false;
 
+      if (!(_sources.every(_source =>_source instanceof ƒ.Node)))
+        return false;
+      
       return _sources.every(_source => checkGraphDrop(_source, _target));
 
       function checkGraphDrop(_source: ƒ.Node, _target: ƒ.Node): boolean {

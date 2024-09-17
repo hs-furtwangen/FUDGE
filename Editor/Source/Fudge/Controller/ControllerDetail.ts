@@ -68,7 +68,7 @@ namespace Fudge {
       let metaType: Function = metaTypes[key];
       // console.log(key, metaTypes, metaType);
 
-      let sources: Object[] = View.getViewSource(_event).getDragDropSources();
+      let sources: Object[] = ƒui.Clipboard.dragDrop.get();
       if (!metaType || (metaType && typeof metaType == "function" && !(sources[0] instanceof metaType)))
         return;
 
@@ -105,7 +105,7 @@ namespace Fudge {
       let { mutable, key } = this.getTargetMutableAndKey(_event);
 
       if (this.#view != View.getViewSource(_event)) {
-        let sources: Object[] = View.getViewSource(_event).getDragDropSources();
+        let sources: Object[] = ƒui.Clipboard.dragDrop.get();
         mutable[key] = sources[0];
       }
 
@@ -127,7 +127,7 @@ namespace Fudge {
       if (!_filter.fromViews?.find((_view) => viewSource instanceof _view))
         return false;
 
-      let sources: Object[] = viewSource.getDragDropSources();
+      let sources: Object[] = ƒui.Clipboard.dragDrop.get();
       if (!(sources[0] instanceof _filter.ofType))
         return false;
 

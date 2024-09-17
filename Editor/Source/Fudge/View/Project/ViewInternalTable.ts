@@ -63,9 +63,9 @@ namespace Fudge {
       return this.table.controller.selection;
     }
 
-    public getDragDropSources(): ƒ.SerializableResource[] {
-      return ƒui.Clipboard.dragDrop.get();
-    }
+    // public getDragDropSources(): ƒ.SerializableResource[] {
+    //   return ƒui.Clipboard.dragDrop.get();
+    // }
 
     // TODO: this is a preparation for syncing a graph with its instances after structural changes
     // protected openContextMenu = (_event: Event): void => {
@@ -178,23 +178,24 @@ namespace Fudge {
     //#endregion
 
     protected hndDragOver(_event: DragEvent, _viewSource: View): void {
+      let viewSource: View = View.getViewSource(_event);
 
       if (this.dom != _event.target) {
         _event.dataTransfer.dropEffect = "none";
         return;
       }
 
-      if (_viewSource instanceof ViewInternal) {
+      if (viewSource instanceof ViewInternal) {
         _event.dataTransfer.dropEffect = this.table.controller.dragOver(_event);
 
-      } else if (_viewSource instanceof ViewExternal) {
-        let sources: DirectoryEntry[] = _viewSource.getDragDropSources();
+      } else if (viewSource instanceof ViewExternal) {
+        let sources: DirectoryEntry[] = ƒui.Clipboard.dragDrop.get();
         if (sources.some(_source => ![MIME.AUDIO, MIME.IMAGE, MIME.MESH, MIME.GLTF].includes(_source.getMimeType())))
           return;
         _event.dataTransfer.dropEffect = "link";
 
-      } else if (_viewSource instanceof ViewHierarchy) {
-        let items: ƒ.Node[] = _viewSource.getDragDropSources();
+      } else if (viewSource instanceof ViewHierarchy) {
+        let items: ƒ.Node[] = ƒui.Clipboard.dragDrop.get();
         if (items.find(_item => _item instanceof ƒ.GraphInstance))
           return;
         _event.dataTransfer.dropEffect = "link";
@@ -209,20 +210,22 @@ namespace Fudge {
     }
 
     protected async hndDrop(_event: DragEvent, _viewSource: View): Promise<void> {
-      if (_viewSource instanceof ViewInternal) {
+      let viewSource: View = View.getViewSource(_event);
+
+      if (viewSource instanceof ViewInternal) {
         let dropEffect: ƒui.DROPEFFECT = this.table.controller.dragOver(_event);
         if (dropEffect == "copy") {
           await this.table.controller.clone(ƒui.Clipboard.dragDrop.get());
         }
       }
-      if (_viewSource instanceof ViewHierarchy) {
-        let sources: ƒ.Node[] = _viewSource.getDragDropSources();
+      if (viewSource instanceof ViewHierarchy) {
+        let sources: ƒ.Node[] = ƒui.Clipboard.dragDrop.get();
         for (let source of sources) {
           if (!(source instanceof ƒ.GraphInstance))
             await ƒ.Project.registerAsGraph(source, true);
         }
-      } else if (_viewSource instanceof ViewExternal) {
-        let sources: DirectoryEntry[] = _viewSource.getDragDropSources();
+      } else if (viewSource instanceof ViewExternal) {
+        let sources: DirectoryEntry[] = ƒui.Clipboard.dragDrop.get();
         for (let source of sources) {
           switch (source.getMimeType()) {
             case MIME.AUDIO:
@@ -255,9 +258,9 @@ namespace Fudge {
       }
 
       this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-      if (_viewSource instanceof ViewHierarchy)
+      if (viewSource instanceof ViewHierarchy)
         // //@ts-ignore
-        _viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
+        viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this /* , data: _viewSource.graph */ } });
     }
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {

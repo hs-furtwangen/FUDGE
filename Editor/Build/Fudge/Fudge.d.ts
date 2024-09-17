@@ -282,7 +282,6 @@ declare namespace Fudge {
         private static registerViewForDragDrop;
         protected get id(): string;
         setTitle(_title: string): void;
-        getDragDropSources(): Object[];
         getCopyPasteSources(): Object[];
         dispatch(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void;
         dispatchToParent(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void;
@@ -309,7 +308,6 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         setProject(): void;
         getSelection(): DirectoryEntry[];
-        getDragDropSources(): DirectoryEntry[];
         protected getState(): ViewState;
         private hndEvent;
         private getExpanded;
@@ -332,7 +330,6 @@ declare namespace Fudge {
         get controller(): ControllerTreeResource;
         get resourceFolder(): ResourceFolder;
         getSelection(): ƒ.SerializableResource[];
-        getDragDropSources(): ƒ.SerializableResource[];
         protected getState(): ViewState;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
@@ -679,7 +676,6 @@ declare namespace Fudge {
     }
 }
 declare namespace Fudge {
-    import ƒ = FudgeCore;
     /**
      * View all components attached to a node
      * @author Jirka Dell'Oro-Friedl, HFU, 2020
@@ -690,7 +686,6 @@ declare namespace Fudge {
         private selected;
         private drag;
         constructor(_container: ComponentContainer, _state: ViewState);
-        getDragDropSources(): ƒ.ComponentCamera[];
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected hndDragOver(_event: DragEvent, _viewSource: View): void;
@@ -720,7 +715,6 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         private get selection();
         setGraph(_graph: ƒ.Graph): void;
-        getDragDropSources(): ƒ.Node[];
         getCopyPasteSources(): ƒ.Node[];
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
@@ -817,7 +811,6 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         listResources(): void;
         getSelection(): ƒ.SerializableResource[];
-        getDragDropSources(): ƒ.SerializableResource[];
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void>;
         protected hndDragOver(_event: DragEvent, _viewSource: View): void;
@@ -884,7 +877,6 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         listScripts(): void;
         getSelection(): ScriptInfo[];
-        getDragDropSources(): ScriptInfo[];
         private hndEvent;
     }
 }

@@ -176,12 +176,12 @@ namespace Fudge {
     protected hndDragEnter(_event: DragEvent, _source: View): void { // prevents dropEffect flickering
       this.hndDragOver(_event, _source);
     }
-    
+
     protected hndDragOver(_event: DragEvent, _viewSource: View): void {
       _event.stopPropagation();
-      if (_viewSource != this)
+      if (View.getViewSource(_event) != this)
         _event.dataTransfer.dropEffect = "none";
-      
+
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       let isParticleSystem: boolean = source instanceof ƒ.Node && source.getComponent(ƒ.ComponentParticleSystem)?.particleSystem != null && !this.tree?.contains(<Node>_event.target);
 
@@ -193,7 +193,7 @@ namespace Fudge {
     }
 
     protected hndDrop(_event: DragEvent, _viewSource: View): void {
-      this.cmpParticleSystem = <ƒ.ComponentParticleSystem>(<ƒ.Node>_viewSource.getDragDropSources()[0]).getComponent(ƒ.ComponentParticleSystem);
+      this.cmpParticleSystem = <ƒ.ComponentParticleSystem>(<ƒ.Node>ƒui.Clipboard.dragDrop.get()[0]).getComponent(ƒ.ComponentParticleSystem);
       this.timeScalePlay = this.cmpParticleSystem.timeScale;
       this.setTime(0);
       this.setParticleSystem(this.cmpParticleSystem.particleSystem);
