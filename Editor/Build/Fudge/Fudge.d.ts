@@ -269,7 +269,7 @@ declare namespace Fudge {
     type ViewState = ƒ.Serialization;
     /**
      * Base class for all [[View]]s to support generic functionality
-     * @authors Monika Galkewitsch, HFU, 2019 | Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
+     * @authors Monika Galkewitsch, HFU, 2019 | Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020-24
      */
     abstract class View {
         #private;
@@ -283,18 +283,18 @@ declare namespace Fudge {
         protected get id(): string;
         setTitle(_title: string): void;
         getCopyPasteSources(): Object[];
+        /**
+         * Dispatch an event to the dom of this view and add a reference to this view in detail if not yet existend in _init
+         */
         dispatch(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void;
+        /**
+         * Like {@link dispatch}, but to the parent element of this view's dom and enable bubbling
+         */
         dispatchToParent(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void;
         protected openContextMenu: (_event: Event) => void;
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected getState(): ViewState;
-        protected hndDropCapture(_event: DragEvent, _source: View): void;
-        protected hndDrop(_event: DragEvent, _source: View): void;
-        protected hndDragOverCapture(_event: DragEvent, _source: View): void;
-        protected hndDragEnter(_event: DragEvent, _source: View): void;
-        protected hndDragOver(_event: DragEvent, _source: View): void;
-        private hndEventCommon;
     }
 }
 declare namespace Fudge {

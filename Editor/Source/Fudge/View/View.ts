@@ -11,7 +11,7 @@ namespace Fudge {
   type Views = { [id: string]: View };
   /**
    * Base class for all [[View]]s to support generic functionality
-   * @authors Monika Galkewitsch, HFU, 2019 | Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
+   * @authors Monika Galkewitsch, HFU, 2019 | Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020-24
    */
   export abstract class View {
     private static views: Views = {};
@@ -25,10 +25,8 @@ namespace Fudge {
     public constructor(_container: ComponentContainer, _state: ViewState) {
       this.dom = document.createElement("div");
       this.dom.style.height = "100%";
-      // this.dom.style.overflow = "auto";
       this.dom.setAttribute("view", this.constructor.name);
 
-      //_container.getElement().append(this.dom); //old
       this.#container = _container;
       this.#container.element.appendChild(this.dom);
       this.#container.stateRequestEvent = this.getState.bind(this);
@@ -37,13 +35,11 @@ namespace Fudge {
         this.dispatch(EVENT_EDITOR.CLOSE, { bubbles: true });
       });
 
-      // console.log(this.contextMenuCallback);
       this.contextMenu = this.getContextMenu(this.contextMenuCallback.bind(this));
-      // this.dom.addEventListener(EVENT_EDITOR.SET_PROJECT, this.hndEventCommon);
-
       this.#id = View.registerViewForDragDrop(this);
     }
 
+    // get the source view of a drag and drop event
     public static getViewSource(_event: DragEvent): View {
       if (_event.dataTransfer)
         for (let item of _event.dataTransfer.items)
@@ -52,6 +48,7 @@ namespace Fudge {
       return null;
     }
 
+    // register the view as a source for drag and drop events to later allow or disallow drop
     private static registerViewForDragDrop(_this: View): number {
       View.views[View.idCount] = _this;
 
@@ -60,30 +57,6 @@ namespace Fudge {
         _event.stopPropagation();
         _event.dataTransfer.setData("SourceView:" + _this.#id.toString(), "typesHack");
       });
-
-      // // when drag enter a view, get the original source view for dragging and call hndDragEnter
-      // _this.dom.addEventListener(ƒui.EVENT.DRAG_ENTER, (_event: DragEvent) => {
-      //   _event.stopPropagation();
-      //   _this.hndDragEnter(_event, View.getViewSource(_event));
-      // });
-
-      // // when dragging over a view, get the original source view for dragging and call hndDragOver
-      // _this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, (_event: DragEvent) => {
-      //   _event.stopPropagation();
-      //   _this.hndDragOver(_event, View.getViewSource(_event));
-      // });
-
-      // // drag over during capture phase, allows views to prevent event reaching the actual target
-      // _this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, _event => _this.hndDragOverCapture(_event, View.getViewSource(_event)), true);
-
-      // // when dropping into a view, get the original source view for dragging and call hndDrop
-      // _this.dom.addEventListener(ƒui.EVENT.DROP, (_event: DragEvent) => {
-      //   // _event.stopPropagation();
-      //   _this.hndDrop(_event, View.getViewSource(_event));
-      // }, false);
-
-      // // drop during capture phase, allows views manipulate the drop data before the actual target is reached
-      // _this.dom.addEventListener(ƒui.EVENT.DROP, _event => _this.hndDropCapture(_event, View.getViewSource(_event)), true);
 
       return View.idCount++;
     }
@@ -100,12 +73,18 @@ namespace Fudge {
       return [];
     }
 
+    /**
+     * Dispatch an event to the dom of this view and add a reference to this view in detail if not yet existend in _init
+     */
     public dispatch(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void {
       _init.detail = _init.detail || {};
       _init.detail.view = _init.detail.view || this;
       this.dom.dispatchEvent(new EditorEvent(_type, _init));
     }
 
+    /**
+     * Like {@link dispatch}, but to the parent element of this view's dom and enable bubbling
+     */
     public dispatchToParent(_type: EVENT_EDITOR, _init: CustomEventInit<EventDetail>): void {
       _init.detail = _init.detail || {};
       _init.bubbles = true;
@@ -134,33 +113,6 @@ namespace Fudge {
       return {};
     }
 
-    protected hndDropCapture(_event: DragEvent, _source: View): void {
-      //
-    }
-
-    protected hndDrop(_event: DragEvent, _source: View): void {
-      // console.log(_source, _event);
-    }
-
-    protected hndDragOverCapture(_event: DragEvent, _source: View): void {
-      //
-    }
-
-    protected hndDragEnter(_event: DragEvent, _source: View): void {
-      // _event.dataTransfer.dropEffect = "link";
-    }
-
-    protected hndDragOver(_event: DragEvent, _source: View): void {
-      // _event.dataTransfer.dropEffect = "link";
-    }
-
-    private hndEventCommon = (_event: Event): void => {
-      // switch (_event.type) {
-      //   case EVENT_EDITOR.SET_PROJECT:
-      //     this.contextMenu = this.getContextMenu(this.contextMenuCallback.bind(this));
-      //     break;
-      // }
-    };
     //#endregion
 
   }
