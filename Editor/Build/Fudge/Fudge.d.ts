@@ -282,7 +282,6 @@ declare namespace Fudge {
         private static registerViewForDragDrop;
         protected get id(): string;
         setTitle(_title: string): void;
-        getCopyPasteSources(): Object[];
         /**
          * Dispatch an event to the dom of this view and add a reference to this view in detail if not yet existend in _init
          */
@@ -713,7 +712,6 @@ declare namespace Fudge {
         constructor(_container: ComponentContainer, _state: ViewState);
         private get selection();
         setGraph(_graph: ƒ.Graph): void;
-        getCopyPasteSources(): ƒ.Node[];
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected getState(): ViewState;

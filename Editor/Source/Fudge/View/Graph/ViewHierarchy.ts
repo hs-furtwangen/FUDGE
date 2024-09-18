@@ -68,13 +68,6 @@ namespace Fudge {
         this.expand(expanded);
     }
 
-    // public getDragDropSources(): ƒ.Node[] {
-    //   return ƒui.Clipboard.dragDrop.get();
-    // }
-    public getCopyPasteSources(): ƒ.Node[] {
-      return ƒui.Clipboard.copyPaste.get();
-    }
-
     //#region  ContextMenu
     protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu {
       const menu: Electron.Menu = new remote.Menu();

@@ -69,10 +69,6 @@ namespace Fudge {
       this.#container.setTitle(_title);
     }
 
-    public getCopyPasteSources(): Object[] {
-      return [];
-    }
-
     /**
      * Dispatch an event to the dom of this view and add a reference to this view in detail if not yet existend in _init
      */
