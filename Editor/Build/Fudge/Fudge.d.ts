@@ -424,6 +424,7 @@ declare namespace Fudge {
         getChildren(_node: ƒ.Node): ƒ.Node[];
         paste(): Promise<ƒ.Node[]>;
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
+        drop(_event: DragEvent): Promise<ƒ.Node[]>;
         delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]>;
         addChildren(_children: ƒ.Node[], _target: ƒ.Node, _index?: number): ƒ.Node[];
         clone(_originals: ƒ.Node[]): Promise<ƒ.Node[]>;

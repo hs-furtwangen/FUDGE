@@ -83,7 +83,7 @@ namespace Fudge {
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       if (source instanceof ƒ.Graph)
         this.dispatch(EVENT_EDITOR.SELECT, { detail: { graph: source, node: this.restoreNode(source) } });
-    }
+    };
 
     private hndEvent = async (_event: EditorEvent): Promise<void> => {
       const detail: EventDetail = _event.detail;

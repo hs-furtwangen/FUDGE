@@ -62,6 +62,14 @@ namespace Fudge {
       return dropEffect;
     }
 
+    public async drop(_event: DragEvent): Promise<ƒ.Node[]> {
+      if (View.getViewSource(_event) instanceof ViewInternal) {
+        let objects: ƒ.Node[] = ƒui.Clipboard.dragDrop.get();
+        return await this.clone(objects);
+      }
+      return await super.drop(_event);
+    }
+
     public async delete(_focussed: ƒ.Node[]): Promise<ƒ.Node[]> {
       // delete selection independend of focussed item
       let deleted: ƒ.Node[] = [];
@@ -117,9 +125,9 @@ namespace Fudge {
       if (_sources.length == 0)
         return false;
 
-      if (!(_sources.every(_source =>_source instanceof ƒ.Node)))
+      if (!(_sources.every(_source => _source instanceof ƒ.Node)))
         return false;
-      
+
       return _sources.every(_source => checkGraphDrop(_source, _target));
 
       function checkGraphDrop(_source: ƒ.Node, _target: ƒ.Node): boolean {

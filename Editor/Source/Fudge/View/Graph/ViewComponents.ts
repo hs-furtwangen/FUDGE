@@ -149,7 +149,7 @@ namespace Fudge {
       _event.dataTransfer.dropEffect = "link";
       _event.preventDefault();
       _event.stopPropagation();
-    }
+    };
 
     protected hndDrop = (_event: DragEvent): void =>  {
       if (this.protectGraphInstance())
@@ -160,7 +160,7 @@ namespace Fudge {
         this.expanded[cmpNew.type] = true;
       }
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
-    }
+    };
 
     private protectGraphInstance(): boolean {
       // inhibit structural changes to a GraphInstance

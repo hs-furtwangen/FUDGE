@@ -53,12 +53,12 @@ namespace Fudge {
       _event.dataTransfer.dropEffect = "link";
       _event.preventDefault();
       _event.stopPropagation();
-    }
+    };
 
     protected hndDrop = (_event: DragEvent): void => {
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
       this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { node: <ƒ.Node>source } });
-    }
+    };
 
     //#region context menu
     protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu {

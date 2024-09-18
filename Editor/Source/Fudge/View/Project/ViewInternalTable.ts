@@ -208,7 +208,7 @@ namespace Fudge {
 
       _event.preventDefault();
       _event.stopPropagation();
-    }
+    };
 
     protected hndDrop = async (_event: DragEvent): Promise<void> => {
       let viewSource: View = View.getViewSource(_event);
@@ -262,7 +262,7 @@ namespace Fudge {
       if (viewSource instanceof ViewHierarchy)
         // //@ts-ignore
         viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this } });
-    }
+    };
 
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
       switch (_event.code) {

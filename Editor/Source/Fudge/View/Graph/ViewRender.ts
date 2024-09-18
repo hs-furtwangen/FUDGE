@@ -165,7 +165,7 @@ namespace Fudge {
         _event.preventDefault();
         _event.stopPropagation();
       }
-    }
+    };
 
     protected hndDrop = (_event: DragEvent): void =>  {
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
@@ -176,7 +176,7 @@ namespace Fudge {
         _event.stopPropagation();
         return;
       }
-    }
+    };
 
     protected getState(): ViewState {
       let state: ViewState = super.getState();
