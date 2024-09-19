@@ -352,6 +352,7 @@ declare namespace Fudge {
         private hndInsert;
         private hndKey;
         private hndDragOver;
+        private hndMutate;
         private hndDrop;
         private filterDragDrop;
         private getAncestorWithType;
