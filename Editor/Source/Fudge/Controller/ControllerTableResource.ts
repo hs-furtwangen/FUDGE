@@ -85,6 +85,7 @@ namespace Fudge {
           if (dependency.get(expendable).length == 0) {
             deleted.push(expendable);
             ƒ.Project.deregister(ƒ.Project.resources[expendable.idResource]);
+            History.save("remove", ƒ.Project, expendable);
           }
         }
         return deleted;

@@ -186,6 +186,8 @@ namespace Fudge {
 
           this.remove(resource);
           this.selection.splice(this.selection.indexOf(resource), 1);
+
+          History.save("remove", ƒ.Project, resource);
         }
 
         return deleted;
