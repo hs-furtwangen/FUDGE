@@ -178,6 +178,7 @@ namespace Fudge {
         this.dispatchToParent(EVENT_EDITOR.CREATE, {});
         this.tree.addChildren([resource], focus);
         this.tree.findVisible(resource).focus();
+        ƒui.History.save("add", project, resource);
       }
     }
 
@@ -239,6 +240,7 @@ namespace Fudge {
       for (const source of <DirectoryEntry[] | ƒ.Node[]>ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ƒ.Node) {
           resources.push(await ƒ.Project.registerAsGraph(source, true));
+          ƒui.History.swap();
           continue;
         }
 
@@ -266,7 +268,9 @@ namespace Fudge {
       }
 
       ƒui.Clipboard.dragDrop.set(resources);
+      resources.forEach(_resource => ƒui.History.save("add", project, _resource));
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
+
       if (viewSource instanceof ViewHierarchy)
         // //@ts-ignore
         viewSource.dispatch(EVENT_EDITOR.UPDATE, { detail: { view: this } });
@@ -283,6 +287,7 @@ namespace Fudge {
           this.tree.findVisible(clone).focus();
           this.tree.findVisible(clone).focus();
           this.dispatchToParent(EVENT_EDITOR.CREATE, { bubbles: true });
+          ƒui.History.save("add", project, clone);
           break;
         case ƒ.KEYBOARD_CODE.F2:
           let input: HTMLInputElement = document.activeElement.querySelector("input");

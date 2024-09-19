@@ -162,7 +162,7 @@ namespace Fudge {
           Page.setTransform(TRANSFORM.SCALE);
           break;
         case ƒ.KEYBOARD_CODE.Z:
-          await ƒui.Controller.undo();
+          await ƒui.History.undo();
           break;
       }
     };

@@ -135,46 +135,42 @@ namespace Fudge {
         return;
       }
 
+      let newResource: ƒ.SerializableResource = null;
       switch (choice) {
+        case CONTEXTMENU.DELETE_RESOURCE:
+          await this.table.controller.delete([this.table.getFocussed()]);
+          this.dispatch(EVENT_EDITOR.DELETE, { bubbles: true });
+          return;
+        case CONTEXTMENU.CLONE_RESOURCE:
+          let clone: ƒ.SerializableResource = await ƒ.Project.cloneResource(this.table.getFocussed());
+          ƒui.History.save("add", project, clone);
+          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+          return;
         //TODO: dispatch CREATE instead of MODIFY!
         case CONTEXTMENU.CREATE_MESH:
           let typeMesh: typeof ƒ.Mesh = ƒ.Mesh.subclasses[iSubclass];
           //@ts-ignore
-          let meshNew: ƒ.Mesh = new typeMesh();
-          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-          this.table.selectInterval(meshNew, meshNew);
+          newResource = new typeMesh();
           break;
         case CONTEXTMENU.CREATE_MATERIAL:
           let typeShader: typeof ƒ.Shader = ƒ.Shader.subclasses[iSubclass];
-          let mtrNew: ƒ.Material = new ƒ.Material(typeShader.name, typeShader);
-          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-          this.table.selectInterval(mtrNew, mtrNew);
+          newResource = new ƒ.Material(typeShader.name, typeShader);
           break;
         case CONTEXTMENU.CREATE_GRAPH:
-          let graph: ƒ.Graph = await ƒ.Project.registerAsGraph(new ƒ.Node("NewGraph"));
-          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-          this.table.selectInterval(graph, graph);
+          newResource = await ƒ.Project.registerAsGraph(new ƒ.Node("NewGraph"));
           break;
         case CONTEXTMENU.CREATE_ANIMATION:
           let typeAnimation: typeof ƒ.Animation = ƒ.Animation.subclasses[iSubclass];
-          let animation: ƒ.Animation = new typeAnimation();
-          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-          this.table.selectInterval(animation, animation);
+          newResource = new typeAnimation();
           break;
         case CONTEXTMENU.CREATE_PARTICLE_EFFECT:
-          let particleSystem: ƒ.ParticleSystem = new ƒ.ParticleSystem();
-          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
-          this.table.selectInterval(particleSystem, particleSystem);
-          break;
-        case CONTEXTMENU.DELETE_RESOURCE:
-          await this.table.controller.delete([this.table.getFocussed()]);
-          this.dispatch(EVENT_EDITOR.DELETE, { bubbles: true });
-          break;
-        case CONTEXTMENU.CLONE_RESOURCE:
-          await ƒ.Project.cloneResource(this.table.getFocussed());
-          this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+          newResource = new ƒ.ParticleSystem();
           break;
       }
+
+      ƒui.History.save("add", project, newResource);
+      this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
+      this.table.selectInterval(newResource, newResource);
     }
     //#endregion
 
@@ -213,30 +209,36 @@ namespace Fudge {
     protected hndDrop = async (_event: DragEvent): Promise<void> => {
       let viewSource: View = View.getViewSource(_event);
 
+      let newResources: ƒ.SerializableResource[] = [];
+
       if (viewSource instanceof ViewInternal) {
         let dropEffect: ƒui.DROPEFFECT = this.table.controller.dragOver(_event);
         if (dropEffect == "copy") {
-          await this.table.controller.clone(ƒui.Clipboard.dragDrop.get());
+          newResources = await this.table.controller.clone(ƒui.Clipboard.dragDrop.get());
         }
       }
       if (viewSource instanceof ViewHierarchy) {
         let sources: ƒ.Node[] = ƒui.Clipboard.dragDrop.get();
         for (let source of sources) {
-          if (!(source instanceof ƒ.GraphInstance))
-            await ƒ.Project.registerAsGraph(source, true);
+          if (!(source instanceof ƒ.GraphInstance)) {
+            let newResource: ƒ.Graph = await ƒ.Project.registerAsGraph(source, true);
+            ƒui.History.save("add", project, newResource);
+            ƒui.History.swap();
+          }
         }
       } else if (viewSource instanceof ViewExternal) {
         let sources: DirectoryEntry[] = ƒui.Clipboard.dragDrop.get();
         for (let source of sources) {
+          let newResource: ƒ.SerializableResource;
           switch (source.getMimeType()) {
             case MIME.AUDIO:
-              console.log(new ƒ.Audio(source.pathRelative));
+              newResource = new ƒ.Audio(source.pathRelative);
               break;
             case MIME.IMAGE:
-              console.log(new ƒ.TextureImage(source.pathRelative));
+              newResource = new ƒ.TextureImage(source.pathRelative);
               break;
             case MIME.MESH:
-              ƒ.Debug.log(await new ƒ.MeshOBJ().load(source.pathRelative));
+              newResource = await new ƒ.MeshOBJ().load(source.pathRelative);
               break;
             case
               MIME.GLTF:
@@ -248,15 +250,20 @@ namespace Fudge {
               for (let type in ViewInternal.gltfImportSettings) if (ViewInternal.gltfImportSettings[type]) {
                 let resources: ƒ.SerializableResource[] = await loader.loadResources(ƒ[type]);
                 for (let resource of resources) {
-                  if (!ƒ.Project.resources[resource.idResource])
+                  if (!ƒ.Project.resources[resource.idResource]) {
                     ƒ.Project.register(resource);
+                    newResource = resource;
+                  }
                 }
               }
 
               break;
           }
+          newResources.push(newResource);
         }
       }
+      newResources.forEach(_resource => ƒui.History.save("add", project, _resource));
+
 
       this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
       if (viewSource instanceof ViewHierarchy)
@@ -267,7 +274,8 @@ namespace Fudge {
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.INSERT:
-          await ƒ.Project.cloneResource(this.table.getFocussed());
+          let clone: ƒ.SerializableResource = await ƒ.Project.cloneResource(this.table.getFocussed());
+          ƒui.History.save("add", project, clone);
           this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
           break;
         case ƒ.KEYBOARD_CODE.F2:

@@ -165,8 +165,10 @@ namespace Fudge {
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {
         case ƒ.EVENT.CHILD_APPEND:
+          ƒui.History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
+          break;
         case ƒ.EVENT.CHILD_REMOVE:
-          console.log(_event.type);
+          ƒui.History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case EVENT_EDITOR.SELECT:
           if (_event.detail.graph)

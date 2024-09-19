@@ -32,6 +32,7 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.MODIFY, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.TRANSFORM, this.hndTransform);
+      this.dom.addEventListener(EVENT_EDITOR.DELETE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.DELETE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.EXPAND, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.COLLAPSE, this.hndEvent);
@@ -39,9 +40,12 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.CLICK, this.hndEvent, true);
       this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndEvent, true);
       this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent, true);
-      
+
       this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
+
+      this.dom.removeEventListener(ƒ.EVENT.COMPONENT_ADD, this.hndEvent);
+      this.dom.removeEventListener(ƒ.EVENT.COMPONENT_REMOVE, this.hndEvent);
     }
 
     //#region  ContextMenu
@@ -124,17 +128,17 @@ namespace Fudge {
       ƒ.Debug.info(cmpNew.type, cmpNew);
 
       this.node.addComponent(cmpNew);
+      ƒui.History.save("add", this.node, cmpNew);
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
-      // this.dispatch(EVENT_EDITOR.SELECT, { bubbles: true, detail: { data: this.node } });
     }
     //#endregion
 
-    protected hndDragOver = (_event: DragEvent): void =>  {
+    protected hndDragOver = (_event: DragEvent): void => {
       if (!this.node)
         return;
       if (this.dom != _event.target)
         return;
- 
+
       for (let source of ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ScriptInfo) {
           if (!source.isComponent)
@@ -151,13 +155,14 @@ namespace Fudge {
       _event.stopPropagation();
     };
 
-    protected hndDrop = (_event: DragEvent): void =>  {
+    protected hndDrop = (_event: DragEvent): void => {
       if (this.protectGraphInstance())
         return;
       for (let source of ƒui.Clipboard.dragDrop.get()) {
         let cmpNew: ƒ.Component = this.createComponent(source);
         this.node.addComponent(cmpNew);
         this.expanded[cmpNew.type] = true;
+        ƒui.History.save("add", this.node, cmpNew);
       }
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     };
@@ -236,15 +241,24 @@ namespace Fudge {
 
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {
+        case ƒ.EVENT.COMPONENT_ADD:
+          ƒui.History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
+          break;
+        case ƒ.EVENT.COMPONENT_REMOVE:
+          ƒui.History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
+          break;
         case EVENT_EDITOR.SELECT:
           this.node = _event.detail.node || _event.detail.graph;
         case EVENT_EDITOR.MODIFY:
+          // console.log(_event);
           this.fillContent();
           break;
         case ƒui.EVENT.DELETE:
+        case EVENT_EDITOR.DELETE:
           if (this.protectGraphInstance())
             return;
           let component: ƒ.Component = <ƒ.Component>_event.detail.mutable;
+          ƒui.History.save("remove", this.node, component);
           this.node.removeComponent(component);
           this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
           break;
@@ -298,7 +312,7 @@ namespace Fudge {
       if (!mtxTransform)
         return;
 
-      ƒui.Controller.save(component, component.getMutator());
+      ƒui.History.save("mutate", component, component.getMutator());
 
 
       let dtl: ƒ.General = _event.detail.transform;
@@ -311,7 +325,7 @@ namespace Fudge {
       value.x = (dtl.restriction == "x" ? !dtl.inverted : dtl.inverted) ? dtl.x : undefined;
       value.y = (dtl.restriction == "y" ? !dtl.inverted : dtl.inverted) ? -dtl.y : undefined;
       value.z = (dtl.restriction == "z" ? !dtl.inverted : dtl.inverted) ?
-        ((value.y == undefined) ? -dtl.y : dtl.x) : undefined; 
+        ((value.y == undefined) ? -dtl.y : dtl.x) : undefined;
       value = value.map((_c: number) => _c || 0);
 
       if (mtxTransform instanceof ƒ.Matrix4x4)

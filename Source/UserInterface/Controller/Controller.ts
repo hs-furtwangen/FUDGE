@@ -6,7 +6,6 @@ namespace FudgeUserInterface {
    * Updates the mutable on interaction with the element and the element in time intervals.
    */
   export class Controller {
-    public static history: [ƒ.Mutable | ƒ.MutableArray<ƒ.General>, ƒ.Mutator][] = [];
     // TODO: examine the use of the attribute key vs name. Key signals the use by FUDGE while name is standard and supported by forms
     public domElement: HTMLElement;
     protected timeUpdate: number = 190;
@@ -135,22 +134,6 @@ namespace FudgeUserInterface {
       return closestElement;
     }
 
-    public static async save(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator: ƒ.Mutator): Promise<void> {
-      Controller.history.push([_mutable, _mutator]);
-    };
-
-    public static async undo(): Promise<void> {
-      let undo: [ƒ.Mutable | ƒ.MutableArray<ƒ.General>, ƒ.Mutator] = Controller.history.pop();
-      if (undo) {
-        let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.General> = undo[0];
-        await mutable.mutate(undo[1]);
-        if (mutable instanceof ƒ.ComponentRigidbody) {
-          mutable.isInitialized = false;
-          mutable.mutate({}); // just to dispatch mutation event again
-        }
-      }
-    }
-
     // public static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement {
     //   return _domElement.querySelector(`:scope > [key="${_key}"]`) ?? _domElement.querySelector(`:scope > * > [key="${_key}"]`);
     // }
@@ -208,8 +191,12 @@ namespace FudgeUserInterface {
           path.push(key);
       }
       path.reverse();
+
+      // get current mutator and save for undo
       let mutator: ƒ.Mutator = this.mutable.getMutator();
-      Controller.save(this.mutable, ƒ.Mutable.getMutatorFromPath(mutator, path));
+      History.save("mutate", this.mutable, ƒ.Mutable.getMutatorFromPath(mutator, path));
+
+      // get current mutator from interface for mutation  
       this.mutator = this.getMutator();
       await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));
       _event.stopPropagation();

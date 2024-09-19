@@ -73,14 +73,30 @@ namespace Fudge {
     }
 
     private hndEvent = (_event: CustomEvent): void => {
-      if (_event.type != EVENT_EDITOR.UPDATE && _event.type != EVENT_EDITOR.CREATE && _event.type != EVENT_EDITOR.DELETE && _event.type != EVENT_EDITOR.MODIFY)
-        _event.stopPropagation();
-      this.setTitle("Project | " + project.name); //why here and everytime?
-      if (_event.type == ƒui.EVENT.SELECT) {
-        this.broadcast(new EditorEvent(EVENT_EDITOR.SELECT, { detail: _event.detail }));
+      // if (_event.type != EVENT_EDITOR.UPDATE && _event.type != EVENT_EDITOR.CREATE && _event.type != EVENT_EDITOR.DELETE && _event.type != EVENT_EDITOR.MODIFY)
+      //   _event.stopPropagation();
+      // // this.setTitle("Project | " + project.name); //why here and everytime?
+      // if (_event.type == EVENT_EDITOR.CREATE)
+      //   console.log("CREATE");
+      // if (_event.type == ƒui.EVENT.SELECT) {
+      //   this.broadcast(new EditorEvent(EVENT_EDITOR.SELECT, { detail: _event.detail }));
+      // }
+      // else this.broadcast(_event);
+
+      switch (_event.type) {
+        case EVENT_EDITOR.CREATE:
+        case EVENT_EDITOR.UPDATE:
+        case EVENT_EDITOR.DELETE:
+        case EVENT_EDITOR.MODIFY:
+          break;
+        case ƒui.EVENT.SELECT:
+          this.broadcast(new EditorEvent(EVENT_EDITOR.SELECT, { detail: _event.detail }));
+          return;
+        default:
+          _event.stopPropagation();
+          break;
       }
-      else
-        this.broadcast(_event);
+      this.broadcast(_event);
     };
   }
 }

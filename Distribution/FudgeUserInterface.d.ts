@@ -22,7 +22,6 @@ declare namespace FudgeUserInterface {
      * Updates the mutable on interaction with the element and the element in time intervals.
      */
     class Controller {
-        static history: [ƒ.Mutable | ƒ.MutableArray<ƒ.General>, ƒ.Mutator][];
         domElement: HTMLElement;
         protected timeUpdate: number;
         /** Refererence to the [[FudgeCore.Mutable]] this ui refers to */
@@ -52,8 +51,6 @@ declare namespace FudgeUserInterface {
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
-        static save(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator: ƒ.Mutator): Promise<void>;
-        static undo(): Promise<void>;
         /**
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
@@ -98,6 +95,23 @@ declare namespace FudgeUserInterface {
          * TODO: refactor for enums
          */
         static createDropdown(_name: string, _content: Object, _value: string, _parent: HTMLElement, _cssClass?: string): HTMLSelectElement;
+    }
+}
+declare namespace FudgeUserInterface {
+    import ƒ = FudgeCore;
+    type undoOwner = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
+    type undoOwned = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+    type undoAction = "mutate" | "add" | "remove";
+    type undoStep = [undoAction, undoOwner, undoOwned];
+    class History {
+        #private;
+        static save(_action: undoAction, _owner: undoOwner, _owned: undoOwned): Promise<void>;
+        static undo(): Promise<void>;
+        static undoLog(): void;
+        /**
+         * In case the order of the last two steps needs to be changed, use this method
+         */
+        static swap(): void;
     }
 }
 declare namespace FudgeUserInterface {
