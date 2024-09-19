@@ -38,10 +38,15 @@ namespace Fudge {
             detail: { node: owned instanceof ƒ.Node && action == "remove" ? owned : owner }
           }));
         } else if (owner == ƒ.Project) {
-          if (action == "add")
+          if (action == "add") {
             ƒ.Project.deregister(<ƒ.SerializableResource>owned);
-          if (action == "remove")
+            document.dispatchEvent(new CustomEvent(EVENT_EDITOR.DELETE, { detail: { sender: History } }));
+          }
+          if (action == "remove") {
             ƒ.Project.resources[(<ƒ.SerializableResource>owned).idResource] = <ƒ.SerializableResource>owned;
+            document.dispatchEvent(new CustomEvent(EVENT_EDITOR.CREATE, { detail: { sender: History } }));
+          }
+
           document.dispatchEvent(new CustomEvent(EVENT_EDITOR.SELECT, {
             detail: { node: owned instanceof ƒ.Node && action == "remove" ? owned : owner }
           }));

@@ -132,7 +132,7 @@ namespace Fudge {
       document.addEventListener(EVENT_EDITOR.CLOSE, Page.hndEvent);
       document.addEventListener(EVENT_EDITOR.CREATE, Page.hndEvent);
       document.addEventListener(ƒui.EVENT.SAVE_HISTORY, Page.hndEvent);
-      // document.addEventListener(EVENT_EDITOR.DELETE, Page.hndEvent);
+      document.addEventListener(EVENT_EDITOR.DELETE, Page.hndEvent);
       // document.addEventListener(EVENT_EDITOR.TRANSFORM, Page.hndEvent);
       document.addEventListener("keyup", Page.hndKey);
     }
@@ -169,7 +169,7 @@ namespace Fudge {
       }
     };
 
-    private static hndEvent = async(_event: EditorEvent): Promise<void> => {
+    private static hndEvent = async (_event: EditorEvent): Promise<void> => {
       switch (_event.type) {
         case ƒui.EVENT.SAVE_HISTORY:
           await History.save(_event.detail["action"], _event.detail["mutable"], _event.detail["mutator"]);
@@ -179,11 +179,14 @@ namespace Fudge {
           if (view instanceof Panel)
             Page.panels.splice(Page.panels.indexOf(view), 1);
           break;
+        case EVENT_EDITOR.DELETE:
+          if (_event.detail.sender != History)
+            return;
         default:
           Page.broadcast(_event);
           break;
       }
-    }; 
+    };
     //#endregion
 
     private static hndPanelCreated = (_event: EventEmitter.BubblingEvent): void => {

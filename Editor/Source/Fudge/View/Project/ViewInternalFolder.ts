@@ -240,7 +240,6 @@ namespace Fudge {
       for (const source of <DirectoryEntry[] | ƒ.Node[]>ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ƒ.Node) {
           resources.push(await ƒ.Project.registerAsGraph(source, true));
-          // History.swap();
           continue;
         }
 
@@ -268,7 +267,11 @@ namespace Fudge {
       }
 
       ƒui.Clipboard.dragDrop.set(resources);
-      resources.forEach(_resource => History.save("add", ƒ.Project, _resource));
+      resources.forEach(_resource => {
+        History.save("add", ƒ.Project, _resource);
+        if (_resource instanceof ƒ.Graph)
+          History.swap();
+      });
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
 
       if (viewSource instanceof ViewHierarchy)
@@ -326,7 +329,10 @@ namespace Fudge {
       for (let idResource in ƒ.Project.resources) {
         let resource: ƒ.SerializableResource = ƒ.Project.resources[idResource];
         if (!this.resourceFolder.contains(resource))
-          this.controller.addChildren([resource], this.resourceFolder);
+          if ((<ResourceEntry>resource).resourceParent)
+            this.controller.addChildren([resource], (<ResourceEntry>resource).resourceParent);
+          else
+            this.controller.addChildren([resource], this.resourceFolder);
       }
       this.hndUpdate();
       let rootItem: ƒui.TreeItem<ResourceEntry> = this.tree.findVisible(this.resourceFolder);
