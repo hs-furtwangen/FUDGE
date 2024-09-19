@@ -23,7 +23,6 @@ namespace Fudge {
     private node: ƒ.Node;
     private expanded: { [type: string]: boolean } = { ComponentTransform: true };
     private selected: string = "ComponentTransform";
-    private drag: ƒ.ComponentCamera;
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
       super(_container, _state);
@@ -128,7 +127,7 @@ namespace Fudge {
       ƒ.Debug.info(cmpNew.type, cmpNew);
 
       this.node.addComponent(cmpNew);
-      ƒui.History.save("add", this.node, cmpNew);
+      History.save("add", this.node, cmpNew);
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     }
     //#endregion
@@ -162,7 +161,7 @@ namespace Fudge {
         let cmpNew: ƒ.Component = this.createComponent(source);
         this.node.addComponent(cmpNew);
         this.expanded[cmpNew.type] = true;
-        ƒui.History.save("add", this.node, cmpNew);
+        History.save("add", this.node, cmpNew);
       }
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     };
@@ -211,7 +210,6 @@ namespace Fudge {
         this.dom.append(details);
         if (component instanceof ƒ.ComponentCamera) {
           details.draggable = true;
-          // details.addEventListener("dragstart", (_event: Event) => { this.drag = <ƒ.ComponentCamera>component; });
           details.addEventListener("dragstart", () => ƒui.Clipboard.dragDrop.set([component]));
         }
         if (component instanceof ƒ.ComponentRigidbody) {
@@ -242,10 +240,10 @@ namespace Fudge {
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {
         case ƒ.EVENT.COMPONENT_ADD:
-          ƒui.History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
+          History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case ƒ.EVENT.COMPONENT_REMOVE:
-          ƒui.History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
+          History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case EVENT_EDITOR.SELECT:
           this.node = _event.detail.node || _event.detail.graph;
@@ -258,7 +256,7 @@ namespace Fudge {
           if (this.protectGraphInstance())
             return;
           let component: ƒ.Component = <ƒ.Component>_event.detail.mutable;
-          ƒui.History.save("remove", this.node, component);
+          History.save("remove", this.node, component);
           this.node.removeComponent(component);
           this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
           break;
@@ -312,7 +310,7 @@ namespace Fudge {
       if (!mtxTransform)
         return;
 
-      ƒui.History.save("mutate", component, component.getMutator());
+      History.save("mutate", component, component.getMutator());
 
 
       let dtl: ƒ.General = _event.detail.transform;

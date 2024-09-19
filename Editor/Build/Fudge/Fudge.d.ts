@@ -175,6 +175,23 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
+    type undoOwner = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
+    type undoOwned = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+    type undoAction = "mutate" | "add" | "remove";
+    type undoStep = [undoAction, undoOwner, undoOwned];
+    class History {
+        #private;
+        static save(_action: undoAction, _owner: undoOwner, _owned: undoOwned): Promise<void>;
+        static undo(): Promise<void>;
+        static undoLog(): void;
+        /**
+         * In case the order of the last two steps needs to be changed, use this method
+         */
+        static swap(): void;
+    }
+}
+declare namespace Fudge {
+    import ƒ = FudgeCore;
     const ipcRenderer: Electron.IpcRenderer;
     const remote: typeof import("@electron/remote");
     let project: Project;
@@ -682,7 +699,6 @@ declare namespace Fudge {
         private node;
         private expanded;
         private selected;
-        private drag;
         constructor(_container: ComponentContainer, _state: ViewState);
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;

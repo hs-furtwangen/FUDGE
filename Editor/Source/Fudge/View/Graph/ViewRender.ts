@@ -277,7 +277,7 @@ namespace Fudge {
       let detail: EventDetail = <EventDetail>_event.detail;
       switch (_event.type) {
         case "startTransform":
-          ƒui.History.save("mutate", this.node.cmpTransform, this.node.cmpTransform.getMutator());
+          History.save("mutate", this.node.cmpTransform, this.node.cmpTransform.getMutator());
           break;
         case EVENT_EDITOR.SELECT:
           if (detail.graph) {

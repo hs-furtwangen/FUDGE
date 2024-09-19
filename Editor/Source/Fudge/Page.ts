@@ -131,6 +131,7 @@ namespace Fudge {
       document.addEventListener(EVENT_EDITOR.UPDATE, Page.hndEvent);
       document.addEventListener(EVENT_EDITOR.CLOSE, Page.hndEvent);
       document.addEventListener(EVENT_EDITOR.CREATE, Page.hndEvent);
+      document.addEventListener(ƒui.EVENT.SAVE_HISTORY, Page.hndEvent);
       // document.addEventListener(EVENT_EDITOR.DELETE, Page.hndEvent);
       // document.addEventListener(EVENT_EDITOR.TRANSFORM, Page.hndEvent);
       document.addEventListener("keyup", Page.hndKey);
@@ -162,25 +163,27 @@ namespace Fudge {
           Page.setTransform(TRANSFORM.SCALE);
           break;
         case ƒ.KEYBOARD_CODE.Z:
-          await ƒui.History.undo();
+          await History.undo();
+          Page.broadcast(new EditorEvent(EVENT_EDITOR.UPDATE, {}));
           break;
       }
     };
 
-    private static hndEvent(_event: EditorEvent): void {
+    private static hndEvent = async(_event: EditorEvent): Promise<void> => {
       switch (_event.type) {
+        case ƒui.EVENT.SAVE_HISTORY:
+          await History.save(_event.detail["action"], _event.detail["mutable"], _event.detail["mutator"]);
+          break;
         case EVENT_EDITOR.CLOSE:
           let view: View = _event.detail.view;
           if (view instanceof Panel)
             Page.panels.splice(Page.panels.indexOf(view), 1);
-
-          // console.log("Closed", view);
           break;
         default:
           Page.broadcast(_event);
           break;
       }
-    }
+    }; 
     //#endregion
 
     private static hndPanelCreated = (_event: EventEmitter.BubblingEvent): void => {

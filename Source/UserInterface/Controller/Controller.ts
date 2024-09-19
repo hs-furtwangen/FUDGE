@@ -194,8 +194,11 @@ namespace FudgeUserInterface {
 
       // get current mutator and save for undo
       let mutator: ƒ.Mutator = this.mutable.getMutator();
-      History.save("mutate", this.mutable, ƒ.Mutable.getMutatorFromPath(mutator, path));
-
+      console.log(mutator);
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, {bubbles: true, detail: {
+        "action": "mutate", mutable: this.mutable, mutator: ƒ.Mutable.getMutatorFromPath(mutator, path)
+      }}));
+ 
       // get current mutator from interface for mutation  
       this.mutator = this.getMutator();
       await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));

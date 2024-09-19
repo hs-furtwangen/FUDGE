@@ -98,23 +98,6 @@ declare namespace FudgeUserInterface {
     }
 }
 declare namespace FudgeUserInterface {
-    import ƒ = FudgeCore;
-    type undoOwner = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
-    type undoOwned = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-    type undoAction = "mutate" | "add" | "remove";
-    type undoStep = [undoAction, undoOwner, undoOwned];
-    class History {
-        #private;
-        static save(_action: undoAction, _owner: undoOwner, _owned: undoOwned): Promise<void>;
-        static undo(): Promise<void>;
-        static undoLog(): void;
-        /**
-         * In case the order of the last two steps needs to be changed, use this method
-         */
-        static swap(): void;
-    }
-}
-declare namespace FudgeUserInterface {
     /**
      * Structure for the attributes to set in a CustomElement.
      * key (maybe rename to `name`) is mandatory and must match the key of a mutator if used in conjunction
@@ -846,6 +829,7 @@ declare namespace FudgeUserInterface {
         TOGGLE = "toggle",
         POINTER_MOVE = "pointermove",
         INSERT = "insert",
-        SELECT_ALL = "selectAll"
+        SELECT_ALL = "selectAll",
+        SAVE_HISTORY = "saveHistory"
     }
 }

@@ -38,6 +38,7 @@ namespace FudgeUserInterface {
     TOGGLE = "toggle",
     POINTER_MOVE = "pointermove",
     INSERT = "insert",
-    SELECT_ALL = "selectAll"
+    SELECT_ALL = "selectAll",
+    SAVE_HISTORY = "saveHistory"
   }
 }

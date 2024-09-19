@@ -165,10 +165,10 @@ namespace Fudge {
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {
         case ƒ.EVENT.CHILD_APPEND:
-          ƒui.History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
+          History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case ƒ.EVENT.CHILD_REMOVE:
-          ƒui.History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
+          History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case EVENT_EDITOR.SELECT:
           if (_event.detail.graph)
@@ -183,8 +183,11 @@ namespace Fudge {
           }
           break;
         case EVENT_EDITOR.UPDATE:
-          if (_event.detail.view instanceof ViewInternal)
+          if (_event.detail.view instanceof ViewInternal || _event.detail.sender instanceof PanelGraph) {
             this.setGraph(this.graph);
+            this.tree.controller.selection = this.selectionPrevious;
+            this.tree.displaySelection(this.selectionPrevious);
+          }
           break;
         case EVENT_EDITOR.CLOSE:
           if (this.graph)

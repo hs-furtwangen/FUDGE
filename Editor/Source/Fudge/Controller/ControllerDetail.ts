@@ -31,7 +31,7 @@ namespace Fudge {
       this.domElement.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
       this.domElement.addEventListener(ƒui.EVENT.DRAG_ENTER, this.hndDragOver);
       this.domElement.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
-      this.domElement.addEventListener(ƒui.EVENT.MUTATE, this.hndMutate, true);
+      // this.domElement.addEventListener(ƒui.EVENT.MUTATE, this.hndMutate, true);
       this.domElement.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndKey);
       this.domElement.addEventListener(ƒui.EVENT.INSERT, this.hndInsert);
     }
@@ -87,7 +87,7 @@ namespace Fudge {
 
     private hndMutate = async (_event: DragEvent): Promise<void> => {
       console.log("BEFORE", this);
-      ƒui.History.save("mutate", this.mutable, this.mutable.getMutator());
+      History.save("mutate", this.mutable, this.mutable.getMutator());
     };
 
     private hndDrop = async (_event: DragEvent): Promise<void> => {
@@ -112,7 +112,7 @@ namespace Fudge {
 
       if (this.#view != View.getViewSource(_event)) {
         let sources: Object[] = ƒui.Clipboard.dragDrop.get();
-        ƒui.History.save("mutate", mutable, { key: mutable[key] });
+        History.save("mutate", mutable, { key: mutable[key] });
         mutable[key] = sources[0];
       }
 
