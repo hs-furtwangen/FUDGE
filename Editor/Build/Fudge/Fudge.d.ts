@@ -181,18 +181,14 @@ declare namespace Fudge {
      * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation.
      * @author Jirka Dell'Oro-Friedl, HFU, 2024
      */
-    export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
-    export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-    export enum HISTORY {
+    type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
+    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+    enum HISTORY {
         MUTATE = 0,
         ADD = 1,
         REMOVE = 2
     }
-    enum DO {
-        UN = 0,
-        RE = 1
-    }
-    export class History {
+    class History {
         #private;
         /**
          * Record a step to the history
@@ -204,20 +200,20 @@ declare namespace Fudge {
         static redo(): Promise<void>;
         /**
          * Move the pointer back by one step and undo that step. No redo is availabe if the pointer is at the start of the history.
-         */
+        */
         static undo(): Promise<void>;
-        /**
-         * Process structural changes on a {@link ƒ.Node} or {@link ƒ.Graph}, specifically adding or removing
-         * other {@link ƒ.Node}s or {@link ƒ.Component}s
-         */
-        static processNode(_do: DO, _action: HISTORY, _source: ƒ.Node, _target: historyTarget): void;
         static print(): void;
         /**
          * In case the order of the last two steps needs to be changed, use this method
          */
         static swap(): void;
+        private static processProject;
+        /**
+         * Process structural changes on a {@link ƒ.Node} or {@link ƒ.Graph}, specifically adding or removing
+         * other {@link ƒ.Node}s or {@link ƒ.Component}s
+         */
+        private static processNode;
     }
-    export {};
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
