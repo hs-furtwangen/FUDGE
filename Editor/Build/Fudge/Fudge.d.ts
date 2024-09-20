@@ -175,6 +175,12 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
+    /**
+     * Static class to record the history of manipulations of various entities. Enables undo and redo.
+     * A manipulation is recorded as a step with the action taken, the source, which is the entity affected,
+     * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation.
+     * @author Jirka Dell'Oro-Friedl, HFU, 2024
+     */
     export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
     export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
     export enum HISTORY {
@@ -188,11 +194,24 @@ declare namespace Fudge {
     }
     export class History {
         #private;
-        static save(_action: HISTORY, _owner: historySource, _owned: historyTarget): Promise<void>;
+        /**
+         * Record a step to the history
+         */
+        static save(_action: HISTORY, _source: historySource, _target: historyTarget): Promise<void>;
+        /**
+         * Redo the step the pointer currently points to. No redo is availabe if the pointer points beyond the end of the history.
+         */
         static redo(): Promise<void>;
+        /**
+         * Move the pointer back by one step and undo that step. No redo is availabe if the pointer is at the start of the history.
+         */
         static undo(): Promise<void>;
+        /**
+         * Process structural changes on a {@link ƒ.Node} or {@link ƒ.Graph}, specifically adding or removing
+         * other {@link ƒ.Node}s or {@link ƒ.Component}s
+         */
         static processNode(_do: DO, _action: HISTORY, _source: ƒ.Node, _target: historyTarget): void;
-        static undoLog(): void;
+        static print(): void;
         /**
          * In case the order of the last two steps needs to be changed, use this method
          */

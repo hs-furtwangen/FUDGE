@@ -1,43 +1,73 @@
 namespace Fudge {
   import ƒ = FudgeCore;
 
+  /**
+   * Static class to record the history of manipulations of various entities. Enables undo and redo.
+   * A manipulation is recorded as a step with the action taken, the source, which is the entity affected, 
+   * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation. 
+   * @author Jirka Dell'Oro-Friedl, HFU, 2024  
+   */
+
   export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
   export enum HISTORY { MUTATE, ADD, REMOVE };
-  type undoStep = [HISTORY, historySource, historyTarget];
+  type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
   export class History {
-    static #steps: undoStep[] = [];
+    static #steps: historyStep[] = [];
     static #block: boolean = false;
     static #pointer: number = 0;
 
-    public static async save(_action: HISTORY, _owner: historySource, _owned: historyTarget): Promise<void> {
+    /**
+     * Record a step to the history
+     */
+    public static async save(_action: HISTORY, _source: historySource, _target: historyTarget): Promise<void> {
       if (History.#block) // block recording, especially when undoing
         return;
 
       if (History.#pointer < History.#steps.length) // undos were processed, pointer doesn't point to end of history
         History.#steps.splice(History.#pointer);
 
-      History.#steps.push([_action, _owner, _owned]);
+      History.#steps.push([_action, _source, _target]);
       History.#pointer = History.#steps.length;
-      this.undoLog();
+
+      History.print();
     };
+
+    /**
+     * Redo the step the pointer currently points to. No redo is availabe if the pointer points beyond the end of the history.
+     */
     public static async redo(): Promise<void> {
-      if (History.#pointer == 0) // no actions saved in list or and of list reached
+      if (History.#pointer == History.#steps.length) // pointer beyond end of list, no further redos available
         return;
 
-      History.#pointer = Math.min(History.#pointer + 1, History.#steps.length);
+      let step: historyStep = History.#steps[this.#pointer];
+      if (!step)
+        return;
+
+      
+      History.#block = true;
+      let [action, source, target] = step;
+
+      if (source instanceof ƒ.Node)
+        History.processNode(DO.RE, action, source, target);
+
+      History.#pointer++;
+      History.print();
+      
+      History.#block = false;
     }
 
+    /**
+     * Move the pointer back by one step and undo that step. No redo is availabe if the pointer is at the start of the history.
+     */
     public static async undo(): Promise<void> {
-      History.#pointer--;
-      if (History.#pointer < 0) {
-        History.#pointer = 0;
+      if (History.#pointer == 0) // pointer at the start of the list, no further undos available
         return;
-      }
+      History.#pointer--;
 
-      let step: undoStep = History.#steps[this.#pointer];
+      let step: historyStep = History.#steps[this.#pointer];
       if (!step)
         return;
 
@@ -70,7 +100,13 @@ namespace Fudge {
         ƒ.Debug.error(_a);
       }
       History.#block = false;
+      History.print();
     }
+
+    /**
+     * Process structural changes on a {@link ƒ.Node} or {@link ƒ.Graph}, specifically adding or removing 
+     * other {@link ƒ.Node}s or {@link ƒ.Component}s
+     */
     public static processNode(_do: DO, _action: HISTORY, _source: ƒ.Node, _target: historyTarget): void {
       let f: ƒ.General = {};
       if (_target instanceof ƒ.Node) {
@@ -95,11 +131,13 @@ namespace Fudge {
       }));
     }
 
-    public static undoLog(): void {
+    public static print(): void {
       console.group("History");
-      History.#steps.forEach(_step =>
+      console.log("Pointer: ", History.#pointer);
+      History.#steps.forEach((_step, _i) =>
         console.log(
-          _step[0],
+          History.#pointer - 1 == _i ? "->" : "",
+          HISTORY[_step[0]],
           _step[1].constructor.name,
           _step[2] instanceof ƒ.Mutable || _step[2] instanceof ƒ.Node ?
             _step[2].constructor.name :
@@ -112,11 +150,11 @@ namespace Fudge {
      * In case the order of the last two steps needs to be changed, use this method
      */
     public static swap(): void {
-      let stepLast: undoStep = History.#steps.pop();
-      let stepPrev: undoStep = History.#steps.pop();
+      let stepLast: historyStep = History.#steps.pop();
+      let stepPrev: historyStep = History.#steps.pop();
       History.#steps.push(stepLast);
       History.#steps.push(stepPrev);
-      this.undoLog();
+      this.print();
     }
   }
 }

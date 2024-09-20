@@ -163,7 +163,14 @@ namespace Fudge {
           Page.setTransform(TRANSFORM.SCALE);
           break;
         case ƒ.KEYBOARD_CODE.Z:
-          await History.undo();
+          if (!_event.ctrlKey)
+            return;
+
+          if (_event.shiftKey)
+            await History.redo();
+          else
+            await History.undo();
+
           Page.broadcast(new EditorEvent(EVENT_EDITOR.UPDATE, {}));
           break;
       }
