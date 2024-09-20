@@ -327,12 +327,17 @@ namespace Fudge {
     private hndCreate = (): void => {
       // add new resources to root folder
       for (let idResource in ƒ.Project.resources) {
-        let resource: ƒ.SerializableResource = ƒ.Project.resources[idResource];
-        if (!this.resourceFolder.contains(resource))
-          if ((<ResourceEntry>resource).resourceParent)
-            this.controller.addChildren([resource], (<ResourceEntry>resource).resourceParent);
+        let resource: ResourceEntry = ƒ.Project.resources[idResource];
+        if (!this.resourceFolder.contains(resource)) {
+          let parent: ResourceFolder = resource.resourceParent;
+          if (parent) {
+            // hack for undo TODO: examine, looks quirky
+            resource.resourceParent = null;
+            this.controller.addChildren([resource], parent);
+          }
           else
             this.controller.addChildren([resource], this.resourceFolder);
+        }
       }
       this.hndUpdate();
       let rootItem: ƒui.TreeItem<ResourceEntry> = this.tree.findVisible(this.resourceFolder);
