@@ -134,9 +134,9 @@ namespace Fudge {
         document.dispatchEvent(new CustomEvent(EVENT_EDITOR.CREATE, { detail: { sender: History } }));
       }
 
-      document.dispatchEvent(new CustomEvent(EVENT_EDITOR.SELECT, {
-        detail: { node: _target instanceof ƒ.Node && action == HISTORY.REMOVE ? _target : _source }
-      }));
+      // document.dispatchEvent(new CustomEvent(EVENT_EDITOR.SELECT, {
+      //   detail: { node: _target instanceof ƒ.Node && action == HISTORY.ADD ? _target : _source }
+      // }));
     }
 
     /**
