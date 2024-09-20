@@ -735,6 +735,8 @@ declare namespace Fudge {
         private node;
         private expanded;
         private selected;
+        private historySave;
+        private historyTime;
         constructor(_container: ComponentContainer, _state: ViewState);
         protected getContextMenu(_callback: ContextMenuCallback): Electron.Menu;
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;

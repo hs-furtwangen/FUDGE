@@ -23,6 +23,8 @@ namespace Fudge {
     private node: ƒ.Node;
     private expanded: { [type: string]: boolean } = { ComponentTransform: true };
     private selected: string = "ComponentTransform";
+    private historySave: boolean = true;
+    private historyTime: number = performance.now();
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
       super(_container, _state);
@@ -310,8 +312,18 @@ namespace Fudge {
       if (!mtxTransform)
         return;
 
-      History.save(HISTORY.MUTATE, component, component.getMutator());
 
+      if (this.historySave) {
+        this.historySave = false;
+        if (performance.now() > this.historyTime)
+          History.save(HISTORY.MUTATE, component, component.getMutator());
+        setTimeout(() => {
+          History.save(HISTORY.MUTATE, component, component.getMutator());
+          component.mutate(component.getMutator());
+          this.historySave = true;
+          this.historyTime = performance.now() + 300;
+        }, 200);
+      }
 
       let dtl: ƒ.General = _event.detail.transform;
       let mtxCamera: ƒ.Matrix4x4 = (<ƒ.ComponentCamera>dtl.camera).node.mtxWorld;
@@ -331,7 +343,7 @@ namespace Fudge {
       if (mtxTransform instanceof ƒ.Matrix3x3)
         this.transform2(dtl.transform, value.toVector2(), mtxTransform, 1);
 
-      component.mutate(component.getMutator());
+      // component.mutate(component.getMutator());
     };
 
     private transform3(_transform: TRANSFORM, _value: ƒ.Vector3, _mtxTransform: ƒ.Matrix4x4, _distance: number): void {
