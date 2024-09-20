@@ -175,12 +175,6 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    /**
-     * Static class to record the history of manipulations of various entities. Enables undo and redo.
-     * A manipulation is recorded as a step with the action taken, the source, which is the entity affected,
-     * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2024
-     */
     type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
     type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
     enum HISTORY {
@@ -188,6 +182,12 @@ declare namespace Fudge {
         ADD = 1,
         REMOVE = 2
     }
+    /**
+     * Static class to record the history of manipulations of various entities. Enables undo and redo.
+     * A manipulation is recorded as a step with the action taken, the source, which is the entity affected,
+     * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation.
+     * @author Jirka Dell'Oro-Friedl, HFU, 2024
+     */
     class History {
         #private;
         /**
@@ -202,11 +202,22 @@ declare namespace Fudge {
          * Move the pointer back by one step and undo that step. No redo is availabe if the pointer is at the start of the history.
         */
         static undo(): Promise<void>;
+        /**
+         * Print the current history to the console
+         */
         static print(): void;
         /**
          * In case the order of the last two steps needs to be changed, use this method
          */
         static swap(): void;
+        /**
+         * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator.
+         * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
+         */
+        private static processMutation;
+        /**
+         * Process deletion and addition of {@link ƒ.SerializableResource}s in the {@link ƒ.Project}
+         */
         private static processProject;
         /**
          * Process structural changes on a {@link ƒ.Node} or {@link ƒ.Graph}, specifically adding or removing

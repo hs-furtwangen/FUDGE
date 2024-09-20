@@ -185,7 +185,7 @@ namespace FudgeCore {
     public getMutatorForAnimation(_extendable: boolean = false): MutatorForAnimation {
       return <MutatorForAnimation>this.getMutator(_extendable);
     }
-   
+
     /**
      * Collect the attributes of the instance and their values applicable for the user interface.
      * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
@@ -245,11 +245,11 @@ namespace FudgeCore {
      */
     public updateMutator(_mutator: Mutator): void {
       for (let attribute in _mutator) {
-        let value: Object = _mutator[attribute];
+        let value: Object = Reflect.get(this, attribute);
         if (value instanceof Mutable)
-          _mutator[attribute] = value.getMutator();
+          value.updateMutator(_mutator[attribute]);
         else
-          _mutator[attribute] = (<General>this)[attribute];
+          _mutator[attribute] = value;
       }
     }
     /**

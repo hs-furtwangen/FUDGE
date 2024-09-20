@@ -1,19 +1,19 @@
 namespace Fudge {
   import ƒ = FudgeCore;
 
-  /**
-   * Static class to record the history of manipulations of various entities. Enables undo and redo.
-   * A manipulation is recorded as a step with the action taken, the source, which is the entity affected, 
-   * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation. 
-   * @author Jirka Dell'Oro-Friedl, HFU, 2024  
-   */
-
   export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
   export enum HISTORY { MUTATE, ADD, REMOVE };
   type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
+
+  /**
+   * Static class to record the history of manipulations of various entities. Enables undo and redo.
+   * A manipulation is recorded as a step with the action taken, the source, which is the entity affected, 
+   * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation. 
+   * @author Jirka Dell'Oro-Friedl, HFU, 2024  
+   */
   export class History {
     static #steps: historyStep[] = [];
     static #block: boolean = false;
@@ -54,6 +54,8 @@ namespace Fudge {
         History.processNode(DO.RE, action, source, target);
       else if (source == ƒ.Project)
         History.processProject(DO.RE, action, source, target);
+      else
+        History.processMutation(DO.RE, step, <ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>>source, target);
 
       History.#pointer++;
       History.print();
@@ -76,17 +78,13 @@ namespace Fudge {
       History.#block = true;
       try {
         let [action, source, target] = step;
-        if (source instanceof ƒ.Node) {
+        if (source instanceof ƒ.Node)
           History.processNode(DO.UN, action, source, target);
-        } else if (source == ƒ.Project) {
+        else if (source == ƒ.Project)
           History.processProject(DO.UN, action, source, target);
-        } else {
-          await (<ƒ.Mutable | ƒ.MutableArray<ƒ.General>>source).mutate(target);
-          if (source instanceof ƒ.ComponentRigidbody) {
-            source.isInitialized = false;
-            await source.mutate({}); // just to dispatch mutation event again
-          }
-        }
+        else
+          History.processMutation(DO.UN, step, <ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>>source, target);
+
       } catch (_a) {
         ƒ.Debug.error(_a);
       }
@@ -94,12 +92,15 @@ namespace Fudge {
       History.print();
     }
 
+    /**
+     * Print the current history to the console
+     */
     public static print(): void {
       console.group("History");
       console.log("Pointer: ", History.#pointer);
       History.#steps.forEach((_step, _i) =>
         console.log(
-          History.#pointer - 1 == _i ? "->" : "",
+          _i + (History.#pointer - 1 == _i ? "->" : "  "),
           HISTORY[_step[0]],
           _step[1].constructor.name,
           _step[2] instanceof ƒ.Mutable || _step[2] instanceof ƒ.Node ?
@@ -120,6 +121,26 @@ namespace Fudge {
       this.print();
     }
 
+    /**
+     * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator. 
+     * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
+     */
+    private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _target: historyTarget): Promise<void> {
+      let current: ƒ.Mutator = JSON.parse(JSON.stringify(_target)); // clone the target
+      _source.updateMutator(current); // update the clone to current state
+      await _source.mutate(_target);
+      _step[2] = current; // replace target in step with previous state
+
+      if (_source instanceof ƒ.ComponentRigidbody) {
+        _source.isInitialized = false;
+        await _source.mutate({}); // just to dispatch mutation event again
+      }
+    }
+
+
+    /**
+     * Process deletion and addition of {@link ƒ.SerializableResource}s in the {@link ƒ.Project}
+     */
     private static processProject(_do: DO, _action: HISTORY, _source: ƒ.Project, _target: historyTarget): void {
       let action: HISTORY = _action;
       if (_do == DO.UN) // reverse action
