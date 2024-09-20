@@ -143,7 +143,7 @@ namespace Fudge {
           return;
         case CONTEXTMENU.CLONE_RESOURCE:
           let clone: ƒ.SerializableResource = await ƒ.Project.cloneResource(this.table.getFocussed());
-          History.save("add", ƒ.Project, clone);
+          History.save(HISTORY.ADD, ƒ.Project, clone);
           this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
           return;
         //TODO: dispatch CREATE instead of MODIFY!
@@ -168,7 +168,7 @@ namespace Fudge {
           break;
       }
 
-      History.save("add", ƒ.Project, newResource);
+      History.save(HISTORY.ADD, ƒ.Project, newResource);
       this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
       this.table.selectInterval(newResource, newResource);
     }
@@ -222,7 +222,7 @@ namespace Fudge {
         for (let source of sources) {
           if (!(source instanceof ƒ.GraphInstance)) {
             let newResource: ƒ.Graph = await ƒ.Project.registerAsGraph(source, true);
-            History.save("add", ƒ.Project, newResource);
+            History.save(HISTORY.ADD, ƒ.Project, newResource);
             History.swap();
           }
         }
@@ -262,7 +262,7 @@ namespace Fudge {
           newResources.push(newResource);
         }
       }
-      newResources.forEach(_resource => History.save("add", ƒ.Project, _resource));
+      newResources.forEach(_resource => History.save(HISTORY.ADD, ƒ.Project, _resource));
 
 
       this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
@@ -275,7 +275,7 @@ namespace Fudge {
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.INSERT:
           let clone: ƒ.SerializableResource = await ƒ.Project.cloneResource(this.table.getFocussed());
-          History.save("add", ƒ.Project, clone);
+          History.save(HISTORY.ADD, ƒ.Project, clone);
           this.dispatch(EVENT_EDITOR.CREATE, { bubbles: true });
           break;
         case ƒ.KEYBOARD_CODE.F2:

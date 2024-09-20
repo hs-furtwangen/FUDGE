@@ -87,7 +87,7 @@ namespace Fudge {
 
     private hndMutate = async (_event: DragEvent): Promise<void> => {
       console.log("BEFORE", this);
-      History.save("mutate", this.mutable, this.mutable.getMutator());
+      History.save(HISTORY.MUTATE, this.mutable, this.mutable.getMutator());
     };
 
     private hndDrop = async (_event: DragEvent): Promise<void> => {
@@ -112,7 +112,7 @@ namespace Fudge {
 
       if (this.#view != View.getViewSource(_event)) {
         let sources: Object[] = ƒui.Clipboard.dragDrop.get();
-        History.save("mutate", mutable, { key: mutable[key] });
+        History.save(HISTORY.MUTATE, mutable, { key: mutable[key] });
         mutable[key] = sources[0];
       }
 

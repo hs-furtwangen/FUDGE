@@ -175,20 +175,30 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    type undoOwner = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
-    type undoOwned = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-    type undoAction = "mutate" | "add" | "remove";
-    type undoStep = [undoAction, undoOwner, undoOwned];
-    class History {
+    export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
+    export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+    export enum HISTORY {
+        MUTATE = 0,
+        ADD = 1,
+        REMOVE = 2
+    }
+    enum DO {
+        UN = 0,
+        RE = 1
+    }
+    export class History {
         #private;
-        static save(_action: undoAction, _owner: undoOwner, _owned: undoOwned): Promise<void>;
+        static save(_action: HISTORY, _owner: historySource, _owned: historyTarget): Promise<void>;
+        static redo(): Promise<void>;
         static undo(): Promise<void>;
+        static processNode(_do: DO, _action: HISTORY, _source: ƒ.Node, _target: historyTarget): void;
         static undoLog(): void;
         /**
          * In case the order of the last two steps needs to be changed, use this method
          */
         static swap(): void;
     }
+    export {};
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;

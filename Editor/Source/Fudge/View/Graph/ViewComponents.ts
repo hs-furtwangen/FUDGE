@@ -127,7 +127,7 @@ namespace Fudge {
       ƒ.Debug.info(cmpNew.type, cmpNew);
 
       this.node.addComponent(cmpNew);
-      History.save("add", this.node, cmpNew);
+      History.save(HISTORY.ADD, this.node, cmpNew);
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     }
     //#endregion
@@ -161,7 +161,7 @@ namespace Fudge {
         let cmpNew: ƒ.Component = this.createComponent(source);
         this.node.addComponent(cmpNew);
         this.expanded[cmpNew.type] = true;
-        History.save("add", this.node, cmpNew);
+        History.save(HISTORY.ADD, this.node, cmpNew);
       }
       this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
     };
@@ -240,10 +240,10 @@ namespace Fudge {
     private hndEvent = (_event: EditorEvent): void => {
       switch (_event.type) {
         case ƒ.EVENT.COMPONENT_ADD:
-          History.save("add", (<ƒ.Node>_event.target).getParent(), _event.target);
+          History.save(HISTORY.ADD, (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case ƒ.EVENT.COMPONENT_REMOVE:
-          History.save("remove", (<ƒ.Node>_event.target).getParent(), _event.target);
+          History.save(HISTORY.REMOVE, (<ƒ.Node>_event.target).getParent(), _event.target);
           break;
         case EVENT_EDITOR.SELECT:
           this.node = _event.detail.node || _event.detail.graph;
@@ -256,7 +256,7 @@ namespace Fudge {
           if (this.protectGraphInstance())
             return;
           let component: ƒ.Component = <ƒ.Component>_event.detail.mutable;
-          History.save("remove", this.node, component);
+          History.save(HISTORY.REMOVE, this.node, component);
           this.node.removeComponent(component);
           this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
           break;
@@ -310,7 +310,7 @@ namespace Fudge {
       if (!mtxTransform)
         return;
 
-      History.save("mutate", component, component.getMutator());
+      History.save(HISTORY.MUTATE, component, component.getMutator());
 
 
       let dtl: ƒ.General = _event.detail.transform;

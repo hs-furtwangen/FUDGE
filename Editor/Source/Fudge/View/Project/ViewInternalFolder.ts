@@ -178,7 +178,7 @@ namespace Fudge {
         this.dispatchToParent(EVENT_EDITOR.CREATE, {});
         this.tree.addChildren([resource], focus);
         this.tree.findVisible(resource).focus();
-        History.save("add", ƒ.Project, resource);
+        History.save(HISTORY.ADD, ƒ.Project, resource);
       }
     }
 
@@ -268,7 +268,7 @@ namespace Fudge {
 
       ƒui.Clipboard.dragDrop.set(resources);
       resources.forEach(_resource => {
-        History.save("add", ƒ.Project, _resource);
+        History.save(HISTORY.ADD, ƒ.Project, _resource);
         if (_resource instanceof ƒ.Graph)
           History.swap();
       });
@@ -290,7 +290,7 @@ namespace Fudge {
           this.tree.findVisible(clone).focus();
           this.tree.findVisible(clone).focus();
           this.dispatchToParent(EVENT_EDITOR.CREATE, { bubbles: true });
-          History.save("add", ƒ.Project, clone);
+          History.save(HISTORY.ADD, ƒ.Project, clone);
           break;
         case ƒ.KEYBOARD_CODE.F2:
           let input: HTMLInputElement = document.activeElement.querySelector("input");
@@ -334,8 +334,7 @@ namespace Fudge {
             // hack for undo TODO: examine, looks quirky
             resource.resourceParent = null;
             this.controller.addChildren([resource], parent);
-          }
-          else
+          } else
             this.controller.addChildren([resource], this.resourceFolder);
         }
       }
