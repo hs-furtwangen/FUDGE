@@ -67,7 +67,7 @@ namespace Fudge {
         label: "Delete Component",
         submenu: ContextMenu.getSubclassMenu(CONTEXTMENU.ADD_JOINT, ƒ.Joint, _callback)
       });
-      item = new remote.MenuItem({ label: "Delete Component", id: String(CONTEXTMENU.DELETE_COMPONENT), click: _callback, accelerator: "D" });
+      item = new remote.MenuItem({ label: "Delete Component", id: String(CONTEXTMENU.DELETE_COMPONENT), click: _callback, accelerator: "Delete" });
       menu.append(item);
 
       // ContextMenu.appendCopyPaste(menu);

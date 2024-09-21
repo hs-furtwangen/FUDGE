@@ -82,7 +82,7 @@ namespace Fudge {
       const menu: Electron.Menu = new remote.Menu();
       let item: Electron.MenuItem;
 
-      item = new remote.MenuItem({ label: "Create Folder", id: String(CONTEXTMENU.CREATE_FOLDER), click: _callback });
+      item = new remote.MenuItem({ label: "Create Folder", id: String(CONTEXTMENU.CREATE_FOLDER), click: _callback, accelerator: "F" });
       menu.append(item);
 
       item = new remote.MenuItem({ label: "Create Graph", id: String(CONTEXTMENU.CREATE_GRAPH), click: _callback, accelerator: "G" });
@@ -124,7 +124,7 @@ namespace Fudge {
     protected async contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void> {
       let choice: CONTEXTMENU = Number(_item.id);
       ƒ.Debug.fudge(`MenuSelect | id: ${CONTEXTMENU[_item.id]} | event: ${_event}`);
-      let iSubclass: number = _item["iSubclass"];
+      let iSubclass: number = _item["iSubclass"]; 
       if (!iSubclass && (choice == CONTEXTMENU.CREATE_MESH || choice == CONTEXTMENU.CREATE_MATERIAL)) {
         alert("Funky Electron-Error... please try again");
         return;
@@ -306,8 +306,14 @@ namespace Fudge {
           }
           break;
         case ƒ.KEYBOARD_CODE.DELETE:
-          this.tree.delete(await this.tree.controller.delete(null));
+          // this.tree.delete(await this.tree.controller.delete(null));
           break;
+        // case ƒ.KEYBOARD_CODE.G:
+        //   this.contextMenu.getMenuItemById(String(CONTEXTMENU.CREATE_GRAPH)).click();
+        //   break;
+        // case ƒ.KEYBOARD_CODE.F:
+        //   this.contextMenu.getMenuItemById(String(CONTEXTMENU.CREATE_FOLDER)).click();
+        //   break;
       }
     };
 

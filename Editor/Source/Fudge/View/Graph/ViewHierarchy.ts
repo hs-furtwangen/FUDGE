@@ -73,11 +73,11 @@ namespace Fudge {
       const menu: Electron.Menu = new remote.Menu();
       let item: Electron.MenuItem;
 
-      item = new remote.MenuItem({ label: "Add Node", id: String(CONTEXTMENU.ADD_NODE), click: _callback, accelerator: "N" });
+      item = new remote.MenuItem({ label: "Add Node", id: String(CONTEXTMENU.ADD_NODE), click: _callback, accelerator: "Insert" });
       menu.append(item);
-      item = new remote.MenuItem({ label: "De- / Acvtivate", id: String(CONTEXTMENU.ACTIVATE_NODE), click: _callback, accelerator: "A" });
+      item = new remote.MenuItem({ label: "De- / Acvtivate", id: String(CONTEXTMENU.ACTIVATE_NODE), click: _callback, accelerator: "Backspace" });
       menu.append(item);
-      item = new remote.MenuItem({ label: "Delete", id: String(CONTEXTMENU.DELETE_NODE), click: _callback, accelerator: "D" });
+      item = new remote.MenuItem({ label: "Delete", id: String(CONTEXTMENU.DELETE_NODE), click: _callback, accelerator: "Delete" });
       menu.append(item);
       return menu;
     }
@@ -157,7 +157,14 @@ namespace Fudge {
           }
           break;
         case ƒ.KEYBOARD_CODE.DELETE:
-          this.tree.delete(await this.tree.controller.delete(null));
+          // this.tree.delete(await this.tree.controller.delete(null));
+          // this.contextMenu.getMenuItemById(String(CONTEXTMENU.DELETE_NODE)).click();
+          break;
+        case ƒ.KEYBOARD_CODE.INSERT:
+          this.contextMenu.getMenuItemById(String(CONTEXTMENU.ADD_NODE)).click();
+          break;
+        case ƒ.KEYBOARD_CODE.BACKSPACE:
+          this.contextMenu.getMenuItemById(String(CONTEXTMENU.ACTIVATE_NODE)).click();
           break;
       }
     };

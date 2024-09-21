@@ -5,8 +5,8 @@ namespace Fudge {
   export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
 
   type Subclass<T> = {
-    subclasses: T[]
-    name: string
+    subclasses: T[];
+    name: string;
   };
 
   export class ContextMenu {
