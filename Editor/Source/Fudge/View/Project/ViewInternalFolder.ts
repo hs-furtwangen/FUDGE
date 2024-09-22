@@ -124,7 +124,7 @@ namespace Fudge {
     protected async contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void> {
       let choice: CONTEXTMENU = Number(_item.id);
       ƒ.Debug.fudge(`MenuSelect | id: ${CONTEXTMENU[_item.id]} | event: ${_event}`);
-      let iSubclass: number = _item["iSubclass"]; 
+      let iSubclass: number = _item["iSubclass"];
       if (!iSubclass && (choice == CONTEXTMENU.CREATE_MESH || choice == CONTEXTMENU.CREATE_MATERIAL)) {
         alert("Funky Electron-Error... please try again");
         return;
@@ -308,12 +308,14 @@ namespace Fudge {
         case ƒ.KEYBOARD_CODE.DELETE:
           // this.tree.delete(await this.tree.controller.delete(null));
           break;
-        // case ƒ.KEYBOARD_CODE.G:
-        //   this.contextMenu.getMenuItemById(String(CONTEXTMENU.CREATE_GRAPH)).click();
-        //   break;
-        // case ƒ.KEYBOARD_CODE.F:
-        //   this.contextMenu.getMenuItemById(String(CONTEXTMENU.CREATE_FOLDER)).click();
-        //   break;
+        case ƒ.KEYBOARD_CODE.G:
+          if (!_event.ctrlKey)
+            this.contextMenu.getMenuItemById(String(CONTEXTMENU.CREATE_GRAPH)).click();
+          break;
+        case ƒ.KEYBOARD_CODE.F:
+          if (!_event.ctrlKey)
+            this.contextMenu.getMenuItemById(String(CONTEXTMENU.CREATE_FOLDER)).click();
+          break;
       }
     };
 
@@ -351,10 +353,13 @@ namespace Fudge {
     };
 
     private hndDelete = (): void => {
-      // remove resources that are no longer registered in the project
-      for (const descendant of this.resourceFolder)
+      const files: ResourceFile[] = []; // collect files that are no longer registered in the project
+      for (const descendant of this.resourceFolder) 
         if (!(descendant instanceof ResourceFolder) && !ƒ.Project.resources[descendant.idResource])
-          this.controller.remove(descendant);
+          files.push(descendant);
+
+      for (const file of files) // remove them 
+        this.controller.remove(file);
 
       this.hndUpdate();
     };
