@@ -38,15 +38,20 @@ namespace Fudge {
       this.dom.addEventListener(ƒui.EVENT.EXPAND, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.COLLAPSE, this.hndEvent);
       this.dom.addEventListener(ƒui.EVENT.CONTEXTMENU, this.openContextMenu);
+      this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent, true);
+
       this.dom.addEventListener(ƒui.EVENT.CLICK, this.hndEvent, true);
       this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndEvent, true);
-      this.dom.addEventListener(ƒui.EVENT.MUTATE, this.hndEvent, true);
+      this.dom.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndKeyboard);
 
       this.dom.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
+      this.dom.addEventListener(ƒui.EVENT.PASTE, this.hndPaste);
 
       this.dom.removeEventListener(ƒ.EVENT.COMPONENT_ADD, this.hndEvent);
       this.dom.removeEventListener(ƒ.EVENT.COMPONENT_REMOVE, this.hndEvent);
+
+      this.dom.tabIndex = 0;
     }
 
     //#region  ContextMenu
@@ -157,16 +162,27 @@ namespace Fudge {
     };
 
     protected hndDrop = (_event: DragEvent): void => {
+      this.addComponentsFromResources(ƒui.Clipboard.dragDrop.get());
+    };
+
+    protected hndPaste = (): void => {
+      this.addComponentsFromResources(ƒui.Clipboard.copyPaste.get());
+    };
+
+    private addComponentsFromResources(_resources: ƒ.SerializableResource[]): void {
       if (this.protectGraphInstance())
         return;
-      for (let source of ƒui.Clipboard.dragDrop.get()) {
-        let cmpNew: ƒ.Component = this.createComponent(source);
-        this.node.addComponent(cmpNew);
-        this.expanded[cmpNew.type] = true;
-        History.save(HISTORY.ADD, this.node, cmpNew);
+      for (let source of ƒui.Clipboard.copyPaste.get() as ƒ.SerializableResource[]) {
+        this.addComponentFromResources(source);
+        this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
       }
-      this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
-    };
+    }
+    private addComponentFromResources(_resource: ƒ.SerializableResource): void {
+      let cmpNew: ƒ.Component = this.createComponent(_resource);
+      this.node.addComponent(cmpNew);
+      this.expanded[cmpNew.type] = true;
+      History.save(HISTORY.ADD, this.node, cmpNew);
+    }
 
     private protectGraphInstance(): boolean {
       // inhibit structural changes to a GraphInstance
@@ -301,6 +317,13 @@ namespace Fudge {
           break;
       }
     };
+
+
+    private hndKeyboard = (_event: KeyboardEvent): void => {
+      if (_event.code == ƒ.KEYBOARD_CODE.V && _event.ctrlKey)
+        this.hndPaste();
+    };
+
 
     private hndTransform = (_event: EditorEvent): void => {
       if (!this.getSelected())

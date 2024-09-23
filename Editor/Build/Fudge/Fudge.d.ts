@@ -739,9 +739,13 @@ declare namespace Fudge {
         protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void;
         protected hndDragOver: (_event: DragEvent) => void;
         protected hndDrop: (_event: DragEvent) => void;
+        protected hndPaste: () => void;
+        private addComponentsFromResources;
+        private addComponentFromResources;
         private protectGraphInstance;
         private fillContent;
         private hndEvent;
+        private hndKeyboard;
         private hndTransform;
         private transform3;
         private transform2;
