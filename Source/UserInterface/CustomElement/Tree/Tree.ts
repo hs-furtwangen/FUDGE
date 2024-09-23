@@ -210,8 +210,10 @@ namespace FudgeUserInterface {
         case EVENT.PASTE:
           _event.stopPropagation();
           let objects: T[] = await this.controller.paste();
-          this.addChildren(objects, target.data);
-          this.parentElement.dispatchEvent(new Event(EVENT.PASTE, { bubbles: true }));
+          if (this.controller.canAddChildren(objects, target.data)) {
+            this.addChildren(objects, target.data);
+            this.parentElement.dispatchEvent(new Event(EVENT.PASTE, { bubbles: true }));
+          }
           break;
       }
     };
