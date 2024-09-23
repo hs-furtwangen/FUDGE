@@ -60,14 +60,6 @@ namespace Fudge {
       }
     }
 
-    // public getSelection(): ƒ.SerializableResource[] {
-    //   return this.table.controller.selection;
-    // }
-
-    // public getDragDropSources(): ƒ.SerializableResource[] {
-    //   return ƒui.Clipboard.dragDrop.get();
-    // }
-
     // TODO: this is a preparation for syncing a graph with its instances after structural changes
     // protected openContextMenu = (_event: Event): void => {
     //   let row: HTMLTableRowElement = <HTMLTableRowElement>_event.composedPath().find((_element) => (<HTMLElement>_element).tagName == "TR");

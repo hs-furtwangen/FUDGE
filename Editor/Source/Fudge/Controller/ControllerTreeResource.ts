@@ -205,12 +205,13 @@ namespace Fudge {
       }
     }
 
-    /** 
-     * Retrieve objects from the clipboard, process and return them to add to the table   
-     */
+
     public async paste(): Promise<ResourceEntry[]> {
       let objects: ResourceEntry[] = await super.paste();
-      return await this.clone(objects);
+      for (let object of objects)
+        History.save(HISTORY.ADD, ƒ.Project, object);
+      document.dispatchEvent(new CustomEvent(EVENT_EDITOR.CREATE, { detail: { sender: History } }));
+      return objects;
     }
 
     public dragOver(_event: DragEvent): ƒui.DROPEFFECT {

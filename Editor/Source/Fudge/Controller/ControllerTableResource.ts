@@ -34,7 +34,10 @@ namespace Fudge {
 
     public async paste(): Promise<ƒ.SerializableResource[]> {
       let objects: ƒ.SerializableResource[] = await super.paste();
-      return this.clone(objects);
+      for (let object of objects)
+        History.save(HISTORY.ADD, ƒ.Project, object);
+      document.dispatchEvent(new CustomEvent(EVENT_EDITOR.CREATE, { detail: { sender: History } }));
+      return objects;
     }
 
     public dragOver(_event: DragEvent): ƒui.DROPEFFECT {

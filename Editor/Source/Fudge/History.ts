@@ -23,6 +23,10 @@ namespace Fudge {
      * Record a step to the history
      */
     public static async save(_action: HISTORY, _source: historySource, _target: historyTarget): Promise<void> {
+      if (_target instanceof ResourceFolder)
+        // ignore operations on resource folders, TODO: include 
+        return;
+
       if (History.#block) // block recording, especially when undoing
         return;
 

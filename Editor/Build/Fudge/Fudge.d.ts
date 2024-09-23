@@ -535,9 +535,6 @@ declare namespace Fudge {
         getChildren(_entry: ResourceEntry): ResourceEntry[];
         addChildren(_sources: ResourceEntry[], _target: ResourceEntry, _index?: number): ResourceEntry[];
         delete(_focussed: ResourceEntry[]): Promise<ResourceEntry[]>;
-        /**
-         * Retrieve objects from the clipboard, process and return them to add to the table
-         */
         paste(): Promise<ResourceEntry[]>;
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;

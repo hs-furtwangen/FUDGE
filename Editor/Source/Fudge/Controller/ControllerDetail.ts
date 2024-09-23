@@ -86,7 +86,7 @@ namespace Fudge {
     };
 
     private hndMutate = async (_event: DragEvent): Promise<void> => {
-      console.log("BEFORE", this);
+      // console.log("BEFORE", this);
       History.save(HISTORY.MUTATE, this.mutable, this.mutable.getMutator());
     };
 
