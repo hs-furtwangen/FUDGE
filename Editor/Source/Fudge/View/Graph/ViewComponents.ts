@@ -171,8 +171,8 @@ namespace Fudge {
 
     private addComponentsFromResources(_resources: ƒ.SerializableResource[]): void {
       if (this.protectGraphInstance())
-        return;
-      for (let source of ƒui.Clipboard.copyPaste.get() as ƒ.SerializableResource[]) {
+        return; 
+      for (let source of _resources as ƒ.SerializableResource[]) {
         this.addComponentFromResources(source);
         this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
       }
