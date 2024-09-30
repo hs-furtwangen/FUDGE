@@ -481,6 +481,8 @@ declare namespace Fudge {
         copy(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;
         getPath(_resource: ResourceEntry): ResourceEntry[];
         remove(_resource: ResourceEntry): void;
+        private collectEntries;
+        private deleteFolders;
     }
 }
 declare namespace Fudge {

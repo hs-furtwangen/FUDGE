@@ -22,10 +22,10 @@ namespace Fudge {
      * Returns true if this or any of its descendants contain the given resource.
      */
     public contains(_resource: ƒ.SerializableResource): boolean {
-      for (let entry of this.entries) 
+      for (let entry of this.entries)
         if (entry == _resource || entry instanceof ResourceFolder && entry.contains(_resource))
           return true;
-      
+
       return false;
     }
 
@@ -130,51 +130,52 @@ namespace Fudge {
     }
 
     public async delete(_focussed: ResourceEntry[]): Promise<ResourceEntry[]> {
-      // TODO: add delete selection isntead of _focussed? Why doesn't the Tree class handle this?
-      let iRoot: number = _focussed.indexOf(project.resourceFolder);
+      // TODO: Maybe the tree controller should provide the selected entries?
+      let expend: ResourceEntry[] = this.selection.length > 0 ? this.selection : _focussed;
+
+      let iRoot: number = expend.indexOf(project.resourceFolder);
       if (iRoot > -1)
-        _focussed.splice(iRoot, 1);
+        expend.splice(iRoot, 1);
+
+      let files: Set<ResourceFile> = new Set();
+      let folders: Set<ResourceFolder> = new Set();
+
+      for (let expendable of expend)
+        this.collectEntries(expendable, files, folders);
 
       let serializations: ƒ.SerializationOfResources = ƒ.Project.serialize();
       let serializationStrings: Map<ƒ.SerializableResource, string> = new Map();
       let usages: ƒ.Mutator = {};
+
       for (let idResource in serializations)
         serializationStrings.set(ƒ.Project.resources[idResource], JSON.stringify(serializations[idResource]));
 
-      for (let expendable of _focussed) {
-        if (expendable instanceof ResourceFolder) {
-          let usage: string[] = [];
-          for (const entry of expendable.entries)
-            usage.push(entry.name);
-
-          usages[_focussed.indexOf(expendable) + " " + expendable.name] = usage;
-        } else {
-          usages[expendable.idResource] = [];
-          for (let resource of serializationStrings.keys())
-            if (resource.idResource != expendable.idResource)
-              if (serializationStrings.get(resource).indexOf(expendable.idResource) > -1)
-                usages[expendable.idResource].push(resource.name + " " + resource.type);
-        }
+      for (let file of files) {
+        usages[file.idResource] = [];
+        for (let resource of serializationStrings.keys())
+          if (resource.idResource != file.idResource)
+            if (serializationStrings.get(resource).indexOf(file.idResource) > -1)
+              usages[file.idResource].push(resource.name + " " + resource.type);
       }
 
-      if (_focussed.length > 0 && await openDialog()) {
-        let deleted: ResourceEntry[] = [];
+      if (expend.length > 0 && await openDialog()) {
+        let deletedFiles: ResourceFile[] = [];
 
-        for (const selected of _focussed) {
-          let key: string = selected instanceof ResourceFolder ? this.selection.indexOf(selected) + " " + selected.name : selected.idResource;
-          if (usages[key].length == 0)  // delete only unused
-            deleted.push(selected);
-        }
+        for (let selected of files)
+          if (usages[selected.idResource].length == 0)  // delete only unused
+            deletedFiles.push(selected);
 
-        for (let resource of deleted) {
-          if (!(resource instanceof ResourceFolder))
-            ƒ.Project.deregister(resource);
-
+        for (let resource of deletedFiles) {
+          ƒ.Project.deregister(resource);
           this.remove(resource);
           this.selection.splice(this.selection.indexOf(resource), 1);
         }
 
-        return deleted;
+        let deletedFolders: ResourceFolder[] = [];
+        for (let folder of folders)
+          this.deleteFolders(folder, deletedFolders);
+
+        return [...deletedFiles, ...deletedFolders];
       }
 
       return [];
@@ -188,6 +189,7 @@ namespace Fudge {
           return false;
       }
     }
+
 
     public async copy(_originals: ResourceEntry[]): Promise<ResourceEntry[]> {
       return [];
@@ -210,6 +212,29 @@ namespace Fudge {
 
       let index: number = parent.entries.indexOf(_resource);
       parent.entries.splice(index, 1);
+    }
+
+
+    private collectEntries(_entry: ResourceEntry, _files: Set<ResourceFile>, _folders: Set<ResourceFolder>): void {
+      if (_entry instanceof ResourceFolder) {
+        for (let entry of _entry.entries) 
+          this.collectEntries(entry, _files, _folders);
+        _folders.add(_entry);
+      } else {
+        _files.add(_entry);
+      }
+    }
+
+    private deleteFolders(_folder: ResourceFolder, _deleted: ResourceFolder[]): void {
+      for (let entry of _folder.entries)
+        if (entry instanceof ResourceFolder)
+          this.deleteFolders(entry, _deleted);
+
+      if (_folder.entries.length == 0) {
+        this.remove(_folder);
+        this.selection.splice(this.selection.indexOf(_folder), 1);
+        _deleted.push(_folder);
+      }
     }
   }
 }
