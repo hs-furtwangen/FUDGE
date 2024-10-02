@@ -80,7 +80,7 @@ namespace Fudge {
     }
 
     protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void {
-      ƒ.Debug.info(`MenuSelect: Item-id=${CONTEXTMENU[_item.id]}`);
+      ƒ.Debug.fudge(`MenuSelect: Item-id=${CONTEXTMENU[_item.id]}`);
       let iSubclass: number = _item["iSubclass"];
       let component: typeof ƒ.Component;
 
@@ -99,7 +99,7 @@ namespace Fudge {
           if (element.tagName == "BODY")
             return;
           do {
-            ƒ.Debug.info(element.tagName);
+            ƒ.Debug.fudge(element.tagName);
             let controller: ControllerDetail = Reflect.get(element, "controller");
             if (element.tagName == "DETAILS" && controller) {
               this.dispatch(EVENT_EDITOR.DELETE, { detail: { mutable: <ƒ.Mutable>controller.getMutable() } });

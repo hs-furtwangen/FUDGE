@@ -121,7 +121,7 @@ namespace Fudge {
     }
 
     protected async contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void> {
-      ƒ.Debug.info(`MenuSelect: Item-id=${CONTEXTMENU[_item.id]}`);
+      ƒ.Debug.fudge(`MenuSelect: Item-id=${CONTEXTMENU[_item.id]}`);
       let focus: ƒ.ParticleData.Recursive = this.tree.getFocussed();
       if (!focus)
         return;

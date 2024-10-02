@@ -190,7 +190,7 @@ namespace FudgeUserInterface {
     };
 
     private hndCopyPaste = async (_event: ClipboardEvent): Promise<void> => {
-      ƒ.Debug.info(_event);
+      ƒ.Debug.fudge(_event);
       // _event.stopPropagation();
 
       switch (_event.type) {

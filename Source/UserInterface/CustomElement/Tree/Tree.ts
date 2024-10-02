@@ -197,7 +197,7 @@ namespace FudgeUserInterface {
     };
 
     private hndCopyPaste = async (_event: Event): Promise<void> => {
-      ƒ.Debug.info(_event);
+      ƒ.Debug.fudge(_event);
       // _event.stopPropagation();
       let target: TreeItem<T> = <TreeItem<T>>_event.target;
       switch (_event.type) {

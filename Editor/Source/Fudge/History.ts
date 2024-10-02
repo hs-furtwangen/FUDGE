@@ -100,10 +100,10 @@ namespace Fudge {
      * Print the current history to the console
      */
     public static print(): void {
-      ƒ.Debug.info("Current History -----------------------------------");
-      ƒ.Debug.info("Pointer: ", History.#pointer);
+      ƒ.Debug.fudge("Current History -----------------------------------");
+      ƒ.Debug.fudge("Pointer: ", History.#pointer);
       History.#steps.forEach((_step, _i) =>
-        ƒ.Debug.info(
+        ƒ.Debug.fudge(
           _i + (History.#pointer - 1 == _i ? "->" : "  "),
           HISTORY[_step[0]],
           _step[1].constructor.name,

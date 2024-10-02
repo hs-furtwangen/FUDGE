@@ -56,7 +56,7 @@ namespace Fudge {
 
     public hndChange = (_event: Event): void => {
       let mutator: ƒ.Mutator = ƒui.Controller.getMutator(this, ƒui.Dialog.dom, this.getMutator());
-      ƒ.Debug.info(mutator, this);
+      ƒ.Debug.fudge(mutator, this);
     };
 
     public async load(_htmlContent: string): Promise<void> {

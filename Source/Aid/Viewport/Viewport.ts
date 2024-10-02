@@ -42,7 +42,7 @@ namespace FudgeAid {
       let cntFly: ƒ.Control = new ƒ.Control("Fly", flySpeed);
       cntFly.setDelay(500);
       let flying: boolean = false;
-      ƒ.Debug.log(timer);
+      ƒ.Debug.fudge("FudgeAid viewport timer: " + timer);
 
       let touchState: "orbit" | "fly" | "zoom";
 
