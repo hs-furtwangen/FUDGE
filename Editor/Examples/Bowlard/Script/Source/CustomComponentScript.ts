@@ -34,7 +34,7 @@ namespace Script {
         case ƒ.EVENT.NODE_DESERIALIZED:
           // if deserialized the node is now fully reconstructed and access to all its components and children is possible
           let cmpRigidbody: ƒ.ComponentRigidbody = this.node.getComponent(ƒ.ComponentRigidbody);
-          console.log(cmpRigidbody);
+          ƒ.Debug.log(cmpRigidbody);
           cmpRigidbody.setVelocity(ƒ.Vector3.Z(this.velocity));
           break;
       }

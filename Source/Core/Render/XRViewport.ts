@@ -176,7 +176,7 @@ namespace FudgeCore {
                   break;
               }
             } catch (e: unknown) {
-              Debug.info("Input Sources Error: " + e);
+              Debug.error("Input Sources Error: " + e);
             }
           });
         }

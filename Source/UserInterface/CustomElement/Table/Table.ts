@@ -1,4 +1,5 @@
 namespace FudgeUserInterface {
+  import ƒ = FudgeCore;
 
   // TODO: duplicated code in Table and Tree, may be optimized...
 
@@ -189,7 +190,7 @@ namespace FudgeUserInterface {
     };
 
     private hndCopyPaste = async (_event: ClipboardEvent): Promise<void> => {
-      console.log(_event);
+      ƒ.Debug.fudge(_event);
       // _event.stopPropagation();
 
       switch (_event.type) {

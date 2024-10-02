@@ -106,7 +106,7 @@ namespace Fudge {
     }
 
     protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void {
-      ƒ.Debug.info(`MenuSelect: Item-id=${_item.id}`);
+      ƒ.Debug.fudge(`MenuSelect: Item-id=${_item.id}`);
 
       switch (_item.id) {
         case TRANSFORM.NONE:

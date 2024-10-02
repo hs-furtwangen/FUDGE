@@ -290,7 +290,7 @@ namespace FudgeUserInterface {
       if (digit == this.querySelector("[name=exp]")) {
         // console.log(this.value);
         let value: number = this.value * Math.pow(10, _amount);
-        console.log(value, this.value);
+        ƒ.Debug.log(value, this.value);
         if (isFinite(value))
           this.value = value; 
         this.display();

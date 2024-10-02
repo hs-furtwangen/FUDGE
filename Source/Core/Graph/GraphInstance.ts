@@ -81,13 +81,9 @@ namespace FudgeCore {
 
       let graph: Graph = this.get();
       if (graph)
-        // if (_serialization.deserializeFromSource) // no components-> assume synchronized GraphInstance
-        //   await this.set(graph); // recreate complete instance from source graph
-        // else {
         await this.connectToGraph(); // otherwise just connect
-      // }
       else {
-        console.log("Register for resync", _serialization.name, this.name);
+        Debug.log("Register for resync", _serialization.name, this.name);
         Project.registerGraphInstanceForResync(this);
       }
       return this;
@@ -110,31 +106,18 @@ namespace FudgeCore {
 
       let currentGraph: Graph = this.get();
       if (currentGraph) {
-        //@ts-ignore
-        // console.log("Before Remove", currentGraph.name, this.name, currentGraph.listeners);
         currentGraph.removeEventListener(EVENT.MUTATE_GRAPH, this.hndMutationGraph);
-        //@ts-ignore
-        // console.log("After Remove", currentGraph.name, this.name, currentGraph.listeners);
       }
 
       // TODO: examine, if the serialization should be stored in the Graph for optimization <- also useful for sync with instances
       let serialization: Serialization = Serializer.serialize(_graph);
-      //Serializer.deserialize(serialization);
       for (let path in serialization) {
         await this.deserialize(serialization[path]);
         break;
       }
 
-      console.log(this.name + GraphInstance.count++);
-
-      // graph.addEventListener(EVENT.MUTATE, (_event: CustomEvent) => this.hndMutation, true);
+      Debug.fudge("GraphInstance set to " + this.name + " | " + "Instance count: " + GraphInstance.count++);
       _graph.addEventListener(EVENT.MUTATE_GRAPH, this.hndMutationGraph);
-      //@ts-ignore
-      // console.log("Add", _graph.name, this.name, _graph.listeners);
-      // graph.addEventListener(EVENT.MUTATE_GRAPH_DONE, () => { console.log("Done", this.name); /* this.#sync = true; */ });
-
-      //@ts-ignore
-      console.log(_graph?.listeners);
       this.broadcastEvent(new Event(EVENT.GRAPH_INSTANTIATED));
     }
 
@@ -149,17 +132,9 @@ namespace FudgeCore {
      * Source graph mutated, reflect mutation in this instance
      */
     private hndMutationGraph = async (_event: CustomEvent): Promise<void> => {
-      // console.log("Reflect Graph-Mutation to Instance", SYNC[this.#sync], (<Graph>_event.currentTarget).name, this.getPath().map(_node => _node.name));
-      // if (this.#sync != SYNC.READY) {
-      //   // console.log("Sync aborted, switch to ready");
-      //   this.#sync = SYNC.READY;
-      //   return;
-      // }
-
       if (this.isFiltered())
         return;
 
-      // this.#sync = SYNC.GRAPH_SYNCED; // do not sync again, since mutation is already a synchronization
       await this.reflectMutation(_event, <Graph>_event.currentTarget, this, _event.detail.path);
       this.dispatchEvent(new Event(EVENT.MUTATE_INSTANCE, { bubbles: true }));
     };
@@ -168,31 +143,15 @@ namespace FudgeCore {
      * This instance mutated, reflect mutation in source graph
      */
     private hndMutationInstance = async (_event: CustomEvent): Promise<void> => {
-      // console.log("Reflect Instance-Mutation to Graph", SYNC[this.#sync], this.getPath().map(_node => _node.name), this.get().name);
-      // if (this.#sync != SYNC.READY) {
-      //   // console.log("Sync aborted, switch to ready");
-      //   this.#sync = SYNC.READY;
-      //   return;
-      // }
-
-      // if (_event.target instanceof GraphInstance && _event.target != this) {
-      //   // console.log("Sync aborted, target already synced");
-      //   return;
-      // }
-
       if (this.isFiltered())
         return;
 
-      // this.#sync = SYNC.INSTANCE; // do not sync again, since mutation is already a synchronization
       await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"));
       this.get().dispatchEvent(new CustomEvent(EVENT.MUTATE, { detail: _event.detail }));
     };
 
     // reflect mutation from a source graph or instance to a destination instance or graph
     private async reflectMutation(_event: CustomEvent, _source: Node, _destination: Node, _path: Node[]): Promise<void> {
-      // console.log("Reflect mutation", _source, _destination);
-
-
       for (let node of _path) // iterate up the event path, which may contain regular Nodes or GraphInstances
         if (node instanceof GraphInstance) // until this GraphInstance is found (or no GraphInstance...)
           if (node == this)

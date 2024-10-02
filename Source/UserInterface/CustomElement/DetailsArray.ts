@@ -47,7 +47,7 @@ namespace FudgeUserInterface {
         child.setAttribute("key", count.toString());
         if (child.setLabel)
           child.setLabel(count.toString());
-        console.log(child.tabIndex);
+        ƒ.Debug.fudge(child.tabIndex);
         count++;
       }
 
@@ -113,7 +113,7 @@ namespace FudgeUserInterface {
 
 
     private hndInsert = (_event: Event): void => {
-      console.log("hndInsert");
+      ƒ.Debug.fudge("hndInsert");
     };
 
     private hndKeySpecial = (_event: KeyboardEvent): void => {

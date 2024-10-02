@@ -25,9 +25,9 @@ namespace FudgeCore {
     public constructor(_buffer: ArrayBuffer, _uri: string) {
       this.uri = _uri;
       this.nodes = FBX.parseNodesFromBinary(_buffer);
-      console.log(this.nodes);
+      Debug.log(this.nodes);
       this.fbx = FBX.loadFromNodes(this.nodes);
-      console.log(this.fbx);
+      Debug.log(this.fbx);
     }
 
     private static get defaultMaterial(): Material {

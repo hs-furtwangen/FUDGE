@@ -56,7 +56,7 @@ namespace Fudge {
 
     public hndChange = (_event: Event): void => {
       let mutator: ƒ.Mutator = ƒui.Controller.getMutator(this, ƒui.Dialog.dom, this.getMutator());
-      console.log(mutator, this);
+      ƒ.Debug.fudge(mutator, this);
     };
 
     public async load(_htmlContent: string): Promise<void> {
@@ -73,8 +73,8 @@ namespace Fudge {
           let url: string = script.getAttribute("src");
           ƒ.Debug.fudge("Load script: ", url);
           await ƒ.Project.loadScript(new URL(url, this.base).toString());
-          console.log("ComponentScripts", ƒ.Project.getComponentScripts());
-          console.log("Script Namespaces", ƒ.Project.scriptNamespaces);
+          ƒ.Debug.log("ComponentScripts", ƒ.Project.getComponentScripts());
+          ƒ.Debug.log("Script Namespaces", ƒ.Project.scriptNamespaces);
         }
       }
 
@@ -250,80 +250,6 @@ namespace Fudge {
 
       return this.stringifyHTML(html);
     }
-
-    // private getAutoViewScript(): HTMLScriptElement {
-    //   let code: string;
-    //   code = (function (_graphId: string): void {
-    //     /**
-    //      * AutoView-Script
-    //      * Loads and displays the selected graph and implements a basic orbit camera
-    //      * @author Jirka Dell'Oro-Friedl, HFU, 2021
-    //      */
-
-    //     window.addEventListener("load", init);
-
-    //     // show dialog for startup
-    //     let dialog: HTMLDialogElement;
-    //     function init(_event: Event): void {
-    //       dialog = document.querySelector("dialog");
-    //       dialog.querySelector("h1").textContent = document.title;
-    //       dialog.addEventListener("click", function (_event: Event): void {
-    //         // @ts-ign re until HTMLDialog is implemented by all browsers and available in dom.d.ts
-    //         dialog.close();
-    //         startInteractiveViewport();
-    //       });
-    //       //@ts-ignore
-    //       dialog.showModal();
-    //     }
-
-    //     // setup and start interactive viewport
-    //     async function startInteractiveViewport(): Promise<void> {
-    //       // load resources referenced in the link-tag
-    //       await FudgeCore.Project.loadResourcesFromHTML();
-    //       FudgeCore.Debug.log("Project:", FudgeCore.Project.resources);
-
-    //       // pick the graph to show
-    //       let graph: ƒ.Graph = <ƒ.Graph>FudgeCore.Project.resources[_graphId];
-    //       FudgeCore.Debug.log("Graph:", graph);
-    //       if (!graph) {
-    //         alert("Nothing to render. Create a graph with at least a mesh, material and probably some light");
-    //         return;
-    //       }
-
-    //       // setup the viewport
-    //       let cmpCamera: ƒ.ComponentCamera = new FudgeCore.ComponentCamera();
-    //       let canvas: HTMLCanvasElement = document.querySelector("canvas");
-    //       let viewport: ƒ.Viewport = new FudgeCore.Viewport();
-    //       viewport.initialize("InteractiveViewport", graph, cmpCamera, canvas);
-    //       FudgeCore.Debug.log("Viewport:", viewport);
-
-    //       // hide the cursor when interacting, also suppressing right-click menu
-    //       canvas.addEventListener("mousedown", canvas.requestPointerLock);
-    //       canvas.addEventListener("mouseup", function (): void { document.exitPointerLock(); });
-
-    //       // make the camera interactive (complex method in FudgeAid)
-    //       let cameraOrbit: FudgeAid.CameraOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(viewport);
-
-    //       // setup audio
-    //       let cmpListener: ƒ.ComponentAudioListener = new ƒ.ComponentAudioListener();
-    //       cmpCamera.node.addComponent(cmpListener);
-    //       FudgeCore.AudioManager.default.listenWith(cmpListener);
-    //       FudgeCore.AudioManager.default.listenTo(graph);
-    //       FudgeCore.Debug.log("Audio:", FudgeCore.AudioManager.default);
-
-    //       // draw viewport once for immediate feedback
-    //       FudgeCore.Render.prepare(cameraOrbit);
-    //       viewport.draw();
-    //       canvas.dispatchEvent(new CustomEvent("interactiveViewportStarted", { bubbles: true, detail: viewport }));
-    //     }
-    //   }).toString();
-
-    //   code = "(" + code + `)(document.head.querySelector("meta[autoView]").getAttribute("autoView"));\n`;
-    //   let script: HTMLScriptElement = document.createElement("script");
-    //   script.setAttribute("name", "autoView");
-    //   script.textContent = code;
-    //   return script;
-    // }
 
     private settingsStringify(): string {
       let mutator: ƒ.Mutator = project.getMutator(true);

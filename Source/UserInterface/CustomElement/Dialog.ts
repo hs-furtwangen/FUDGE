@@ -48,7 +48,7 @@ namespace FudgeUserInterface {
             try {
               Controller.updateMutator(content, _data);
             } catch (_e) {
-              ƒ.Debug.info(_e);
+              ƒ.Debug.warn(_e);
             }
           //@ts-ignore
           Dialog.dom.close();

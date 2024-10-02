@@ -29,7 +29,7 @@ namespace FudgeCore {
       Project.register(this, _serialization.idResource);
       await Project.resyncGraphInstances(this);
       this.broadcastEvent(new Event(EVENT.GRAPH_DESERIALIZED));
-      console.log("Deserialized", this.name);
+      Debug.log("Deserialized", this.name);
       return this;
     }
 
