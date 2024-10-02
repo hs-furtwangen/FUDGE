@@ -378,7 +378,7 @@ namespace FudgeCore {
     public getGizmos(_nodes: Node[] = Array.from(this.#branch.getIterator(true))): Gizmo[] {
       return _nodes
         .flatMap(_node => _node.getAllComponents())
-        .filter(_component => _component.isActive && _component.drawGizmos && this.gizmosFilter[_component.type]);
+        .filter(_component => _component.isActive && (_component.drawGizmos || _component.drawGizmosSelected) && this.gizmosFilter[_component.type]);
     }
   }
 }

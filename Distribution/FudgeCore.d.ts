@@ -177,9 +177,9 @@ declare namespace FudgeCore {
         NODE_SERIALIZED = "nodeSerialized",
         /** dispatched to {@link Node} and all its {@link Component}s when it's done deserializing, so all components, children and attributes are available */
         NODE_DESERIALIZED = "nodeDeserialized",
-        /** dispatched to {@link GraphInstance} when it's content is set according to a serialization of a {@link Graph}. Broadcasted, so needs to be caught in capture. */
+        /** broadcast from a {@link GraphInstance} to all its descendants when it's content is set according to a serialization of a {@link Graph}. Broadcasted, so needs to be caught in capture. */
         GRAPH_INSTANTIATED = "graphInstantiated",
-        /** dispatched to a {@link Graph} when it's finished deserializing. Broadcasted, so needs to be caught in capture. */
+        /** broadcast from a {@link Graph} to all its descendants when it's finished deserializing. Broadcasted, so needs to be caught in capture. */
         GRAPH_DESERIALIZED = "graphDeserialized",
         /** dispatched by a {@link Graph} when it and its connected instances have finished mutating  */
         GRAPH_MUTATED = "graphMutated",
@@ -5857,6 +5857,10 @@ declare namespace FudgeCore {
         private createPyramidVertices;
         /** Adding this ComponentRigidbody to the Physiscs.world giving the oimoPhysics system the information needed */
         private addRigidbodyToWorld;
+        /**
+         * Capture only events that are broadcast to this node directly. Don't capture events that get send to descendants
+         */
+        private hndNodeDeactivate;
         /** Removing this ComponentRigidbody from the Physiscs.world taking the informations from the oimoPhysics system */
         private removeRigidbodyFromWorld;
         private collisionCenterPoint;
