@@ -99,7 +99,7 @@ namespace Fudge {
           if (element.tagName == "BODY")
             return;
           do {
-            console.log(element.tagName);
+            ƒ.Debug.info(element.tagName);
             let controller: ControllerDetail = Reflect.get(element, "controller");
             if (element.tagName == "DETAILS" && controller) {
               this.dispatch(EVENT_EDITOR.DELETE, { detail: { mutable: <ƒ.Mutable>controller.getMutable() } });

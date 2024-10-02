@@ -87,7 +87,7 @@ namespace FudgeCore {
         await this.connectToGraph(); // otherwise just connect
       // }
       else {
-        console.log("Register for resync", _serialization.name, this.name);
+        Debug.log("Register for resync", _serialization.name, this.name);
         Project.registerGraphInstanceForResync(this);
       }
       return this;
@@ -125,7 +125,7 @@ namespace FudgeCore {
         break;
       }
 
-      console.log(this.name + GraphInstance.count++);
+      Debug.log(this.name + GraphInstance.count++);
 
       // graph.addEventListener(EVENT.MUTATE, (_event: CustomEvent) => this.hndMutation, true);
       _graph.addEventListener(EVENT.MUTATE_GRAPH, this.hndMutationGraph);
@@ -134,7 +134,7 @@ namespace FudgeCore {
       // graph.addEventListener(EVENT.MUTATE_GRAPH_DONE, () => { console.log("Done", this.name); /* this.#sync = true; */ });
 
       //@ts-ignore
-      console.log(_graph?.listeners);
+      Debug.log(_graph?.listeners);
       this.broadcastEvent(new Event(EVENT.GRAPH_INSTANTIATED));
     }
 

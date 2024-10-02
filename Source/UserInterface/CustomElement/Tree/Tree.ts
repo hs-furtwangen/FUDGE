@@ -1,5 +1,7 @@
 ///<reference path="TreeList.ts"/>
 namespace FudgeUserInterface {
+  import ƒ = FudgeCore;
+  
   export enum CSS_CLASS {
     SELECTED = "selected",
     INACTIVE = "inactive"
@@ -195,7 +197,7 @@ namespace FudgeUserInterface {
     };
 
     private hndCopyPaste = async (_event: Event): Promise<void> => {
-      console.log(_event);
+      ƒ.Debug.info(_event);
       // _event.stopPropagation();
       let target: TreeItem<T> = <TreeItem<T>>_event.target;
       switch (_event.type) {

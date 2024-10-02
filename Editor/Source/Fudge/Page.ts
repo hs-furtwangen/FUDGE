@@ -24,7 +24,7 @@ namespace Fudge {
     private static physics: { [idGraph: string]: ƒ.Physics } = {};
 
     public static setDefaultProject(): void {
-      console.log("Set default project in local storage", project);
+      ƒ.Debug.log("Set default project in local storage", project);
       if (project)
         localStorage.setItem("project", project.base.toString());
     }
@@ -61,7 +61,7 @@ namespace Fudge {
     private static async start(): Promise<void> {
       // ƒ.Debug.setFilter(ƒ.DebugConsole, ƒ.DEBUG_FILTER.ALL | ƒ.DEBUG_FILTER.SOURCE);
 
-      console.log("LocalStorage", localStorage);
+      ƒ.Debug.log("LocalStorage", localStorage);
 
       Page.setupGoldenLayout();
       ƒ.Project.mode = ƒ.MODE.EDITOR;
@@ -78,7 +78,7 @@ namespace Fudge {
       ipcRenderer.send("enableMenuItem", { item: Fudge.MENU.PANEL_HELP_OPEN, on: true });
 
       if (localStorage.project) {
-        console.log("Load project referenced in local storage", localStorage.project);
+        ƒ.Debug.log("Load project referenced in local storage", localStorage.project);
         await Page.loadProject(new URL(localStorage.project));
       }
     }

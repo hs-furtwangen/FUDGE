@@ -10,7 +10,7 @@ namespace Fudge {
     public constructor(_container: ComponentContainer, _state: ViewState) {
       super(_container, _state);
       this.setTitle("Help");
-      console.log(this.dom);
+      ƒ.Debug.log(this.dom);
       // TODO: iframe sandbox disallows use of scripts, remove or replace with object if necessary
       // this.dom.innerHTML = `<iframe src="Help.html" sandbox></iframe>`;
       this.dom.innerHTML = `<object data="Help.html"></object>`;

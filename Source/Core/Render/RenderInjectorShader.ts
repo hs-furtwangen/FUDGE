@@ -89,7 +89,7 @@ namespace FudgeCore {
         crc3.compileShader(webGLShader);
         let error: string = RenderWebGL.assert<string>(crc3.getShaderInfoLog(webGLShader));
         if (error !== "") {
-          console.log(_shaderCode);
+          Debug.log(_shaderCode);
 
           throw new Error("Error compiling shader: " + error);
         }

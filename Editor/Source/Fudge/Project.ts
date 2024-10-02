@@ -56,7 +56,7 @@ namespace Fudge {
 
     public hndChange = (_event: Event): void => {
       let mutator: ƒ.Mutator = ƒui.Controller.getMutator(this, ƒui.Dialog.dom, this.getMutator());
-      console.log(mutator, this);
+      ƒ.Debug.info(mutator, this);
     };
 
     public async load(_htmlContent: string): Promise<void> {
@@ -73,8 +73,8 @@ namespace Fudge {
           let url: string = script.getAttribute("src");
           ƒ.Debug.fudge("Load script: ", url);
           await ƒ.Project.loadScript(new URL(url, this.base).toString());
-          console.log("ComponentScripts", ƒ.Project.getComponentScripts());
-          console.log("Script Namespaces", ƒ.Project.scriptNamespaces);
+          ƒ.Debug.log("ComponentScripts", ƒ.Project.getComponentScripts());
+          ƒ.Debug.log("Script Namespaces", ƒ.Project.scriptNamespaces);
         }
       }
 

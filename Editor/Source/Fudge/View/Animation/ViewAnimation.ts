@@ -100,7 +100,7 @@ namespace Fudge {
         case CONTEXTMENU.CONVERT_ANIMATION:
           if (this.animation instanceof ƒ.AnimationSprite) {
             let animation: ƒ.Animation = this.animation.convertToAnimation();
-            console.log(animation);
+            ƒ.Debug.log(animation);
           }
       }
     }

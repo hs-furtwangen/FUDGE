@@ -37,10 +37,10 @@ namespace Fudge {
     }
 
     private hndInsert = (_event: CustomEvent): void => {
-      console.log("INSERT at ControllerDetail");
-      console.log(_event.detail);
+      ƒ.Debug.log("INSERT at ControllerDetail");
+      ƒ.Debug.log(_event.detail);
       let mutable: ƒ.Mutable = this.mutable[_event.detail.getAttribute("key")];
-      console.log(mutable.type);
+      ƒ.Debug.log(mutable.type);
       if (mutable instanceof ƒ.MutableArray)
         mutable.push(new mutable.type());
     };

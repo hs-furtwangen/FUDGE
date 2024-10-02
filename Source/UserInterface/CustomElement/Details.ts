@@ -89,7 +89,7 @@ namespace FudgeUserInterface {
 
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.INSERT:
-          console.log("INSERT at Details");
+          ƒ.Debug.log("INSERT at Details");
           this.dispatchEvent(new CustomEvent(EVENT.INSERT, { bubbles: true, detail: this }));
           break;
         case ƒ.KEYBOARD_CODE.DELETE:

@@ -143,7 +143,7 @@ namespace Fudge {
         focus = focus.resourceParent;
       }
 
-      console.log(focus.name);
+      ƒ.Debug.info(focus.name);
       if (!(focus instanceof ResourceFolder))
         return;
 

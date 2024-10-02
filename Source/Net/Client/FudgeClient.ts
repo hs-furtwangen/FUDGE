@@ -74,7 +74,7 @@ namespace FudgeNet {
         return;
       peer.close();
       delete this.peers[_idRemote];
-      console.log("Deleted peer", _idRemote, "remaining", this.peers);
+      ƒ.Debug.log("Deleted peer", _idRemote, "remaining", this.peers);
     }
 
     /**
@@ -116,7 +116,7 @@ namespace FudgeNet {
             this.sendToAllPeers(message);
         }
       } catch (_error) {
-        console.log(_error);
+        ƒ.Debug.log(_error);
       }
     }
 
@@ -137,7 +137,7 @@ namespace FudgeNet {
     public becomeHost(): void {
       this.dispatch({ idRoom: idRoom, command: FudgeNet.COMMAND.DISCONNECT_PEERS });
       this.disconnectPeers();
-      console.log("createHost", this.id);
+      ƒ.Debug.log("createHost", this.id);
       this.dispatch({ idRoom: idRoom, command: FudgeNet.COMMAND.CONNECT_HOST, route: FudgeNet.ROUTE.SERVER });
     }
 
@@ -186,7 +186,7 @@ namespace FudgeNet {
               host = id;
           if (host != this.idHost) {
             this.idHost = host;
-            console.log("New host", host);
+            ƒ.Debug.log("New host", host);
           }
           break;
       }
@@ -266,7 +266,7 @@ namespace FudgeNet {
 
       rtc.addEventListener(
         "icegatheringstatechange", (_event: Event) => {
-          console.log("ICE-state", rtc.iceGatheringState);
+          ƒ.Debug.log("ICE-state", rtc.iceGatheringState);
         }
       );
 

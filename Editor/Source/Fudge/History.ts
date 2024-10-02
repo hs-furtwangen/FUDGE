@@ -100,10 +100,10 @@ namespace Fudge {
      * Print the current history to the console
      */
     public static print(): void {
-      console.group("History");
-      console.log("Pointer: ", History.#pointer);
+      ƒ.Debug.info("Current History -----------------------------------");
+      ƒ.Debug.info("Pointer: ", History.#pointer);
       History.#steps.forEach((_step, _i) =>
-        console.log(
+        ƒ.Debug.info(
           _i + (History.#pointer - 1 == _i ? "->" : "  "),
           HISTORY[_step[0]],
           _step[1].constructor.name,
@@ -111,7 +111,6 @@ namespace Fudge {
             _step[2].constructor.name :
             _step[2]
         ));
-      console.groupEnd();
     };
 
     /**

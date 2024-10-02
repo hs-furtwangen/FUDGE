@@ -55,7 +55,7 @@ namespace Fudge {
     }
 
     public async delete(_focussed: ƒ.SerializableResource[]): Promise<ƒ.SerializableResource[]> {
-      console.log(_focussed, this.selection);
+      // ƒ.Debug.info(_focussed, this.selection);
       // this.selection = [];
       let expendables: ƒ.SerializableResource[] = this.selection.slice(); //_focussed);
       if (expendables.length == 0)

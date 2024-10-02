@@ -17,14 +17,14 @@ namespace Fudge {
       return;
 
     let base: URL = new URL(new URL("file://" + filename[0]).toString() + "/");
-    console.log("Path", base.toString());
+    ƒ.Debug.log("Path", base.toString());
       
     project = new Project(base);
 
     await saveProject(true);
 
     let ƒPath: URL = new URL("../../", location.href);
-    console.log(ƒPath);
+    ƒ.Debug.log(ƒPath);
 
     fs.copyFileSync(new URL("Editor/Source/Template/.gitignore.txt", ƒPath), new URL(".gitignore", base));
     fs.mkdirSync(new URL("Script/Source", base), { recursive: true });
