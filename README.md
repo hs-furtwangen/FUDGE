@@ -109,17 +109,14 @@ Contains classes for easy and automatic creation of graphical interfaces using t
 - Grapheditor/Wiring for Shader and Animation
 - Importer for standard file formats
 - Runtime-Recording for Replay
-- Undo/Rollback
 - Selection-Sets to store temporary Groups
 - Advanced texturing
 - Input-Manager  
-- Graphic Feedback/Feedforward in RenderView
 - Image-Tracking
 - Pathfinding System
 - Procedural 3D-Assets
 
 ## In Progress
-- Light and Shadow
 
 ## Done  
 
@@ -144,3 +141,5 @@ Contains classes for easy and automatic creation of graphical interfaces using t
 | Jonas Plotzky      | Particle & Animation Editor       |
 | Matthias Roming      | Skeletal Animation |
 | Valentin Schnidtberger | VR Components |
+| Roland Heer | Postrendering-Effects |
+| Henry Czösz | Un- / Redo |
