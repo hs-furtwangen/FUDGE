@@ -752,8 +752,10 @@ namespace FudgeCore {
       // Influences how much the material's color affects the specular reflection. When metallic is higher, the specular reflection takes on the color of the material, creating a metallic appearance. Range from 0.0 to 1.0.
       const metallic: number = gltfMetallicFactor;
 
-      const isLit: boolean = gltfEmissiveFactor[0] == 1 && gltfEmissiveFactor[1] == 1 || gltfEmissiveFactor[2] == 1;
+      const isLit: boolean = gltfEmissiveFactor[0] > 0 || gltfEmissiveFactor[1] > 0 || gltfEmissiveFactor[2] > 0;
       const color: Color = new Color(...gltfBaseColorFactor);
+      if (isLit)
+        color.add(new Color(...gltfEmissiveFactor, 0));
       const coat: Coat = gltfBaseColorTexture ?
         isLit ? new CoatTextured(color, await this.getTexture(gltfBaseColorTexture.index)) :
           gltfNormalTexture ?
