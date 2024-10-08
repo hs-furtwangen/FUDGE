@@ -1,12 +1,15 @@
 namespace FudgeAid {
   import ƒ = FudgeCore;
 
+  // TODO: Think about the Transformator and its usage in the Editor (separation of concerns). 
+  // Maybe the transformator should be part of the editor after all and handle components directly instead of only matrices.
+  // That way no hacky event dispatching/handling would be needed, as instead the transformator could handle everything internally.
   /**
    * Allows to translate, rotate and scale matrices visually by dragging with a pointer. 
    * Installs pointer event listeners on the given {@link ƒ.Viewport}s canvas on construction. 
    * Use {@link addListeners}/{@link removeListeners} to handle the installation manually.
    */
-  export class Transformator {
+  export class Transformator { 
     public readonly viewport: ƒ.Viewport;
 
     public mode: "none" | "translate" | "rotate" | "scale" = "translate";
@@ -46,8 +49,6 @@ namespace FudgeAid {
         yz: ƒ.Color.CSS("salmon", 0.5)
       }
     };
-
-    #undo: (() => void)[] = []; // stack of functions to undo the last transformation
 
     #mtxLocal: ƒ.Matrix4x4; // local matrix of the object to be transformed
     #mtxWorld: ƒ.Matrix4x4; // world matrix of the object to be transformed
@@ -113,23 +114,6 @@ namespace FudgeAid {
       this.viewport.canvas.removeEventListener("pointercancel", this.hndPointerUp);
       this.viewport.removeEventListener(ƒ.EVENT.RENDER_END, this.hndRenderEnd);
     };
-
-    /**
-     * Undo the last transformation
-     */
-    public undo(): void {
-      if (this.#isTransforming)
-        return;
-
-      this.#undo.pop()?.();
-    }
-
-    /**
-     * Clear the undo stack
-     */
-    public clearUndo(): void {
-      this.#undo.length = 0;
-    }
 
     public drawGizmos(_cmpCamera: ƒ.ComponentCamera, _picking: boolean): void {
       if (!this.#mtxLocal || !this.#mtxWorld)
@@ -253,6 +237,8 @@ namespace FudgeAid {
       if (!this.camera || !this.viewport || !this.selected || !this.#mtxLocal || !this.#mtxWorld)
         return;
 
+      this.viewport.canvas.style.cursor = "grabbing";
+
       this.#mtxLocalBase.copy(this.#mtxLocal);
       this.#mtxWorldBase.copy(this.#mtxWorld);
 
@@ -276,21 +262,12 @@ namespace FudgeAid {
 
       ƒ.Recycler.store(point);
 
-      // create undo function
-      const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocal;
-      const mutatorLocal: ƒ.Mutator = mtxLocal.getMutator();
-      let undo: () => void = () => {
-        mtxLocal.mutate(mutatorLocal);
-        if (this.#mtxLocal == mtxLocal)
-          this.#mtxLocalBase.copy(mtxLocal);
-      };
-      this.#undo.push(undo);
       this.#startTransform = true;
     };
 
     private hndPointerMove = (_event: PointerEvent): void => {
       this.#isTransforming = false;
-      // this.viewport.canvas.style.cursor = "default";
+      this.viewport.canvas.style.cursor = "default";
 
       if (_event.buttons != 1) {
         const point: ƒ.Vector2 = new ƒ.Vector2(_event.offsetX, _event.offsetY);
@@ -313,6 +290,9 @@ namespace FudgeAid {
         else
           this.selected = null;
 
+        if (this.selected)
+          this.viewport.canvas.style.cursor = "grab";
+
         ƒ.Recycler.store(point);
 
         return;
@@ -320,6 +300,8 @@ namespace FudgeAid {
 
       if (!this.camera || !this.viewport || !this.selected || !this.#mtxLocal || !this.#mtxWorld)
         return;
+
+      this.viewport.canvas.style.cursor = "grabbing";
 
       const isSnapping: boolean = ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.CTRL_LEFT, ƒ.KEYBOARD_CODE.CTRL_RIGHT]);
 
@@ -451,8 +433,10 @@ namespace FudgeAid {
         this.#mtxWorldBase.copy(this.#mtxWorld);
       if (this.selected)
         this.selected = null;
-      if (this.#isTransforming)
+      if (this.#isTransforming) {
         this.#isTransforming = false;
+        this.viewport.canvas.dispatchEvent(new Event("endTransform", { bubbles: true }));
+      }
       this.#startTransform = false;
     };
 

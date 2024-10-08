@@ -333,14 +333,6 @@ declare namespace FudgeAid {
          * Remove pointer event listeners from the viewport canvas
          */
         removeListeners: () => void;
-        /**
-         * Undo the last transformation
-         */
-        undo(): void;
-        /**
-         * Clear the undo stack
-         */
-        clearUndo(): void;
         drawGizmos(_cmpCamera: ƒ.ComponentCamera, _picking: boolean): void;
         private hndPointerDown;
         private hndPointerMove;
