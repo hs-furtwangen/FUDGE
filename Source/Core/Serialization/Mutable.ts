@@ -54,8 +54,8 @@ namespace FudgeCore {
      * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
      */
     attributeTypes?: MetaAttributeTypes;
-
-    enumerableKeys?: (string | symbol)[];
+    enumerableKeys?: string[];
+    serializableKeys?: string[];
   }
 
   /**
@@ -90,10 +90,14 @@ namespace FudgeCore {
 
     let metadata: Metadata = _context.metadata;
     if (_context.kind == "getter" || _context.kind == "accessor") {
+      if (typeof _context.name != "string")
+        return;
+
       metadata.enumerableKeys ??= [];
       metadata.enumerableKeys.push(_context.name.toString());
       return;
     }
+
     if (_context.kind == "class") {
       metadata.enumerableKeys ??= [];
       for (const key of metadata.enumerableKeys)

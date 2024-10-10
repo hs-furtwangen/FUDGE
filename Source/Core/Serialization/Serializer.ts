@@ -26,6 +26,23 @@ namespace FudgeCore {
   }
 
   /**
+   * Decorator to mark properties of a {@link Serializable} for automatic serialization. The automatic serialization happens after calling an instances {@link Serializable.serialize} / {@link Serializable.deserialize} methods respectively.
+   * - References to {@link SerializableResource}s will be serialized via their resource id.
+   * - References from a {@link Component} instance to a {@link Node} will be serialized as a path connecting them through the hierarchy, if found.
+   * - Primitives will be serialized as is.
+   */
+  export function serialize(): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+    return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
+      if (typeof _context.name != "string")
+        return;
+
+      let metadata: Metadata = _context.metadata;
+      metadata.serializableKeys ??= [];
+      metadata.serializableKeys.push(_context.name);
+    };
+  }
+
+  /**
    * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.  
    * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.  
    * Vice versa, a JSON-String can be parsed to a {@link Serialization} which can be deserialized to a {@link Serializable} object.
@@ -94,6 +111,8 @@ namespace FudgeCore {
       if (!path)
         throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
       serialization[path] = _object.serialize();
+      Serializer.serializeDecorated(_object, serialization[path]);
+
       return serialization;
       // return _object.serialize();
     }
@@ -110,6 +129,8 @@ namespace FudgeCore {
         for (path in _serialization) {
           reconstruct = Serializer.reconstruct(path);
           reconstruct = await reconstruct.deserialize(_serialization[path]);
+          Serializer.deserializeDecorated(reconstruct, _serialization[path]);
+
           return reconstruct;
         }
       } catch (_error) {
@@ -213,6 +234,83 @@ namespace FudgeCore {
       return (<General>namespace)[typeName];
     }
 
+
+    /**
+     * Serialize references to {@link SerializableResource}s and {@link Node}s from a {@link Component}.
+     * The references need to have their type specified via the {@link type} decorator.
+     */
+    private static serializeDecorated(_instance: Serializable, _serialization: Serialization): void {
+      if (!(_instance instanceof Mutable))
+        return;
+
+      let meta: Metadata = _instance.getMetadata();
+      if (!meta.serializableKeys)
+        return;
+
+      for (const key of meta.serializableKeys) {
+        let value: General = Reflect.get(_instance, key);
+        if (value == null)
+          continue;
+
+        let type: Function = value.constructor;
+        if (type == Boolean || type == Number || type == String) { // is primitive
+          _serialization[key] = value;
+          continue;
+        }
+
+        let idResource: string = (<SerializableResource>value).idResource; // is resource reference
+        if (idResource != null) {
+          _serialization[key] = { idResource: idResource };
+          continue;
+        }
+
+        if (meta.attributeTypes?.[key] == Node && _instance instanceof Component) { // is node reference
+          _serialization[key] = Node.PATH_FROM_TO(_instance, value);
+          continue;
+        }
+      }
+    }
+
+    private static async deserializeDecorated(_instance: Serializable, _serialization: Serialization): Promise<void> {
+      if (!(_instance instanceof Mutable))
+        return;
+
+      let meta: Metadata = _instance.getMetadata();
+      if (!meta.serializableKeys)
+        return;
+
+      for (const key of meta.serializableKeys) {
+        let value: General = Reflect.get(_serialization, key);
+        if (value == null)
+          continue;
+
+        if (meta.attributeTypes?.[key] == Node && _instance instanceof Component) {
+          const hndNodeDeserialized: EventListenerUnified = () => {
+            const hndGraphDeserialized: EventListenerUnified = () => {
+              Reflect.set(_instance, key, Node.FIND(_instance, value));
+              _instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+              _instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+            };
+            _instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+          };
+          _instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+          continue;
+        }
+
+        let idResource: string = value.idResource;
+        if (idResource != null) {
+          Reflect.set(_instance, key, await Project.getResource(idResource));
+          continue;
+        }
+
+        let type: Function = value.constructor;
+        if (type == Boolean || type == Number || type == String) {
+          Reflect.set(_instance, key, value);
+          continue;
+        }
+      }
+    }
+
     /**
      * Returns the full path to the class of the object, if found in the registered namespaces
      * @param _object 
@@ -273,7 +371,7 @@ namespace FudgeCore {
           name: this.name,
           type: this.type,
           url: this.url.toString()
-        }; 
+        };
         return serialization;
       }
 

@@ -284,7 +284,8 @@ declare namespace FudgeCore {
          * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
          */
         attributeTypes?: MetaAttributeTypes;
-        enumerableKeys?: (string | symbol)[];
+        enumerableKeys?: string[];
+        serializableKeys?: string[];
     }
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
@@ -396,6 +397,13 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
     /**
+     * Decorator to mark properties of a {@link Serializable} for automatic serialization. The automatic serialization happens after calling an instances {@link Serializable.serialize} / {@link Serializable.deserialize} methods respectively.
+     * - References to {@link SerializableResource}s will be serialized via their resource id.
+     * - References from a {@link Component} instance to a {@link Node} will be serialized as a path connecting them through the hierarchy, if found.
+     * - Primitives will be serialized as is.
+     */
+    function serialize(): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
+    /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
      * Vice versa, a JSON-String can be parsed to a {@link Serialization} which can be deserialized to a {@link Serializable} object.
@@ -473,6 +481,12 @@ declare namespace FudgeCore {
          * Returns the constructor from the given path to a class
          */
         static getConstructor<T extends Serializable>(_path: string): new () => T;
+        /**
+         * Serialize references to {@link SerializableResource}s and {@link Node}s from a {@link Component}.
+         * The references need to have their type specified via the {@link type} decorator.
+         */
+        private static serializeDecorated;
+        private static deserializeDecorated;
         /**
          * Returns the full path to the class of the object, if found in the registered namespaces
          * @param _object
