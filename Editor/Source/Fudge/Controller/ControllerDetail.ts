@@ -112,7 +112,7 @@ namespace Fudge {
 
       if (this.#view != View.getViewSource(_event)) {
         let sources: Object[] = ƒui.Clipboard.dragDrop.get();
-        History.save(HISTORY.MUTATE, mutable, { key: mutable[key] });
+        History.save(HISTORY.LINK, mutable, { [key]: mutable[key] });
         mutable[key] = sources[0];
       }
 

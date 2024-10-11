@@ -3,7 +3,7 @@ namespace Fudge {
 
   export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-  export enum HISTORY { MUTATE, ADD, REMOVE };
+  export enum HISTORY { MUTATE, ADD, REMOVE, LINK };
   type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
@@ -100,6 +100,8 @@ namespace Fudge {
      * Print the current history to the console
      */
     public static print(): void {
+      // let stack:string = (new Error()).stack;
+      // console.log(stack.split("at")[1]);
       ƒ.Debug.fudge("Current History -----------------------------------");
       ƒ.Debug.fudge("Pointer: ", History.#pointer);
       History.#steps.forEach((_step, _i) =>
@@ -129,9 +131,20 @@ namespace Fudge {
      * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
      */
     private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _target: historyTarget): Promise<void> {
-      let current: ƒ.Mutator = JSON.parse(JSON.stringify(_target)); // clone the target
-      _source.updateMutator(current); // update the clone to current state
-      await _source.mutate(_target);
+      let current: ƒ.Mutator;
+      if (_step[0] == HISTORY.LINK) {
+        let key: string = <string>Reflect.ownKeys(_target)[0];
+        current = { [key]: _source[key] };
+        _source[key] = _target[key];
+      } else {
+        current = JSON.parse(JSON.stringify(_target, (_key: string, _value: ƒ.General) =>
+          (_value === undefined) ? null : _value
+        )); // clone the target
+
+        _source.updateMutator(current); // update the clone to current state
+        await _source.mutate(_target);
+      }
+
       _step[2] = current; // replace target in step with previous state
 
       if (_source instanceof ƒ.ComponentRigidbody) {

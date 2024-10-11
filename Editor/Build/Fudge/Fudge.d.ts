@@ -1,6 +1,3 @@
-/// <reference types="electron" />
-/// <reference types="node" />
-/// <reference types="../../GoldenLayout/golden-layout" />
 declare namespace Fudge {
     export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
     type Subclass<T> = {
@@ -180,7 +177,8 @@ declare namespace Fudge {
     enum HISTORY {
         MUTATE = 0,
         ADD = 1,
-        REMOVE = 2
+        REMOVE = 2,
+        LINK = 3
     }
     /**
      * Static class to record the history of manipulations of various entities. Enables undo and redo.
