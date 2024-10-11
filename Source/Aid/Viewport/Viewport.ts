@@ -163,7 +163,7 @@ namespace FudgeAid {
 
         const doubleTap: boolean = activePointers.size == 1 &&
           (_event.timeStamp - (prevPointer?.timeStamp ?? 0) < doubleTapThreshold.time) &&
-          (prevPointer?.offsetX - _event.offsetX ?? 0) ** 2 + (prevPointer?.offsetY - _event.offsetY ?? 0) ** 2 < doubleTapThreshold.distance;
+          (prevPointer?.offsetX - _event.offsetX || 0) ** 2 + (prevPointer?.offsetY - _event.offsetY || 0) ** 2 < doubleTapThreshold.distance;
 
         prevPointer = doubleTap ? null : _event;
 
