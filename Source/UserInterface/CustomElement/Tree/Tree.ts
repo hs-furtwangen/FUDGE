@@ -180,9 +180,9 @@ namespace FudgeUserInterface {
     };
 
     private hndDragLeave = (_event: DragEvent): void => {
-      // let relatedTarget: EventTarget = _event.relatedTarget;
-      // if (relatedTarget instanceof HTMLElement && !this.contains(relatedTarget) && !this.contains(relatedTarget.offsetParent)) // offset parent is for weird (invisible) divs which are placed over input elements and trigger leave events... 
-      //   this.controller.dragDropIndicator.remove();
+      let relatedTarget: EventTarget = _event.relatedTarget;
+      if (relatedTarget instanceof HTMLElement && !this.contains(relatedTarget) && !this.contains(relatedTarget.offsetParent)) // offset parent is for weird (invisible) divs which are placed over input elements and trigger leave events... 
+        this.controller.dragDropIndicator.remove();
     };
 
     private hndDelete = async (_event: Event): Promise<void> => {
