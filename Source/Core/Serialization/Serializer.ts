@@ -26,19 +26,38 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark properties of a {@link Serializable} for automatic serialization. The automatic serialization happens after calling an instances {@link Serializable.serialize} / {@link Serializable.deserialize} methods respectively.
-   * - References to {@link SerializableResource}s will be serialized via their resource id.
-   * - References from a {@link Component} instance to a {@link Node} will be serialized as a path connecting them through the hierarchy, if found.
+   * Decorator to mark properties of a {@link Mutable} for automatic serialization and editor configuration.
+   * 
+   * **Serialization**:
+   * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+   * - References to {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+   * - References from a {@link Component} to a {@link Node} will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy.
    * - Primitives will be serialized as is.
+   *
+   * **Editor Configuration**:
+   * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+   * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
+   * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+   * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
+   * 
+   * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
+   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
+   * will be displayed via their {@link toString} method in the editor.
    */
-  export function serialize(): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+  export function serialize(_constructor?: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
     return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
 
-      let metadata: Metadata = _context.metadata;
-      metadata.serializableKeys ??= [];
-      metadata.serializableKeys.push(_context.name);
+      let meta: Metadata = _context.metadata;
+      meta.serializableKeys ??= [];
+      meta.serializableKeys.push(_context.name);
+
+      if (!_constructor)
+        return;
+
+      meta.attributeTypes ??= {};
+      meta.attributeTypes[_context.name] = _constructor;
     };
   }
 
