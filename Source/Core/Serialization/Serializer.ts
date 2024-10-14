@@ -305,14 +305,17 @@ namespace FudgeCore {
 
         if (meta.attributeTypes?.[key] == Node && _instance instanceof Component) {
           const hndNodeDeserialized: EventListenerUnified = () => {
-            const hndGraphDeserialized: EventListenerUnified = () => {
+            const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
               Reflect.set(_instance, key, Node.FIND(_instance, value));
               _instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+              _instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
               _instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
             };
             _instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+            _instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
           };
           _instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+
           continue;
         }
 
