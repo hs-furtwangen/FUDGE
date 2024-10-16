@@ -285,7 +285,12 @@ declare namespace FudgeCore {
          */
         attributeTypes?: MetaAttributeTypes;
         enumerableKeys?: string[];
-        serializableKeys?: string[];
+        /**
+         * Map of property names to the type of serialization that should be used for that property.
+         */
+        serializables?: {
+            [key: string]: "primitve" | "nested" | "resource" | "node";
+        };
     }
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
@@ -397,13 +402,7 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
     /**
-     * Decorator to mark properties of a {@link Mutable} for automatic serialization and editor configuration.
-     *
-     * **Serialization**:
-     * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-     * - References to {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-     * - References from a {@link Component} to a {@link Node} will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy.
-     * - Primitives will be serialized as is.
+     * Decorator to mark properties of a {@link Component} for automatic serialization and editor configuration.
      *
      * **Editor Configuration**:
      * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
@@ -411,11 +410,17 @@ declare namespace FudgeCore {
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
      * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
      *
+     * **Serialization**:
+     * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+     * - Primitives will be serialized as is.
+     * - {@link Serializable}s will be serialized nested. Pass `true` as second argument to serailize {@link SerializableResource}s as project resources. Project resources are serialized via their resource id and fetched with it from the project when deserialized.
+     * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED}/{@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
+     *
      * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator}
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
      */
-    function serialize(_constructor?: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
+    function serialize(_constructor: abstract new (...args: General[]) => General, _asResource?: boolean): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -494,12 +499,6 @@ declare namespace FudgeCore {
          * Returns the constructor from the given path to a class
          */
         static getConstructor<T extends Serializable>(_path: string): new () => T;
-        /**
-         * Serialize references to {@link SerializableResource}s and {@link Node}s from a {@link Component}.
-         * The references need to have their type specified via the {@link type} decorator.
-         */
-        private static serializeDecorated;
-        private static deserializeDecorated;
         /**
          * Returns the full path to the class of the object, if found in the registered namespaces
          * @param _object

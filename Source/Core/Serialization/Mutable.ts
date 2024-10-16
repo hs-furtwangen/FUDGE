@@ -55,7 +55,11 @@ namespace FudgeCore {
      */
     attributeTypes?: MetaAttributeTypes;
     enumerableKeys?: string[];
-    serializableKeys?: string[];
+
+    /**
+     * Map of property names to the type of serialization that should be used for that property.
+     */
+    serializables?: { [key: string]: "primitve" | "nested" | "resource" | "node" };
   }
 
   /**

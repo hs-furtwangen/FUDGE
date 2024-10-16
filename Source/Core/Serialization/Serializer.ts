@@ -26,38 +26,46 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark properties of a {@link Mutable} for automatic serialization and editor configuration.
+   * Decorator to mark properties of a {@link Component} for automatic serialization and editor configuration.
    * 
-   * **Serialization**:
-   * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-   * - References to {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-   * - References from a {@link Component} to a {@link Node} will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy.
-   * - Primitives will be serialized as is.
-   *
    * **Editor Configuration**:
    * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
    * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
    * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
    * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
    * 
+   * **Serialization**:
+   * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+   * - Primitives will be serialized as is.
+   * - {@link Serializable}s will be serialized nested. Pass `true` as second argument to serailize {@link SerializableResource}s as project resources. Project resources are serialized via their resource id and fetched with it from the project when deserialized.
+   * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED}/{@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
+   * 
    * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function serialize(_constructor?: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+  export function serialize(_constructor: abstract new (...args: General[]) => General, _asResource: boolean = false): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
     return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
 
       let meta: Metadata = _context.metadata;
-      meta.serializableKeys ??= [];
-      meta.serializableKeys.push(_context.name);
-
-      if (!_constructor)
-        return;
 
       meta.attributeTypes ??= {};
       meta.attributeTypes[_context.name] = _constructor;
+
+      let type: "primitve" | "nested"|  "resource" | "node";
+      if (_constructor == String || _constructor == Number || _constructor == Boolean)
+        type = "primitve";
+      else if (_constructor == Node)
+        type = "node";
+      else if (_constructor.prototype.serialize && _asResource)
+        type = "resource";
+      else if (_constructor.prototype.serialize)
+        type = "nested";
+
+      if (type)
+        (meta.serializables ??= {})[_context.name] = type;
     };
   }
 
@@ -130,7 +138,30 @@ namespace FudgeCore {
       if (!path)
         throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
       serialization[path] = _object.serialize();
-      Serializer.serializeDecorated(_object, serialization[path]);
+
+      let serializables: Metadata["serializables"] = <Metadata["serializables"]>_object.constructor[Symbol.metadata]?.serializables;
+      if (serializables) {
+        for (const key in serializables) {
+          let value: General = Reflect.get(_object, key);
+          if (value == null)
+            continue;
+
+          switch (serializables[key]) {
+            case "primitve":
+              serialization[path][key] = value;
+              break;
+            case "resource":
+              serialization[path][key] = value.idResource;
+              break;
+            case "nested":
+              serialization[path][key] = value.serialize();
+              break;
+            case "node":
+              serialization[path][key] = Node.PATH_FROM_TO(<Component>_object, value);
+              break;
+          }
+        }
+      }
 
       return serialization;
       // return _object.serialize();
@@ -148,7 +179,40 @@ namespace FudgeCore {
         for (path in _serialization) {
           reconstruct = Serializer.reconstruct(path);
           reconstruct = await reconstruct.deserialize(_serialization[path]);
-          Serializer.deserializeDecorated(reconstruct, _serialization[path]);
+
+          let serializables: Metadata["serializables"] = <Metadata["serializables"]>reconstruct.constructor[Symbol.metadata]?.serializables;
+          if (serializables) {
+            for (const key in serializables) {
+              let value: General = _serialization[path][key];
+              if (value == null)
+                continue;
+
+              switch (serializables[key]) {
+                case "primitve":
+                  Reflect.set(reconstruct, key, value);
+                  break;
+                case "resource":
+                  Reflect.set(reconstruct, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
+                  break;
+                case "nested":
+                  await Reflect.get(reconstruct, key).deserialize(value);
+                  break;
+                case "node":
+                  let instance: Component = <Component>reconstruct;
+                  const hndNodeDeserialized: EventListenerUnified = () => {
+                    const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
+                      Reflect.set(reconstruct, key, Node.FIND(instance, value));
+                      instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+                      instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+                      instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+                    };
+                    instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+                    instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+                  };
+                  instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+              }
+            }
+          }
 
           return reconstruct;
         }
@@ -251,86 +315,6 @@ namespace FudgeCore {
       if (!namespace)
         throw new Error(`Constructor of serializable object of type ${_path} not found. Maybe the namespace hasn't been registered?`);
       return (<General>namespace)[typeName];
-    }
-
-
-    /**
-     * Serialize references to {@link SerializableResource}s and {@link Node}s from a {@link Component}.
-     * The references need to have their type specified via the {@link type} decorator.
-     */
-    private static serializeDecorated(_instance: Serializable, _serialization: Serialization): void {
-      if (!(_instance instanceof Mutable))
-        return;
-
-      let meta: Metadata = _instance.getMetadata();
-      if (!meta.serializableKeys)
-        return;
-
-      for (const key of meta.serializableKeys) {
-        let value: General = Reflect.get(_instance, key);
-        if (value == null)
-          continue;
-
-        let type: Function = value.constructor;
-        if (type == Boolean || type == Number || type == String) { // is primitive
-          _serialization[key] = value;
-          continue;
-        }
-
-        let idResource: string = (<SerializableResource>value).idResource; // is resource reference
-        if (idResource != null) {
-          _serialization[key] = { idResource: idResource };
-          continue;
-        }
-
-        if (meta.attributeTypes?.[key] == Node && _instance instanceof Component) { // is node reference
-          _serialization[key] = Node.PATH_FROM_TO(_instance, value);
-          continue;
-        }
-      }
-    }
-
-    private static async deserializeDecorated(_instance: Serializable, _serialization: Serialization): Promise<void> {
-      if (!(_instance instanceof Mutable))
-        return;
-
-      let meta: Metadata = _instance.getMetadata();
-      if (!meta.serializableKeys)
-        return;
-
-      for (const key of meta.serializableKeys) {
-        let value: General = Reflect.get(_serialization, key);
-        if (value == null)
-          continue;
-
-        if (meta.attributeTypes?.[key] == Node && _instance instanceof Component) {
-          const hndNodeDeserialized: EventListenerUnified = () => {
-            const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
-              Reflect.set(_instance, key, Node.FIND(_instance, value));
-              _instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-              _instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-              _instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-            };
-            _instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-            _instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-          };
-          _instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-
-          continue;
-        }
-
-        let idResource: string = value.idResource;
-        if (idResource != null) {
-          Reflect.set(_instance, key, await Project.getResource(idResource));
-          continue;
-        }
-
-        let type: Function = value.constructor;
-        if (type == Boolean || type == Number || type == String) {
-          Reflect.set(_instance, key, value);
-          continue;
-        }
-      }
     }
 
     /**

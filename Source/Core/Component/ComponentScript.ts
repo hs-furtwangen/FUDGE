@@ -15,7 +15,7 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      return this.getMutator();
+      return this.getMutator(true);
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
