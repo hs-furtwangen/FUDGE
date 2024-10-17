@@ -37,14 +37,15 @@ namespace FudgeCore {
    * **Serialization**:
    * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
    * - Primitives will be serialized as is.
-   * - {@link Serializable}s will be serialized nested. Pass `true` as second argument to serailize {@link SerializableResource}s as project resources. Project resources are serialized via their resource id and fetched with it from the project when deserialized.
+   * - {@link Serializable}s will be serialized nested. 
+   * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
    * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED}/{@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
    * 
    * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function serialize(_constructor: abstract new (...args: General[]) => General, _asResource: boolean = false): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+  export function serialize(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
     return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
@@ -54,15 +55,13 @@ namespace FudgeCore {
       meta.attributeTypes ??= {};
       meta.attributeTypes[_context.name] = _constructor;
 
-      let type: "primitve" | "nested"|  "resource" | "node";
+      let type: Metadata["serializables"][string];
       if (_constructor == String || _constructor == Number || _constructor == Boolean)
         type = "primitve";
       else if (_constructor == Node)
         type = "node";
-      else if (_constructor.prototype.serialize && _asResource)
-        type = "resource";
-      else if (_constructor.prototype.serialize)
-        type = "nested";
+      else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
+        type = "serializable";
 
       if (type)
         (meta.serializables ??= {})[_context.name] = type;
@@ -131,15 +130,15 @@ namespace FudgeCore {
      * @param _object An object to serialize, implementing the {@link Serializable} interface
      */
     public static serialize(_object: Serializable): Serialization {
-      let serialization: Serialization = {};
       // TODO: save the namespace with the constructors name
       // serialization[_object.constructor.name] = _object.serialize();
       let path: string = this.getFullPath(_object);
       if (!path)
         throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
-      serialization[path] = _object.serialize();
 
-      let serializables: Metadata["serializables"] = <Metadata["serializables"]>_object.constructor[Symbol.metadata]?.serializables;
+      let serialization: Serialization = _object.serialize();
+
+      let serializables: Metadata["serializables"] = (_object.constructor[Symbol.metadata] as Metadata)?.serializables;
       if (serializables) {
         for (const key in serializables) {
           let value: General = Reflect.get(_object, key);
@@ -148,22 +147,22 @@ namespace FudgeCore {
 
           switch (serializables[key]) {
             case "primitve":
-              serialization[path][key] = value;
+              serialization[key] = value;
               break;
-            case "resource":
-              serialization[path][key] = value.idResource;
-              break;
-            case "nested":
-              serialization[path][key] = value.serialize();
+            case "serializable":
+              if (value.idResource)
+                serialization[key] = { idResource: value.idResource };
+              else
+                serialization[key] = value.serialize();
               break;
             case "node":
-              serialization[path][key] = Node.PATH_FROM_TO(<Component>_object, value);
+              serialization[key] = Node.PATH_FROM_TO(<Component>_object, value);
               break;
           }
         }
       }
 
-      return serialization;
+      return { [path]: serialization };
       // return _object.serialize();
     }
 
@@ -180,7 +179,7 @@ namespace FudgeCore {
           reconstruct = Serializer.reconstruct(path);
           reconstruct = await reconstruct.deserialize(_serialization[path]);
 
-          let serializables: Metadata["serializables"] = <Metadata["serializables"]>reconstruct.constructor[Symbol.metadata]?.serializables;
+          let serializables: Metadata["serializables"] = (reconstruct.constructor[Symbol.metadata] as Metadata)?.serializables;
           if (serializables) {
             for (const key in serializables) {
               let value: General = _serialization[path][key];
@@ -191,11 +190,11 @@ namespace FudgeCore {
                 case "primitve":
                   Reflect.set(reconstruct, key, value);
                   break;
-                case "resource":
-                  Reflect.set(reconstruct, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
-                  break;
-                case "nested":
-                  await Reflect.get(reconstruct, key).deserialize(value);
+                case "serializable":
+                  if (value.idResource)
+                    Reflect.set(reconstruct, key, Project.resources[value.idResource] ?? await Project.getResource(value.idResource)); // await is costly so first try to get resource directly
+                  else
+                    await Reflect.get(reconstruct, key).deserialize(value);
                   break;
                 case "node":
                   let instance: Component = <Component>reconstruct;

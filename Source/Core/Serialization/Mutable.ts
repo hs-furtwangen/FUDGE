@@ -59,7 +59,7 @@ namespace FudgeCore {
     /**
      * Map of property names to the type of serialization that should be used for that property.
      */
-    serializables?: { [key: string]: "primitve" | "nested" | "resource" | "node" };
+    serializables?: { [key: string]: "primitve" | "serializable" | "node" };
   }
 
   /**
@@ -150,6 +150,7 @@ namespace FudgeCore {
     public get type(): string {
       return this.constructor.name;
     }
+    
     /**
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
      * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
