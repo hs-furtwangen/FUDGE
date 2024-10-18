@@ -120,14 +120,14 @@ namespace FudgeCore {
     /**
      * Add an event listener to {@link targetStatic}.
      */
-    public static addEventListener(_type: string, _handler: EventListener): void {
+    public static addEventListener(_type: string, _handler: EventListener, _options?: boolean | AddEventListenerOptions): void {
       EventTargetStatic.targetStatic.addEventListener(_type, _handler);
     }
 
     /**
      * Remove an event listener from {@link targetStatic}.
      */
-    public static removeEventListener(_type: string, _handler: EventListener): void {
+    public static removeEventListener(_type: string, _handler: EventListener, _options?: boolean | AddEventListenerOptions): void {
       EventTargetStatic.targetStatic.removeEventListener(_type, _handler);
     }
 

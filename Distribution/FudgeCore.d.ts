@@ -236,11 +236,11 @@ declare namespace FudgeCore {
         /**
          * Add an event listener to {@link targetStatic}.
          */
-        static addEventListener(_type: string, _handler: EventListener): void;
+        static addEventListener(_type: string, _handler: EventListener, _options?: boolean | AddEventListenerOptions): void;
         /**
          * Remove an event listener from {@link targetStatic}.
          */
-        static removeEventListener(_type: string, _handler: EventListener): void;
+        static removeEventListener(_type: string, _handler: EventListener, _options?: boolean | AddEventListenerOptions): void;
         /**
          * Dispatch an event on {@link targetStatic}.
          */
