@@ -5850,6 +5850,8 @@ declare namespace FudgeCore {
         private createPyramidVertices;
         /** Adding this ComponentRigidbody to the Physiscs.world giving the oimoPhysics system the information needed */
         private addRigidbodyToWorld;
+        /** Capture only events that are broadcast to this node from an ancestor. Don't capture events that get send to descendants. */
+        private hndNodeDeactivate;
         /** Removing this ComponentRigidbody from the Physiscs.world taking the informations from the oimoPhysics system */
         private removeRigidbodyFromWorld;
         private collisionCenterPoint;
