@@ -70,11 +70,11 @@ namespace FudgeCore {
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+  export function type<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void {
     return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
       let name: string | symbol = _context.name;
       let metadata: Metadata = _context.metadata;
-      let types: MetaAttributeTypes = metadata.attributeTypes ??= {};
+      let types: MetaAttributeTypes = metadata.attributeTypes ??= {}; // TODO: implement correct inheritance of metadata
       types[name] = _constructor;
     };
   }

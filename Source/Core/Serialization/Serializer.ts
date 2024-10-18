@@ -45,7 +45,7 @@ namespace FudgeCore {
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function serialize(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
+  export function serialize<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void {
     return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
@@ -56,9 +56,9 @@ namespace FudgeCore {
       meta.attributeTypes[_context.name] = _constructor;
 
       let type: Metadata["serializables"][string];
-      if (_constructor == String || _constructor == Number || _constructor == Boolean)
+      if (<Function>_constructor == String || <Function>_constructor == Number || <Function>_constructor == Boolean)
         type = "primitve";
-      else if (_constructor == Node)
+      else if (<Function>_constructor == Node)
         type = "node";
       else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
         type = "serializable";
