@@ -236,6 +236,8 @@ namespace Fudge {
       if (!(viewSource instanceof ViewExternal || viewSource instanceof ViewHierarchy))
         return;
 
+      _event.stopPropagation(); // stop the event during capture because we need to process async loading 
+
       let resources: ƒ.SerializableResource[] = [];
       for (const source of <DirectoryEntry[] | ƒ.Node[]>ƒui.Clipboard.dragDrop.get()) {
         if (source instanceof ƒ.Node) {
@@ -267,9 +269,15 @@ namespace Fudge {
       }
 
       ƒui.Clipboard.dragDrop.set(resources);
+
+      // redispatch event without capture
+      this.dom.removeEventListener(ƒui.EVENT.DROP, this.hndDropCapture, true);
+      _event.target.dispatchEvent(_event); 
+      this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDropCapture, true);
+
       resources.forEach(_resource => {
         History.save(HISTORY.ADD, ƒ.Project, _resource);
-        if (_resource instanceof ƒ.Graph)
+        if (_resource instanceof ƒ.Graph) // why is this necessary?
           History.swap();
       });
       this.dispatchToParent(EVENT_EDITOR.CREATE, {});
