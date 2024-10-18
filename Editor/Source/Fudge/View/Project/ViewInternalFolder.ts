@@ -140,7 +140,7 @@ namespace Fudge {
       }
       if (choice == CONTEXTMENU.CLONE_RESOURCE) {
         resource = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
-        focus = focus.resourceParent;
+        focus = this.controller.getParent(focus);
       }
 
       ƒ.Debug.fudge(focus.name);
@@ -286,7 +286,7 @@ namespace Fudge {
           if (focus instanceof ResourceFolder)
             return;
           let clone: ResourceEntry = await ƒ.Project.cloneResource(<ƒ.SerializableResource>focus);
-          this.tree.addChildren([clone], focus.resourceParent);
+          this.tree.addChildren([clone], this.controller.getParent(focus));
           this.tree.findVisible(clone).focus();
           this.tree.findVisible(clone).focus();
           this.dispatchToParent(EVENT_EDITOR.CREATE, { bubbles: true });
@@ -336,15 +336,8 @@ namespace Fudge {
       // add new resources to root folder
       for (let idResource in ƒ.Project.resources) {
         let resource: ResourceEntry = ƒ.Project.resources[idResource];
-        if (!this.resourceFolder.contains(resource)) {
-          let parent: ResourceFolder = resource.resourceParent;
-          if (parent) {
-            // hack for undo TODO: examine, looks quirky
-            resource.resourceParent = null;
-            this.controller.addChildren([resource], parent);
-          } else
-            this.controller.addChildren([resource], this.resourceFolder);
-        }
+        if (!this.resourceFolder.contains(resource))
+          this.controller.addChildren([resource], this.resourceFolder);
       }
       this.hndUpdate();
       let rootItem: ƒui.TreeItem<ResourceEntry> = this.tree.findVisible(this.resourceFolder);
@@ -353,8 +346,8 @@ namespace Fudge {
     };
 
     private hndDelete = (): void => {
-      const files: ResourceFile[] = []; // collect files that are no longer registered in the project
-      for (const descendant of this.resourceFolder) 
+      const files: ƒ.SerializableResource[] = []; // collect files that are no longer registered in the project
+      for (const descendant of this.resourceFolder)
         if (!(descendant instanceof ResourceFolder) && !ƒ.Project.resources[descendant.idResource])
           files.push(descendant);
 
@@ -413,7 +406,12 @@ namespace Fudge {
     }
 
     private getPath(_entry: ResourceEntry): string {
-      return this.controller.getPath(_entry).map(_entry => _entry.resourceParent?.entries.indexOf(_entry)).join("/");
+      return this.controller.getPath(_entry)
+        .map((_entry, _index, _array) => {
+          let parent: ResourceFolder = <ResourceFolder>_array[_index - 1];
+          return parent?.entries.indexOf(_entry);
+        })
+        .join("/");
     }
   }
 }

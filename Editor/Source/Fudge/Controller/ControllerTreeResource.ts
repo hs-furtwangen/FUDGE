@@ -2,15 +2,10 @@ namespace Fudge {
   import ƒ = FudgeCore;
   import ƒui = FudgeUserInterface;
 
-  export type ResourceEntry = ResourceFile | ResourceFolder;
-
-  export interface ResourceFile extends ƒ.SerializableResource {
-    resourceParent?: ResourceFolder; // dangerous as a SerializableResource must not have a property with this name itself
-  }
+  export type ResourceEntry = ƒ.SerializableResource | ResourceFolder;
 
   export class ResourceFolder implements ƒ.Serializable {
     public name: string;
-    public resourceParent: ResourceFolder;
     public entries: ResourceEntry[] = [];
     public readonly type: string = "Folder";
 
@@ -27,6 +22,38 @@ namespace Fudge {
           return true;
 
       return false;
+    }
+
+    /** 
+     * Returns the parent folder of the given resource
+     */
+    public getParent(_of: ResourceEntry): ResourceFolder {
+      for (let entry of this.entries) {
+        if (entry == _of) 
+          return this;
+        
+        if (entry instanceof ResourceFolder) {
+          let parent: ResourceFolder = entry.getParent(_of);
+          if (parent) 
+            return parent;
+        }
+      }
+
+      return null;
+    }
+
+    /**
+     * Returns the path to the given resource starting at this
+     */
+    public getPath(_to: ResourceEntry): ResourceEntry[] {
+      let path: ResourceEntry[] = []; 
+      let entry: ResourceEntry = _to;
+      while (entry) {
+        path.push(entry);
+        entry = this.getParent(entry); // this is rather costly now, if it becomes a problem, don't use getParent
+      }
+      path.reverse();
+      return path;
     }
 
     public serialize(): ƒ.Serialization {
@@ -49,10 +76,8 @@ namespace Fudge {
         else
           entry = <ResourceFolder>await new ResourceFolder().deserialize(entrySerialization);
 
-        if (entry) {
+        if (entry) 
           this.entries.push(entry);
-          entry.resourceParent = this;
-        }
       }
       return this;
     }
@@ -117,7 +142,6 @@ namespace Fudge {
           _index -= 1;
 
         this.remove(source);
-        source.resourceParent = _target;
         move.push(source);
 
         if (_index == null)
@@ -168,7 +192,7 @@ namespace Fudge {
             else
               usage.push(". " + dependend.name + " " + dependend.idResource);
           } else
-            usage.push(". " + dependend.name + " " + (<ResourceFile>dependend).idResource);
+            usage.push(". " + dependend.name + " " + (<ƒ.SerializableResource>dependend).idResource);
       }
 
 
@@ -232,17 +256,15 @@ namespace Fudge {
     }
 
     public getPath(_resource: ResourceEntry): ResourceEntry[] {
-      let path: ResourceEntry[] = [];
-      let current: ResourceEntry = _resource;
-      while (current) {
-        path.push(current);
-        current = current.resourceParent;
-      }
-      return path.reverse();
+      return project.resourceFolder.getPath(_resource);
+    }
+
+    public getParent(_resource: ResourceEntry): ResourceFolder {
+      return project.resourceFolder.getParent(_resource);;
     }
 
     public remove(_resource: ResourceEntry): void {
-      let parent: ResourceFolder = _resource.resourceParent;
+      let parent: ResourceFolder = project.resourceFolder.getParent(_resource);
       if (!parent)
         return;
 

@@ -1,3 +1,6 @@
+/// <reference types="electron" />
+/// <reference types="node" />
+/// <reference types="../../GoldenLayout/golden-layout" />
 declare namespace Fudge {
     export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
     type Subclass<T> = {
@@ -507,13 +510,9 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
-    type ResourceEntry = ResourceFile | ResourceFolder;
-    interface ResourceFile extends ƒ.SerializableResource {
-        resourceParent?: ResourceFolder;
-    }
+    type ResourceEntry = ƒ.SerializableResource | ResourceFolder;
     class ResourceFolder implements ƒ.Serializable {
         name: string;
-        resourceParent: ResourceFolder;
         entries: ResourceEntry[];
         readonly type: string;
         constructor(_name?: string);
@@ -521,6 +520,14 @@ declare namespace Fudge {
          * Returns true if this or any of its descendants contain the given resource.
          */
         contains(_resource: ƒ.SerializableResource): boolean;
+        /**
+         * Returns the parent folder of the given resource
+         */
+        getParent(_of: ResourceEntry): ResourceFolder;
+        /**
+         * Returns the path to the given resource starting at this
+         */
+        getPath(_to: ResourceEntry): ResourceEntry[];
         serialize(): ƒ.Serialization;
         deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable>;
         [Symbol.iterator](): IterableIterator<ResourceEntry>;
@@ -537,6 +544,7 @@ declare namespace Fudge {
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         clone(_originals: ResourceEntry[]): Promise<ResourceEntry[]>;
         getPath(_resource: ResourceEntry): ResourceEntry[];
+        getParent(_resource: ResourceEntry): ResourceFolder;
         remove(_resource: ResourceEntry): void;
     }
 }
