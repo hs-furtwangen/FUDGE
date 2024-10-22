@@ -10,6 +10,25 @@ namespace FudgeCore {
     [type: string]: General;
   }
 
+  export abstract class Implementable {
+    public static register<T extends typeof Implementable>(this: T, _class: abstract new (...args: General[]) => InstanceType<T>, _context: ClassDecoratorContext): void {
+      let meta: Metadata = _context.metadata;
+      if (!Object.hasOwn(meta, "implements")) 
+        meta.implements = new Set(meta.implements);
+      
+      let cls: General = this;
+      while (cls != Implementable) {
+        meta.implements.add(cls);
+        cls = Object.getPrototypeOf(cls);
+      }
+    }
+
+    public static [Symbol.hasInstance](_instance: unknown): boolean {
+      let meta: Metadata = _instance.constructor[Symbol.metadata];
+      return meta?.implements?.has(this);
+    }
+  }
+
   export interface Serializable {
     /**
      * Returns a {@link Serialization} of this object.

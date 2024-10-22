@@ -279,7 +279,7 @@ declare namespace FudgeCore {
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
      */
-    interface Metadata {
+    interface Metadata extends DecoratorMetadataObject {
         /**
          * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
          */
@@ -289,8 +289,9 @@ declare namespace FudgeCore {
          * Map of property names to the type of serialization that should be used for that property.
          */
         serializables?: {
-            [key: string]: "primitve" | "serializable" | "node";
+            [key: string]: "primitve" | "serializable" | "resource" | "node";
         };
+        implements?: Set<Function>;
     }
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
@@ -390,6 +391,10 @@ declare namespace FudgeCore {
      */
     interface Serialization {
         [type: string]: General;
+    }
+    abstract class Implementable {
+        static register<T extends typeof Implementable>(this: T, _class: abstract new (...args: General[]) => InstanceType<T>, _context: ClassDecoratorContext): void;
+        static [Symbol.hasInstance](_instance: unknown): boolean;
     }
     interface Serializable {
         /**
