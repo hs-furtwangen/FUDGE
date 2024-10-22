@@ -46,13 +46,14 @@ namespace FudgeCore {
    * will be displayed via their {@link toString} method in the editor.
    */
   export function serialize<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void {
-    return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
+    return (_value, _context) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
 
       let meta: Metadata = _context.metadata;
 
-      meta.attributeTypes ??= {};
+      if (!Object.hasOwn(meta, "attributeTypes"))
+        meta.attributeTypes = { ...meta.attributeTypes };
       meta.attributeTypes[_context.name] = _constructor;
 
       let type: Metadata["serializables"][string];
@@ -60,11 +61,17 @@ namespace FudgeCore {
         type = "primitve";
       else if (<Function>_constructor == Node)
         type = "node";
+      // else if (_constructor.prototype instanceof SerializableResource)
+      //   type = "resource";
       else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
         type = "serializable";
 
-      if (type)
-        (meta.serializables ??= {})[_context.name] = type;
+      if (!type)
+        return;
+
+      if (!Object.hasOwn(meta, "serializables"))
+        meta.serializables = { ...meta.serializables };
+      meta.serializables[_context.name] = type;
     };
   }
 

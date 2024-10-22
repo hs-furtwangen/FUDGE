@@ -49,7 +49,7 @@ namespace FudgeCore {
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
    * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
    */
-  export interface Metadata {
+  export interface Metadata extends DecoratorMetadataObject {
     /**
      * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
      */
@@ -59,7 +59,7 @@ namespace FudgeCore {
     /**
      * Map of property names to the type of serialization that should be used for that property.
      */
-    serializables?: { [key: string]: "primitve" | "serializable" | "node" };
+    serializables?: { [key: string]: "primitve" | "serializable" | "resource" | "node" };
   }
 
   /**
@@ -71,11 +71,11 @@ namespace FudgeCore {
    * will be displayed via their {@link toString} method in the editor.
    */
   export function type<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void {
-    return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
-      let name: string | symbol = _context.name;
-      let metadata: Metadata = _context.metadata;
-      let types: MetaAttributeTypes = metadata.attributeTypes ??= {}; // TODO: implement correct inheritance of metadata
-      types[name] = _constructor;
+    return (_value, _context) => { // could cache the decorator function for each class
+      let meta: Metadata = _context.metadata;
+      if (!Object.hasOwn(meta, "attributeTypes"))
+        meta.attributeTypes = { ...meta.attributeTypes };
+      meta.attributeTypes[_context.name] = _constructor;
     };
   }
 
@@ -97,15 +97,17 @@ namespace FudgeCore {
       if (typeof _context.name != "string")
         return;
 
-      metadata.enumerableKeys ??= [];
+      if (!Object.hasOwn(metadata, "enumerableKeys"))
+        metadata.enumerableKeys = [];
+
       metadata.enumerableKeys.push(_context.name.toString());
       return;
     }
 
     if (_context.kind == "class") {
-      metadata.enumerableKeys ??= [];
-      for (const key of metadata.enumerableKeys)
-        Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
+      if (metadata.enumerableKeys)
+        for (const key of metadata.enumerableKeys)
+          Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
       return;
     }
   }
@@ -150,7 +152,7 @@ namespace FudgeCore {
     public get type(): string {
       return this.constructor.name;
     }
-    
+
     /**
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
      * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
