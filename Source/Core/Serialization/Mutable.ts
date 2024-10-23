@@ -63,6 +63,9 @@ namespace FudgeCore {
     implements?: Set<Function>;
   }
 
+  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+  export type ClassPropertyContext<This, Value> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+
   /**
    * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
    * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
@@ -71,7 +74,7 @@ namespace FudgeCore {
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function type<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void {
+  export function type<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: T extends Node ? ClassPropertyContext<Component, T> : ClassPropertyContext<Mutable, T>) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       let meta: Metadata = _context.metadata;
       if (!Object.hasOwn(meta, "attributeTypes"))
@@ -85,6 +88,8 @@ namespace FudgeCore {
    * 
    * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
   */
+  export function enumerable(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
+  export function enumerable(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
   export function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
     // _context.addInitializer(function (this: unknown) { // this is run per instance... ideally we would want to run this once per class
     //   const prototype: unknown = Object.getPrototypeOf(this);

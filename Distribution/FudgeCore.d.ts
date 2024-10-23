@@ -293,6 +293,8 @@ declare namespace FudgeCore {
         };
         implements?: Set<Function>;
     }
+    /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+    type ClassPropertyContext<This, Value> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
      * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
@@ -301,13 +303,14 @@ declare namespace FudgeCore {
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
      */
-    function type<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void;
+    function type<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: T extends Node ? ClassPropertyContext<Component, T> : ClassPropertyContext<Mutable, T>) => void;
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
      *
      * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
     */
-    function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void;
+    function enumerable(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
+    function enumerable(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -453,7 +456,7 @@ declare namespace FudgeCore {
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
      */
-    function serialize<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void;
+    function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: T extends Node ? ClassPropertyContext<Component, T> : ClassPropertyContext<Serializable, T>) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -2378,7 +2381,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const AnimationGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Animation;
+    const AnimationGLTF_base: Constructor<SerializableResourceExternal> & typeof Animation;
     /**
      * An {@link Animation} loaded from a glTF-File.
      * @authors Jonas Plotzky
@@ -3798,7 +3801,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const GraphGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Graph;
+    const GraphGLTF_base: Constructor<SerializableResourceExternal> & typeof Graph;
     /**
      * A {@link Graph} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -3940,8 +3943,6 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     const CoatToon_base: (abstract new (...args: any[]) => {
         texToon: Texture;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }) & typeof CoatRemissive;
     /**
      * A {@link Coat} providing a color and parameters for the toon shading model.
@@ -3951,8 +3952,6 @@ declare namespace FudgeCore {
     }
     const CoatToonTextured_base: (abstract new (...args: any[]) => {
         texToon: Texture;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }) & typeof CoatRemissiveTextured;
     /**
      * A {@link Coat} providing a texture, a color and parameters for the toon shading model.
@@ -4069,7 +4068,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MaterialGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Material;
+    const MaterialGLTF_base: Constructor<SerializableResourceExternal> & typeof Material;
     /**
      * A {@link Material} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -5293,7 +5292,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshFBX_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshFBX_base: Constructor<SerializableResourceExternal> & typeof Mesh;
     /**
      * A mesh loaded from an FBX-File.
      * @authors Matthias Roming, HFU, 2023 | Jonas Plotzky, HFU, 2023
@@ -5323,7 +5322,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshGLTF_base: Constructor<SerializableResourceExternal> & typeof Mesh;
     /**
      * A {@link Mesh} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -5337,7 +5336,7 @@ declare namespace FudgeCore {
     export {};
 }
 declare namespace FudgeCore {
-    const MeshOBJ_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshOBJ_base: Constructor<SerializableResourceExternal> & typeof Mesh;
     /**
      * A mesh loaded from an OBJ-file.
      * Simple Wavefront OBJ import. Takes a wavefront obj string. To Load from a file url, use the

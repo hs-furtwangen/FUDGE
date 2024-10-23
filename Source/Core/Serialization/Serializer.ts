@@ -91,7 +91,7 @@ namespace FudgeCore {
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function serialize<T>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassFieldDecoratorContext<unknown, T> | ClassGetterDecoratorContext<unknown, T> | ClassAccessorDecoratorContext<unknown, T>) => void {
+  export function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: T extends Node ? ClassPropertyContext<Component, T> : ClassPropertyContext<Serializable, T>) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
@@ -407,7 +407,8 @@ namespace FudgeCore {
   }
 
 
-  type Constructor<T> = abstract new (...args: General[]) => T;
+  /** @internal */
+  export type Constructor<T> = abstract new (...args: General[]) => T;
 
   /**
    * Creates a new (abstract) class implementing {@link SerializableResourceExternal} from any class that implements {@link SerializableResource} by mixing in the functionality to load the resource from an external source.
