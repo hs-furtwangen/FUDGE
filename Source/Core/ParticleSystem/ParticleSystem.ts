@@ -91,6 +91,7 @@ namespace FudgeCore {
    * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
    * @authors Jonas Plotzky, HFU, 2022
    */
+  @SerializableResource.register
   export class ParticleSystem extends Mutable implements SerializableResource {
     public name: string;
     public idResource: string = undefined;

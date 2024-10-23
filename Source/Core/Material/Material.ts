@@ -5,6 +5,7 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
   @enumerable
+  @SerializableResource.register
   export class Material extends Mutable implements SerializableResource {
     /** The name to call the Material by. */
     public name: string;

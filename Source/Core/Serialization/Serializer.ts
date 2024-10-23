@@ -10,16 +10,43 @@ namespace FudgeCore {
     [type: string]: General;
   }
 
+  /**
+   * Abstract class serving as a base for interface-like pure abstract classes that work with the "instanceof"-operator. 
+   * 
+   * **Usage**:
+   * * Create a pure abstract class that extends {@link Implementable} that will serve as your interface. Specify the required attributes and methods within it as abstract. 
+   * * Use your abstract class via the `implements` keyword exactly how you would use a regular `interface`.
+   * * Decorate the class that implements your abstract class using the static `YOUR_ABSTRACT_CLASS`.{@link register} method.
+   * * Now you can use the `instanceof`-operator with your abstract class.
+   * 
+   * **Example**:
+   * ```typescript
+   * abstract class MyInterface extends Implementable {
+   *   public abstract myAttribute: string;
+   *   public abstract myMethod(): void;
+   * }
+   * 
+   * ⁤@MyInterface.register
+   * class MyClass implements MyInterface {
+   *   public myAttribute: string;
+   *   public myMethod(): void { ... }
+   * }
+   * 
+   * let myInstance: MyInterface = new MyClass();
+   * console.log(myInstance instanceof MyInterface); // true
+   * console.log(MyClass.prototype instanceof MyInterface); // true
+   * ```
+   */
   export abstract class Implementable {
     public static register<T extends typeof Implementable>(this: T, _class: abstract new (...args: General[]) => InstanceType<T>, _context: ClassDecoratorContext): void {
       let meta: Metadata = _context.metadata;
-      if (!Object.hasOwn(meta, "implements")) 
+      if (!Object.hasOwn(meta, "implements"))
         meta.implements = new Set(meta.implements);
-      
-      let cls: General = this;
-      while (cls != Implementable) {
-        meta.implements.add(cls);
-        cls = Object.getPrototypeOf(cls);
+
+      let implement: General = this;
+      while (implement != Implementable) {
+        meta.implements.add(implement);
+        implement = Object.getPrototypeOf(implement);
       }
     }
 
@@ -80,8 +107,8 @@ namespace FudgeCore {
         type = "primitve";
       else if (<Function>_constructor == Node)
         type = "node";
-      // else if (_constructor.prototype instanceof SerializableResource)
-      //   type = "resource";
+      else if (_constructor.prototype instanceof SerializableResource)
+        type = "resource";
       else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
         type = "serializable";
 
@@ -176,10 +203,10 @@ namespace FudgeCore {
               serialization[key] = value;
               break;
             case "serializable":
-              if (value.idResource)
-                serialization[key] = { idResource: value.idResource };
-              else
-                serialization[key] = value.serialize();
+              serialization[key] = value.serialize();
+              break;
+            case "resource":
+              serialization[key] = value.idResource;
               break;
             case "node":
               serialization[key] = Node.PATH_FROM_TO(<Component>_object, value);
@@ -217,10 +244,10 @@ namespace FudgeCore {
                   Reflect.set(reconstruct, key, value);
                   break;
                 case "serializable":
-                  if (value.idResource)
-                    Reflect.set(reconstruct, key, Project.resources[value.idResource] ?? await Project.getResource(value.idResource)); // await is costly so first try to get resource directly
-                  else
-                    await Reflect.get(reconstruct, key).deserialize(value);
+                  await Reflect.get(reconstruct, key).deserialize(value);
+                  break;
+                case "resource":
+                  Reflect.set(reconstruct, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
                   break;
                 case "node":
                   let instance: Component = <Component>reconstruct;
@@ -384,11 +411,11 @@ namespace FudgeCore {
 
   /**
    * Creates a new (abstract) class implementing {@link SerializableResourceExternal} from any class that implements {@link SerializableResource} by mixing in the functionality to load the resource from an external source.
-   * @internal
+   * @internal 
    * @authors Jonas Plotzky, HFU, 2024
    */
-  export function mixinSerializableResourceExternal<TBase extends Constructor<SerializableResource>>(_base: TBase) { /* eslint-disable-line */ //disable eslint because only type inference seems to be able to handle mixin abstract classes correctly
-    abstract class SerializableResourceExternal extends _base implements FudgeCore.SerializableResourceExternal {
+  export function mixinSerializableResourceExternal<TBase extends Constructor<SerializableResource>>(_base: TBase): Constructor<SerializableResourceExternal> & TBase {
+    abstract class SerializableResourceExternalMixin extends _base {
       public url: RequestInfo;
 
       public status: RESOURCE_STATUS = RESOURCE_STATUS.PENDING;
@@ -418,7 +445,7 @@ namespace FudgeCore {
 
     if (_base.prototype instanceof Mutable) {
       /**
-       * Mixin the {@link Mutable} functionality into the class
+       * Mixin the {@link Mutable} functionality into the class 
        * @authors Jonas Plotzky, HFU, 2024
        */
       function mixinMutableSerializableResourceExternal<TBase extends Constructor<SerializableResourceExternal & Mutable>>(_base: TBase) { // eslint-disable-line
@@ -437,9 +464,9 @@ namespace FudgeCore {
         return MutableSerializableResourceExternal;
       }
 
-      return mixinMutableSerializableResourceExternal(<TBase & Constructor<SerializableResourceExternal & Mutable>>SerializableResourceExternal);
+      return mixinMutableSerializableResourceExternal(<TBase & Constructor<SerializableResourceExternal & Mutable>>SerializableResourceExternalMixin);
     }
 
-    return SerializableResourceExternal;
+    return SerializableResourceExternalMixin;
   }
 }

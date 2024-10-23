@@ -3,6 +3,7 @@ namespace FudgeCore {
    * Extension of AudioBuffer with a load method that creates a buffer in the {@link AudioManager}.default to be used with {@link ComponentAudio}
    * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
    */
+  @SerializableResource.register
   export class Audio extends Mutable implements SerializableResource {
     public name: string = "Audio";
     public idResource: string = undefined;
