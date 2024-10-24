@@ -7,6 +7,7 @@ namespace FudgeCore {
     PENDING, READY, ERROR
   }
 
+  /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
   export abstract class SerializableResource extends Implementable {} // allow check with instanceof 
   export interface SerializableResource extends Serializable {
     name: string;
@@ -14,6 +15,7 @@ namespace FudgeCore {
     readonly type: string;
   }
 
+  /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
   export interface SerializableResourceExternal extends SerializableResource {
     url: RequestInfo;
     status: RESOURCE_STATUS;

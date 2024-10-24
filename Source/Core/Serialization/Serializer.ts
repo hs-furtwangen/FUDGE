@@ -21,15 +21,17 @@ namespace FudgeCore {
    * 
    * **Example**:
    * ```typescript
-   * abstract class MyInterface extends Implementable {
+   * import ƒ = FudgeCore;
+   * 
+   * abstract class MyInterface extends ƒ.Implementable {
    *   public abstract myAttribute: string;
    *   public abstract myMethod(): void;
    * }
    * 
-   * ⁤@MyInterface.register
+   * @MyInterface.register
    * class MyClass implements MyInterface {
    *   public myAttribute: string;
-   *   public myMethod(): void { ... }
+   *   public myMethod(): void {}
    * }
    * 
    * let myInstance: MyInterface = new MyClass();
@@ -72,7 +74,7 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark properties of a {@link Component} for automatic serialization and editor configuration.
+   * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
    * 
    * **Editor Configuration**:
    * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
@@ -85,9 +87,28 @@ namespace FudgeCore {
    * - Primitives will be serialized as is.
    * - {@link Serializable}s will be serialized nested. 
    * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-   * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED}/{@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
+   * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
    * 
-   * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
+   * **Example**:
+   * ```typescript
+   * import ƒ = FudgeCore;
+   *
+   * export class MyScript extends ƒ.ComponentScript {
+   *   @ƒ.serialize(Number) // display a number in the editor
+   *   public counter: number;
+   *
+   *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+   *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+   *
+   *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+   *   public resource: ƒ.Material;
+   *
+   *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+   *   public friend: ƒ.Node
+   * }
+   * ```
+   * 
+   * **Side effects:** Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */

@@ -236,10 +236,10 @@ var FudgeCore;
         constructor() {
             super();
         }
-        static addEventListener(_type, _handler) {
+        static addEventListener(_type, _handler, _options) {
             EventTargetStatic.targetStatic.addEventListener(_type, _handler);
         }
-        static removeEventListener(_type, _handler) {
+        static removeEventListener(_type, _handler, _options) {
             EventTargetStatic.targetStatic.removeEventListener(_type, _handler);
         }
         static dispatchEvent(_event) {
@@ -266,24 +266,27 @@ var FudgeCore;
     Symbol.metadata ??= Symbol("Symbol.metadata");
     function type(_constructor) {
         return (_value, _context) => {
-            let name = _context.name;
-            let metadata = _context.metadata;
-            let types = metadata.attributeTypes ??= {};
-            types[name] = _constructor;
+            let meta = _context.metadata;
+            if (!Object.hasOwn(meta, "attributeTypes"))
+                meta.attributeTypes = { ...meta.attributeTypes };
+            meta.attributeTypes[_context.name] = _constructor;
         };
     }
     FudgeCore.type = type;
     function enumerable(_value, _context) {
         let metadata = _context.metadata;
         if (_context.kind == "getter" || _context.kind == "accessor") {
-            metadata.enumerableKeys ??= [];
+            if (typeof _context.name != "string")
+                return;
+            if (!Object.hasOwn(metadata, "enumerableKeys"))
+                metadata.enumerableKeys = [];
             metadata.enumerableKeys.push(_context.name.toString());
             return;
         }
         if (_context.kind == "class") {
-            metadata.enumerableKeys ??= [];
-            for (const key of metadata.enumerableKeys)
-                Object.defineProperty(_value.prototype, key, { enumerable: true });
+            if (metadata.enumerableKeys)
+                for (const key of metadata.enumerableKeys)
+                    Object.defineProperty(_value.prototype, key, { enumerable: true });
             return;
         }
     }
@@ -355,11 +358,11 @@ var FudgeCore;
         }
         updateMutator(_mutator) {
             for (let attribute in _mutator) {
-                let value = _mutator[attribute];
+                let value = Reflect.get(this, attribute);
                 if (value instanceof Mutable)
-                    _mutator[attribute] = value.getMutator();
+                    value.updateMutator(_mutator[attribute]);
                 else
-                    _mutator[attribute] = this[attribute];
+                    _mutator[attribute] = value;
             }
         }
         async mutate(_mutator, _selection = null, _dispatchMutate = true) {
@@ -391,6 +394,48 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
+    class Implementable {
+        static register(_class, _context) {
+            let meta = _context.metadata;
+            if (!Object.hasOwn(meta, "implements"))
+                meta.implements = new Set(meta.implements);
+            let implement = this;
+            while (implement != Implementable) {
+                meta.implements.add(implement);
+                implement = Object.getPrototypeOf(implement);
+            }
+        }
+        static [Symbol.hasInstance](_instance) {
+            let meta = _instance.constructor[Symbol.metadata];
+            return meta?.implements?.has(this);
+        }
+    }
+    FudgeCore.Implementable = Implementable;
+    function serialize(_constructor) {
+        return (_value, _context) => {
+            if (typeof _context.name != "string")
+                return;
+            let meta = _context.metadata;
+            if (!Object.hasOwn(meta, "attributeTypes"))
+                meta.attributeTypes = { ...meta.attributeTypes };
+            meta.attributeTypes[_context.name] = _constructor;
+            let type;
+            if (_constructor == String || _constructor == Number || _constructor == Boolean)
+                type = "primitve";
+            else if (_constructor == FudgeCore.Node)
+                type = "node";
+            else if (_constructor.prototype instanceof FudgeCore.SerializableResource)
+                type = "resource";
+            else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
+                type = "serializable";
+            if (!type)
+                return;
+            if (!Object.hasOwn(meta, "serializables"))
+                meta.serializables = { ...meta.serializables };
+            meta.serializables[_context.name] = type;
+        };
+    }
+    FudgeCore.serialize = serialize;
     class Serializer {
         static { this.namespaces = { "ƒ": FudgeCore }; }
         static registerNamespace(_namespace) {
@@ -412,12 +457,33 @@ var FudgeCore;
             return name;
         }
         static serialize(_object) {
-            let serialization = {};
             let path = this.getFullPath(_object);
             if (!path)
                 throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
-            serialization[path] = _object.serialize();
-            return serialization;
+            let serialization = _object.serialize();
+            let serializables = _object.constructor[Symbol.metadata]?.serializables;
+            if (serializables) {
+                for (const key in serializables) {
+                    let value = Reflect.get(_object, key);
+                    if (value == null)
+                        continue;
+                    switch (serializables[key]) {
+                        case "primitve":
+                            serialization[key] = value;
+                            break;
+                        case "serializable":
+                            serialization[key] = value.serialize();
+                            break;
+                        case "resource":
+                            serialization[key] = value.idResource;
+                            break;
+                        case "node":
+                            serialization[key] = FudgeCore.Node.PATH_FROM_TO(_object, value);
+                            break;
+                    }
+                }
+            }
+            return { [path]: serialization };
         }
         static async deserialize(_serialization) {
             let reconstruct;
@@ -426,6 +492,38 @@ var FudgeCore;
                 for (path in _serialization) {
                     reconstruct = Serializer.reconstruct(path);
                     reconstruct = await reconstruct.deserialize(_serialization[path]);
+                    let serializables = reconstruct.constructor[Symbol.metadata]?.serializables;
+                    if (serializables) {
+                        for (const key in serializables) {
+                            let value = _serialization[path][key];
+                            if (value == null)
+                                continue;
+                            switch (serializables[key]) {
+                                case "primitve":
+                                    Reflect.set(reconstruct, key, value);
+                                    break;
+                                case "serializable":
+                                    await Reflect.get(reconstruct, key).deserialize(value);
+                                    break;
+                                case "resource":
+                                    Reflect.set(reconstruct, key, FudgeCore.Project.resources[value] ?? await FudgeCore.Project.getResource(value));
+                                    break;
+                                case "node":
+                                    let instance = reconstruct;
+                                    const hndNodeDeserialized = () => {
+                                        const hndGraphDeserialized = (_event) => {
+                                            Reflect.set(reconstruct, key, FudgeCore.Node.FIND(instance, value));
+                                            instance.node.removeEventListener("graphDeserialized", hndGraphDeserialized, true);
+                                            instance.node.removeEventListener("graphInstantiated", hndGraphDeserialized, true);
+                                            instance.removeEventListener("nodeDeserialized", hndNodeDeserialized);
+                                        };
+                                        instance.node.addEventListener("graphDeserialized", hndGraphDeserialized, true);
+                                        instance.node.addEventListener("graphInstantiated", hndGraphDeserialized, true);
+                                    };
+                                    instance.addEventListener("nodeDeserialized", hndNodeDeserialized);
+                            }
+                        }
+                    }
                     return reconstruct;
                 }
             }
@@ -510,7 +608,7 @@ var FudgeCore;
     }
     FudgeCore.Serializer = Serializer;
     function mixinSerializableResourceExternal(_base) {
-        class SerializableResourceExternal extends _base {
+        class SerializableResourceExternalMixin extends _base {
             constructor() {
                 super(...arguments);
                 this.status = FudgeCore.RESOURCE_STATUS.PENDING;
@@ -546,9 +644,9 @@ var FudgeCore;
                 }
                 return MutableSerializableResourceExternal;
             }
-            return mixinMutableSerializableResourceExternal(SerializableResourceExternal);
+            return mixinMutableSerializableResourceExternal(SerializableResourceExternalMixin);
         }
-        return SerializableResourceExternal;
+        return SerializableResourceExternalMixin;
     }
     FudgeCore.mixinSerializableResourceExternal = mixinSerializableResourceExternal;
 })(FudgeCore || (FudgeCore = {}));
@@ -1116,7 +1214,7 @@ var FudgeCore;
                 crc3.compileShader(webGLShader);
                 let error = FudgeCore.RenderWebGL.assert(crc3.getShaderInfoLog(webGLShader));
                 if (error !== "") {
-                    console.log(_shaderCode);
+                    FudgeCore.Debug.log(_shaderCode);
                     throw new Error("Error compiling shader: " + error);
                 }
                 if (!crc3.getShaderParameter(webGLShader, WebGL2RenderingContext.COMPILE_STATUS)) {
@@ -1621,7 +1719,7 @@ var FudgeCore;
             let instances = Recycler.depot[key];
             if (instances && instances.length > 0) {
                 let instance = instances.pop();
-                instance.recycle();
+                instance.recycle?.();
                 return instance;
             }
             else
@@ -1630,32 +1728,15 @@ var FudgeCore;
         static reuse(_t) {
             return Recycler.depot[_t.name]?.pop() ?? new _t();
         }
-        static borrow(_t) {
-            let t;
-            let key = _t.name;
-            let instances = Recycler.depot[key];
-            if (!instances || instances.length == 0) {
-                t = new _t();
-                Recycler.store(t);
-                return t;
-            }
-            let instance = instances[0];
-            instance.recycle();
-            return instance;
-        }
         static store(_instance) {
-            let key = _instance.constructor.name;
-            let instances = Recycler.depot[key] || [];
-            instances.push(_instance);
-            Recycler.depot[key] = instances;
+            (Recycler.depot[_instance.constructor.name] ??= new FudgeCore.RecycableArray()).push(_instance);
         }
         static storeMultiple(..._instances) {
             for (const instance of _instances)
                 Recycler.store(instance);
         }
         static dump(_t) {
-            let key = _t.name;
-            Recycler.depot[key] = [];
+            Recycler.depot[_t.name] = new FudgeCore.RecycableArray();
         }
         static dumpAll() {
             Recycler.depot = {};
@@ -3000,6 +3081,11 @@ var FudgeCore;
             mutator.anchor = this.anchor.getMutator();
             return mutator;
         }
+        getMutatorAttributeTypes(_mutator) {
+            let types = super.getMutatorAttributeTypes(_mutator);
+            types.nameChildToConnect = "String";
+            return types;
+        }
         async mutate(_mutator, _selection = null, _dispatchMutate = true) {
             if (typeof (_mutator.anchor) !== "undefined")
                 this.anchor = new FudgeCore.Vector3(...(Object.values(_mutator.anchor)));
@@ -3166,6 +3252,220 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
+    let MODE;
+    (function (MODE) {
+        MODE[MODE["EDITOR"] = 0] = "EDITOR";
+        MODE[MODE["RUNTIME"] = 1] = "RUNTIME";
+    })(MODE = FudgeCore.MODE || (FudgeCore.MODE = {}));
+    let RESOURCE_STATUS;
+    (function (RESOURCE_STATUS) {
+        RESOURCE_STATUS[RESOURCE_STATUS["PENDING"] = 0] = "PENDING";
+        RESOURCE_STATUS[RESOURCE_STATUS["READY"] = 1] = "READY";
+        RESOURCE_STATUS[RESOURCE_STATUS["ERROR"] = 2] = "ERROR";
+    })(RESOURCE_STATUS = FudgeCore.RESOURCE_STATUS || (FudgeCore.RESOURCE_STATUS = {}));
+    class SerializableResource extends FudgeCore.Implementable {
+    }
+    FudgeCore.SerializableResource = SerializableResource;
+    class Project extends FudgeCore.EventTargetStatic {
+        static { this.resources = {}; }
+        static { this.serialization = {}; }
+        static { this.scriptNamespaces = {}; }
+        static { this.baseURL = new URL(location.toString()); }
+        static { this.mode = MODE.RUNTIME; }
+        static { this.graphInstancesToResync = {}; }
+        static register(_resource, _idResource) {
+            if (_resource.idResource && _resource.idResource == _idResource)
+                return;
+            if (_resource.idResource)
+                this.deregister(_resource);
+            if (_idResource) {
+                _resource.idResource = _idResource;
+                this.deregister(_resource);
+            }
+            if (!_resource.idResource)
+                _resource.idResource = Project.generateId(_resource);
+            Project.resources[_resource.idResource] = _resource;
+            if (_resource instanceof FudgeCore.Graph)
+                _resource.addEventListener("graphMutated", (_event) => this.dispatchEvent(new CustomEvent("graphMutated", { detail: _resource })));
+        }
+        static deregister(_resource) {
+            delete (Project.resources[_resource.idResource]);
+            delete (Project.serialization[_resource.idResource]);
+        }
+        static clear() {
+            Project.resources = {};
+            Project.serialization = {};
+            Project.clearScriptNamespaces();
+        }
+        static getResourcesByType(_type) {
+            let found = [];
+            for (let resourceId in Project.resources) {
+                let resource = Project.resources[resourceId];
+                if (resource instanceof _type)
+                    found.push(resource);
+            }
+            return found;
+        }
+        static getResourcesByName(_name) {
+            let found = [];
+            for (let resourceId in Project.resources) {
+                let resource = Project.resources[resourceId];
+                if (resource.name == _name)
+                    found.push(resource);
+            }
+            return found;
+        }
+        static generateId(_resource) {
+            let idResource;
+            do
+                idResource = _resource.constructor.name + "|" + new Date().toISOString() + "|" + Math.random().toPrecision(5).substr(2, 5);
+            while (Project.resources[idResource]);
+            return idResource;
+        }
+        static isResource(_object) {
+            return (Reflect.has(_object, "idResource"));
+        }
+        static async getResource(_idResource) {
+            let resource = Project.resources[_idResource];
+            if (!resource) {
+                let serialization = Project.serialization[_idResource];
+                if (!serialization) {
+                    FudgeCore.Debug.error("Resource not found", _idResource);
+                    return null;
+                }
+                resource = await Project.deserializeResource(serialization);
+            }
+            return resource;
+        }
+        static async cloneResource(_resource) {
+            if (!_resource)
+                return null;
+            let serialization = FudgeCore.Serializer.serialize(_resource);
+            let type = Reflect.ownKeys(serialization)[0];
+            delete (serialization[type].idResource);
+            let clone = await Project.deserializeResource(serialization);
+            Project.register(clone);
+            clone.name += "_clone";
+            return clone;
+        }
+        static async registerAsGraph(_node, _replaceWithInstance = true) {
+            let serialization = _node.serialize();
+            let graph = new FudgeCore.Graph(_node.name);
+            await graph.deserialize(serialization);
+            Project.register(graph);
+            if (_replaceWithInstance && _node.getParent()) {
+                let instance = await Project.createGraphInstance(graph);
+                _node.getParent().replaceChild(_node, instance);
+            }
+            return graph;
+        }
+        static async createGraphInstance(_graph) {
+            let instance = new FudgeCore.GraphInstance(_graph);
+            await instance.connectToGraph();
+            return instance;
+        }
+        static registerGraphInstanceForResync(_instance) {
+            let instances = Project.graphInstancesToResync[_instance.idSource] || [];
+            instances.push(_instance);
+            Project.graphInstancesToResync[_instance.idSource] = instances;
+        }
+        static async resyncGraphInstances(_graph) {
+            let instances = Project.graphInstancesToResync[_graph.idResource];
+            if (!instances)
+                return;
+            for (let instance of instances)
+                await instance.connectToGraph();
+            delete (Project.graphInstancesToResync[_graph.idResource]);
+        }
+        static registerScriptNamespace(_namespace) {
+            let name = FudgeCore.Serializer.registerNamespace(_namespace);
+            if (!Project.scriptNamespaces[name])
+                Project.scriptNamespaces[name] = _namespace;
+        }
+        static clearScriptNamespaces() {
+            for (let name in Project.scriptNamespaces) {
+                Reflect.set(window, name, undefined);
+                Project.scriptNamespaces[name] = undefined;
+                delete Project.scriptNamespaces[name];
+            }
+        }
+        static getComponentScripts() {
+            let compoments = {};
+            for (let namespace in Project.scriptNamespaces) {
+                compoments[namespace] = [];
+                for (let name in Project.scriptNamespaces[namespace]) {
+                    let script = Reflect.get(Project.scriptNamespaces[namespace], name);
+                    try {
+                        let o = Object.create(script);
+                        if (o.prototype instanceof FudgeCore.ComponentScript)
+                            compoments[namespace].push(script);
+                    }
+                    catch (_e) { }
+                }
+            }
+            return compoments;
+        }
+        static async loadScript(_url) {
+            let script = document.createElement("script");
+            script.type = "text/javascript";
+            script.async = false;
+            let head = document.head;
+            head.appendChild(script);
+            FudgeCore.Debug.log("Loading: ", _url);
+            return new Promise((_resolve, _reject) => {
+                script.addEventListener("load", () => _resolve());
+                script.addEventListener("error", () => {
+                    FudgeCore.Debug.error("Loading script", _url);
+                    _reject();
+                });
+                script.src = _url.toString();
+            });
+        }
+        static async loadResources(_url) {
+            const response = await fetch(_url);
+            const resourceFileContent = await response.text();
+            let serialization = FudgeCore.Serializer.parse(resourceFileContent);
+            let reconstruction = await Project.deserialize(serialization);
+            Project.dispatchEvent(new CustomEvent("resourcesLoaded", { detail: { url: _url, resources: reconstruction } }));
+            return reconstruction;
+        }
+        static async loadResourcesFromHTML() {
+            const head = document.head;
+            let links = head.querySelectorAll("link[type=resources]");
+            for (let link of links) {
+                let url = link.getAttribute("src");
+                await Project.loadResources(url);
+            }
+        }
+        static serialize() {
+            let serialization = {};
+            for (let idResource in Project.resources) {
+                let resource = Project.resources[idResource];
+                if (idResource != resource.idResource)
+                    FudgeCore.Debug.error("Resource-id mismatch", resource);
+                serialization[idResource] = FudgeCore.Serializer.serialize(resource);
+            }
+            return serialization;
+        }
+        static async deserialize(_serialization) {
+            Project.serialization = _serialization;
+            Project.resources = {};
+            for (let idResource in _serialization) {
+                let serialization = _serialization[idResource];
+                let resource = await Project.deserializeResource(serialization);
+                if (resource)
+                    Project.resources[idResource] = resource;
+            }
+            return Project.resources;
+        }
+        static async deserializeResource(_serialization) {
+            return FudgeCore.Serializer.deserialize(_serialization);
+        }
+    }
+    FudgeCore.Project = Project;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
     let MIPMAP;
     (function (MIPMAP) {
         MIPMAP[MIPMAP["CRISP"] = 0] = "CRISP";
@@ -3180,8 +3480,8 @@ var FudgeCore;
         WRAP[WRAP["MIRROR"] = 2] = "MIRROR";
     })(WRAP = FudgeCore.WRAP || (FudgeCore.WRAP = {}));
     let Texture = (() => {
-        var _a;
-        let _classDecorators = [(_a = FudgeCore.RenderInjectorTexture).decorate.bind(_a)];
+        var _a, _b;
+        let _classDecorators = [(_a = FudgeCore.RenderInjectorTexture).decorate.bind(_a), (_b = FudgeCore.SerializableResource).register.bind(_b)];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -3437,8 +3737,8 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     let Mesh = (() => {
-        var _a;
-        let _classDecorators = [(_a = FudgeCore.RenderInjectorMesh).decorate.bind(_a)];
+        var _a, _b;
+        let _classDecorators = [(_a = FudgeCore.RenderInjectorMesh).decorate.bind(_a), (_b = FudgeCore.SerializableResource).register.bind(_b)];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -3535,7 +3835,8 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     let Material = (() => {
-        let _classDecorators = [FudgeCore.enumerable];
+        var _a;
+        let _classDecorators = [FudgeCore.enumerable, (_a = FudgeCore.SerializableResource).register.bind(_a)];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -3651,55 +3952,73 @@ var FudgeCore;
         }
         ParticleData.isTransformation = isTransformation;
     })(ParticleData = FudgeCore.ParticleData || (FudgeCore.ParticleData = {}));
-    class ParticleSystem extends FudgeCore.Mutable {
-        #data;
-        #shaderToShaderParticleSystem;
-        constructor(_name = ParticleSystem.name, _data = {}) {
-            super();
-            this.idResource = undefined;
-            this.#shaderToShaderParticleSystem = new Map();
-            this.name = _name;
-            this.data = _data;
-            FudgeCore.Project.register(this);
-        }
-        get data() {
-            return this.#data;
-        }
-        set data(_data) {
-            this.#data = _data;
-            this.#shaderToShaderParticleSystem.forEach(_shader => _shader.deleteProgram());
-            this.#shaderToShaderParticleSystem.clear();
-        }
-        getShaderFrom(_source) {
-            if (!this.#shaderToShaderParticleSystem.has(_source)) {
-                let particleShader = new FudgeCore.ShaderParticleSystem();
-                particleShader.data = this.data;
-                particleShader.define = [...particleShader.define, ..._source.define];
-                particleShader.vertexShaderSource = _source.getVertexShaderSource();
-                particleShader.fragmentShaderSource = _source.getFragmentShaderSource();
-                this.#shaderToShaderParticleSystem.set(_source, particleShader);
+    let ParticleSystem = (() => {
+        var _a;
+        let _classDecorators = [(_a = FudgeCore.SerializableResource).register.bind(_a)];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = FudgeCore.Mutable;
+        var ParticleSystem = class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                ParticleSystem = _classThis = _classDescriptor.value;
+                if (_metadata)
+                    Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            return this.#shaderToShaderParticleSystem.get(_source);
-        }
-        serialize() {
-            let serialization = {
-                idResource: this.idResource,
-                name: this.name,
-                data: this.data
-            };
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            FudgeCore.Project.register(this, _serialization.idResource);
-            this.name = _serialization.name;
-            this.data = _serialization.data;
-            return this;
-        }
-        reduceMutator(_mutator) {
-            delete _mutator.cachedMutators;
-            delete _mutator.shaderMap;
-        }
-    }
+            #data;
+            #shaderToShaderParticleSystem;
+            constructor(_name = ParticleSystem.name, _data = {}) {
+                super();
+                this.idResource = undefined;
+                this.#shaderToShaderParticleSystem = new Map();
+                this.name = _name;
+                this.data = _data;
+                FudgeCore.Project.register(this);
+            }
+            get data() {
+                return this.#data;
+            }
+            set data(_data) {
+                this.#data = _data;
+                this.#shaderToShaderParticleSystem.forEach(_shader => _shader.deleteProgram());
+                this.#shaderToShaderParticleSystem.clear();
+            }
+            getShaderFrom(_source) {
+                if (!this.#shaderToShaderParticleSystem.has(_source)) {
+                    let particleShader = new FudgeCore.ShaderParticleSystem();
+                    particleShader.data = this.data;
+                    particleShader.define = [...particleShader.define, ..._source.define];
+                    particleShader.vertexShaderSource = _source.getVertexShaderSource();
+                    particleShader.fragmentShaderSource = _source.getFragmentShaderSource();
+                    this.#shaderToShaderParticleSystem.set(_source, particleShader);
+                }
+                return this.#shaderToShaderParticleSystem.get(_source);
+            }
+            serialize() {
+                let serialization = {
+                    idResource: this.idResource,
+                    name: this.name,
+                    data: this.data
+                };
+                return serialization;
+            }
+            async deserialize(_serialization) {
+                FudgeCore.Project.register(this, _serialization.idResource);
+                this.name = _serialization.name;
+                this.data = _serialization.data;
+                return this;
+            }
+            reduceMutator(_mutator) {
+                delete _mutator.cachedMutators;
+                delete _mutator.shaderMap;
+            }
+        };
+        return ParticleSystem = _classThis;
+    })();
     FudgeCore.ParticleSystem = ParticleSystem;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
@@ -3851,320 +4170,340 @@ var FudgeCore;
         ANIMATION_QUANTIZATION["DISCRETE"] = "discrete";
         ANIMATION_QUANTIZATION["FRAMES"] = "frames";
     })(ANIMATION_QUANTIZATION = FudgeCore.ANIMATION_QUANTIZATION || (FudgeCore.ANIMATION_QUANTIZATION = {}));
-    class Animation extends FudgeCore.Mutable {
-        static { this.subclasses = []; }
-        static { this.iSubclass = Animation.registerSubclass(Animation); }
-        #animationStructuresProcessed;
-        constructor(_name = Animation.name, _animStructure = {}, _fps = 60) {
-            super();
-            this.idResource = undefined;
-            this.totalTime = 0;
-            this.labels = {};
-            this.events = {};
-            this.framesPerSecond = 60;
-            this.eventsProcessed = new Map();
-            this.#animationStructuresProcessed = new Map();
-            this.name = _name;
-            this.animationStructure = _animStructure;
-            this.#animationStructuresProcessed.set(ANIMATION_STRUCTURE_TYPE.NORMAL, _animStructure);
-            this.framesPerSecond = _fps;
-            this.calculateTotalTime();
-            FudgeCore.Project.register(this);
-        }
-        static registerSubclass(_subClass) { return Animation.subclasses.push(_subClass) - 1; }
-        get getLabels() {
-            let en = new Enumerator(this.labels);
-            return en;
-        }
-        get fps() {
-            return this.framesPerSecond;
-        }
-        set fps(_fps) {
-            this.framesPerSecond = _fps;
-            this.eventsProcessed.clear();
-            this.clearCache();
-        }
-        clearCache() {
-            this.#animationStructuresProcessed.clear();
-        }
-        getState(_time, _direction, _quantization) {
-            let m = {};
-            let animationStructure;
-            if (_quantization == ANIMATION_QUANTIZATION.CONTINOUS)
-                animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
-            else
-                animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE : ANIMATION_STRUCTURE_TYPE.RASTERED;
-            m = this.traverseStructureForMutator(this.getProcessedAnimationStructure(animationStructure), _time);
-            return m;
-        }
-        getEventsToFire(_min, _max, _quantization, _direction) {
-            let eventList = [];
-            let minSection = Math.floor(_min / this.totalTime);
-            let maxSection = Math.floor(_max / this.totalTime);
-            _min = _min % this.totalTime;
-            _max = _max % this.totalTime;
-            while (minSection <= maxSection) {
-                let eventTriggers = this.getCorrectEventList(_direction, _quantization);
-                if (minSection == maxSection) {
-                    eventList = eventList.concat(this.checkEventsBetween(eventTriggers, _min, _max));
-                }
-                else {
-                    eventList = eventList.concat(this.checkEventsBetween(eventTriggers, _min, this.totalTime));
-                    _min = 0;
-                }
-                minSection++;
+    let Animation = (() => {
+        var _a;
+        let _classDecorators = [(_a = FudgeCore.SerializableResource).register.bind(_a)];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = FudgeCore.Mutable;
+        var Animation = class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                Animation = _classThis = _classDescriptor.value;
+                if (_metadata)
+                    Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            return eventList;
-        }
-        setEvent(_name, _time) {
-            this.events[_name] = _time;
-            this.eventsProcessed.clear();
-        }
-        removeEvent(_name) {
-            delete this.events[_name];
-            this.eventsProcessed.clear();
-        }
-        calculateTotalTime() {
-            this.totalTime = 0;
-            this.traverseStructureForTime(this.animationStructure);
-        }
-        getModalTime(_time, _playmode, _timeStop = _time) {
-            switch (_playmode) {
-                case ANIMATION_PLAYMODE.STOP:
-                    return _timeStop;
-                case ANIMATION_PLAYMODE.PLAY_ONCE:
-                    if (_time >= this.totalTime)
-                        return this.totalTime - 0.01;
-                case ANIMATION_PLAYMODE.PLAY_ONCE_RESET:
-                    if (_time >= this.totalTime)
-                        return this.totalTime + 0.01;
+            static { this.subclasses = []; }
+            static { this.iSubclass = Animation.registerSubclass(Animation); }
+            #animationStructuresProcessed;
+            constructor(_name = Animation.name, _animStructure = {}, _fps = 60) {
+                super();
+                this.idResource = undefined;
+                this.totalTime = 0;
+                this.labels = {};
+                this.events = {};
+                this.framesPerSecond = 60;
+                this.eventsProcessed = new Map();
+                this.#animationStructuresProcessed = new Map();
+                this.name = _name;
+                this.animationStructure = _animStructure;
+                this.#animationStructuresProcessed.set(ANIMATION_STRUCTURE_TYPE.NORMAL, _animStructure);
+                this.framesPerSecond = _fps;
+                this.calculateTotalTime();
+                FudgeCore.Project.register(this);
             }
-            return _time;
-        }
-        calculateDirection(_time, _playmode) {
-            switch (_playmode) {
-                case ANIMATION_PLAYMODE.STOP:
-                    return 0;
-                case ANIMATION_PLAYMODE.REVERSE_LOOP:
-                    return -1;
-                case ANIMATION_PLAYMODE.PLAY_ONCE:
-                case ANIMATION_PLAYMODE.PLAY_ONCE_RESET:
-                    if (_time >= this.totalTime) {
-                        return 0;
-                    }
-                default:
-                    return 1;
+            static registerSubclass(_subClass) { return Animation.subclasses.push(_subClass) - 1; }
+            get getLabels() {
+                let en = new Enumerator(this.labels);
+                return en;
             }
-        }
-        serialize() {
-            let s = {
-                idResource: this.idResource,
-                name: this.name,
-                labels: {},
-                events: {},
-                framesPerSecond: this.framesPerSecond
-            };
-            for (let name in this.labels) {
-                s.labels[name] = this.labels[name];
+            get fps() {
+                return this.framesPerSecond;
             }
-            for (let name in this.events) {
-                s.events[name] = this.events[name];
+            set fps(_fps) {
+                this.framesPerSecond = _fps;
+                this.eventsProcessed.clear();
+                this.clearCache();
             }
-            s.animationStructure = this.traverseStructureForSerialization(this.animationStructure);
-            return s;
-        }
-        async deserialize(_serialization) {
-            FudgeCore.Project.register(this, _serialization.idResource);
-            this.name = _serialization.name;
-            this.framesPerSecond = _serialization.framesPerSecond;
-            this.labels = {};
-            for (let name in _serialization.labels) {
-                this.labels[name] = _serialization.labels[name];
+            clearCache() {
+                this.#animationStructuresProcessed.clear();
             }
-            this.events = {};
-            for (let name in _serialization.events) {
-                this.events[name] = _serialization.events[name];
-            }
-            this.eventsProcessed = new Map();
-            this.animationStructure = await this.traverseStructureForDeserialization(_serialization.animationStructure);
-            this.#animationStructuresProcessed = new Map();
-            this.calculateTotalTime();
-            return this;
-        }
-        reduceMutator(_mutator) {
-            delete _mutator.totalTime;
-        }
-        traverseStructureForSerialization(_structure) {
-            let serialization = {};
-            for (const property in _structure) {
-                let structureOrSequence = _structure[property];
-                if (structureOrSequence instanceof FudgeCore.AnimationSequence)
-                    serialization[property] = structureOrSequence.serialize();
+            getState(_time, _direction, _quantization) {
+                let m = {};
+                let animationStructure;
+                if (_quantization == ANIMATION_QUANTIZATION.CONTINOUS)
+                    animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
                 else
-                    serialization[property] = this.traverseStructureForSerialization(structureOrSequence);
+                    animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE : ANIMATION_STRUCTURE_TYPE.RASTERED;
+                m = this.traverseStructureForMutator(this.getProcessedAnimationStructure(animationStructure), _time);
+                return m;
             }
-            return serialization;
-        }
-        async traverseStructureForDeserialization(_serialization) {
-            let structure = {};
-            for (let n in _serialization) {
-                if (_serialization[n].animationSequence) {
-                    let animSeq = new FudgeCore.AnimationSequence();
-                    structure[n] = (await animSeq.deserialize(_serialization[n]));
+            getEventsToFire(_min, _max, _quantization, _direction) {
+                let eventList = [];
+                let minSection = Math.floor(_min / this.totalTime);
+                let maxSection = Math.floor(_max / this.totalTime);
+                _min = _min % this.totalTime;
+                _max = _max % this.totalTime;
+                while (minSection <= maxSection) {
+                    let eventTriggers = this.getCorrectEventList(_direction, _quantization);
+                    if (minSection == maxSection) {
+                        eventList = eventList.concat(this.checkEventsBetween(eventTriggers, _min, _max));
+                    }
+                    else {
+                        eventList = eventList.concat(this.checkEventsBetween(eventTriggers, _min, this.totalTime));
+                        _min = 0;
+                    }
+                    minSection++;
                 }
-                else {
-                    structure[n] = await this.traverseStructureForDeserialization(_serialization[n]);
+                return eventList;
+            }
+            setEvent(_name, _time) {
+                this.events[_name] = _time;
+                this.eventsProcessed.clear();
+            }
+            removeEvent(_name) {
+                delete this.events[_name];
+                this.eventsProcessed.clear();
+            }
+            calculateTotalTime() {
+                this.totalTime = 0;
+                this.traverseStructureForTime(this.animationStructure);
+            }
+            getModalTime(_time, _playmode, _timeStop = _time) {
+                switch (_playmode) {
+                    case ANIMATION_PLAYMODE.STOP:
+                        return _timeStop;
+                    case ANIMATION_PLAYMODE.PLAY_ONCE:
+                        if (_time >= this.totalTime)
+                            return this.totalTime - 0.01;
+                    case ANIMATION_PLAYMODE.PLAY_ONCE_RESET:
+                        if (_time >= this.totalTime)
+                            return this.totalTime + 0.01;
+                }
+                return _time;
+            }
+            calculateDirection(_time, _playmode) {
+                switch (_playmode) {
+                    case ANIMATION_PLAYMODE.STOP:
+                        return 0;
+                    case ANIMATION_PLAYMODE.REVERSE_LOOP:
+                        return -1;
+                    case ANIMATION_PLAYMODE.PLAY_ONCE:
+                    case ANIMATION_PLAYMODE.PLAY_ONCE_RESET:
+                        if (_time >= this.totalTime) {
+                            return 0;
+                        }
+                    default:
+                        return 1;
                 }
             }
-            return structure;
-        }
-        getCorrectEventList(_direction, _quantization) {
-            if (_quantization != ANIMATION_QUANTIZATION.FRAMES) {
-                if (_direction >= 0) {
-                    return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.NORMAL);
+            serialize() {
+                let s = {
+                    idResource: this.idResource,
+                    name: this.name,
+                    labels: {},
+                    events: {},
+                    framesPerSecond: this.framesPerSecond
+                };
+                for (let name in this.labels) {
+                    s.labels[name] = this.labels[name];
                 }
-                else {
-                    return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.REVERSE);
+                for (let name in this.events) {
+                    s.events[name] = this.events[name];
                 }
+                s.animationStructure = this.traverseStructureForSerialization(this.animationStructure);
+                return s;
             }
-            else {
-                if (_direction >= 0) {
-                    return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.RASTERED);
+            async deserialize(_serialization) {
+                FudgeCore.Project.register(this, _serialization.idResource);
+                this.name = _serialization.name;
+                this.framesPerSecond = _serialization.framesPerSecond;
+                this.labels = {};
+                for (let name in _serialization.labels) {
+                    this.labels[name] = _serialization.labels[name];
                 }
-                else {
-                    return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE);
+                this.events = {};
+                for (let name in _serialization.events) {
+                    this.events[name] = _serialization.events[name];
                 }
+                this.eventsProcessed = new Map();
+                this.animationStructure = await this.traverseStructureForDeserialization(_serialization.animationStructure);
+                this.#animationStructuresProcessed = new Map();
+                this.calculateTotalTime();
+                return this;
             }
-        }
-        traverseStructureForMutator(_structure, _time) {
-            let newMutator = {};
-            for (let n in _structure) {
-                if (_structure[n] instanceof FudgeCore.AnimationSequence) {
-                    newMutator[n] = _structure[n].evaluate(_time);
-                }
-                else {
-                    newMutator[n] = this.traverseStructureForMutator(_structure[n], _time);
-                }
+            reduceMutator(_mutator) {
+                delete _mutator.totalTime;
             }
-            return newMutator;
-        }
-        traverseStructureForTime(_structure) {
-            for (let n in _structure) {
-                if (_structure[n] instanceof FudgeCore.AnimationSequence) {
-                    let sequence = _structure[n];
-                    if (sequence.length > 0) {
-                        let sequenceTime = sequence.getKey(sequence.length - 1).time;
-                        this.totalTime = Math.max(sequenceTime, this.totalTime);
+            traverseStructureForSerialization(_structure) {
+                let serialization = {};
+                for (const property in _structure) {
+                    let structureOrSequence = _structure[property];
+                    if (structureOrSequence instanceof FudgeCore.AnimationSequence)
+                        serialization[property] = structureOrSequence.serialize();
+                    else
+                        serialization[property] = this.traverseStructureForSerialization(structureOrSequence);
+                }
+                return serialization;
+            }
+            async traverseStructureForDeserialization(_serialization) {
+                let structure = {};
+                for (let n in _serialization) {
+                    if (_serialization[n].animationSequence) {
+                        let animSeq = new FudgeCore.AnimationSequence();
+                        structure[n] = (await animSeq.deserialize(_serialization[n]));
+                    }
+                    else {
+                        structure[n] = await this.traverseStructureForDeserialization(_serialization[n]);
+                    }
+                }
+                return structure;
+            }
+            getCorrectEventList(_direction, _quantization) {
+                if (_quantization != ANIMATION_QUANTIZATION.FRAMES) {
+                    if (_direction >= 0) {
+                        return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.NORMAL);
+                    }
+                    else {
+                        return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.REVERSE);
                     }
                 }
                 else {
-                    this.traverseStructureForTime(_structure[n]);
+                    if (_direction >= 0) {
+                        return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.RASTERED);
+                    }
+                    else {
+                        return this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE);
+                    }
                 }
             }
-        }
-        getProcessedAnimationStructure(_type) {
-            if (!this.#animationStructuresProcessed.has(_type)) {
-                this.calculateTotalTime();
+            traverseStructureForMutator(_structure, _time) {
+                let newMutator = {};
+                for (let n in _structure) {
+                    if (_structure[n] instanceof FudgeCore.AnimationSequence) {
+                        newMutator[n] = _structure[n].evaluate(_time);
+                    }
+                    else {
+                        newMutator[n] = this.traverseStructureForMutator(_structure[n], _time);
+                    }
+                }
+                return newMutator;
+            }
+            traverseStructureForTime(_structure) {
+                for (let n in _structure) {
+                    if (_structure[n] instanceof FudgeCore.AnimationSequence) {
+                        let sequence = _structure[n];
+                        if (sequence.length > 0) {
+                            let sequenceTime = sequence.getKey(sequence.length - 1).time;
+                            this.totalTime = Math.max(sequenceTime, this.totalTime);
+                        }
+                    }
+                    else {
+                        this.traverseStructureForTime(_structure[n]);
+                    }
+                }
+            }
+            getProcessedAnimationStructure(_type) {
+                if (!this.#animationStructuresProcessed.has(_type)) {
+                    this.calculateTotalTime();
+                    let ae = {};
+                    switch (_type) {
+                        case ANIMATION_STRUCTURE_TYPE.NORMAL:
+                            ae = this.animationStructure;
+                            break;
+                        case ANIMATION_STRUCTURE_TYPE.REVERSE:
+                            ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateReverseSequence.bind(this));
+                            break;
+                        case ANIMATION_STRUCTURE_TYPE.RASTERED:
+                            ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateRasteredSequence.bind(this));
+                            break;
+                        case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
+                            ae = this.traverseStructureForNewStructure(this.getProcessedAnimationStructure(ANIMATION_STRUCTURE_TYPE.REVERSE), this.calculateRasteredSequence.bind(this));
+                            break;
+                        default:
+                            return {};
+                    }
+                    this.#animationStructuresProcessed.set(_type, ae);
+                }
+                return this.#animationStructuresProcessed.get(_type);
+            }
+            getProcessedEventTrigger(_type) {
+                if (!this.eventsProcessed.has(_type)) {
+                    this.calculateTotalTime();
+                    let ev = {};
+                    switch (_type) {
+                        case ANIMATION_STRUCTURE_TYPE.NORMAL:
+                            ev = this.events;
+                            break;
+                        case ANIMATION_STRUCTURE_TYPE.REVERSE:
+                            ev = this.calculateReverseEventTriggers(this.events);
+                            break;
+                        case ANIMATION_STRUCTURE_TYPE.RASTERED:
+                            ev = this.calculateRasteredEventTriggers(this.events);
+                            break;
+                        case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
+                            ev = this.calculateRasteredEventTriggers(this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.REVERSE));
+                            break;
+                        default:
+                            return {};
+                    }
+                    this.eventsProcessed.set(_type, ev);
+                }
+                return this.eventsProcessed.get(_type);
+            }
+            traverseStructureForNewStructure(_oldStructure, _functionToUse) {
+                let newStructure = {};
+                for (let n in _oldStructure) {
+                    if (_oldStructure[n] instanceof FudgeCore.AnimationSequence) {
+                        newStructure[n] = _functionToUse(_oldStructure[n]);
+                    }
+                    else {
+                        newStructure[n] = this.traverseStructureForNewStructure(_oldStructure[n], _functionToUse);
+                    }
+                }
+                return newStructure;
+            }
+            calculateReverseSequence(_sequence) {
+                let seq = new FudgeCore.AnimationSequence();
+                for (let i = 0; i < _sequence.length; i++) {
+                    let oldKey = _sequence.getKey(i);
+                    let key = new FudgeCore.AnimationKey(this.totalTime - oldKey.time, oldKey.value, oldKey.interpolation, oldKey.slopeOut, oldKey.slopeIn);
+                    seq.addKey(key);
+                }
+                return seq;
+            }
+            calculateRasteredSequence(_sequence) {
+                let seq = new FudgeCore.AnimationSequence();
+                let frameTime = 1000 / this.framesPerSecond;
+                for (let i = 0; i < this.totalTime; i += frameTime) {
+                    let key = new FudgeCore.AnimationKey(i, _sequence.evaluate(i), FudgeCore.ANIMATION_INTERPOLATION.CONSTANT, 0, 0);
+                    seq.addKey(key);
+                }
+                return seq;
+            }
+            calculateReverseEventTriggers(_events) {
                 let ae = {};
-                switch (_type) {
-                    case ANIMATION_STRUCTURE_TYPE.NORMAL:
-                        ae = this.animationStructure;
-                        break;
-                    case ANIMATION_STRUCTURE_TYPE.REVERSE:
-                        ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateReverseSequence.bind(this));
-                        break;
-                    case ANIMATION_STRUCTURE_TYPE.RASTERED:
-                        ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateRasteredSequence.bind(this));
-                        break;
-                    case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
-                        ae = this.traverseStructureForNewStructure(this.getProcessedAnimationStructure(ANIMATION_STRUCTURE_TYPE.REVERSE), this.calculateRasteredSequence.bind(this));
-                        break;
-                    default:
-                        return {};
+                for (let name in _events) {
+                    ae[name] = this.totalTime - _events[name];
                 }
-                this.#animationStructuresProcessed.set(_type, ae);
+                return ae;
             }
-            return this.#animationStructuresProcessed.get(_type);
-        }
-        getProcessedEventTrigger(_type) {
-            if (!this.eventsProcessed.has(_type)) {
-                this.calculateTotalTime();
-                let ev = {};
-                switch (_type) {
-                    case ANIMATION_STRUCTURE_TYPE.NORMAL:
-                        ev = this.events;
-                        break;
-                    case ANIMATION_STRUCTURE_TYPE.REVERSE:
-                        ev = this.calculateReverseEventTriggers(this.events);
-                        break;
-                    case ANIMATION_STRUCTURE_TYPE.RASTERED:
-                        ev = this.calculateRasteredEventTriggers(this.events);
-                        break;
-                    case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
-                        ev = this.calculateRasteredEventTriggers(this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.REVERSE));
-                        break;
-                    default:
-                        return {};
+            calculateRasteredEventTriggers(_events) {
+                let ae = {};
+                let frameTime = 1000 / this.framesPerSecond;
+                for (let name in _events) {
+                    ae[name] = _events[name] - (_events[name] % frameTime);
                 }
-                this.eventsProcessed.set(_type, ev);
+                return ae;
             }
-            return this.eventsProcessed.get(_type);
-        }
-        traverseStructureForNewStructure(_oldStructure, _functionToUse) {
-            let newStructure = {};
-            for (let n in _oldStructure) {
-                if (_oldStructure[n] instanceof FudgeCore.AnimationSequence) {
-                    newStructure[n] = _functionToUse(_oldStructure[n]);
+            checkEventsBetween(_eventTriggers, _min, _max) {
+                let eventsToTrigger = [];
+                for (let name in _eventTriggers) {
+                    if (_min <= _eventTriggers[name] && _eventTriggers[name] < _max) {
+                        eventsToTrigger.push(name);
+                    }
                 }
-                else {
-                    newStructure[n] = this.traverseStructureForNewStructure(_oldStructure[n], _functionToUse);
-                }
+                return eventsToTrigger;
             }
-            return newStructure;
-        }
-        calculateReverseSequence(_sequence) {
-            let seq = new FudgeCore.AnimationSequence();
-            for (let i = 0; i < _sequence.length; i++) {
-                let oldKey = _sequence.getKey(i);
-                let key = new FudgeCore.AnimationKey(this.totalTime - oldKey.time, oldKey.value, oldKey.interpolation, oldKey.slopeOut, oldKey.slopeIn);
-                seq.addKey(key);
+            static {
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            return seq;
-        }
-        calculateRasteredSequence(_sequence) {
-            let seq = new FudgeCore.AnimationSequence();
-            let frameTime = 1000 / this.framesPerSecond;
-            for (let i = 0; i < this.totalTime; i += frameTime) {
-                let key = new FudgeCore.AnimationKey(i, _sequence.evaluate(i), FudgeCore.ANIMATION_INTERPOLATION.CONSTANT, 0, 0);
-                seq.addKey(key);
-            }
-            return seq;
-        }
-        calculateReverseEventTriggers(_events) {
-            let ae = {};
-            for (let name in _events) {
-                ae[name] = this.totalTime - _events[name];
-            }
-            return ae;
-        }
-        calculateRasteredEventTriggers(_events) {
-            let ae = {};
-            let frameTime = 1000 / this.framesPerSecond;
-            for (let name in _events) {
-                ae[name] = _events[name] - (_events[name] % frameTime);
-            }
-            return ae;
-        }
-        checkEventsBetween(_eventTriggers, _min, _max) {
-            let eventsToTrigger = [];
-            for (let name in _eventTriggers) {
-                if (_min <= _eventTriggers[name] && _eventTriggers[name] < _max) {
-                    eventsToTrigger.push(name);
-                }
-            }
-            return eventsToTrigger;
-        }
-    }
+        };
+        return Animation = _classThis;
+    })();
     FudgeCore.Animation = Animation;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
@@ -4564,62 +4903,80 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class Audio extends FudgeCore.Mutable {
-        constructor(_url) {
-            super();
-            this.name = "Audio";
-            this.idResource = undefined;
-            this.buffer = undefined;
-            this.path = undefined;
-            this.url = undefined;
-            this.ready = false;
-            if (_url) {
-                this.load(_url);
-                this.name = _url.toString().split("/").pop();
+    let Audio = (() => {
+        var _a;
+        let _classDecorators = [(_a = FudgeCore.SerializableResource).register.bind(_a)];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = FudgeCore.Mutable;
+        var Audio = class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                Audio = _classThis = _classDescriptor.value;
+                if (_metadata)
+                    Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers(_classThis, _classExtraInitializers);
             }
-            FudgeCore.Project.register(this);
-        }
-        get isReady() {
-            return this.ready;
-        }
-        async load(_url) {
-            FudgeCore.Debug.fudge("AudioLoad", _url);
-            this.url = _url;
-            this.ready = false;
-            this.path = new URL(this.url.toString(), FudgeCore.Project.baseURL);
-            const response = await window.fetch(this.path.toString());
-            const arrayBuffer = await response.arrayBuffer();
-            let buffer = await FudgeCore.AudioManager.default.decodeAudioData(arrayBuffer);
-            this.buffer = buffer;
-            this.ready = true;
-            this.dispatchEvent(new Event("ready"));
-        }
-        serialize() {
-            return {
-                url: this.url,
-                idResource: this.idResource,
-                name: this.name,
-                type: this.type
-            };
-        }
-        async deserialize(_serialization) {
-            FudgeCore.Project.register(this, _serialization.idResource);
-            await this.load(_serialization.url);
-            this.name = _serialization.name;
-            return this;
-        }
-        async mutate(_mutator, _selection, _dispatchMutate) {
-            let url = _mutator.url;
-            if (_mutator.url != this.url.toString())
-                this.load(_mutator.url);
-            delete (_mutator.url);
-            super.mutate(_mutator, _selection, _dispatchMutate);
-            Reflect.set(_mutator, "url", url);
-        }
-        reduceMutator(_mutator) {
-            delete _mutator.ready;
-        }
-    }
+            constructor(_url) {
+                super();
+                this.name = "Audio";
+                this.idResource = undefined;
+                this.buffer = undefined;
+                this.path = undefined;
+                this.url = undefined;
+                this.ready = false;
+                if (_url) {
+                    this.load(_url);
+                    this.name = _url.toString().split("/").pop();
+                }
+                FudgeCore.Project.register(this);
+            }
+            get isReady() {
+                return this.ready;
+            }
+            async load(_url) {
+                FudgeCore.Debug.fudge("AudioLoad", _url);
+                this.url = _url;
+                this.ready = false;
+                this.path = new URL(this.url.toString(), FudgeCore.Project.baseURL);
+                const response = await window.fetch(this.path.toString());
+                const arrayBuffer = await response.arrayBuffer();
+                let buffer = await FudgeCore.AudioManager.default.decodeAudioData(arrayBuffer);
+                this.buffer = buffer;
+                this.ready = true;
+                this.dispatchEvent(new Event("ready"));
+            }
+            serialize() {
+                return {
+                    url: this.url,
+                    idResource: this.idResource,
+                    name: this.name,
+                    type: this.type
+                };
+            }
+            async deserialize(_serialization) {
+                FudgeCore.Project.register(this, _serialization.idResource);
+                await this.load(_serialization.url);
+                this.name = _serialization.name;
+                return this;
+            }
+            async mutate(_mutator, _selection, _dispatchMutate) {
+                let url = _mutator.url;
+                if (_mutator.url != this.url.toString())
+                    this.load(_mutator.url);
+                delete (_mutator.url);
+                super.mutate(_mutator, _selection, _dispatchMutate);
+                Reflect.set(_mutator, "url", url);
+            }
+            reduceMutator(_mutator) {
+                delete _mutator.ready;
+            }
+        };
+        return Audio = _classThis;
+    })();
     FudgeCore.Audio = Audio;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
@@ -5724,12 +6081,10 @@ var FudgeCore;
                     const hndNodeDeserialized = () => {
                         const hndGraphDeserialized = () => {
                             this.skeleton = FudgeCore.Node.FIND(this, _serialization.skeleton);
-                            this.node.removeEventListener("graphDeserialized", hndGraphDeserialized);
-                            this.node.removeEventListener("graphInstantiated", hndGraphDeserialized);
+                            this.node.removeEventListener("graphDeserialized", hndGraphDeserialized, true);
                             this.removeEventListener("nodeDeserialized", hndNodeDeserialized);
                         };
                         this.node.addEventListener("graphDeserialized", hndGraphDeserialized, true);
-                        this.node.addEventListener("graphInstantiated", hndGraphDeserialized, true);
                     };
                     this.addEventListener("nodeDeserialized", hndNodeDeserialized);
                 }
@@ -5951,7 +6306,7 @@ var FudgeCore;
             this.singleton = false;
         }
         serialize() {
-            return this.getMutator();
+            return this.getMutator(true);
         }
         async deserialize(_serialization) {
             this.mutate(_serialization);
@@ -6790,35 +7145,53 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class Graph extends FudgeCore.Node {
-        constructor(_name = "Graph") {
-            super(_name);
-            this.idResource = undefined;
-            this.hndMutate = async (_event) => {
-                _event.detail.path = Reflect.get(_event, "path");
-                this.dispatchEvent(new CustomEvent("mutateGraph", { detail: _event.detail }));
-                this.dispatchEvent(new CustomEvent("graphMutated", { detail: _event.detail }));
-            };
-            this.addEventListener("mutate", this.hndMutate);
-        }
-        get type() {
-            return this.constructor.name;
-        }
-        serialize() {
-            let serialization = super.serialize();
-            serialization.idResource = this.idResource;
-            serialization.type = this.type;
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization);
-            FudgeCore.Project.register(this, _serialization.idResource);
-            await FudgeCore.Project.resyncGraphInstances(this);
-            this.broadcastEvent(new Event("graphDeserialized"));
-            console.log("Deserialized", this.name);
-            return this;
-        }
-    }
+    let Graph = (() => {
+        var _a;
+        let _classDecorators = [(_a = FudgeCore.SerializableResource).register.bind(_a)];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = FudgeCore.Node;
+        var Graph = class extends _classSuper {
+            static { _classThis = this; }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                Graph = _classThis = _classDescriptor.value;
+                if (_metadata)
+                    Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers(_classThis, _classExtraInitializers);
+            }
+            constructor(_name = "Graph") {
+                super(_name);
+                this.idResource = undefined;
+                this.hndMutate = async (_event) => {
+                    _event.detail.path = Reflect.get(_event, "path");
+                    this.dispatchEvent(new CustomEvent("mutateGraph", { detail: _event.detail }));
+                    this.dispatchEvent(new CustomEvent("graphMutated", { detail: _event.detail }));
+                };
+                this.addEventListener("mutate", this.hndMutate);
+            }
+            get type() {
+                return this.constructor.name;
+            }
+            serialize() {
+                let serialization = super.serialize();
+                serialization.idResource = this.idResource;
+                serialization.type = this.type;
+                return serialization;
+            }
+            async deserialize(_serialization) {
+                await super.deserialize(_serialization);
+                FudgeCore.Project.register(this, _serialization.idResource);
+                await FudgeCore.Project.resyncGraphInstances(this);
+                this.broadcastEvent(new Event("graphDeserialized"));
+                FudgeCore.Debug.log("Deserialized", this.name);
+                return this;
+            }
+        };
+        return Graph = _classThis;
+    })();
     FudgeCore.Graph = Graph;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
@@ -6909,7 +7282,7 @@ var FudgeCore;
             if (graph)
                 await this.connectToGraph();
             else {
-                console.log("Register for resync", _serialization.name, this.name);
+                FudgeCore.Debug.log("Register for resync", _serialization.name, this.name);
                 FudgeCore.Project.registerGraphInstanceForResync(this);
             }
             return this;
@@ -6930,9 +7303,8 @@ var FudgeCore;
                 await this.deserialize(serialization[path]);
                 break;
             }
-            console.log(this.name + GraphInstance.count++);
+            FudgeCore.Debug.fudge("GraphInstance set to " + this.name + " | " + "Instance count: " + GraphInstance.count++);
             _graph.addEventListener("mutateGraph", this.hndMutationGraph);
-            console.log(_graph?.listeners);
             this.broadcastEvent(new Event("graphInstantiated"));
         }
         get() {
@@ -10979,13 +11351,13 @@ var FudgeCore;
                 switch (_event.type) {
                     case "componentAdd":
                         this.addEventListener("componentDeactivate", this.removeRigidbodyFromWorld);
-                        this.node.addEventListener("nodeDeactivate", this.removeRigidbodyFromWorld, true);
+                        this.node.addEventListener("nodeDeactivate", this.hndNodeDeactivate, true);
                         if (!this.node.cmpTransform)
                             FudgeCore.Debug.warn("ComponentRigidbody attached to node missing ComponentTransform", this.node);
                         break;
                     case "componentRemove":
                         this.removeEventListener("componentRemove", this.removeRigidbodyFromWorld);
-                        this.node.removeEventListener("nodeDeactivate", this.removeRigidbodyFromWorld, true);
+                        this.node.removeEventListener("nodeDeactivate", this.hndNodeDeactivate, true);
                         this.removeRigidbodyFromWorld();
                         break;
                     case "nodeDeserialized":
@@ -10997,6 +11369,12 @@ var FudgeCore;
             this.addRigidbodyToWorld = () => {
                 if (!this.#rigidbody._world)
                     FudgeCore.Physics.addRigidbody(this);
+            };
+            this.hndNodeDeactivate = (_event) => {
+                let path = this.node.getPath();
+                if (!path.includes(_event.target))
+                    return;
+                this.removeRigidbodyFromWorld();
             };
             this.removeRigidbodyFromWorld = () => {
                 FudgeCore.Physics.removeRigidbody(this);
@@ -13057,6 +13435,8 @@ var FudgeCore;
                 Gizmos.posIcons.clear();
                 let picks = [];
                 for (let gizmo of _gizmos) {
+                    if (!gizmo.drawGizmos)
+                        continue;
                     Gizmos.pickId = picks.length;
                     gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
                     let pick = new FudgeCore.Pick(gizmo.node);
@@ -13768,7 +14148,7 @@ var FudgeCore;
         getGizmos(_nodes = Array.from(this.#branch.getIterator(true))) {
             return _nodes
                 .flatMap(_node => _node.getAllComponents())
-                .filter(_component => _component.isActive && _component.drawGizmos && this.gizmosFilter[_component.type]);
+                .filter(_component => _component.isActive && (_component.drawGizmos || _component.drawGizmosSelected) && this.gizmosFilter[_component.type]);
         }
     }
     FudgeCore.Viewport = Viewport;
@@ -13892,7 +14272,7 @@ var FudgeCore;
                             }
                         }
                         catch (e) {
-                            FudgeCore.Debug.info("Input Sources Error: " + e);
+                            FudgeCore.Debug.error("Input Sources Error: " + e);
                         }
                     });
                 }
@@ -13993,7 +14373,7 @@ var FudgeCore;
             return this.getMutator();
         }
         async mutate(_mutator) {
-            for (let entry in this)
+            for (let entry in _mutator)
                 await this[entry].mutate(_mutator[entry]);
         }
         updateMutator(_mutator) {
@@ -14009,206 +14389,6 @@ var FudgeCore;
         }
     }
     FudgeCore.MutableArray = MutableArray;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let MODE;
-    (function (MODE) {
-        MODE[MODE["EDITOR"] = 0] = "EDITOR";
-        MODE[MODE["RUNTIME"] = 1] = "RUNTIME";
-    })(MODE = FudgeCore.MODE || (FudgeCore.MODE = {}));
-    let RESOURCE_STATUS;
-    (function (RESOURCE_STATUS) {
-        RESOURCE_STATUS[RESOURCE_STATUS["PENDING"] = 0] = "PENDING";
-        RESOURCE_STATUS[RESOURCE_STATUS["READY"] = 1] = "READY";
-        RESOURCE_STATUS[RESOURCE_STATUS["ERROR"] = 2] = "ERROR";
-    })(RESOURCE_STATUS = FudgeCore.RESOURCE_STATUS || (FudgeCore.RESOURCE_STATUS = {}));
-    class Project extends FudgeCore.EventTargetStatic {
-        static { this.resources = {}; }
-        static { this.serialization = {}; }
-        static { this.scriptNamespaces = {}; }
-        static { this.baseURL = new URL(location.toString()); }
-        static { this.mode = MODE.RUNTIME; }
-        static { this.graphInstancesToResync = {}; }
-        static register(_resource, _idResource) {
-            if (_resource.idResource && _resource.idResource == _idResource)
-                return;
-            if (_resource.idResource)
-                this.deregister(_resource);
-            if (_idResource) {
-                _resource.idResource = _idResource;
-                this.deregister(_resource);
-            }
-            if (!_resource.idResource)
-                _resource.idResource = Project.generateId(_resource);
-            Project.resources[_resource.idResource] = _resource;
-            if (_resource instanceof FudgeCore.Graph)
-                _resource.addEventListener("graphMutated", (_event) => this.dispatchEvent(new CustomEvent("graphMutated", { detail: _resource })));
-        }
-        static deregister(_resource) {
-            delete (Project.resources[_resource.idResource]);
-            delete (Project.serialization[_resource.idResource]);
-        }
-        static clear() {
-            Project.resources = {};
-            Project.serialization = {};
-            Project.clearScriptNamespaces();
-        }
-        static getResourcesByType(_type) {
-            let found = [];
-            for (let resourceId in Project.resources) {
-                let resource = Project.resources[resourceId];
-                if (resource instanceof _type)
-                    found.push(resource);
-            }
-            return found;
-        }
-        static getResourcesByName(_name) {
-            let found = [];
-            for (let resourceId in Project.resources) {
-                let resource = Project.resources[resourceId];
-                if (resource.name == _name)
-                    found.push(resource);
-            }
-            return found;
-        }
-        static generateId(_resource) {
-            let idResource;
-            do
-                idResource = _resource.constructor.name + "|" + new Date().toISOString() + "|" + Math.random().toPrecision(5).substr(2, 5);
-            while (Project.resources[idResource]);
-            return idResource;
-        }
-        static isResource(_object) {
-            return (Reflect.has(_object, "idResource"));
-        }
-        static async getResource(_idResource) {
-            let resource = Project.resources[_idResource];
-            if (!resource) {
-                let serialization = Project.serialization[_idResource];
-                if (!serialization) {
-                    FudgeCore.Debug.error("Resource not found", _idResource);
-                    return null;
-                }
-                resource = await Project.deserializeResource(serialization);
-            }
-            return resource;
-        }
-        static async registerAsGraph(_node, _replaceWithInstance = true) {
-            let serialization = _node.serialize();
-            let graph = new FudgeCore.Graph(_node.name);
-            await graph.deserialize(serialization);
-            Project.register(graph);
-            if (_replaceWithInstance && _node.getParent()) {
-                let instance = await Project.createGraphInstance(graph);
-                _node.getParent().replaceChild(_node, instance);
-            }
-            return graph;
-        }
-        static async createGraphInstance(_graph) {
-            let instance = new FudgeCore.GraphInstance(_graph);
-            await instance.connectToGraph();
-            return instance;
-        }
-        static registerGraphInstanceForResync(_instance) {
-            let instances = Project.graphInstancesToResync[_instance.idSource] || [];
-            instances.push(_instance);
-            Project.graphInstancesToResync[_instance.idSource] = instances;
-        }
-        static async resyncGraphInstances(_graph) {
-            let instances = Project.graphInstancesToResync[_graph.idResource];
-            if (!instances)
-                return;
-            for (let instance of instances)
-                await instance.connectToGraph();
-            delete (Project.graphInstancesToResync[_graph.idResource]);
-        }
-        static registerScriptNamespace(_namespace) {
-            let name = FudgeCore.Serializer.registerNamespace(_namespace);
-            if (!Project.scriptNamespaces[name])
-                Project.scriptNamespaces[name] = _namespace;
-        }
-        static clearScriptNamespaces() {
-            for (let name in Project.scriptNamespaces) {
-                Reflect.set(window, name, undefined);
-                Project.scriptNamespaces[name] = undefined;
-                delete Project.scriptNamespaces[name];
-            }
-        }
-        static getComponentScripts() {
-            let compoments = {};
-            for (let namespace in Project.scriptNamespaces) {
-                compoments[namespace] = [];
-                for (let name in Project.scriptNamespaces[namespace]) {
-                    let script = Reflect.get(Project.scriptNamespaces[namespace], name);
-                    try {
-                        let o = Object.create(script);
-                        if (o.prototype instanceof FudgeCore.ComponentScript)
-                            compoments[namespace].push(script);
-                    }
-                    catch (_e) { }
-                }
-            }
-            return compoments;
-        }
-        static async loadScript(_url) {
-            let script = document.createElement("script");
-            script.type = "text/javascript";
-            script.async = false;
-            let head = document.head;
-            head.appendChild(script);
-            FudgeCore.Debug.log("Loading: ", _url);
-            return new Promise((_resolve, _reject) => {
-                script.addEventListener("load", () => _resolve());
-                script.addEventListener("error", () => {
-                    FudgeCore.Debug.error("Loading script", _url);
-                    _reject();
-                });
-                script.src = _url.toString();
-            });
-        }
-        static async loadResources(_url) {
-            const response = await fetch(_url);
-            const resourceFileContent = await response.text();
-            let serialization = FudgeCore.Serializer.parse(resourceFileContent);
-            let reconstruction = await Project.deserialize(serialization);
-            Project.dispatchEvent(new CustomEvent("resourcesLoaded", { detail: { url: _url, resources: reconstruction } }));
-            return reconstruction;
-        }
-        static async loadResourcesFromHTML() {
-            const head = document.head;
-            let links = head.querySelectorAll("link[type=resources]");
-            for (let link of links) {
-                let url = link.getAttribute("src");
-                await Project.loadResources(url);
-            }
-        }
-        static serialize() {
-            let serialization = {};
-            for (let idResource in Project.resources) {
-                let resource = Project.resources[idResource];
-                if (idResource != resource.idResource)
-                    FudgeCore.Debug.error("Resource-id mismatch", resource);
-                serialization[idResource] = FudgeCore.Serializer.serialize(resource);
-            }
-            return serialization;
-        }
-        static async deserialize(_serialization) {
-            Project.serialization = _serialization;
-            Project.resources = {};
-            for (let idResource in _serialization) {
-                let serialization = _serialization[idResource];
-                let resource = await Project.deserializeResource(serialization);
-                if (resource)
-                    Project.resources[idResource] = resource;
-            }
-            return Project.resources;
-        }
-        static async deserializeResource(_serialization) {
-            return FudgeCore.Serializer.deserialize(_serialization);
-        }
-    }
-    FudgeCore.Project = Project;
 })(FudgeCore || (FudgeCore = {}));
 var FBX;
 (function (FBX) {
@@ -14299,9 +14479,9 @@ var FudgeCore;
         constructor(_buffer, _uri) {
             this.uri = _uri;
             this.nodes = FBX.parseNodesFromBinary(_buffer);
-            console.log(this.nodes);
+            FudgeCore.Debug.log(this.nodes);
             this.fbx = FBX.loadFromNodes(this.nodes);
-            console.log(this.fbx);
+            FudgeCore.Debug.log(this.fbx);
         }
         static get defaultMaterial() {
             return this.#defaultMaterial || (this.#defaultMaterial =
@@ -15473,8 +15653,10 @@ var FudgeCore;
             const specular = 1.8 * (1 - gltfRoughnessFactor) + 0.6 * gltfMetallicFactor;
             const intensity = 0.7 * (1 - gltfRoughnessFactor) + gltfMetallicFactor;
             const metallic = gltfMetallicFactor;
-            const isLit = gltfEmissiveFactor[0] == 1 && gltfEmissiveFactor[1] == 1 || gltfEmissiveFactor[2] == 1;
+            const isLit = gltfEmissiveFactor[0] > 0 || gltfEmissiveFactor[1] > 0 || gltfEmissiveFactor[2] > 0;
             const color = new FudgeCore.Color(...gltfBaseColorFactor);
+            if (isLit)
+                color.add(new FudgeCore.Color(...gltfEmissiveFactor, 0));
             const coat = gltfBaseColorTexture ?
                 isLit ? new FudgeCore.CoatTextured(color, await this.getTexture(gltfBaseColorTexture.index)) :
                     gltfNormalTexture ?

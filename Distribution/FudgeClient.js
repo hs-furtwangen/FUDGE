@@ -129,7 +129,7 @@ var FudgeNet;
                 return;
             peer.close();
             delete this.peers[_idRemote];
-            console.log("Deleted peer", _idRemote, "remaining", this.peers);
+            ƒ.Debug.log("Deleted peer", _idRemote, "remaining", this.peers);
         }
         /**
          * Disconnect all peers
@@ -172,7 +172,7 @@ var FudgeNet;
                 }
             }
             catch (_error) {
-                console.log(_error);
+                ƒ.Debug.log(_error);
             }
         }
         /**
@@ -192,7 +192,7 @@ var FudgeNet;
         becomeHost() {
             this.dispatch({ idRoom: idRoom, command: FudgeNet.COMMAND.DISCONNECT_PEERS });
             this.disconnectPeers();
-            console.log("createHost", this.id);
+            ƒ.Debug.log("createHost", this.id);
             this.dispatch({ idRoom: idRoom, command: FudgeNet.COMMAND.CONNECT_HOST, route: FudgeNet.ROUTE.SERVER });
         }
         hndMessage = (_event) => {
@@ -236,7 +236,7 @@ var FudgeNet;
                             host = id;
                     if (host != this.idHost) {
                         this.idHost = host;
-                        console.log("New host", host);
+                        ƒ.Debug.log("New host", host);
                     }
                     break;
             }
@@ -301,7 +301,7 @@ var FudgeNet;
             rtc.addEventListener("negotiationneeded", async (_event) => this.cRsendOffer(_idRemote));
             rtc.addEventListener("icecandidate", (_event) => this.cRsendIceCandidates(_event, _idRemote));
             rtc.addEventListener("icegatheringstatechange", (_event) => {
-                console.log("ICE-state", rtc.iceGatheringState);
+                ƒ.Debug.log("ICE-state", rtc.iceGatheringState);
             });
             // fires the negotiationneeded-event
             rtc.setupDataChannel(this, _idRemote);
