@@ -14,7 +14,7 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2022
    */
   @RenderInjectorComponentParticleSystem.decorate
-  @enumerable
+  @enumerate
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
     @type(ParticleSystem)
@@ -51,7 +51,7 @@ namespace FudgeCore {
     /**
      * Get the number of particles
      */
-    @enumerable
+    @enumerate
     public get size(): number {
       return this.#size;
     }

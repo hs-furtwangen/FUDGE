@@ -85,11 +85,29 @@ namespace FudgeCore {
   /**
    * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
    * 
-   * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
-  */
-  export function enumerable(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
-  export function enumerable(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
-  export function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
+   * **Usage**: Apply this decorator to both the getter method and the class to make it effective.
+   * 
+   * **Example**:
+   * ```typescript
+   * @ƒ.enumerate // apply the decorator to the class.
+   * export class SomeScript extends ƒ.ComponentScript {
+   *   #size: number = 1;
+   * 
+   *   @ƒ.enumerate // apply the decorator to the getter
+   *   public get size(): number {
+   *     return this.#size;
+   *   }
+   * 
+   *   // define a setter to allow writing, or omit it to leave the property read-only
+   *   public set size(_size: number) {
+   *     this.#size = _size;
+   *   }
+   * }
+   * ```
+   */
+  export function enumerate(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
+  export function enumerate(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
+  export function enumerate(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
     // _context.addInitializer(function (this: unknown) { // this is run per instance... ideally we would want to run this once per class
     //   const prototype: unknown = Object.getPrototypeOf(this);
     //   const descriptor: PropertyDescriptor = Object.getOwnPropertyDescriptor(prototype, _context.name);

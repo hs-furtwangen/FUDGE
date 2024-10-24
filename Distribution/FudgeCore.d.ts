@@ -307,10 +307,28 @@ declare namespace FudgeCore {
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
      *
-     * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
-    */
-    function enumerable(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
-    function enumerable(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
+     * **Usage**: Apply this decorator to both the getter method and the class to make it effective.
+     *
+     * **Example**:
+     * ```typescript
+     * @ƒ.enumerate // apply the decorator to the class.
+     * export class SomeScript extends ƒ.ComponentScript {
+     *   #size: number = 1;
+     *
+     *   @ƒ.enumerate // apply the decorator to the getter
+     *   public get size(): number {
+     *     return this.#size;
+     *   }
+     *
+     *   // define a setter to allow writing, or omit it to leave the property read-only
+     *   public set size(_size: number) {
+     *     this.#size = _size;
+     *   }
+     * }
+     * ```
+     */
+    function enumerate(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
+    function enumerate(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
