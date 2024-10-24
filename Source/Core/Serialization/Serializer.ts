@@ -10,6 +10,52 @@ namespace FudgeCore {
     [type: string]: General;
   }
 
+  /**
+   * Abstract class serving as a base for interface-like pure abstract classes that work with the "instanceof"-operator. 
+   * 
+   * **Usage**:
+   * * Create a pure abstract class that extends {@link Implementable} that will serve as your interface. Specify the required attributes and methods within it as abstract. 
+   * * Use your abstract class via the `implements` keyword exactly how you would use a regular `interface`.
+   * * Decorate the class that implements your abstract class using the static `YOUR_ABSTRACT_CLASS`.{@link register} method.
+   * * Now you can use the `instanceof`-operator with your abstract class.
+   * 
+   * **Example**:
+   * ```typescript
+   * abstract class MyInterface extends Implementable {
+   *   public abstract myAttribute: string;
+   *   public abstract myMethod(): void;
+   * }
+   * 
+   * ⁤@MyInterface.register
+   * class MyClass implements MyInterface {
+   *   public myAttribute: string;
+   *   public myMethod(): void { ... }
+   * }
+   * 
+   * let myInstance: MyInterface = new MyClass();
+   * console.log(myInstance instanceof MyInterface); // true
+   * console.log(MyClass.prototype instanceof MyInterface); // true
+   * ```
+   */
+  export abstract class Implementable {
+    public static register<T extends typeof Implementable>(this: T, _class: abstract new (...args: General[]) => InstanceType<T>, _context: ClassDecoratorContext): void {
+      let meta: Metadata = _context.metadata;
+      if (!Object.hasOwn(meta, "implements"))
+        meta.implements = new Set(meta.implements);
+
+      let implement: General = this;
+      while (implement != Implementable) {
+        meta.implements.add(implement);
+        implement = Object.getPrototypeOf(implement);
+      }
+    }
+
+    public static [Symbol.hasInstance](_instance: unknown): boolean {
+      let meta: Metadata = _instance.constructor[Symbol.metadata];
+      return meta?.implements?.has(this);
+    }
+  }
+
   export interface Serializable {
     /**
      * Returns a {@link Serialization} of this object.
@@ -23,6 +69,56 @@ namespace FudgeCore {
 
   interface NamespaceRegister {
     [name: string]: Object;
+  }
+
+  /**
+   * Decorator to mark properties of a {@link Component} for automatic serialization and editor configuration.
+   * 
+   * **Editor Configuration**:
+   * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+   * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
+   * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+   * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
+   * 
+   * **Serialization**:
+   * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+   * - Primitives will be serialized as is.
+   * - {@link Serializable}s will be serialized nested. 
+   * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+   * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED}/{@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
+   * 
+   * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
+   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
+   * will be displayed via their {@link toString} method in the editor.
+   */
+  export function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void {
+    return (_value, _context) => { // could cache the decorator function for each class
+      if (typeof _context.name != "string")
+        return;
+
+      let meta: Metadata = _context.metadata;
+
+      if (!Object.hasOwn(meta, "attributeTypes"))
+        meta.attributeTypes = { ...meta.attributeTypes };
+      meta.attributeTypes[_context.name] = _constructor;
+
+      let type: Metadata["serializables"][string];
+      if (<Function>_constructor == String || <Function>_constructor == Number || <Function>_constructor == Boolean)
+        type = "primitve";
+      else if (<Function>_constructor == Node)
+        type = "node";
+      else if (_constructor.prototype instanceof SerializableResource)
+        type = "resource";
+      else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
+        type = "serializable";
+
+      if (!type)
+        return;
+
+      if (!Object.hasOwn(meta, "serializables"))
+        meta.serializables = { ...meta.serializables };
+      meta.serializables[_context.name] = type;
+    };
   }
 
   /**
@@ -87,14 +183,39 @@ namespace FudgeCore {
      * @param _object An object to serialize, implementing the {@link Serializable} interface
      */
     public static serialize(_object: Serializable): Serialization {
-      let serialization: Serialization = {};
       // TODO: save the namespace with the constructors name
       // serialization[_object.constructor.name] = _object.serialize();
       let path: string = this.getFullPath(_object);
       if (!path)
         throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
-      serialization[path] = _object.serialize();
-      return serialization;
+
+      let serialization: Serialization = _object.serialize();
+
+      let serializables: Metadata["serializables"] = (_object.constructor[Symbol.metadata] as Metadata)?.serializables;
+      if (serializables) {
+        for (const key in serializables) {
+          let value: General = Reflect.get(_object, key);
+          if (value == null)
+            continue;
+
+          switch (serializables[key]) {
+            case "primitve":
+              serialization[key] = value;
+              break;
+            case "serializable":
+              serialization[key] = value.serialize();
+              break;
+            case "resource":
+              serialization[key] = value.idResource;
+              break;
+            case "node":
+              serialization[key] = Node.PATH_FROM_TO(<Component>_object, value);
+              break;
+          }
+        }
+      }
+
+      return { [path]: serialization };
       // return _object.serialize();
     }
 
@@ -110,6 +231,41 @@ namespace FudgeCore {
         for (path in _serialization) {
           reconstruct = Serializer.reconstruct(path);
           reconstruct = await reconstruct.deserialize(_serialization[path]);
+
+          let serializables: Metadata["serializables"] = (reconstruct.constructor[Symbol.metadata] as Metadata)?.serializables;
+          if (serializables) {
+            for (const key in serializables) {
+              let value: General = _serialization[path][key];
+              if (value == null)
+                continue;
+
+              switch (serializables[key]) {
+                case "primitve":
+                  Reflect.set(reconstruct, key, value);
+                  break;
+                case "serializable":
+                  await Reflect.get(reconstruct, key).deserialize(value);
+                  break;
+                case "resource":
+                  Reflect.set(reconstruct, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
+                  break;
+                case "node":
+                  let instance: Component = <Component>reconstruct;
+                  const hndNodeDeserialized: EventListenerUnified = () => {
+                    const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
+                      Reflect.set(reconstruct, key, Node.FIND(instance, value));
+                      instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+                      instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+                      instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+                    };
+                    instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+                    instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+                  };
+                  instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+              }
+            }
+          }
+
           return reconstruct;
         }
       } catch (_error) {
@@ -251,15 +407,16 @@ namespace FudgeCore {
   }
 
 
-  type Constructor<T> = abstract new (...args: General[]) => T;
+  /** @internal */
+  export type Constructor<T> = abstract new (...args: General[]) => T;
 
   /**
    * Creates a new (abstract) class implementing {@link SerializableResourceExternal} from any class that implements {@link SerializableResource} by mixing in the functionality to load the resource from an external source.
-   * @internal
+   * @internal 
    * @authors Jonas Plotzky, HFU, 2024
    */
-  export function mixinSerializableResourceExternal<TBase extends Constructor<SerializableResource>>(_base: TBase) { /* eslint-disable-line */ //disable eslint because only type inference seems to be able to handle mixin abstract classes correctly
-    abstract class SerializableResourceExternal extends _base implements FudgeCore.SerializableResourceExternal {
+  export function mixinSerializableResourceExternal<TBase extends Constructor<SerializableResource>>(_base: TBase): Constructor<SerializableResourceExternal> & TBase {
+    abstract class SerializableResourceExternalMixin extends _base {
       public url: RequestInfo;
 
       public status: RESOURCE_STATUS = RESOURCE_STATUS.PENDING;
@@ -273,7 +430,7 @@ namespace FudgeCore {
           name: this.name,
           type: this.type,
           url: this.url.toString()
-        }; 
+        };
         return serialization;
       }
 
@@ -289,7 +446,7 @@ namespace FudgeCore {
 
     if (_base.prototype instanceof Mutable) {
       /**
-       * Mixin the {@link Mutable} functionality into the class
+       * Mixin the {@link Mutable} functionality into the class 
        * @authors Jonas Plotzky, HFU, 2024
        */
       function mixinMutableSerializableResourceExternal<TBase extends Constructor<SerializableResourceExternal & Mutable>>(_base: TBase) { // eslint-disable-line
@@ -308,9 +465,9 @@ namespace FudgeCore {
         return MutableSerializableResourceExternal;
       }
 
-      return mixinMutableSerializableResourceExternal(<TBase & Constructor<SerializableResourceExternal & Mutable>>SerializableResourceExternal);
+      return mixinMutableSerializableResourceExternal(<TBase & Constructor<SerializableResourceExternal & Mutable>>SerializableResourceExternalMixin);
     }
 
-    return SerializableResourceExternal;
+    return SerializableResourceExternalMixin;
   }
 }

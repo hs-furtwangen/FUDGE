@@ -279,13 +279,22 @@ declare namespace FudgeCore {
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
      */
-    interface Metadata {
+    interface Metadata extends DecoratorMetadataObject {
         /**
          * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
          */
         attributeTypes?: MetaAttributeTypes;
-        enumerableKeys?: (string | symbol)[];
+        enumerableKeys?: string[];
+        /**
+         * Map of property names to the type of serialization that should be used for that property.
+         */
+        serializables?: {
+            [key: string]: "primitve" | "serializable" | "resource" | "node";
+        };
+        implements?: Set<Function>;
     }
+    /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+    type ClassPropertyContext<This, Value> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
      * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
@@ -294,13 +303,14 @@ declare namespace FudgeCore {
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
      */
-    function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void;
+    function type<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
      *
      * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
     */
-    function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void;
+    function enumerable(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
+    function enumerable(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -385,6 +395,37 @@ declare namespace FudgeCore {
     interface Serialization {
         [type: string]: General;
     }
+    /**
+     * Abstract class serving as a base for interface-like pure abstract classes that work with the "instanceof"-operator.
+     *
+     * **Usage**:
+     * * Create a pure abstract class that extends {@link Implementable} that will serve as your interface. Specify the required attributes and methods within it as abstract.
+     * * Use your abstract class via the `implements` keyword exactly how you would use a regular `interface`.
+     * * Decorate the class that implements your abstract class using the static `YOUR_ABSTRACT_CLASS`.{@link register} method.
+     * * Now you can use the `instanceof`-operator with your abstract class.
+     *
+     * **Example**:
+     * ```typescript
+     * abstract class MyInterface extends Implementable {
+     *   public abstract myAttribute: string;
+     *   public abstract myMethod(): void;
+     * }
+     *
+     * ⁤@MyInterface.register
+     * class MyClass implements MyInterface {
+     *   public myAttribute: string;
+     *   public myMethod(): void { ... }
+     * }
+     *
+     * let myInstance: MyInterface = new MyClass();
+     * console.log(myInstance instanceof MyInterface); // true
+     * console.log(MyClass.prototype instanceof MyInterface); // true
+     * ```
+     */
+    abstract class Implementable {
+        static register<T extends typeof Implementable>(this: T, _class: abstract new (...args: General[]) => InstanceType<T>, _context: ClassDecoratorContext): void;
+        static [Symbol.hasInstance](_instance: unknown): boolean;
+    }
     interface Serializable {
         /**
          * Returns a {@link Serialization} of this object.
@@ -395,6 +436,27 @@ declare namespace FudgeCore {
          */
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
+    /**
+     * Decorator to mark properties of a {@link Component} for automatic serialization and editor configuration.
+     *
+     * **Editor Configuration**:
+     * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+     * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
+     * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+     * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
+     *
+     * **Serialization**:
+     * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+     * - Primitives will be serialized as is.
+     * - {@link Serializable}s will be serialized nested.
+     * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+     * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED}/{@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
+     *
+     * **Note:** Attributes with a specified type will always be included in the {@link Mutator base-mutator}
+     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
+     * will be displayed via their {@link toString} method in the editor.
+     */
+    function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -1611,6 +1673,148 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    export enum MODE {
+        EDITOR = 0,
+        RUNTIME = 1
+    }
+    export enum RESOURCE_STATUS {
+        PENDING = 0,
+        READY = 1,
+        ERROR = 2
+    }
+    export abstract class SerializableResource extends Implementable {
+    }
+    export interface SerializableResource extends Serializable {
+        name: string;
+        idResource: string;
+        readonly type: string;
+    }
+    export interface SerializableResourceExternal extends SerializableResource {
+        url: RequestInfo;
+        status: RESOURCE_STATUS;
+        load(): Promise<SerializableResourceExternal>;
+    }
+    export interface Resources {
+        [idResource: string]: SerializableResource;
+    }
+    export interface SerializationOfResources {
+        [idResource: string]: Serialization;
+    }
+    export interface ScriptNamespaces {
+        [name: string]: Object;
+    }
+    export interface ComponentScripts {
+        [namespace: string]: ComponentScript[];
+    }
+    interface GraphInstancesToResync {
+        [idResource: string]: GraphInstance[];
+    }
+    /**
+     * Static class handling the resources used with the current FUDGE-instance.
+     * Keeps a list of the resources and generates ids to retrieve them.
+     * Resources are objects referenced multiple times but supposed to be stored only once
+     */
+    export abstract class Project extends EventTargetStatic {
+        static resources: Resources;
+        static serialization: SerializationOfResources;
+        static scriptNamespaces: ScriptNamespaces;
+        static baseURL: URL;
+        static mode: MODE;
+        static graphInstancesToResync: GraphInstancesToResync;
+        /**
+         * Registers the resource and generates an id for it by default.
+         * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
+         * It's possible to pass an id, but should not be done except by the Serializer.
+         */
+        static register(_resource: SerializableResource, _idResource?: string): void;
+        /**
+         * Removes the resource from the list of resources.
+         */
+        static deregister(_resource: SerializableResource): void;
+        /**
+         * Clears the list of resources and their serialization, thus removing all resources.
+         */
+        static clear(): void;
+        /**
+         * Returns an array of all resources of the requested type.
+         */
+        static getResourcesByType<T>(_type: new (_args: General) => T): SerializableResource[];
+        /**
+         * Returns an array of all resources with the requested name.
+         */
+        static getResourcesByName(_name: string): SerializableResource[];
+        /**
+         * Generate a user readable and unique id using the type of the resource, the date and random numbers
+         * @param _resource
+         */
+        static generateId(_resource: SerializableResource): string;
+        /**
+         * Tests, if an object is a {@link SerializableResource}
+         * @param _object The object to examine
+         */
+        static isResource(_object: Serializable): boolean;
+        /**
+         * Retrieves the resource stored with the given id
+         */
+        static getResource(_idResource: string): Promise<SerializableResource>;
+        static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
+        /**
+         * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
+         * @param _node A node to create the resource from
+         * @param _replaceWithInstance if true (default), the node used as origin is replaced by a {@link GraphInstance} of the {@link Graph} created
+         */
+        static registerAsGraph(_node: Node, _replaceWithInstance?: boolean): Promise<Graph>;
+        /**
+         * Creates and returns a {@link GraphInstance} of the given {@link Graph}
+         * and connects it to the graph for synchronisation of mutation.
+         */
+        static createGraphInstance(_graph: Graph): Promise<GraphInstance>;
+        /**
+         * Register the given {@link GraphInstance} to be resynced
+         */
+        static registerGraphInstanceForResync(_instance: GraphInstance): void;
+        /**
+         * Resync all {@link GraphInstance} registered to the given {@link Graph}
+         */
+        static resyncGraphInstances(_graph: Graph): Promise<void>;
+        /**
+         * Register the given namespace to the list of script-namespaces.
+         */
+        static registerScriptNamespace(_namespace: Object): void;
+        /**
+         * Clear the list of script-namespaces.
+         */
+        static clearScriptNamespaces(): void;
+        /**
+         * Collects all {@link ComponentScript}s registered in {@link Project.scriptNamespaces} and returns them.
+         */
+        static getComponentScripts(): ComponentScripts;
+        /**
+         * Loads a script from the given URL and integrates it into a {@link HTMLScriptElement} in the {@link document.head}
+         */
+        static loadScript(_url: RequestInfo): Promise<void>;
+        /**
+         * Load {@link Resources} from the given url
+         */
+        static loadResources(_url: RequestInfo): Promise<Resources>;
+        /**
+         * Load all resources from the {@link document.head}
+         */
+        static loadResourcesFromHTML(): Promise<void>;
+        /**
+         * Serialize all resources
+         */
+        static serialize(): SerializationOfResources;
+        /**
+         * Create resources from a serialization, deleting all resources previously registered
+         * @param _serialization
+         */
+        static deserialize(_serialization: SerializationOfResources): Promise<Resources>;
+        private static deserializeResource;
+    }
+    export {};
+}
+declare namespace FudgeCore {
     /** {@link TexImageSource} is a union type which as of now includes {@link VideoFrame}. All other parts of this union have a .width and .height property but VideoFrame does not. And since we only ever use {@link HTMLImageElement} and {@link OffscreenCanvas} currently VideoFrame can be excluded for convenience of accessing .width and .height */
     type ImageSource = Exclude<TexImageSource, VideoFrame>;
     /**
@@ -2177,16 +2381,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const AnimationGLTF_base: (abstract new (...args: any[]) => {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        load(): Promise<any>;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }) & typeof Animation;
+    const AnimationGLTF_base: Constructor<SerializableResourceExternal> & typeof Animation;
     /**
      * An {@link Animation} loaded from a glTF-File.
      * @authors Jonas Plotzky
@@ -3606,16 +3801,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const GraphGLTF_base: (abstract new (...args: any[]) => {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        load(): Promise<any>;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }) & typeof Graph;
+    const GraphGLTF_base: Constructor<SerializableResourceExternal> & typeof Graph;
     /**
      * A {@link Graph} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -3757,8 +3943,6 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     const CoatToon_base: (abstract new (...args: any[]) => {
         texToon: Texture;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }) & typeof CoatRemissive;
     /**
      * A {@link Coat} providing a color and parameters for the toon shading model.
@@ -3768,8 +3952,6 @@ declare namespace FudgeCore {
     }
     const CoatToonTextured_base: (abstract new (...args: any[]) => {
         texToon: Texture;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }) & typeof CoatRemissiveTextured;
     /**
      * A {@link Coat} providing a texture, a color and parameters for the toon shading model.
@@ -3886,16 +4068,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MaterialGLTF_base: (abstract new (...args: any[]) => {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        load(): Promise<any>;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }) & typeof Material;
+    const MaterialGLTF_base: Constructor<SerializableResourceExternal> & typeof Material;
     /**
      * A {@link Material} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -5119,16 +5292,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshFBX_base: (abstract new (...args: any[]) => {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        load(): Promise<any>;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }) & typeof Mesh;
+    const MeshFBX_base: Constructor<SerializableResourceExternal> & typeof Mesh;
     /**
      * A mesh loaded from an FBX-File.
      * @authors Matthias Roming, HFU, 2023 | Jonas Plotzky, HFU, 2023
@@ -5158,16 +5322,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshGLTF_base: (abstract new (...args: any[]) => {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        load(): Promise<any>;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }) & typeof Mesh;
+    const MeshGLTF_base: Constructor<SerializableResourceExternal> & typeof Mesh;
     /**
      * A {@link Mesh} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -5181,16 +5336,7 @@ declare namespace FudgeCore {
     export {};
 }
 declare namespace FudgeCore {
-    const MeshOBJ_base: (abstract new (...args: any[]) => {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        load(): Promise<any>;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }) & typeof Mesh;
+    const MeshOBJ_base: Constructor<SerializableResourceExternal> & typeof Mesh;
     /**
      * A mesh loaded from an OBJ-file.
      * Simple Wavefront OBJ import. Takes a wavefront obj string. To Load from a file url, use the
@@ -7068,146 +7214,6 @@ declare namespace FudgeCore {
          */
         updateMutator(_mutator: Mutator): void;
     }
-}
-declare namespace FudgeCore {
-    export enum MODE {
-        EDITOR = 0,
-        RUNTIME = 1
-    }
-    export enum RESOURCE_STATUS {
-        PENDING = 0,
-        READY = 1,
-        ERROR = 2
-    }
-    export interface SerializableResourceExternal extends SerializableResource {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        load(): Promise<SerializableResourceExternal>;
-    }
-    export interface SerializableResource extends Serializable {
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }
-    export interface Resources {
-        [idResource: string]: SerializableResource;
-    }
-    export interface SerializationOfResources {
-        [idResource: string]: Serialization;
-    }
-    export interface ScriptNamespaces {
-        [name: string]: Object;
-    }
-    export interface ComponentScripts {
-        [namespace: string]: ComponentScript[];
-    }
-    interface GraphInstancesToResync {
-        [idResource: string]: GraphInstance[];
-    }
-    /**
-     * Static class handling the resources used with the current FUDGE-instance.
-     * Keeps a list of the resources and generates ids to retrieve them.
-     * Resources are objects referenced multiple times but supposed to be stored only once
-     */
-    export abstract class Project extends EventTargetStatic {
-        static resources: Resources;
-        static serialization: SerializationOfResources;
-        static scriptNamespaces: ScriptNamespaces;
-        static baseURL: URL;
-        static mode: MODE;
-        static graphInstancesToResync: GraphInstancesToResync;
-        /**
-         * Registers the resource and generates an id for it by default.
-         * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
-         * It's possible to pass an id, but should not be done except by the Serializer.
-         */
-        static register(_resource: SerializableResource, _idResource?: string): void;
-        /**
-         * Removes the resource from the list of resources.
-         */
-        static deregister(_resource: SerializableResource): void;
-        /**
-         * Clears the list of resources and their serialization, thus removing all resources.
-         */
-        static clear(): void;
-        /**
-         * Returns an array of all resources of the requested type.
-         */
-        static getResourcesByType<T>(_type: new (_args: General) => T): SerializableResource[];
-        /**
-         * Returns an array of all resources with the requested name.
-         */
-        static getResourcesByName(_name: string): SerializableResource[];
-        /**
-         * Generate a user readable and unique id using the type of the resource, the date and random numbers
-         * @param _resource
-         */
-        static generateId(_resource: SerializableResource): string;
-        /**
-         * Tests, if an object is a {@link SerializableResource}
-         * @param _object The object to examine
-         */
-        static isResource(_object: Serializable): boolean;
-        /**
-         * Retrieves the resource stored with the given id
-         */
-        static getResource(_idResource: string): Promise<SerializableResource>;
-        static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
-        /**
-         * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
-         * @param _node A node to create the resource from
-         * @param _replaceWithInstance if true (default), the node used as origin is replaced by a {@link GraphInstance} of the {@link Graph} created
-         */
-        static registerAsGraph(_node: Node, _replaceWithInstance?: boolean): Promise<Graph>;
-        /**
-         * Creates and returns a {@link GraphInstance} of the given {@link Graph}
-         * and connects it to the graph for synchronisation of mutation.
-         */
-        static createGraphInstance(_graph: Graph): Promise<GraphInstance>;
-        /**
-         * Register the given {@link GraphInstance} to be resynced
-         */
-        static registerGraphInstanceForResync(_instance: GraphInstance): void;
-        /**
-         * Resync all {@link GraphInstance} registered to the given {@link Graph}
-         */
-        static resyncGraphInstances(_graph: Graph): Promise<void>;
-        /**
-         * Register the given namespace to the list of script-namespaces.
-         */
-        static registerScriptNamespace(_namespace: Object): void;
-        /**
-         * Clear the list of script-namespaces.
-         */
-        static clearScriptNamespaces(): void;
-        /**
-         * Collects all {@link ComponentScript}s registered in {@link Project.scriptNamespaces} and returns them.
-         */
-        static getComponentScripts(): ComponentScripts;
-        /**
-         * Loads a script from the given URL and integrates it into a {@link HTMLScriptElement} in the {@link document.head}
-         */
-        static loadScript(_url: RequestInfo): Promise<void>;
-        /**
-         * Load {@link Resources} from the given url
-         */
-        static loadResources(_url: RequestInfo): Promise<Resources>;
-        /**
-         * Load all resources from the {@link document.head}
-         */
-        static loadResourcesFromHTML(): Promise<void>;
-        /**
-         * Serialize all resources
-         */
-        static serialize(): SerializationOfResources;
-        /**
-         * Create resources from a serialization, deleting all resources previously registered
-         * @param _serialization
-         */
-        static deserialize(_serialization: SerializationOfResources): Promise<Resources>;
-        private static deserializeResource;
-    }
-    export {};
 }
 declare namespace FBX {
     /**

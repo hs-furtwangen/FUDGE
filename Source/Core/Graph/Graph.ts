@@ -4,6 +4,7 @@ namespace FudgeCore {
    * @author Jirka Dell'Oro-Friedl, HFU, 2019
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
    */
+  @SerializableResource.register
   export class Graph extends Node implements SerializableResource {
     public idResource: string = undefined;
     // #syncing: boolean = false;

@@ -7,16 +7,17 @@ namespace FudgeCore {
     PENDING, READY, ERROR
   }
 
-  export interface SerializableResourceExternal extends SerializableResource {
-    url: RequestInfo;
-    status: RESOURCE_STATUS;
-    load(): Promise<SerializableResourceExternal>;
-  }
-
+  export abstract class SerializableResource extends Implementable {} // allow check with instanceof 
   export interface SerializableResource extends Serializable {
     name: string;
     idResource: string;
     readonly type: string;
+  }
+
+  export interface SerializableResourceExternal extends SerializableResource {
+    url: RequestInfo;
+    status: RESOURCE_STATUS;
+    load(): Promise<SerializableResourceExternal>;
   }
 
   export interface Resources {

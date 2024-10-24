@@ -49,15 +49,22 @@ namespace FudgeCore {
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
    * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
    */
-  export interface Metadata {
+  export interface Metadata extends DecoratorMetadataObject {
     /**
      * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
      */
     attributeTypes?: MetaAttributeTypes;
+    enumerableKeys?: string[];
 
-    enumerableKeys?: (string | symbol)[];
+    /**
+     * Map of property names to the type of serialization that should be used for that property.
+     */
+    serializables?: { [key: string]: "primitve" | "serializable" | "resource" | "node" };
+    implements?: Set<Function>;
   }
 
+  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+  export type ClassPropertyContext<This, Value> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
   /**
    * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
    * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
@@ -66,12 +73,12 @@ namespace FudgeCore {
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    */
-  export function type(_constructor: abstract new (...args: General[]) => General): (_value: unknown, _context: ClassFieldDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext) => void {
-    return (_value: unknown, _context: ClassMemberDecoratorContext) => { // could cache the decorator function for each class
-      let name: string | symbol = _context.name;
-      let metadata: Metadata = _context.metadata;
-      let types: MetaAttributeTypes = metadata.attributeTypes ??= {};
-      types[name] = _constructor;
+  export function type<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void {
+    return (_value, _context) => { // could cache the decorator function for each class
+      let meta: Metadata = _context.metadata;
+      if (!Object.hasOwn(meta, "attributeTypes"))
+        meta.attributeTypes = { ...meta.attributeTypes };
+      meta.attributeTypes[_context.name] = _constructor;
     };
   }
 
@@ -80,6 +87,8 @@ namespace FudgeCore {
    * 
    * **Usage:** Apply this decorator to both the getter method and the class to make it effective.
   */
+  export function enumerable(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
+  export function enumerable(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
   export function enumerable(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
     // _context.addInitializer(function (this: unknown) { // this is run per instance... ideally we would want to run this once per class
     //   const prototype: unknown = Object.getPrototypeOf(this);
@@ -90,14 +99,20 @@ namespace FudgeCore {
 
     let metadata: Metadata = _context.metadata;
     if (_context.kind == "getter" || _context.kind == "accessor") {
-      metadata.enumerableKeys ??= [];
+      if (typeof _context.name != "string")
+        return;
+
+      if (!Object.hasOwn(metadata, "enumerableKeys"))
+        metadata.enumerableKeys = [];
+
       metadata.enumerableKeys.push(_context.name.toString());
       return;
     }
+
     if (_context.kind == "class") {
-      metadata.enumerableKeys ??= [];
-      for (const key of metadata.enumerableKeys)
-        Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
+      if (metadata.enumerableKeys)
+        for (const key of metadata.enumerableKeys)
+          Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
       return;
     }
   }
@@ -142,6 +157,7 @@ namespace FudgeCore {
     public get type(): string {
       return this.constructor.name;
     }
+
     /**
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
      * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.

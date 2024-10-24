@@ -92,6 +92,7 @@ namespace FudgeCore {
    * Applied to a {@link Node} directly via script or {@link ComponentAnimator}.
    * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
    */
+  @SerializableResource.register
   export class Animation extends Mutable implements SerializableResource {
     // /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
     // public static readonly baseClass: typeof Animation = Animation;
