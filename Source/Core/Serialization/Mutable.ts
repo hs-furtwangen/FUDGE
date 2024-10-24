@@ -54,7 +54,7 @@ namespace FudgeCore {
      * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
      */
     attributeTypes?: MetaAttributeTypes;
-    enumerableKeys?: string[];
+    enumerateKeys?: string[];
 
     /**
      * Map of property names to the type of serialization that should be used for that property.
@@ -64,7 +64,7 @@ namespace FudgeCore {
   }
 
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-  export type ClassPropertyContext<This, Value> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+  export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
   /**
    * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
    * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
@@ -121,15 +121,15 @@ namespace FudgeCore {
         return;
 
       if (!Object.hasOwn(metadata, "enumerableKeys"))
-        metadata.enumerableKeys = [];
+        metadata.enumerateKeys = [];
 
-      metadata.enumerableKeys.push(_context.name.toString());
+      metadata.enumerateKeys.push(_context.name.toString());
       return;
     }
 
     if (_context.kind == "class") {
-      if (metadata.enumerableKeys)
-        for (const key of metadata.enumerableKeys)
+      if (metadata.enumerateKeys)
+        for (const key of metadata.enumerateKeys)
           Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
       return;
     }

@@ -284,7 +284,7 @@ declare namespace FudgeCore {
          * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
          */
         attributeTypes?: MetaAttributeTypes;
-        enumerableKeys?: string[];
+        enumerateKeys?: string[];
         /**
          * Map of property names to the type of serialization that should be used for that property.
          */
@@ -294,7 +294,7 @@ declare namespace FudgeCore {
         implements?: Set<Function>;
     }
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-    type ClassPropertyContext<This, Value> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+    type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
      * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
      * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
@@ -459,26 +459,29 @@ declare namespace FudgeCore {
     /**
      * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
      *
-     * **Editor Configuration**:
+     * **Editor Configuration:**
      * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
      * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
      * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
      *
-     * **Serialization**:
+     * **Serialization:**
      * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
      * - Primitives will be serialized as is.
      * - {@link Serializable}s will be serialized nested.
      * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
      * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
      *
-     * **Example**:
+     * **Example:**
      * ```typescript
      * import ƒ = FudgeCore;
      *
+     * @ƒ.serialize
      * export class MyScript extends ƒ.ComponentScript {
-     *   @ƒ.serialize(Number) // display a number in the editor
-     *   public counter: number;
+     *   #size: number = 1;
+     *
+     *   @ƒ.serialize(String) // display a string in the editor
+     *   public info: string;
      *
      *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
      *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
@@ -487,15 +490,28 @@ declare namespace FudgeCore {
      *   public resource: ƒ.Material;
      *
      *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
-     *   public friend: ƒ.Node
+     *   public reference: ƒ.Node
+     *
+     *   @ƒ.serialize(Number) // display a number in the editor
+     *   public get size(): number {
+     *     return this.#size;
+     *   }
+     *
+     *   // define a setter to allow writing to size, or omit it to leave the property read-only
+     *   public set size(_size: number) {
+     *     this.#size = _size;
+     *   }
      * }
      * ```
      *
-     * **Side effects:** Attributes with a specified type will always be included in the {@link Mutator base-mutator}
+     * **Side effects:**
+     * * Attributes with a specified type will always be included in the {@link Mutator base-mutator}
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
+     * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
      */
     function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function serialize<T extends abstract new (...args: General[]) => Serializable>(_value: T, _context: ClassDecoratorContext): void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
