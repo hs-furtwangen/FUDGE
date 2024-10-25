@@ -289,7 +289,7 @@ declare namespace FudgeCore {
          * Map of property names to the type of serialization that should be used for that property.
          */
         serializables?: {
-            [key: string]: "primitve" | "serializable" | "resource" | "node";
+            [key: string]: "primitive" | "serializable" | "resource" | "node";
         };
         implements?: Set<Function>;
     }
@@ -510,8 +510,8 @@ declare namespace FudgeCore {
      * will be displayed via their {@link toString} method in the editor.
      * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
      */
+    function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
     function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function serialize<T extends abstract new (...args: General[]) => Serializable>(_value: T, _context: ClassDecoratorContext): void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.

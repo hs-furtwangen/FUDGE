@@ -59,7 +59,7 @@ namespace FudgeCore {
     /**
      * Map of property names to the type of serialization that should be used for that property.
      */
-    serializables?: { [key: string]: "primitve" | "serializable" | "resource" | "node" };
+    serializables?: { [key: string]: "primitive" | "serializable" | "resource" | "node" };
     implements?: Set<Function>;
   }
 

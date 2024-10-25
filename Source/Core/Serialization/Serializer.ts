@@ -127,30 +127,108 @@ namespace FudgeCore {
    * will be displayed via their {@link toString} method in the editor.
    * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
    */
+  export function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
   export function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-  export function serialize<T extends abstract new (...args: General[]) => Serializable>(_value: T, _context: ClassDecoratorContext): void;
   export function serialize(_constructor: Function, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
-    if (_context) {
+    // decorate class
+    if (_context) { 
       let meta: Metadata = _context.metadata;
+
+      // make getters enumerable
       if (meta.enumerateKeys)
         for (const key of meta.enumerateKeys)
           Object.defineProperty((<Function>_constructor).prototype, key, { enumerable: true });
+
+      // override serialize and deserialize methods
+      const prototype: Serializable = _constructor.prototype;
+      const originalSerialize: Serializable["serialize"] = prototype.serialize;
+      const originalDeserialize: Serializable["deserialize"] = prototype.deserialize;
+      const serializables: Metadata["serializables"] = meta.serializables;
+
+      prototype.serialize = function (this: Serializable): Serialization {
+        const serialization: Serialization = originalSerialize?.call(this) ?? {};
+
+        for (const key in serializables) {
+          let value: General = Reflect.get(this, key);
+          if (value == null)
+            continue;
+
+          switch (serializables[key]) {
+            case "primitive":
+              serialization[key] = value;
+              break;
+            case "serializable":
+              serialization[key] = value.serialize();
+              break;
+            case "resource":
+              serialization[key] = value.idResource;
+              break;
+            case "node":
+              serialization[key] = Node.PATH_FROM_TO(<Component>this, value);
+              break;
+          }
+        }
+
+        return serialization;
+      };
+
+      prototype.deserialize = async function (this: Serializable, _serialization: Serialization): Promise<Serializable> {
+        if (originalDeserialize)
+          await originalDeserialize.call(this, _serialization);
+
+        for (const key in serializables) {
+          let value: General = _serialization[key];
+          if (value == null)
+            continue;
+
+          switch (serializables[key]) {
+            case "primitive":
+              Reflect.set(this, key, value);
+              break;
+            case "serializable":
+              await Reflect.get(this, key).deserialize(value);
+              break;
+            case "resource":
+              Reflect.set(this, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
+              break;
+            case "node":
+              let instance: Component = <Component>this;
+              const hndNodeDeserialized: EventListenerUnified = () => {
+                const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
+                  Reflect.set(this, key, Node.FIND(instance, value));
+                  instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+                  instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+                  instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+                };
+                instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+                instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+              };
+              instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+          }
+        }
+
+        return this;
+      };
+
       return;
     }
-    
+
+    // decorate property
     return (_value, _context) => { // could cache the decorator function for each class
       if (typeof _context.name != "string")
         return;
 
       let meta: Metadata = _context.metadata;
 
+      // add attribute type to metadata
       if (!Object.hasOwn(meta, "attributeTypes"))
         meta.attributeTypes = { ...meta.attributeTypes };
       meta.attributeTypes[_context.name] = _constructor;
 
+      // determine serialization type and add to metadata
       let type: Metadata["serializables"][string];
       if (<Function>_constructor == String || <Function>_constructor == Number || <Function>_constructor == Boolean)
-        type = "primitve";
+        type = "primitive";
       else if (<Function>_constructor == Node)
         type = "node";
       else if (_constructor.prototype instanceof SerializableResource)
@@ -168,6 +246,7 @@ namespace FudgeCore {
       if (_context.kind != "getter")
         return;
 
+      // mark getter to be made enumerable
       if (!Object.hasOwn(meta, "enumerableKeys"))
         meta.enumerateKeys = [];
 
@@ -238,39 +317,11 @@ namespace FudgeCore {
      */
     public static serialize(_object: Serializable): Serialization {
       // TODO: save the namespace with the constructors name
-      // serialization[_object.constructor.name] = _object.serialize();
       let path: string = this.getFullPath(_object);
       if (!path)
         throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
 
-      let serialization: Serialization = _object.serialize();
-
-      let serializables: Metadata["serializables"] = (_object.constructor[Symbol.metadata] as Metadata)?.serializables;
-      if (serializables) {
-        for (const key in serializables) {
-          let value: General = Reflect.get(_object, key);
-          if (value == null)
-            continue;
-
-          switch (serializables[key]) {
-            case "primitve":
-              serialization[key] = value;
-              break;
-            case "serializable":
-              serialization[key] = value.serialize();
-              break;
-            case "resource":
-              serialization[key] = value.idResource;
-              break;
-            case "node":
-              serialization[key] = Node.PATH_FROM_TO(<Component>_object, value);
-              break;
-          }
-        }
-      }
-
-      return { [path]: serialization };
-      // return _object.serialize();
+      return { [path]: _object.serialize() };
     }
 
     /**
@@ -285,40 +336,6 @@ namespace FudgeCore {
         for (path in _serialization) {
           reconstruct = Serializer.reconstruct(path);
           reconstruct = await reconstruct.deserialize(_serialization[path]);
-
-          let serializables: Metadata["serializables"] = (reconstruct.constructor[Symbol.metadata] as Metadata)?.serializables;
-          if (serializables) {
-            for (const key in serializables) {
-              let value: General = _serialization[path][key];
-              if (value == null)
-                continue;
-
-              switch (serializables[key]) {
-                case "primitve":
-                  Reflect.set(reconstruct, key, value);
-                  break;
-                case "serializable":
-                  await Reflect.get(reconstruct, key).deserialize(value);
-                  break;
-                case "resource":
-                  Reflect.set(reconstruct, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
-                  break;
-                case "node":
-                  let instance: Component = <Component>reconstruct;
-                  const hndNodeDeserialized: EventListenerUnified = () => {
-                    const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
-                      Reflect.set(reconstruct, key, Node.FIND(instance, value));
-                      instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-                      instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-                      instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-                    };
-                    instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-                    instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-                  };
-                  instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-              }
-            }
-          }
 
           return reconstruct;
         }
