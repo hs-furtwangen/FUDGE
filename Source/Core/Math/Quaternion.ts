@@ -21,7 +21,6 @@ namespace FudgeCore {
       this.set(_x, _y, _z, _w);
     }
 
-    //#region STATICS
     /**
      * Retrieve a new identity quaternion
      */
@@ -54,7 +53,7 @@ namespace FudgeCore {
       } else {
         let halfAngle: number = _angle * Calc.deg2rad / 2;
         let sinHalfAngle: number = Math.sin(halfAngle);
-        
+
         result.set(
           _vector.x * sinHalfAngle,
           _vector.y * sinHalfAngle,
@@ -166,7 +165,15 @@ namespace FudgeCore {
       return result;
     }
 
-    //#endregion
+    /**
+     * Negates the given quaternion.
+     */
+    public static negate(_q: Quaternion): void {
+      _q.x = -_q.x;
+      _q.y = -_q.y;
+      _q.z = -_q.z;
+      _q.w = -_q.w;
+    }
 
     /**
      * Creates and returns a clone of this quaternion.

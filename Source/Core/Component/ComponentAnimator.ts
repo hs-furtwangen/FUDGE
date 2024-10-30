@@ -17,6 +17,10 @@ namespace FudgeCore {
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
 
+    #transitAnimation: Animation;
+    #transitStart: number;
+    #transitDuration: number;
+
     #scale: number = 1;
     #timeLocal: Time;
     #previous: number = 0;
@@ -142,6 +146,12 @@ namespace FudgeCore {
     }
     //#endregion
 
+    public transit(_to: Animation, _duration: number): void {
+      this.#transitStart = this.#timeLocal.get();
+      this.#transitAnimation = _to;
+      this.#transitDuration = _duration;
+    }
+
     private activateListeners(_on: boolean): void {
       if (_on && (Project.mode != MODE.EDITOR || Project.mode == MODE.EDITOR && this.animateInEditor)) {
         Time.game.addEventListener(EVENT.TIME_SCALED, this.updateScale);
@@ -159,28 +169,71 @@ namespace FudgeCore {
      * May also be called from updateAnimation().
      */
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
-      if (this.animation.totalTime == 0) 
+      if (this.animation.totalTime == 0)
         return null;
 
       let time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
-      if (this.quantization == ANIMATION_QUANTIZATION.FRAMES) {
+      if (this.quantization == ANIMATION_QUANTIZATION.FRAMES)
         time = this.#previous + (1000 / this.animation.fps);
-      }
-      let direction: number = this.animation.calculateDirection(time, this.playmode);
+
       time = this.animation.getModalTime(time, this.playmode, this.#timeLocal.getOffset());
+
+      let direction: number = this.animation.calculateDirection(time, this.playmode);
       this.executeEvents(this.animation.getEventsToFire(this.#previous, time, this.quantization, direction));
 
-      if (this.#previous != time) {
-        this.#previous = time;
-        time = time % this.animation.totalTime;
-        let mutator: Mutator = this.animation.getState(time, direction, this.quantization);
-        if (this.node) {
-          this.node.applyAnimation(mutator);
+      if (this.#previous == time)
+        return null;
+
+      this.#previous = time;
+
+      let mutator: Mutator;
+
+      if (this.#transitAnimation) {
+        let transitTime: number = (time - this.#transitStart) % this.#transitAnimation.totalTime;
+        let transitDirection: number = this.#transitAnimation.calculateDirection(transitTime, this.playmode);
+
+        if (transitTime >= this.#transitDuration) {
+          this.animation = this.#transitAnimation;
+          this.#timeLocal.set(transitTime);
+          mutator = this.#transitAnimation.getState(transitTime, transitDirection, this.quantization);
+
+          this.#transitAnimation = null;
+          this.#transitStart = null;
+          this.#transitDuration = null;
+        } else {
+          mutator = this.animation.getState(time % this.animation.totalTime, direction, this.quantization);
+          this.blendMutators(
+            mutator,
+            this.#transitAnimation.getState(transitTime, transitDirection, this.quantization),
+            transitTime / this.#transitDuration
+          );
         }
-        return mutator;
-      }
-      return null;
+      } else
+        mutator = this.animation.getState(time % this.animation.totalTime, direction, this.quantization);
+
+      if (this.node)
+        this.node.applyAnimation(mutator);
+
+      return mutator;
     };
+
+    private blendMutators(_from: Mutator, _to: Mutator, _factor: number): void {
+      for (let key in _to) {
+        if (_from[key]) {
+          if (typeof _from[key] == "object") {
+            let from: Mutator = _from[key];
+            let to: Mutator = _to[key];
+            if (from.x != undefined && from.y != undefined && from.z != undefined && from.w != undefined && Quaternion.DOT(<Quaternion>from, <Quaternion>to) < 0)
+              Quaternion.negate(<Quaternion>to);
+
+            this.blendMutators(from, to, _factor);
+          } else
+            _from[key] = _from[key] * (1 - _factor) + _to[key] * _factor;
+        } else {
+          _from[key] = _to[key];
+        }
+      }
+    }
 
     /**
      * Fires all custom events the Animation should have fired between the last frame and the current frame.

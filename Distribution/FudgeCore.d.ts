@@ -2726,6 +2726,7 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
+        transit(_to: Animation, _duration: number): void;
         private activateListeners;
         /**
          * Updates the Animation.
@@ -2733,6 +2734,7 @@ declare namespace FudgeCore {
          * May also be called from updateAnimation().
          */
         private updateAnimationLoop;
+        private blendMutators;
         /**
          * Fires all custom events the Animation should have fired between the last frame and the current frame.
          * @param _events a list of names of custom events to fire
@@ -4852,6 +4854,10 @@ declare namespace FudgeCore {
          * Returns the spherical linear interpolation between two quaternions based on the given _factor. When _factor is 0 the result is _from, when _factor is 1 the result is _to.
          */
         static SLERP(_from: Quaternion, _to: Quaternion, _factor: number): Quaternion;
+        /**
+         * Negates the given quaternion.
+         */
+        static negate(_q: Quaternion): void;
         /**
          * Creates and returns a clone of this quaternion.
          */
