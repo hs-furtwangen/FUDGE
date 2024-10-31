@@ -2729,11 +2729,13 @@ declare namespace FudgeCore {
         transit(_to: Animation, _duration: number): void;
         private activateListeners;
         /**
-         * Updates the Animation.
+         * Updates the animation and all running transition.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
          */
         private updateAnimationLoop;
+        /** Process the given animation at the given time and previous time. Send events and return animation state. */
+        private process;
         private blendMutators;
         /**
          * Fires all custom events the Animation should have fired between the last frame and the current frame.

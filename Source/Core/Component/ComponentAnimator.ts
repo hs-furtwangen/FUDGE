@@ -147,6 +147,9 @@ namespace FudgeCore {
     //#endregion
 
     public transit(_to: Animation, _duration: number): void {
+      if (_to == this.animation || _to == this.#transitAnimation)
+        return;
+
       this.#transitStart = this.#timeLocal.get();
       this.#transitAnimation = _to;
       this.#transitDuration = _duration;
@@ -164,58 +167,62 @@ namespace FudgeCore {
 
     //#region updateAnimation
     /**
-     * Updates the Animation.
+     * Updates the animation and all running transitions.
      * Uses the built-in time unless a different time is specified.
      * May also be called from updateAnimation().
      */
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
-      if (this.animation.totalTime == 0)
-        return null;
-
       let time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
-      if (this.quantization == ANIMATION_QUANTIZATION.FRAMES)
-        time = this.#previous + (1000 / this.animation.fps);
+      let mutator: Mutator = this.process(this.animation, time, this.#previous);
 
-      time = this.animation.getModalTime(time, this.playmode, this.#timeLocal.getOffset());
-
-      let direction: number = this.animation.calculateDirection(time, this.playmode);
-      this.executeEvents(this.animation.getEventsToFire(this.#previous, time, this.quantization, direction));
-
-      if (this.#previous == time)
+      if (!mutator)
         return null;
-
-      this.#previous = time;
-
-      let mutator: Mutator;
 
       if (this.#transitAnimation) {
-        let transitTime: number = (time - this.#transitStart) % this.#transitAnimation.totalTime;
-        let transitDirection: number = this.#transitAnimation.calculateDirection(transitTime, this.playmode);
+        let transitTime: number = time - this.#transitStart;
+        let transitPrevious: number = Math.max(this.#previous - this.#transitStart, 0);
+        let transitMutator: Mutator = this.process(this.#transitAnimation, transitTime, transitPrevious);
+        // console.log("time " + time + " previous " + this.#previous + "\ntransitTime " + transitTime + " transitPrevious " + transitPrevious);
+
+        this.blendMutators(
+          mutator,
+          transitMutator,
+          Math.min(transitTime / this.#transitDuration, 1)
+        );
 
         if (transitTime >= this.#transitDuration) {
           this.animation = this.#transitAnimation;
           this.#timeLocal.set(transitTime);
-          mutator = this.#transitAnimation.getState(transitTime, transitDirection, this.quantization);
 
           this.#transitAnimation = null;
           this.#transitStart = null;
           this.#transitDuration = null;
-        } else {
-          mutator = this.animation.getState(time % this.animation.totalTime, direction, this.quantization);
-          this.blendMutators(
-            mutator,
-            this.#transitAnimation.getState(transitTime, transitDirection, this.quantization),
-            transitTime / this.#transitDuration
-          );
         }
-      } else
-        mutator = this.animation.getState(time % this.animation.totalTime, direction, this.quantization);
+      }
+
+      this.#previous = time;
 
       if (this.node)
         this.node.applyAnimation(mutator);
 
       return mutator;
     };
+
+    /** Process the given animation at the given time and previous time. Send events and return animation state. */
+    private process(_animation: Animation, _time: number, _previousTime: number): Mutator {
+      if (_animation.totalTime == 0 || _previousTime == _time)
+        return null;
+
+      if (this.quantization == ANIMATION_QUANTIZATION.FRAMES)
+        _time = this.#previous + (1000 / _animation.fps);
+
+      _time = _animation.getModalTime(_time, this.playmode, this.#timeLocal.getOffset());
+      
+      let direction: number = _animation.calculateDirection(_time, this.playmode);
+      this.executeEvents(_animation.getEventsToFire(_previousTime, _time, this.quantization, direction));
+      
+      return _animation.getState(_time % _animation.totalTime, direction, this.quantization);
+    }
 
     private blendMutators(_from: Mutator, _to: Mutator, _factor: number): void {
       for (let key in _to) {
