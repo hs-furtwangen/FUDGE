@@ -2729,7 +2729,7 @@ declare namespace FudgeCore {
         transit(_to: Animation, _duration: number): void;
         private activateListeners;
         /**
-         * Updates the animation and all running transition.
+         * Updates the animation and all running transitions.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
          */

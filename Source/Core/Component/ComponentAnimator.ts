@@ -3,6 +3,14 @@
 
 namespace FudgeCore {
 
+  interface AnimationTransition {
+    to: Animation;
+    start: number;
+    duration: number;
+    weight: number;
+    mutator: Mutator;
+  }
+
   /**
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
@@ -17,9 +25,7 @@ namespace FudgeCore {
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
 
-    #transitAnimation: Animation;
-    #transitStart: number;
-    #transitDuration: number;
+    #transitions: AnimationTransition[];
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -31,6 +37,7 @@ namespace FudgeCore {
       this.quantization = _quantization;
       this.animation = _animation;
 
+      this.#transitions = [];
       this.#timeLocal = new Time();
 
       //TODO: update animation total time when loading a different animation?
@@ -147,12 +154,19 @@ namespace FudgeCore {
     //#endregion
 
     public transit(_to: Animation, _duration: number): void {
-      if (_to == this.animation || _to == this.#transitAnimation)
+      console.log("transit", _to.name);
+      console.log("transition", this.#transitions.length);
+
+      if (this.#transitions.length == 0 && this.animation == _to)
         return;
 
-      this.#transitStart = this.#timeLocal.get();
-      this.#transitAnimation = _to;
-      this.#transitDuration = _duration;
+      if (this.#transitions.length > 0 && this.#transitions[this.#transitions.length - 1].to == _to)
+        return;
+
+      if (this.#transitions.length > 9) //TODO: find a smart way to remove finished transitions
+        this.#transitions.shift();
+
+      this.#transitions.push({ start: this.#timeLocal.get(), duration: _duration, to: _to, weight: 0, mutator: null });
     }
 
     private activateListeners(_on: boolean): void {
@@ -172,31 +186,26 @@ namespace FudgeCore {
      * May also be called from updateAnimation().
      */
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
-      let time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
+      const time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
       let mutator: Mutator = this.process(this.animation, time, this.#previous);
 
       if (!mutator)
         return null;
 
-      if (this.#transitAnimation) {
-        let transitTime: number = time - this.#transitStart;
-        let transitPrevious: number = Math.max(this.#previous - this.#transitStart, 0);
-        let transitMutator: Mutator = this.process(this.#transitAnimation, transitTime, transitPrevious);
-        // console.log("time " + time + " previous " + this.#previous + "\ntransitTime " + transitTime + " transitPrevious " + transitPrevious);
+      if (this.#transitions.length > 0) {
+        const top: AnimationTransition = this.#transitions[this.#transitions.length - 1];
+        const transitTime: number = time - top.start;
+        const transitPrevious: number = Math.max(this.#previous - top.start, 0);
+        top.mutator = this.process(top.to, transitTime, transitPrevious);
+        top.weight = Math.min(transitTime / top.duration, 1);
 
-        this.blendMutators(
-          mutator,
-          transitMutator,
-          Math.min(transitTime / this.#transitDuration, 1)
-        );
+        for (const transition of this.#transitions)
+          this.blendMutators(mutator, transition.mutator, transition.weight);
 
-        if (transitTime >= this.#transitDuration) {
-          this.animation = this.#transitAnimation;
+        if (top.weight == 1) {
+          this.animation = top.to;
           this.#timeLocal.set(transitTime);
-
-          this.#transitAnimation = null;
-          this.#transitStart = null;
-          this.#transitDuration = null;
+          this.#transitions.length = 0;
         }
       }
 
@@ -217,10 +226,10 @@ namespace FudgeCore {
         _time = this.#previous + (1000 / _animation.fps);
 
       _time = _animation.getModalTime(_time, this.playmode, this.#timeLocal.getOffset());
-      
+
       let direction: number = _animation.calculateDirection(_time, this.playmode);
       this.executeEvents(_animation.getEventsToFire(_previousTime, _time, this.quantization, direction));
-      
+
       return _animation.getState(_time % _animation.totalTime, direction, this.quantization);
     }
 
