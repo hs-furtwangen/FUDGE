@@ -9,7 +9,7 @@ namespace Fudge {
   export class ViewAnimation extends View {
     public keySelected: ƒ.AnimationKey;
     private node: ƒ.Node;
-    private cmpAnimator: ƒ.ComponentAnimator;
+    private cmpAnimation: ƒ.ComponentAnimation;
     private animation: ƒ.Animation;
     private playbackTime: number = 0;
 
@@ -47,7 +47,7 @@ namespace Fudge {
       _event.dataTransfer.dropEffect = "none";
 
       let source: Object = ƒui.Clipboard.dragDrop.get()[0];
-      if (!(source instanceof ƒ.Node && source.getComponent(ƒ.ComponentAnimator)?.animation))
+      if (!(source instanceof ƒ.Node && source.getComponent(ƒ.ComponentAnimation)?.animation))
         return;
 
       _event.dataTransfer.dropEffect = "link";
@@ -201,17 +201,17 @@ namespace Fudge {
           }
           if (_event.detail.node != null) {
             this.node = _event.detail.node;
-            this.cmpAnimator = this.node.getComponent(ƒ.ComponentAnimator);
+            this.cmpAnimation = this.node.getComponent(ƒ.ComponentAnimation);
             this.contextMenu = this.getContextMenu(this.contextMenuCallback.bind(this));
-            if (this.cmpAnimator?.animation != this.animation)
-              this.setAnimation(this.cmpAnimator?.animation);
+            if (this.cmpAnimation?.animation != this.animation)
+              this.setAnimation(this.cmpAnimation?.animation);
             else
               _event.stopPropagation();
           }
           break;
         case EVENT_EDITOR.MODIFY:
-          if (_event.detail.mutable instanceof ƒ.ComponentAnimator) {
-            // switched animation in a ComponentAnimator
+          if (_event.detail.mutable instanceof ƒ.ComponentAnimation) {
+            // switched animation in a ComponentAnimation
             if (this.node == _event.detail.mutable.node)
               this.dispatch(EVENT_EDITOR.SELECT, { detail: { node: _event.detail.mutable.node } });
             break;
@@ -230,7 +230,7 @@ namespace Fudge {
 
           this.frameInput.value = (Math.trunc(this.playbackTime / 1000 * this.animation.fps)).toString();
           this.animation.clearCache();
-          let nodeMutator: ƒ.Mutator = this.cmpAnimator?.updateAnimation(this.playbackTime) || {};
+          let nodeMutator: ƒ.Mutator = this.cmpAnimation?.updateAnimation(this.playbackTime) || {};
           this.controller?.update(nodeMutator, this.playbackTime);
           this.propertyList.dispatchEvent(new CustomEvent(EVENT_EDITOR.MODIFY));
           break;
@@ -261,7 +261,7 @@ namespace Fudge {
     }
 
     private createPropertyList(): void {
-      let nodeMutator: ƒ.Mutator = this.animation.getState(this.playbackTime, 0, this.cmpAnimator.quantization) || {};
+      let nodeMutator: ƒ.Mutator = this.animation.getState(this.playbackTime, 0, this.cmpAnimation.quantization) || {};
 
       let newPropertyList: HTMLDivElement = ƒui.Generator.createInterfaceFromMutator(nodeMutator);
       if (this.dom.contains(this.propertyList))

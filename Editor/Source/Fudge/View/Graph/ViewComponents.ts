@@ -11,7 +11,7 @@ namespace Fudge {
     [ƒ.Audio, ƒ.ComponentAudio],
     [ƒ.Material, ƒ.ComponentMaterial],
     [ƒ.Mesh, ƒ.ComponentMesh],
-    [ƒ.Animation, ƒ.ComponentAnimator],
+    [ƒ.Animation, ƒ.ComponentAnimation],
     [ƒ.ParticleSystem, ƒ.ComponentParticleSystem]
   ]);
 

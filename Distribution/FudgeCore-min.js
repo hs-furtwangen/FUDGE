@@ -5058,12 +5058,12 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    let ComponentAnimator = (() => {
+    let ComponentAnimation = (() => {
         let _classSuper = FudgeCore.Component;
         let _animation_decorators;
         let _animation_initializers = [];
         let _animation_extraInitializers = [];
-        return class ComponentAnimator extends _classSuper {
+        return class ComponentAnimation extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _animation_decorators = [FudgeCore.type(FudgeCore.Animation)];
@@ -5071,7 +5071,7 @@ var FudgeCore;
                 if (_metadata)
                     Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentAnimator); }
+            static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentAnimation); }
             #scale;
             #timeLocal;
             #previous;
@@ -5209,7 +5209,7 @@ var FudgeCore;
             }
         };
     })();
-    FudgeCore.ComponentAnimator = ComponentAnimator;
+    FudgeCore.ComponentAnimation = ComponentAnimation;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -14516,7 +14516,7 @@ var FudgeCore;
                     const animation = await this.getAnimation(documentFBX.ActiveAnimStackName.length > 0 ?
                         this.fbx.objects.animStacks.findIndex(_animStack => _animStack.name == documentFBX.ActiveAnimStackName) : 0);
                     if (animation)
-                        scene.addComponent(new FudgeCore.ComponentAnimator(animation));
+                        scene.addComponent(new FudgeCore.ComponentAnimation(animation));
                 }
                 for (const skeleton of this.#skeletons)
                     scene.addComponent(skeleton);

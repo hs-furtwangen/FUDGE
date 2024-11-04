@@ -632,7 +632,7 @@ declare namespace Fudge {
     class ViewAnimation extends View {
         keySelected: ƒ.AnimationKey;
         private node;
-        private cmpAnimator;
+        private cmpAnimation;
         private animation;
         private playbackTime;
         private propertyList;

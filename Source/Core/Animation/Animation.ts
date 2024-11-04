@@ -89,7 +89,7 @@ namespace FudgeCore {
   /**
    * Describes and controls and animation by yielding mutators 
    * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
-   * Applied to a {@link Node} directly via script or {@link ComponentAnimator}.
+   * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
    * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
    */
   @SerializableResource.register
@@ -165,7 +165,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a list of the names of the events the {@link ComponentAnimator} needs to fire between _min and _max input values.
+     * Returns a list of the names of the events the {@link ComponentAnimation} needs to fire between _min and _max input values.
      * @param _direction The direction the animation is supposed to run in. >0 == forward, 0 == stop, <0 == backwards
      * @returns a list of strings with the names of the custom events to fire.
      */

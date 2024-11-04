@@ -251,7 +251,7 @@ details[type*=Light]>summary::after {
 }
 
 details[type*=Animation]>summary::after,
-details[type^=ComponentAnimator]>summary::after {
+details[type^=ComponentAnimation]>summary::after {
   mask: url(../Html/Icon/Animation.svg);
   -webkit-mask: url(../Html/Icon/Animation.svg);
 }

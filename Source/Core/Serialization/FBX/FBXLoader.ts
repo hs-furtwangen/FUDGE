@@ -69,7 +69,7 @@ namespace FudgeCore {
           const animation: Animation = await this.getAnimation(documentFBX.ActiveAnimStackName.length > 0 ?
             this.fbx.objects.animStacks.findIndex(_animStack => _animStack.name == documentFBX.ActiveAnimStackName) : 0);
           if (animation)
-            scene.addComponent(new ComponentAnimator(animation));
+            scene.addComponent(new ComponentAnimation(animation));
         }
 
         for (const skeleton of this.#skeletons)

@@ -312,10 +312,10 @@ namespace FudgeCore {
       for (const iNode of gltfScene.nodes)
         graph.addChild(await this.getNodeByIndex(iNode));
 
-      // if (this.#gltf.animations?.length > 0 && !graph.getComponent(ComponentAnimator)) {
+      // if (this.#gltf.animations?.length > 0 && !graph.getComponent(ComponentAnimation)) {
       //   let animation: Animation = await this.getAnimation(0);
       //   Project.register(animation);
-      //   graph.addComponent(new ComponentAnimator(animation));
+      //   graph.addComponent(new ComponentAnimation(animation));
       // }
 
       // TODO: load only skeletons which belong to the scene???

@@ -2255,7 +2255,7 @@ declare namespace FudgeCore {
     /**
      * Describes and controls and animation by yielding mutators
      * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
-     * Applied to a {@link Node} directly via script or {@link ComponentAnimator}.
+     * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
      * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
      */
     class Animation extends Mutable implements SerializableResource {
@@ -2285,7 +2285,7 @@ declare namespace FudgeCore {
          */
         getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION): Mutator;
         /**
-         * Returns a list of the names of the events the {@link ComponentAnimator} needs to fire between _min and _max input values.
+         * Returns a list of the names of the events the {@link ComponentAnimation} needs to fire between _min and _max input values.
          * @param _direction The direction the animation is supposed to run in. >0 == forward, 0 == stop, <0 == backwards
          * @returns a list of strings with the names of the custom events to fire.
          */
@@ -2690,7 +2690,7 @@ declare namespace FudgeCore {
      * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
      * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
      */
-    class ComponentAnimator extends Component {
+    class ComponentAnimation extends Component {
         #private;
         static readonly iSubclass: number;
         animation: Animation;
@@ -2737,7 +2737,7 @@ declare namespace FudgeCore {
         /** Process the given animation at the given time and previous time. Send events and return animation state. */
         private process;
         /**
-         * Blends the two given mutators by the given factor using linear interpolation. Modifies the first mutator to
+         * Blends the two given mutators by the given factor using linear interpolation. Modifies the first mutator to the result.
          */
         private blendAnimationMutators;
         /**

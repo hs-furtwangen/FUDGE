@@ -1345,7 +1345,7 @@ declare namespace FudgeCore {
     /**
      * Animation Class to hold all required Objects that are part of an Animation.
      * Also holds functions to play said Animation.
-     * Can be added to a Node and played through {@link ComponentAnimator}.
+     * Can be added to a Node and played through {@link ComponentAnimation}.
      * @author Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021
      */
     class Animation extends Mutable implements SerializableResource {
@@ -1363,7 +1363,7 @@ declare namespace FudgeCore {
         get fps(): number;
         set fps(_fps: number);
         /**
-         * Generates a new "Mutator" with the information to apply to the {@link Node} the {@link ComponentAnimator} is attached to with {@link Node.applyAnimation}.
+         * Generates a new "Mutator" with the information to apply to the {@link Node} the {@link ComponentAnimation} is attached to with {@link Node.applyAnimation}.
          * @param _time The time at which the animation currently is at
          * @param _direction The direction in which the animation is supposed to be playing back. >0 == forward, 0 == stop, <0 == backwards
          * @param _playback The playbackmode the animation is supposed to be calculated with.
@@ -1371,7 +1371,7 @@ declare namespace FudgeCore {
          */
         getMutated(_time: number, _direction: number, _playback: ANIMATION_PLAYBACK): Mutator;
         /**
-         * Returns a list of the names of the events the {@link ComponentAnimator} needs to fire between _min and _max.
+         * Returns a list of the names of the events the {@link ComponentAnimation} needs to fire between _min and _max.
          * @param _min The minimum time (inclusive) to check between
          * @param _max The maximum time (exclusive) to check between
          * @param _playback The playback mode to check in. Has an effect on when the Events are fired.
@@ -1680,7 +1680,7 @@ declare namespace FudgeCore {
      * Holds a reference to an {@link Animation} and controls it. Controls playback and playmode as well as speed.
      * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021
      */
-    class ComponentAnimator extends Component {
+    class ComponentAnimation extends Component {
         #private;
         static readonly iSubclass: number;
         animation: Animation;

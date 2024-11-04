@@ -44,7 +44,7 @@ namespace Fudge {
     private hndEvent = async (_event: EditorEvent): Promise<void> => {
       switch (_event.type) {
         case EVENT_EDITOR.SELECT:
-          let name: string = _event.detail.node?.getComponent(ƒ.ComponentAnimator)?.animation?.name;
+          let name: string = _event.detail.node?.getComponent(ƒ.ComponentAnimation)?.animation?.name;
           if (name)
             this.setTitle("Animation | " + name);
 

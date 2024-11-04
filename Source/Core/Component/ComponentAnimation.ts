@@ -15,8 +15,8 @@ namespace FudgeCore {
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
    */
-  export class ComponentAnimator extends Component {
-    public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimator);
+  export class ComponentAnimation extends Component {
+    public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
     //TODO: add functionality to blend from one animation to another.
     @type(Animation)
     public animation: Animation;

@@ -107,9 +107,9 @@ namespace SkeletonTest {
       } else 
         gPressed = false;
       if (ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.H])) setShader(ƒ.ShaderPhong);
-      let cmpAnimator: ƒ.ComponentAnimator = graph.getComponent(ƒ.ComponentAnimator);
-      if (cmpAnimator)
-        timeSpan.get = () => cmpAnimator.time.toFixed(0);
+      let cmpAnimation: ƒ.ComponentAnimation = graph.getComponent(ƒ.ComponentAnimation);
+      if (cmpAnimation)
+        timeSpan.get = () => cmpAnimation.time.toFixed(0);
       viewport.draw();
       viewport.draw();
     }

@@ -6,7 +6,7 @@ namespace SkeletonTest {
   export let viewport: ƒ.Viewport;
   export let loader: ƒ.GLTFLoader;
   export let loaded: ƒ.Node;
-  export let cmpAnimator: ƒ.ComponentAnimator;
+  export let cmpAnimation: ƒ.ComponentAnimation;
   export let slcFile: HTMLSelectElement;
   export let slcAmount: HTMLSelectElement;
 
@@ -39,7 +39,7 @@ namespace SkeletonTest {
 
     let timeSpan: UI.Time = document.querySelector('span[is="ui-time"]');
     timeSpan.get = () => {
-      let cmpAnimation: ƒ.ComponentAnimator = loaded?.getComponent(ƒ.ComponentAnimator);
+      let cmpAnimation: ƒ.ComponentAnimation = loaded?.getComponent(ƒ.ComponentAnimation);
       return cmpAnimation ? cmpAnimation.time.toFixed(0) : "0";
     };
 
@@ -78,16 +78,16 @@ namespace SkeletonTest {
     function hndKeydown(_event: KeyboardEvent): void {
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.SPACE:
-          cmpAnimator?.jumpTo(0);
+          cmpAnimation?.jumpTo(0);
           break;
         case ƒ.KEYBOARD_CODE.P:
           ƒ.Time.game.setScale(ƒ.Time.game.getScale() == 0 ? 1 : 0);
           break;
         case ƒ.KEYBOARD_CODE.D:
-          cmpAnimator?.jumpTo(cmpAnimator.time + 50);
+          cmpAnimation?.jumpTo(cmpAnimation.time + 50);
           break;
         case ƒ.KEYBOARD_CODE.A:
-          cmpAnimator?.jumpTo(cmpAnimator.time - 50);
+          cmpAnimation?.jumpTo(cmpAnimation.time - 50);
           break;
         case ƒ.KEYBOARD_CODE.W:
           ƒ.Time.game.setScale(ƒ.Time.game.getScale() * 2);
@@ -124,8 +124,8 @@ async function load(): Promise<void> {
     SkeletonTest.loaded = await SkeletonTest.loader.getGraph();
     let animation: FudgeCore.Animation = await SkeletonTest.loader.getAnimation(0);
     FudgeCore.Project.register(animation);
-    if (animation && !SkeletonTest.loaded.getComponent(FudgeCore.ComponentAnimator))
-      SkeletonTest.loaded.addComponent(new FudgeCore.ComponentAnimator(animation));
+    if (animation && !SkeletonTest.loaded.getComponent(FudgeCore.ComponentAnimation))
+      SkeletonTest.loaded.addComponent(new FudgeCore.ComponentAnimation(animation));
   } else {
     SkeletonTest.loaded = new FudgeCore.Node("Scene");
     for (let i: number = 0; i < amount; i++) {
@@ -133,8 +133,8 @@ async function load(): Promise<void> {
       FudgeCore.Project.register(graph);
       let instance: FudgeCore.GraphInstance = await FudgeCore.Project.createGraphInstance(graph);
       let animation: FudgeCore.Animation = await SkeletonTest.loader.getAnimation(0);
-      if (animation && !instance.getComponent(FudgeCore.ComponentAnimator))
-        instance.addComponent(new FudgeCore.ComponentAnimator(animation));
+      if (animation && !instance.getComponent(FudgeCore.ComponentAnimation))
+        instance.addComponent(new FudgeCore.ComponentAnimation(animation));
       instance.addComponent(new FudgeCore.ComponentTransform());
       instance.name = "instance" + i;
       instance.mtxLocal.translateX((i * 2 - (amount - 1)) * 1.5);
@@ -142,9 +142,9 @@ async function load(): Promise<void> {
     }
   }
 
-  SkeletonTest.cmpAnimator = SkeletonTest.loaded?.getComponent(FudgeCore.ComponentAnimator);
+  SkeletonTest.cmpAnimation = SkeletonTest.loaded?.getComponent(FudgeCore.ComponentAnimation);
   // SkeletonTest.loaded.name = "loaded";
-  // loaded.getComponent(FudgeCore.ComponentAnimator)?.activate(false);
+  // loaded.getComponent(FudgeCore.ComponentAnimation)?.activate(false);
   let root: FudgeCore.Node = SkeletonTest.viewport.getBranch();
   let loaded: FudgeCore.Node = root.getChildrenByName("Scene")[0];
   if (loaded)

@@ -45,8 +45,8 @@ namespace AnimatorComponentTest {
     animation.setEvent("event", 3000);
 
 
-    let cmpAnimator: ƒ.ComponentAnimator = new ƒ.ComponentAnimator(animation, ƒ.ANIMATION_PLAYMODE.LOOP, ƒ.ANIMATION_QUANTIZATION.CONTINOUS);
-    cmpAnimator.scale = 2;
+    let cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(animation, ƒ.ANIMATION_PLAYMODE.LOOP, ƒ.ANIMATION_QUANTIZATION.CONTINOUS);
+    cmpAnimation.scale = 2;
 
     // #region serialisation
     console.groupCollapsed("Animation");
@@ -55,17 +55,17 @@ namespace AnimatorComponentTest {
     console.groupEnd();
 
     console.groupCollapsed("Serialization");
-    console.log(cmpAnimator);
-    serialisation = cmpAnimator.serialize();
+    console.log(cmpAnimation);
+    serialisation = cmpAnimation.serialize();
     let txtOriginal: string = ƒ.Serializer.stringify(serialisation);
-    console.log("ComponentAnimator original", txtOriginal);
+    console.log("ComponentAnimation original", txtOriginal);
     console.groupEnd();
 
     console.groupCollapsed("Reconstruction");
-    let cmpAnimatorReconstructed: ƒ.ComponentAnimator = new ƒ.ComponentAnimator();
-    await cmpAnimatorReconstructed.deserialize(serialisation);
-    // console.log(cmpAnimatorReconstructed);
-    serialisation = cmpAnimatorReconstructed.serialize();
+    let cmpAnimationReconstructed: ƒ.ComponentAnimation = new ƒ.ComponentAnimation();
+    await cmpAnimationReconstructed.deserialize(serialisation);
+    // console.log(cmpAnimationReconstructed);
+    serialisation = cmpAnimationReconstructed.serialize();
     let txtReconstruction: string = ƒ.Serializer.stringify(serialisation);
     console.log(txtReconstruction);
     console.groupEnd();
@@ -77,20 +77,20 @@ namespace AnimatorComponentTest {
 
     let formdata: FormData = new FormData(document.forms[0]);
     if (formdata.get("use") == "reconstruction")
-      cmpAnimator = cmpAnimatorReconstructed;
+      cmpAnimation = cmpAnimationReconstructed;
 
-    cmpAnimator.addEventListener("event", hndlEv);
+    cmpAnimation.addEventListener("event", hndlEv);
     if (formdata.get("jump"))
-      cmpAnimator.addEventListener("event", (_event: Event) => cmpAnimator.jumpTo(animation.labels["test"]));
+      cmpAnimation.addEventListener("event", (_event: Event) => cmpAnimation.jumpTo(animation.labels["test"]));
 
-    node.addComponent(cmpAnimator);
-    cmpAnimator.activate(true);
+    node.addComponent(cmpAnimation);
+    cmpAnimation.activate(true);
 
     ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, frame);
     ƒ.Loop.start();
 
     if (formdata.get("destroy") == "detach")
-      console.log(new ƒ.Timer(ƒ.Time.game, 8000, 1, () => node.removeComponent(cmpAnimator)));
+      console.log(new ƒ.Timer(ƒ.Time.game, 8000, 1, () => node.removeComponent(cmpAnimation)));
     if (formdata.get("destroy") == "remove")
       console.log(new ƒ.Timer(ƒ.Time.game, 8000, 1, () => root.removeChild(node)));
   }

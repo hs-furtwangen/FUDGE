@@ -186,9 +186,9 @@
                   }
                 }
               ],
-              "ComponentAnimator": [
+              "ComponentAnimation": [
                 {
-                  "ƒ.ComponentAnimator": {
+                  "ƒ.ComponentAnimation": {
                     "Component": {
                       "active": true
                     },

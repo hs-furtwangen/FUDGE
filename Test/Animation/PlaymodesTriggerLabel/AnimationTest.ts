@@ -37,8 +37,8 @@ namespace AnimatorControleTest {
     (<HTMLInputElement>document.querySelector("button[id=jump]")).addEventListener("click", jump);
     function jump(_event: Event): void {
       console.log("Jump");
-      let cmpAnimator: ƒ.ComponentAnimator = node.getComponent(ƒ.ComponentAnimator);
-      cmpAnimator.jumpToLabel("jump");
+      let cmpAnimation: ƒ.ComponentAnimation = node.getComponent(ƒ.ComponentAnimation);
+      cmpAnimation.jumpToLabel("jump");
     }
 
     ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, update);
@@ -85,23 +85,23 @@ namespace AnimatorControleTest {
     let playmode: string = String(formData.get("mode"));
     let quantization: string = String(formData.get("quantization"));
 
-    let cmpAnimator: ƒ.ComponentAnimator = new ƒ.ComponentAnimator(animation, ƒ.ANIMATION_PLAYMODE[playmode], ƒ.ANIMATION_QUANTIZATION[quantization]);
-    cmpAnimator.scale = 1;
-    cmpAnimator.addEventListener("event", (_event: Event) => {
-      let time: number = (<ƒ.ComponentAnimator>_event.target).time;
+    let cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(animation, ƒ.ANIMATION_PLAYMODE[playmode], ƒ.ANIMATION_QUANTIZATION[quantization]);
+    cmpAnimation.scale = 1;
+    cmpAnimation.addEventListener("event", (_event: Event) => {
+      let time: number = (<ƒ.ComponentAnimation>_event.target).time;
       console.log(`Event fired at ${time}`, _event);
     });
 
 
-    if (node.getComponent(ƒ.ComponentAnimator)) {
-      node.removeComponent(node.getComponent(ƒ.ComponentAnimator));
+    if (node.getComponent(ƒ.ComponentAnimation)) {
+      node.removeComponent(node.getComponent(ƒ.ComponentAnimation));
     }
 
 
-    node.addComponent(cmpAnimator);
-    cmpAnimator.activate(true);
+    node.addComponent(cmpAnimation);
+    cmpAnimation.activate(true);
 
-    console.log("Component", cmpAnimator);
+    console.log("Component", cmpAnimation);
   }
 
   function update(): void {

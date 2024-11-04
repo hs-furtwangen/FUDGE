@@ -192,9 +192,9 @@ namespace SkeletonTest {
       //   }
       // }
     });
-    const cmpAnimator: ƒ.ComponentAnimator = new ƒ.ComponentAnimator(animation, ƒ.ANIMATION_PLAYMODE.LOOP);
-    skeleton.addComponent(cmpAnimator);
-    cmpAnimator.activate(true);
+    const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(animation, ƒ.ANIMATION_PLAYMODE.LOOP);
+    skeleton.addComponent(cmpAnimation);
+    cmpAnimation.activate(true);
     cylinder.addChild(skeleton);
 
     // setup component mesh

@@ -35,14 +35,14 @@
 <body>
   <script>
     TestInstructions.display({
-      Name: "ComponentAnimator",
+      Name: "ComponentAnimation",
       Test: [
-        "ComponentAnimator is complex and largely extensible, so this test was created to check the serialization and deserialization.",
+        "ComponentAnimation is complex and largely extensible, so this test was created to check the serialization and deserialization.",
         "It also tests if the Component is attached and detached from the node and deactivated, when the node gets removed from the graph, so that no events and timers leak in memory."
       ],
       Setup: [
         "A small animation rotating the cube with 5 seconds of length, a label at 2 seconds and an event triggered at 3 seconds",
-        "A ComponentAnimator with a speed of 2, playmode loop and continous time, reacting to the event if triggered with console output",
+        "A ComponentAnimation with a speed of 2, playmode loop and continous time, reacting to the event if triggered with console output",
         "A reconstruction of this component created by serialization/deserialization"
       ],
       Act: [
