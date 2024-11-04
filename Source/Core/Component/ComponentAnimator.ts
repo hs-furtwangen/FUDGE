@@ -163,9 +163,6 @@ namespace FudgeCore {
       if (this.#transitions.length > 0 && this.#transitions[this.#transitions.length - 1].to == _to)
         return;
 
-      if (this.#transitions.length > 9) //TODO: find a smart way to remove finished transitions
-        this.#transitions.shift();
-
       this.#transitions.push({ start: this.#timeLocal.get(), duration: _duration, to: _to, weight: 0, mutator: null });
     }
 
@@ -194,17 +191,28 @@ namespace FudgeCore {
 
       if (this.#transitions.length > 0) {
         const top: AnimationTransition = this.#transitions[this.#transitions.length - 1];
-        const transitTime: number = time - top.start;
-        const transitPrevious: number = Math.max(this.#previous - top.start, 0);
-        top.mutator = this.process(top.to, transitTime, transitPrevious);
-        top.weight = Math.min(transitTime / top.duration, 1);
+        const topTime: number = time - top.start;
+        const topPrevious: number = Math.max(this.#previous - top.start, 0);
+        top.mutator = this.process(top.to, topTime, topPrevious);
+        top.weight = Math.min(topTime / top.duration, 1);
 
-        for (const transition of this.#transitions)
-          this.blendMutators(mutator, transition.mutator, transition.weight);
+        // fade out all canceled transitions
+        for (let i: number = 0; i < this.#transitions.length - 1; i++) {
+          const transition: AnimationTransition = this.#transitions[i];
+          const transitionCancel: number = transition.weight * transition.duration + transition.start; // time of cancelation
+          const transitionTime: number = time - transitionCancel;
+          const fade: number = 1 - Math.min(transitionTime / transition.duration, 1); // fade transition out over the duration it would have taken to finish
+          this.blendAnimationMutators(mutator, transition.mutator, transition.weight * fade);
+          if (fade == 0) {
+            this.#transitions.splice(i, 1);
+            i--;
+          }
+        }
+        this.blendAnimationMutators(mutator, top.mutator, top.weight);
 
         if (top.weight == 1) {
           this.animation = top.to;
-          this.#timeLocal.set(transitTime);
+          this.#timeLocal.set(topTime);
           this.#transitions.length = 0;
         }
       }
@@ -233,16 +241,19 @@ namespace FudgeCore {
       return _animation.getState(_time % _animation.totalTime, direction, this.quantization);
     }
 
-    private blendMutators(_from: Mutator, _to: Mutator, _factor: number): void {
+    /**
+     * Blends the two given mutators by the given factor using linear interpolation. Modifies the first mutator to the result.
+     */
+    private blendAnimationMutators(_from: Mutator, _to: Mutator, _factor: number): void {
       for (let key in _to) {
-        if (_from[key]) {
+        if (_from[key] != undefined) {
           if (typeof _from[key] == "object") {
             let from: Mutator = _from[key];
             let to: Mutator = _to[key];
             if (from.x != undefined && from.y != undefined && from.z != undefined && from.w != undefined && Quaternion.DOT(<Quaternion>from, <Quaternion>to) < 0)
               Quaternion.negate(<Quaternion>to);
 
-            this.blendMutators(from, to, _factor);
+            this.blendAnimationMutators(from, to, _factor);
           } else
             _from[key] = _from[key] * (1 - _factor) + _to[key] * _factor;
         } else {

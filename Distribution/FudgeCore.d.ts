@@ -2736,7 +2736,10 @@ declare namespace FudgeCore {
         private updateAnimationLoop;
         /** Process the given animation at the given time and previous time. Send events and return animation state. */
         private process;
-        private blendMutators;
+        /**
+         * Blends the two given mutators by the given factor using linear interpolation. Modifies the first mutator to
+         */
+        private blendAnimationMutators;
         /**
          * Fires all custom events the Animation should have fired between the last frame and the current frame.
          * @param _events a list of names of custom events to fire
