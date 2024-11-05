@@ -199,9 +199,9 @@ namespace FudgeCore {
         // fade out all canceled transitions
         for (let i: number = 0; i < this.#transitions.length - 1; i++) {
           const transition: AnimationTransition = this.#transitions[i];
-          const transitionCancel: number = transition.weight * transition.duration + transition.start; // time of cancelation
-          const transitionTime: number = time - transitionCancel;
-          const fade: number = 1 - Math.min(transitionTime / transition.duration, 1); // fade transition out over the duration it would have taken to finish
+          const transitionDuration: number = transition.weight * transition.duration; // total elapsed time until transition was canceled
+          const transitionTime: number = time - (transition.start + transitionDuration); // time since transition was canceled
+          const fade: number = 1 - Math.min(transitionTime / transitionDuration, 1); // fade out the transition at the same speed it was blending in
           this.blendAnimationMutators(mutator, transition.mutator, transition.weight * fade);
           if (fade == 0) {
             this.#transitions.splice(i, 1);
