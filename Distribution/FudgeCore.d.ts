@@ -2732,8 +2732,7 @@ declare namespace FudgeCore {
          * Updates the animation and all running transitions.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
-         */
-        private updateAnimationLoop;
+         */ private updateAnimationLoop;
         /** Process the given animation at the given time and previous time. Send events and return animation state. */
         private process;
         /**

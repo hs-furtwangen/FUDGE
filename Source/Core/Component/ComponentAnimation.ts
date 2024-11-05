@@ -7,6 +7,7 @@ namespace FudgeCore {
     to: Animation;
     start: number;
     duration: number;
+    previous: number;
     weight: number;
     mutator: Mutator;
   }
@@ -163,7 +164,7 @@ namespace FudgeCore {
       if (this.#transitions.length > 0 && this.#transitions[this.#transitions.length - 1].to == _to)
         return;
 
-      this.#transitions.push({ start: this.#timeLocal.get(), duration: _duration, to: _to, weight: 0, mutator: null });
+      this.#transitions.push({ start: this.#timeLocal.get(), duration: _duration, previous: 0, to: _to, weight: 0, mutator: null });
     }
 
     private activateListeners(_on: boolean): void {
@@ -181,10 +182,11 @@ namespace FudgeCore {
      * Updates the animation and all running transitions.
      * Uses the built-in time unless a different time is specified.
      * May also be called from updateAnimation().
-     */
+     */ // TODO: think about whether fireing events for current and target animation makes sense...
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
       const time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
-      let mutator: Mutator = this.process(this.animation, time, this.#previous);
+      let mutator: Mutator;
+      [mutator, this.#previous] = this.process(this.animation, time, this.#previous);
 
       if (!mutator)
         return null;
@@ -192,8 +194,7 @@ namespace FudgeCore {
       if (this.#transitions.length > 0) {
         const top: AnimationTransition = this.#transitions[this.#transitions.length - 1];
         const topTime: number = time - top.start;
-        const topPrevious: number = Math.max(this.#previous - top.start, 0);
-        top.mutator = this.process(top.to, topTime, topPrevious);
+        [top.mutator, top.previous] = this.process(top.to, topTime, top.previous);
         top.weight = Math.min(topTime / top.duration, 1);
 
         // fade out all canceled transitions
@@ -217,28 +218,26 @@ namespace FudgeCore {
         }
       }
 
-      this.#previous = time;
-
       if (this.node)
         this.node.applyAnimation(mutator);
 
       return mutator;
     };
 
-    /** Process the given animation at the given time and previous time. Send events and return animation state. */
-    private process(_animation: Animation, _time: number, _previousTime: number): Mutator {
+    /** Process the given animation at the given time and previous time. Send events and return animation state and time. */
+    private process(_animation: Animation, _time: number, _previousTime: number): [Mutator, number] {
       if (_animation.totalTime == 0 || _previousTime == _time)
         return null;
 
       if (this.quantization == ANIMATION_QUANTIZATION.FRAMES)
-        _time = this.#previous + (1000 / _animation.fps);
+        _time = _previousTime + (1000 / _animation.fps);
 
       _time = _animation.getModalTime(_time, this.playmode, this.#timeLocal.getOffset());
 
       let direction: number = _animation.calculateDirection(_time, this.playmode);
       this.executeEvents(_animation.getEventsToFire(_previousTime, _time, this.quantization, direction));
 
-      return _animation.getState(_time % _animation.totalTime, direction, this.quantization);
+      return [_animation.getState(_time % _animation.totalTime, direction, this.quantization), _time];
     }
 
     /**
