@@ -2733,7 +2733,8 @@ declare namespace FudgeCore {
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
          */ private updateAnimationLoop;
-        /** Process the given animation at the given time and previous time. Send events and return animation state. */
+        private processTransitions;
+        /** Process the given animation at the given time and previous time. Send events and return animation state and time. */
         private process;
         /**
          * Blends the two given mutators by the given factor using linear interpolation. Modifies the first mutator to the result.

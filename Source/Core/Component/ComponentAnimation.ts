@@ -7,7 +7,7 @@ namespace FudgeCore {
     to: Animation;
     start: number;
     duration: number;
-    previous: number;
+    time: number;
     weight: number;
     mutator: Mutator;
   }
@@ -164,7 +164,7 @@ namespace FudgeCore {
       if (this.#transitions.length > 0 && this.#transitions[this.#transitions.length - 1].to == _to)
         return;
 
-      this.#transitions.push({ start: this.#timeLocal.get(), duration: _duration, previous: 0, to: _to, weight: 0, mutator: null });
+      this.#transitions.push({ start: this.#timeLocal.get(), duration: _duration, time: 0, to: _to, weight: 0, mutator: null });
     }
 
     private activateListeners(_on: boolean): void {
@@ -184,39 +184,14 @@ namespace FudgeCore {
      * May also be called from updateAnimation().
      */ // TODO: think about whether fireing events for current and target animation makes sense...
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
-      const time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
-      let mutator: Mutator;
-      [mutator, this.#previous] = this.process(this.animation, time, this.#previous);
-
-      if (!mutator)
+      _time ??= this.#timeLocal.get();
+      if (this.animation.totalTime == 0 || this.#previous == _time)
         return null;
 
-      if (this.#transitions.length > 0) {
-        const top: AnimationTransition = this.#transitions[this.#transitions.length - 1];
-        const topTime: number = time - top.start;
-        [top.mutator, top.previous] = this.process(top.to, topTime, top.previous);
-        top.weight = Math.min(topTime / top.duration, 1);
+      let mutator: Mutator;
+      [this.#previous, mutator] = this.process(this.animation, _time, this.#previous);
 
-        // fade out all canceled transitions
-        for (let i: number = 0; i < this.#transitions.length - 1; i++) {
-          const transition: AnimationTransition = this.#transitions[i];
-          const transitionDuration: number = transition.weight * transition.duration; // total elapsed time until transition was canceled
-          const transitionTime: number = time - (transition.start + transitionDuration); // time since transition was canceled
-          const fade: number = 1 - Math.min(transitionTime / transitionDuration, 1); // fade out the transition at the same speed it was blending in
-          this.blendAnimationMutators(mutator, transition.mutator, transition.weight * fade);
-          if (fade == 0) {
-            this.#transitions.splice(i, 1);
-            i--;
-          }
-        }
-        this.blendAnimationMutators(mutator, top.mutator, top.weight);
-
-        if (top.weight == 1) {
-          this.animation = top.to;
-          this.#timeLocal.set(topTime);
-          this.#transitions.length = 0;
-        }
-      }
+      this.processTransitions(_time, mutator);
 
       if (this.node)
         this.node.applyAnimation(mutator);
@@ -224,11 +199,40 @@ namespace FudgeCore {
       return mutator;
     };
 
-    /** Process the given animation at the given time and previous time. Send events and return animation state and time. */
-    private process(_animation: Animation, _time: number, _previousTime: number): [Mutator, number] {
-      if (_animation.totalTime == 0 || _previousTime == _time)
-        return null;
+    private processTransitions(_time: number, _mutator: Mutator): void {
+      if (this.#transitions.length == 0)
+        return;
 
+      const top: AnimationTransition = this.#transitions[this.#transitions.length - 1];
+      const time: number = _time - top.start;
+      if (top.to.totalTime == 0 || top.time == time)
+        return;
+
+      [top.time, top.mutator] = this.process(top.to, time, top.time);
+      top.weight = Math.min(top.time / top.duration, 1);
+
+      // fade out all canceled transitions
+      for (let i: number = 0; i < this.#transitions.length - 1; i++) {
+        const transition: AnimationTransition = this.#transitions[i];
+        const fadeTime: number = _time - (transition.start + transition.time); // time since transition was canceled
+        const fade: number = 1 - Math.min(fadeTime / transition.time, 1); // fade out the transition at the same speed it was blending in
+        this.blendAnimationMutators(_mutator, transition.mutator, transition.weight * fade);
+        if (fade == 0) {
+          this.#transitions.splice(i, 1);
+          i--;
+        }
+      }
+      this.blendAnimationMutators(_mutator, top.mutator, top.weight);
+
+      if (top.weight == 1) {
+        this.animation = top.to;
+        this.#timeLocal.set(top.time);
+        this.#transitions.length = 0;
+      }
+    }
+
+    /** Process the given animation at the given time and previous time. Send events and return animation state and time. */
+    private process(_animation: Animation, _time: number, _previousTime: number): [number, Mutator] {
       if (this.quantization == ANIMATION_QUANTIZATION.FRAMES)
         _time = _previousTime + (1000 / _animation.fps);
 
@@ -237,7 +241,7 @@ namespace FudgeCore {
       let direction: number = _animation.calculateDirection(_time, this.playmode);
       this.executeEvents(_animation.getEventsToFire(_previousTime, _time, this.quantization, direction));
 
-      return [_animation.getState(_time % _animation.totalTime, direction, this.quantization), _time];
+      return [_time, _animation.getState(_time % _animation.totalTime, direction, this.quantization)];
     }
 
     /**
