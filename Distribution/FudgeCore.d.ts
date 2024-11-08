@@ -2726,20 +2726,13 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        transit(_to: Animation, _duration: number): void;
+        transit(_animation: Animation, _duration: number): void;
         private activateListeners;
         /**
          * Updates the animation and all running transitions.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
          */ private updateAnimationLoop;
-        private processTransitions;
-        /** Process the given animation at the given time and previous time. Send events and return animation state and time. */
-        private process;
-        /**
-         * Blends the two given mutators by the given factor using linear interpolation. Modifies the first mutator to the result.
-         */
-        private blendAnimationMutators;
         /**
          * Fires all custom events the Animation should have fired between the last frame and the current frame.
          * @param _events a list of names of custom events to fire
