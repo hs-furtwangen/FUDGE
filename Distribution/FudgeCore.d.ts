@@ -2693,12 +2693,13 @@ declare namespace FudgeCore {
     class ComponentAnimation extends Component {
         #private;
         static readonly iSubclass: number;
-        animation: Animation;
         playmode: ANIMATION_PLAYMODE;
         quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
         animateInEditor: boolean;
         constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
+        get animation(): Animation;
+        set animation(_animation: Animation);
         set scale(_scale: number);
         get scale(): number;
         /**
