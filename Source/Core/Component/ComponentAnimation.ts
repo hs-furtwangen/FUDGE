@@ -3,78 +3,22 @@
 
 namespace FudgeCore {
 
-  interface AnimationBlend {
+  export interface AnimationBlendLayer {
     animation: Animation;
     weight: number;
+    /** @internal */
     mutator?: Mutator;
+  }
+
+  interface AnimationLayer extends AnimationBlendLayer {
     events?: string[];
-    
-    // transiton properties...
     time?: number;
+    // transition properties
     start?: number;
     duration?: number;
   }
 
-  class AnimationBlendTree extends Array<AnimationBlend> {
-    public update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
-      for (const blend of this) {
-        if (blend.animation.totalTime == 0 || blend.time == _time)
-          continue;
-
-        let start: number = blend.start ?? 0;
-        let time: number = _time - start;
-
-        if (_quantization == ANIMATION_QUANTIZATION.FRAMES)
-          time = blend.time + (1000 / blend.animation.fps);
-        time = blend.animation.getModalTime(time, _playmode, start);
-
-        let direction: number = blend.animation.calculateDirection(time, _playmode);
-        blend.events = blend.animation.getEventsToFire(blend.time, time, _quantization, direction);
-        blend.mutator = blend.animation.getState(time % blend.animation.totalTime, direction, _quantization);
-        blend.time = time;
-      }
-    }
-
-    public blend(): Mutator {
-      if (this.length == 0)
-        return {};
-
-      if (this.length == 1)
-        return this[0].mutator;
-
-      let mutator: Mutator = {};
-      for (const blend of this)
-        this.blendMutators(mutator, blend.mutator, 1, blend.weight);
-
-      return mutator;
-    }
-
-    public blendMutators(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void {
-      for (let key in _blend) {
-        if (typeof _blend[key] == "number") {
-          _base[key] = (_base[key] ?? 0) * _weightBase + _blend[key] * _weightBlend;
-          continue;
-        }
-
-        if (typeof _base[key] == "object") {
-          let base: Mutator = _base[key];
-          let blend: Mutator = _blend[key];
-          if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && Quaternion.DOT(<Quaternion>base, <Quaternion>blend) < 0)
-            Quaternion.negate(<Quaternion>blend);
-          this.blendMutators(base, blend, _weightBase, _weightBlend);
-
-          continue;
-        }
-
-        if (typeof _blend[key] === "object") {
-          _base[key] = {};
-          this.blendMutators(_base[key], _blend[key], _weightBase, _weightBlend);
-
-          continue;
-        }
-      }
-    }
-  }
+  export type AnimationBlendTree<T extends AnimationBlendLayer = AnimationBlendLayer> = Array<T>;
 
   /**
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
@@ -89,7 +33,7 @@ namespace FudgeCore {
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
 
-    #animations: AnimationBlendTree; // all animations are stored in a blend tree which is used for smooth transitions
+    #animations: AnimationBlendTree<AnimationLayer>; // all animations are stored in a blend tree which is used for smooth transitions
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -97,7 +41,7 @@ namespace FudgeCore {
 
     public constructor(_animation?: Animation, _playmode: ANIMATION_PLAYMODE = ANIMATION_PLAYMODE.LOOP, _quantization: ANIMATION_QUANTIZATION = ANIMATION_QUANTIZATION.CONTINOUS) {
       super();
-      this.#animations = new AnimationBlendTree();
+      this.#animations = [];
       this.#timeLocal = new Time();
 
       this.playmode = _playmode;
@@ -158,11 +102,11 @@ namespace FudgeCore {
      */
     public jumpTo(_time: number): void { // TODO: implement jumpTo with blending, TEST ALL USE CASES
       this.#timeLocal.set(_time);
-      this.#animations.update(_time, this.playmode, this.quantization);
+      // this.process(this.animation, _time, 0, this.#animations[0]);
+      // this.#animations.update(_time, this.playmode, this.quantization);
       // this.#previous = _time;
-      // _time = _time % this.animation.totalTime;
-      // let mutator: Mutator = this.animation.getState(_time, this.animation.calculateDirection(_time, this.playmode), this.quantization);
-      this.node.applyAnimation(this.#animations[0].mutator);
+      this.#animations[0].time = _time;
+      this.node.applyAnimation(this.animation.getState(_time % this.animation.totalTime, this.animation.calculateDirection(_time, this.playmode), this.quantization));
     }
 
     /**
@@ -232,7 +176,7 @@ namespace FudgeCore {
       if (this.#animations[this.#animations.length - 1]?.animation == _animation)
         return;
 
-      this.#animations.push({ animation: _animation, weight: 0, start: this.#timeLocal.get(), duration: _duration });
+      this.#animations.push({ animation: _animation, weight: 0, time: 0, start: this.#timeLocal.get(), duration: _duration });
     }
 
     private activateListeners(_on: boolean): void {
@@ -257,57 +201,50 @@ namespace FudgeCore {
 
       _time ??= this.#timeLocal.get();
 
-      this.#animations.update(_time, this.playmode, this.quantization);
+      const source: AnimationLayer = this.#animations[0];
+      Animation.process(source.animation, _time, source.time, this.playmode, this.quantization, source);
+      // TODO: execute events for all animations in the blend tree
+      this.executeEvents(source.events);
 
-      let mutator: Mutator = this.#animations[0].mutator;
+      let mutator: Mutator = source.mutator;
 
       if (this.#animations.length > 1) {
-        const top: AnimationBlend = this.#animations[this.#animations.length - 1];
-        top.weight = Math.min(top.time / top.duration, 1);
-        
-        let totalWeight: number = top.weight;
+        const target: AnimationLayer = this.#animations[this.#animations.length - 1];
+        Animation.process(target.animation, _time - target.start, target.time, this.playmode, this.quantization, target);
+        target.weight = Math.min(target.time / target.duration, 1);
+
+        let totalWeight: number = target.weight;
         for (let i: number = this.#animations.length - 1; i > 1; i--) {
-          const current: AnimationBlend = this.#animations[i - 1];
-          const next: AnimationBlend = this.#animations[i];
-          let cancelWeight: number = Math.min((next.start - current.start) / current.duration, 1); // weight at point of cancelation
+          const transition: AnimationLayer = this.#animations[i - 1];
+          transition.weight = Math.min(transition.time / transition.duration, 1) * (1 - totalWeight);
 
           if (i < this.#animations.length - 2) { // fade out canceled transitions if there are more than 2
-            const push: AnimationBlend = this.#animations[i + 2]; // the transition that pushed the current one over the threshold
-            cancelWeight *= 1 - Math.min(push.time / push.duration, 1); // fade out at progression of the transition that pushed the current one out
+            const push: AnimationLayer = this.#animations[i + 2]; // the transition that pushed the current one over the threshold
+            transition.weight *= 1 - Math.min(push.time / push.duration, 1); // fade out at progression of the transition that pushed the current one out
           }
 
-          totalWeight += current.weight = cancelWeight * (1 - totalWeight);
+          if (transition.weight == 0.0)
+            this.#animations.splice(i - 1, 1);
+
+          totalWeight += transition.weight;
         }
 
-        this.#animations[0].weight = Math.max(1 - totalWeight, 0);
+        source.weight = Math.max(1 - totalWeight, 0);
 
-        for (let i: number = 0; i < this.#animations.length - 1; i++) {
-          if (this.#animations[i].weight == 0.0) {
-            this.#animations.splice(i, 1);
-            i--;
-          }
+        if (target.weight == 1) {
+          this.#timeLocal.set(target.time);
+          this.animation = target.animation;
         }
 
-        if (top.weight == 1) {
-          delete top.duration;
-          delete top.start;
-          this.#timeLocal.set(top.time);
-          // this.#animations.length = 0;
-          // this.#animations.push({ animation: top.animation, weight: 1, events: top.events });
-        }
-
-        mutator = this.#animations.blend();
+        mutator = Animation.blend(this.#animations);
       }
-
-      // TODO: execute events for all animations in the blend tree
-      this.executeEvents(this.#animations[0].events);
 
       if (this.node)
         this.node.applyAnimation(mutator);
 
       return mutator;
     };
-      
+
     /**
      * Fires all custom events the Animation should have fired between the last frame and the current frame.
      * @param _events a list of names of custom events to fire

@@ -122,6 +122,61 @@ namespace FudgeCore {
       Project.register(this);
     }
 
+    /**
+     * Process the given animation at the given time, previous time, direction and quantization. Outputs the mutator, the events to fire and the current time.
+     */
+    public static process(_animation: Animation, _time: number, _previous: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _out: { time?: number; events?: string[]; mutator?: Mutator }): void {
+      if (_animation.totalTime == 0 || _previous == _time)
+        return;
+
+      let time: number = _time;
+
+      if (_quantization == ANIMATION_QUANTIZATION.FRAMES)
+        time = _previous + (1000 / _animation.fps);
+
+      time = _animation.getModalTime(time, _playmode);
+
+      let direction: number = _animation.calculateDirection(time, _playmode);
+
+      _out.time = time;
+      _out.events = _animation.getEventsToFire(_previous, time, _quantization, direction);
+      _out.mutator = _animation.getState(time % _animation.totalTime, direction, _quantization);
+    }
+
+    public static blend(_mutators: { mutator?: Mutator; weight?: number }[]): Mutator {
+      let mutator: Mutator = {};
+      for (const blend of _mutators)
+        this.blendRecursive(mutator, blend.mutator, 1, blend.weight);
+
+      return mutator;
+    }
+
+    public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void {
+      for (let key in _blend) {
+        if (typeof _blend[key] == "number") {
+          _base[key] = (_base[key] ?? 0) * _weightBase + _blend[key] * _weightBlend;
+          continue;
+        }
+
+        if (typeof _base[key] == "object") {
+          let base: Mutator = _base[key];
+          let blend: Mutator = _blend[key];
+          if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && Quaternion.DOT(<Quaternion>base, <Quaternion>blend) < 0)
+            Quaternion.negate(<Quaternion>blend);
+          this.blendRecursive(base, blend, _weightBase, _weightBlend);
+
+          continue;
+        }
+
+        if (typeof _blend[key] === "object") {
+          _base[key] = {};
+          this.blendRecursive(_base[key], _blend[key], _weightBase, _weightBlend);
+
+          continue;
+        }
+      }
+    }
+
     protected static registerSubclass(_subClass: typeof Animation): number { return Animation.subclasses.push(_subClass) - 1; }
 
     public get getLabels(): Enumerator {

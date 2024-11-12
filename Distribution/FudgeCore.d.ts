@@ -2271,6 +2271,19 @@ declare namespace FudgeCore {
         protected framesPerSecond: number;
         private eventsProcessed;
         constructor(_name?: string, _animStructure?: AnimationStructure, _fps?: number);
+        /**
+         * Process the given animation at the given time, previous time, direction and quantization. Outputs the mutator, the events to fire and the current time.
+         */
+        static process(_animation: Animation, _time: number, _previous: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _out: {
+            time?: number;
+            events?: string[];
+            mutator?: Mutator;
+        }): void;
+        static blend(_mutators: {
+            mutator?: Mutator;
+            weight?: number;
+        }[]): Mutator;
+        static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void;
         protected static registerSubclass(_subClass: typeof Animation): number;
         get getLabels(): Enumerator;
         get fps(): number;
@@ -2686,6 +2699,11 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    interface AnimationBlendLayer {
+        animation: Animation;
+        weight: number;
+    }
+    type AnimationBlendTree<T extends AnimationBlendLayer = AnimationBlendLayer> = Array<T>;
     /**
      * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
      * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
