@@ -86,6 +86,84 @@ namespace FudgeCore {
     FRAMES = "frames"
   }
 
+  export class AnimationLayer {
+    public animation: Animation | AnimationBlendTree;
+    public weight: number;
+
+    #mutator: Mutator;
+    #events: string[];
+    #time: number;
+
+    public constructor(_animation: Animation | AnimationBlendTree, _weight: number) {
+      this.animation = _animation;
+      this.weight = _weight;
+      this.#time = 0;
+    }
+
+    public get mutator(): Mutator {
+      return this.#mutator;
+    }
+
+    public get events(): string[] {
+      return this.#events;
+    }
+
+    public get time(): number {
+      return this.#time;
+    }
+
+    public getTotalTime(): number {
+      if (this.animation instanceof Animation)
+        return this.animation.totalTime;
+
+      return this.animation.reduce((_max: number, _layer: AnimationLayer) => Math.max(_max, _layer.getTotalTime()), 0);
+    }
+
+    public update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
+      if (this.animation instanceof Animation) {
+        if (this.animation.totalTime == 0 || this.time == _time)
+          return;
+
+        if (_quantization == ANIMATION_QUANTIZATION.FRAMES)
+          _time = this.time + (1000 / this.animation.fps);
+
+        _time = this.animation.getModalTime(_time, _playmode);
+
+        let direction: number = this.animation.calculateDirection(_time, _playmode);
+
+        this.#events = this.animation.getEventsToFire(this.time, _time, _quantization, direction);
+        this.#mutator = this.animation.getState(_time % this.animation.totalTime, direction, _quantization);
+        this.#time = _time;
+
+        return;
+      }
+
+      for (const layer of this.animation)
+        layer.update(_time, _playmode, _quantization);
+
+      this.#time = _time;
+      this.#events = this.animation.flatMap(_layer => _layer.events);
+      this.#mutator = Animation.blend(this.animation);
+    }
+  }
+
+  export class AnimationTransition extends AnimationLayer {
+    public start: number;
+    public duration: number;
+
+    public constructor(_animation: Animation | AnimationBlendTree, _weight: number, _start: number, _duration: number) {
+      super(_animation, _weight);
+      this.start = _start;
+      this.duration = _duration;
+    }
+
+    public update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
+      super.update(_time - this.start, _playmode, _quantization);
+    }
+  }
+
+  export type AnimationBlendTree<T extends AnimationLayer = AnimationLayer> = Array<T>;
+
   /**
    * Describes and controls and animation by yielding mutators 
    * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
@@ -122,39 +200,18 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    /**
-     * Process the given animation at the given time, previous time, direction and quantization. Outputs the mutator, the events to fire and the current time.
-     */
-    public static process(_animation: Animation, _time: number, _previous: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _out: { time?: number; events?: string[]; mutator?: Mutator }): void {
-      if (_animation.totalTime == 0 || _previous == _time)
-        return;
-
-      let time: number = _time;
-
-      if (_quantization == ANIMATION_QUANTIZATION.FRAMES)
-        time = _previous + (1000 / _animation.fps);
-
-      time = _animation.getModalTime(time, _playmode);
-
-      let direction: number = _animation.calculateDirection(time, _playmode);
-
-      _out.time = time;
-      _out.events = _animation.getEventsToFire(_previous, time, _quantization, direction);
-      _out.mutator = _animation.getState(time % _animation.totalTime, direction, _quantization);
-    }
-
     public static blend(_mutators: { mutator?: Mutator; weight?: number }[]): Mutator {
       let mutator: Mutator = {};
       for (const blend of _mutators)
-        this.blendRecursive(mutator, blend.mutator, 1, blend.weight);
+        this.blendRecursive(mutator, blend.mutator, blend.weight);
 
       return mutator;
     }
 
-    public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void {
+    public static blendRecursive(_base: Mutator, _blend: Mutator, _weight: number): void {
       for (let key in _blend) {
         if (typeof _blend[key] == "number") {
-          _base[key] = (_base[key] ?? 0) * _weightBase + _blend[key] * _weightBlend;
+          _base[key] = (_base[key] ?? 0) + _blend[key] * _weight;
           continue;
         }
 
@@ -163,14 +220,14 @@ namespace FudgeCore {
           let blend: Mutator = _blend[key];
           if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && Quaternion.DOT(<Quaternion>base, <Quaternion>blend) < 0)
             Quaternion.negate(<Quaternion>blend);
-          this.blendRecursive(base, blend, _weightBase, _weightBlend);
+          this.blendRecursive(base, blend, _weight);
 
           continue;
         }
 
         if (typeof _blend[key] === "object") {
           _base[key] = {};
-          this.blendRecursive(_base[key], _blend[key], _weightBase, _weightBlend);
+          this.blendRecursive(_base[key], _blend[key], _weight);
 
           continue;
         }

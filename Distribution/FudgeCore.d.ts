@@ -303,7 +303,7 @@ declare namespace FudgeCore {
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
      */
-    function type<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function type<Value, Constructor extends abstract new (...args: General[]) => Value>(_constructor: Constructor): (_value: unknown, _context: ClassPropertyContext<Value extends Node ? Node extends Value ? Component : Serializable : Serializable, Value>) => void;
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
      *
@@ -511,7 +511,7 @@ declare namespace FudgeCore {
      * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
      */
     function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
-    function serialize<T extends Number | String | Boolean | Serializable | Node>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -2252,6 +2252,24 @@ declare namespace FudgeCore {
         /** Advances the time each frame according to the FPS value of the animation, ignoring the actual duration of the frames. Doesn't skip any frames.*/
         FRAMES = "frames"
     }
+    class AnimationLayer {
+        #private;
+        animation: Animation | AnimationBlendTree;
+        weight: number;
+        constructor(_animation: Animation | AnimationBlendTree, _weight: number);
+        get mutator(): Mutator;
+        get events(): string[];
+        get time(): number;
+        getTotalTime(): number;
+        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
+    }
+    class AnimationTransition extends AnimationLayer {
+        start: number;
+        duration: number;
+        constructor(_animation: Animation | AnimationBlendTree, _weight: number, _start: number, _duration: number);
+        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
+    }
+    type AnimationBlendTree<T extends AnimationLayer = AnimationLayer> = Array<T>;
     /**
      * Describes and controls and animation by yielding mutators
      * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
@@ -2271,19 +2289,11 @@ declare namespace FudgeCore {
         protected framesPerSecond: number;
         private eventsProcessed;
         constructor(_name?: string, _animStructure?: AnimationStructure, _fps?: number);
-        /**
-         * Process the given animation at the given time, previous time, direction and quantization. Outputs the mutator, the events to fire and the current time.
-         */
-        static process(_animation: Animation, _time: number, _previous: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _out: {
-            time?: number;
-            events?: string[];
-            mutator?: Mutator;
-        }): void;
         static blend(_mutators: {
             mutator?: Mutator;
             weight?: number;
         }[]): Mutator;
-        static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void;
+        static blendRecursive(_base: Mutator, _blend: Mutator, _weight: number): void;
         protected static registerSubclass(_subClass: typeof Animation): number;
         get getLabels(): Enumerator;
         get fps(): number;
@@ -2699,11 +2709,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    interface AnimationBlendLayer {
-        animation: Animation;
-        weight: number;
-    }
-    type AnimationBlendTree<T extends AnimationBlendLayer = AnimationBlendLayer> = Array<T>;
     /**
      * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
      * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
@@ -2715,9 +2720,9 @@ declare namespace FudgeCore {
         quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
         animateInEditor: boolean;
-        constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
-        get animation(): Animation;
-        set animation(_animation: Animation);
+        constructor(_animation?: Animation | AnimationBlendTree, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
+        get animation(): Animation | AnimationBlendTree;
+        set animation(_animation: Animation | AnimationBlendTree);
         set scale(_scale: number);
         get scale(): number;
         /**
@@ -2733,6 +2738,7 @@ declare namespace FudgeCore {
         jumpTo(_time: number): void;
         /**
          * Jumps to a certain label in the animation if defined
+         * ⚠️ Not supported for animation blend trees
          */
         jumpToLabel(_label: string): void;
         /**
@@ -2745,13 +2751,14 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        transit(_animation: Animation, _duration: number): void;
+        transit(_animation: Animation | AnimationBlendTree, _duration: number): void;
         private activateListeners;
         /**
          * Updates the animation and all running transitions.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
          */ private updateAnimationLoop;
+        private updateTransitions;
         /**
          * Fires all custom events the Animation should have fired between the last frame and the current frame.
          * @param _events a list of names of custom events to fire
