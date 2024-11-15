@@ -222,7 +222,7 @@ output.placeholder {
   /* background-color: var(--color-focus); */
 }
 
-ul.tree li:has(>fieldset.error) {
+ul.tree li:has(>fieldset .error) {
   outline: 1px outset var(--color-error);
 }
 

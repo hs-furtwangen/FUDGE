@@ -95,6 +95,8 @@ namespace FudgeUserInterface {
       this.#content.innerHTML = "";
       this.#content.appendChild(this.controller.createContent(this.data));
       this.#content.disabled = true;
+      for (const descendant of <NodeListOf<HTMLElement>>this.#content.querySelectorAll("[title]")) 
+        this.title += descendant.title + "\n";
     }
 
     /**
