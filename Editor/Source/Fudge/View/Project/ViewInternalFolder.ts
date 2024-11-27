@@ -272,7 +272,7 @@ namespace Fudge {
 
       // redispatch event without capture
       this.dom.removeEventListener(ƒui.EVENT.DROP, this.hndDropCapture, true);
-      _event.target.dispatchEvent(_event); 
+      _event.target.dispatchEvent(new DragEvent(_event.type, _event));
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDropCapture, true);
 
       resources.forEach(_resource => {
