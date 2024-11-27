@@ -86,84 +86,6 @@ namespace FudgeCore {
     FRAMES = "frames"
   }
 
-  export class AnimationLayer {
-    public animation: Animation | AnimationBlendTree;
-    public weight: number;
-
-    #mutator: Mutator;
-    #events: string[];
-    #time: number;
-
-    public constructor(_animation: Animation | AnimationBlendTree, _weight: number) {
-      this.animation = _animation;
-      this.weight = _weight;
-      this.#time = 0;
-    }
-
-    public get mutator(): Mutator {
-      return this.#mutator;
-    }
-
-    public get events(): string[] {
-      return this.#events;
-    }
-
-    public get time(): number {
-      return this.#time;
-    }
-
-    public getTotalTime(): number {
-      if (this.animation instanceof Animation)
-        return this.animation.totalTime;
-
-      return this.animation.reduce((_max: number, _layer: AnimationLayer) => Math.max(_max, _layer.getTotalTime()), 0);
-    }
-
-    public update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
-      if (this.animation instanceof Animation) {
-        if (this.animation.totalTime == 0 || this.time == _time)
-          return;
-
-        if (_quantization == ANIMATION_QUANTIZATION.FRAMES)
-          _time = this.time + (1000 / this.animation.fps);
-
-        _time = this.animation.getModalTime(_time, _playmode);
-
-        let direction: number = this.animation.calculateDirection(_time, _playmode);
-
-        this.#events = this.animation.getEventsToFire(this.time, _time, _quantization, direction);
-        this.#mutator = this.animation.getState(_time % this.animation.totalTime, direction, _quantization);
-        this.#time = _time;
-
-        return;
-      }
-
-      for (const layer of this.animation)
-        layer.update(_time, _playmode, _quantization);
-
-      this.#time = _time;
-      this.#events = this.animation.flatMap(_layer => _layer.events);
-      this.#mutator = Animation.blend(this.animation);
-    }
-  }
-
-  export class AnimationTransition extends AnimationLayer {
-    public start: number;
-    public duration: number;
-
-    public constructor(_animation: Animation | AnimationBlendTree, _weight: number, _start: number, _duration: number) {
-      super(_animation, _weight);
-      this.start = _start;
-      this.duration = _duration;
-    }
-
-    public update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
-      super.update(_time - this.start, _playmode, _quantization);
-    }
-  }
-
-  export type AnimationBlendTree<T extends AnimationLayer = AnimationLayer> = Array<T>;
-
   /**
    * Describes and controls and animation by yielding mutators 
    * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
@@ -179,7 +101,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Animation.registerSubclass(Animation);
     public idResource: string = undefined;
     public name: string;
-    public totalTime: number = 0;
+    public totalTime: number = 0; // Why isn't this called duration or length?
     public labels: AnimationLabel = {}; // a label marks a specific time to conveniently jump to using a text identifier
     // stepsPerSecond: number = 10;
     public animationStructure: AnimationStructure; // TODO: if set the cache needs to be adjusted (animationStructuresProcessed)

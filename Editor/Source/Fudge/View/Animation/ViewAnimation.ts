@@ -204,7 +204,7 @@ namespace Fudge {
             this.cmpAnimation = this.node.getComponent(ƒ.ComponentAnimation);
             this.contextMenu = this.getContextMenu(this.contextMenuCallback.bind(this));
             if (this.cmpAnimation?.animation != this.animation)
-              this.setAnimation(this.cmpAnimation?.animation);
+              this.setAnimation(<ƒ.Animation>this.cmpAnimation?.animation);
             else
               _event.stopPropagation();
           }

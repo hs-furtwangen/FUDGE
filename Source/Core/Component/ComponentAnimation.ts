@@ -16,7 +16,11 @@ namespace FudgeCore {
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
 
-    #animations: AnimationBlendTree<AnimationLayer | AnimationTransition>; // all animations are stored in a blend tree which is used for smooth transitions
+    /** 
+     * A stack with the current animation at the bottom, the target transition at the top and canceled transitions inbetween.
+     * {@link animation} getts/sets the current animation directly. {@link transit} initiates a transition.
+     */
+    #animations: AnimationBlendTree<AnimationBlendNode | AnimationTransitionNode>;
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -46,8 +50,11 @@ namespace FudgeCore {
     }
 
     public set animation(_animation: Animation | AnimationBlendTree) {
+      if (!_animation)
+        return;
+
       this.#animations.length = 0;
-      this.#animations.push(new AnimationLayer(_animation, 1));
+      this.#animations.push(new AnimationBlendNode(_animation, 1));
     }
 
     public set scale(_scale: number) {
@@ -64,7 +71,7 @@ namespace FudgeCore {
      * - set: jump to a certain sample time in the animation
      */
     public get time(): number {
-      return this.#timeLocal.get() % this.#animations[0].getTotalTime();
+      return this.#timeLocal.get() % this.#animations[0].getLength();
     }
 
     public set time(_time: number) {
@@ -84,9 +91,8 @@ namespace FudgeCore {
      */
     public jumpTo(_time: number): void { // TODO: implement jumpTo with blending, TEST ALL USE CASES
       this.#timeLocal.set(_time);
-      const main: AnimationLayer = this.#animations[0];
-      main.update(_time, this.playmode, this.quantization);
-      this.node.applyAnimation(main.mutator);
+      this.#animations[0].update(_time, this.playmode, this.quantization);
+      this.node.applyAnimation(this.#animations[0].mutator);
     }
 
     /**
@@ -109,6 +115,7 @@ namespace FudgeCore {
      */
     public updateAnimation(_time: number): Mutator {
       // this.#previous = undefined; // TODO: check what to do with blend tree? TEST ALL USE CASES
+      this.#animations[0].time = undefined;
       return this.updateAnimationLoop(null, _time);
     }
 
@@ -129,7 +136,8 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization[super.constructor.name]);
-      this.animation = <Animation>await Project.getResource(_serialization.idAnimation);
+      if (_serialization.idAnimation != undefined)
+        this.animation = <Animation>await Project.getResource(_serialization.idAnimation);
       this.playmode = _serialization.playmode;
       this.quantization = _serialization.quantization;
       this.scale = _serialization.scale;
@@ -161,7 +169,7 @@ namespace FudgeCore {
       if (this.#animations[this.#animations.length - 1]?.animation == _animation)
         return;
 
-      this.#animations.push(new AnimationTransition(_animation, 0, this.#timeLocal.get(), _duration));
+      this.#animations.push(new AnimationTransitionNode(_animation, 0, this.#timeLocal.get(), _duration));
     }
 
     private activateListeners(_on: boolean): void {
@@ -180,16 +188,13 @@ namespace FudgeCore {
      * Uses the built-in time unless a different time is specified.
      * May also be called from updateAnimation().
      */ // TODO: think about whether fireing events for current and target animation makes sense...
-    private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
+    private updateAnimationLoop = (_e: Event, _time: number = this.#timeLocal.get()): Mutator => {
       if (this.#animations.length == 0)
         return null;
 
-      _time ??= this.#timeLocal.get();
-
-      const source: AnimationLayer = this.#animations[0];
-      source.update(_time, this.playmode, this.quantization);
-      this.executeEvents(source.events);
-      let mutator: Mutator = this.#animations.length == 1 ? source.mutator : this.updateTransitions(_time);
+      this.#animations[0].update(_time, this.playmode, this.quantization);
+      this.executeEvents(this.#animations[0].events);
+      let mutator: Mutator = this.#animations.length == 1 ? this.#animations[0].mutator : this.updateTransitions(_time);
       if (this.node)
         this.node.applyAnimation(mutator);
 
@@ -197,7 +202,7 @@ namespace FudgeCore {
     };
 
     private updateTransitions(_time: number): Mutator {
-      const target: AnimationTransition = <AnimationTransition>this.#animations[this.#animations.length - 1];
+      const target: AnimationTransitionNode = <AnimationTransitionNode>this.#animations[this.#animations.length - 1];
       target.update(_time, this.playmode, this.quantization);
       target.weight = Math.min(target.time / target.duration, 1);
 
@@ -209,11 +214,11 @@ namespace FudgeCore {
 
       let totalWeight: number = target.weight;
       for (let i: number = this.#animations.length - 1; i > 1; i--) {
-        const transition: AnimationTransition = <AnimationTransition>this.#animations[i - 1];
+        const transition: AnimationTransitionNode = <AnimationTransitionNode>this.#animations[i - 1];
         transition.weight = Math.min(transition.time / transition.duration, 1) * (1 - totalWeight);
 
         if (i < this.#animations.length - 2) { // fade out canceled transitions if there are more than 2
-          const push: AnimationTransition = <AnimationTransition>this.#animations[i + 2]; // the transition that pushed the current one over the threshold
+          const push: AnimationTransitionNode = <AnimationTransitionNode>this.#animations[i + 2]; // the transition that pushed the current one over the threshold
           transition.weight *= 1 - Math.min(push.time / push.duration, 1); // fade out at progression of the transition that pushed the current one out
         }
 
@@ -233,9 +238,8 @@ namespace FudgeCore {
      * @param _events a list of names of custom events to fire
      */
     private executeEvents(_events: string[]): void {
-      for (let i: number = 0; i < _events.length; i++) {
-        this.dispatchEvent(new Event(_events[i]));
-      }
+      for (const event of _events)
+        this.dispatchEvent(new Event(event));
     }
 
     /**
