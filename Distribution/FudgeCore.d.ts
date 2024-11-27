@@ -2252,24 +2252,6 @@ declare namespace FudgeCore {
         /** Advances the time each frame according to the FPS value of the animation, ignoring the actual duration of the frames. Doesn't skip any frames.*/
         FRAMES = "frames"
     }
-    class AnimationLayer {
-        #private;
-        animation: Animation | AnimationBlendTree;
-        weight: number;
-        constructor(_animation: Animation | AnimationBlendTree, _weight: number);
-        get mutator(): Mutator;
-        get events(): string[];
-        get time(): number;
-        getTotalTime(): number;
-        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
-    }
-    class AnimationTransition extends AnimationLayer {
-        start: number;
-        duration: number;
-        constructor(_animation: Animation | AnimationBlendTree, _weight: number, _start: number, _duration: number);
-        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
-    }
-    type AnimationBlendTree<T extends AnimationLayer = AnimationLayer> = Array<T>;
     /**
      * Describes and controls and animation by yielding mutators
      * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
@@ -2418,6 +2400,38 @@ declare namespace FudgeCore {
          */
         private checkEventsBetween;
     }
+}
+declare namespace FudgeCore {
+    /**
+   * A node in an {@link AnimationBlendTree} that manages a weighted {@link Animation} or {@link AnimationBlendTree subtree}.
+   * {@link update Updates} and provides access to the node's current state ({@link time}, {@link mutator}, {@link events}).
+   * @author Jonas Plotzky, HFU, 2024
+   */
+    class AnimationBlendNode {
+        #private;
+        animation: Animation | AnimationBlendTree;
+        weight: number;
+        time: number;
+        constructor(_animation: Animation | AnimationBlendTree, _weight: number);
+        /** The (blended) {@link Animation.getState animation mutator} at the state of the last {@link update}. */
+        get mutator(): Mutator;
+        /** The {@link Animation.events events} that occured between the nodes last two {@link update}s. */
+        get events(): string[];
+        /** Returns the {@link Animation.totalTime length} of this nodes animation or the longest animation length in the subtree */
+        getLength(): number;
+        /**
+         * Updates the {@link time}, {@link mutator} and {@link events} according the given time, direction and quantization.
+         */
+        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
+    }
+    class AnimationTransitionNode extends AnimationBlendNode {
+        start: number;
+        duration: number;
+        constructor(_animation: Animation | AnimationBlendTree, _weight: number, _start: number, _duration: number);
+        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
+    }
+    /** A tree of weighted {@link Animation}s to blend between them. Can be used as a {@link ComponentAnimation}s animation */
+    type AnimationBlendTree<T extends AnimationBlendNode = AnimationBlendNode> = Array<T>;
 }
 declare namespace FudgeCore {
     /**
