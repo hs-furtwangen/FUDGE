@@ -3,6 +3,8 @@
 
 namespace FudgeCore {
 
+
+
   /**
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
@@ -20,13 +22,16 @@ namespace FudgeCore {
      * A stack with the current animation at the bottom, the target transition at the top and canceled transitions inbetween.
      * {@link animation} getts/sets the current animation directly. {@link transit} initiates a transition.
      */
-    #animations: AnimationBlendTree<AnimationBlendNode | AnimationTransitionNode>;
+    #animations: AnimationTree<AnimationNode>;
 
     #scale: number = 1;
     #timeLocal: Time;
     // #previous: number = 0; // TODO: watch out for occurence of this variable
 
-    public constructor(_animation?: Animation | AnimationBlendTree, _playmode: ANIMATION_PLAYMODE = ANIMATION_PLAYMODE.LOOP, _quantization: ANIMATION_QUANTIZATION = ANIMATION_QUANTIZATION.CONTINOUS) {
+    // #timeFrame = 0;
+    #timeFrameStart: number = 0;
+
+    public constructor(_animation?: Animation | AnimationTree, _playmode: ANIMATION_PLAYMODE = ANIMATION_PLAYMODE.LOOP, _quantization: ANIMATION_QUANTIZATION = ANIMATION_QUANTIZATION.CONTINOUS) {
       super();
       this.#animations = [];
       this.#timeLocal = new Time();
@@ -45,16 +50,24 @@ namespace FudgeCore {
     }
 
     @type(Animation) @enumerate
-    public get animation(): Animation | AnimationBlendTree {
-      return this.#animations[0]?.animation;
+    public get animation(): Animation | AnimationTree {
+      return this.#animations[0]?.motion;
     }
 
-    public set animation(_animation: Animation | AnimationBlendTree) {
+    public set animation(_animation: Animation | AnimationTree) {
       if (!_animation)
         return;
 
+      this.branch = new AnimationNode(_animation, 1, ANIMATION_BLENDING.OVERRIDE);
+    }
+
+    public get branch(): AnimationNode {
+      return this.#animations[0];
+    }
+
+    public set branch(_branch: AnimationNode) {
       this.#animations.length = 0;
-      this.#animations.push(new AnimationBlendNode(_animation, 1));
+      this.#animations.push(_branch);
     }
 
     public set scale(_scale: number) {
@@ -76,6 +89,14 @@ namespace FudgeCore {
 
     public set time(_time: number) {
       this.jumpTo(_time);
+    }
+
+    public get transition(): Animation | AnimationTree {
+      return this.#animations[this.#animations.length - 1]?.motion;
+    }
+
+    public isPlaying(_animation: Animation | AnimationTree): boolean {
+      return this.animation == _animation || this.#animations[this.#animations.length - 1]?.motion == _animation;
     }
 
     public activate(_on: boolean): void {
@@ -165,11 +186,14 @@ namespace FudgeCore {
     }
     //#endregion
 
-    public transit(_animation: Animation | AnimationBlendTree, _duration: number): void {
-      if (this.#animations[this.#animations.length - 1]?.animation == _animation)
+    public transit(_to: AnimationNode, _duration: number): void {
+      let target: AnimationNode = this.#animations[this.#animations.length - 1];
+      if (target == _to)
         return;
 
-      this.#animations.push(new AnimationTransitionNode(_animation, 0, this.#timeLocal.get(), _duration));
+      _to.blending = ANIMATION_BLENDING.OVERRIDE;
+      _to.duration = _duration;
+      this.#animations.push(_to);
     }
 
     private activateListeners(_on: boolean): void {
@@ -192,43 +216,42 @@ namespace FudgeCore {
       if (this.#animations.length == 0)
         return null;
 
-      this.#animations[0].update(_time, this.playmode, this.quantization);
+      let timeFrame: number = _time - this.#timeFrameStart;
+      this.#timeFrameStart = _time;
+
+      this.#animations[0].update(timeFrame, this.playmode, this.quantization);
       this.executeEvents(this.#animations[0].events);
-      let mutator: Mutator = this.#animations.length == 1 ? this.#animations[0].mutator : this.updateTransitions(_time);
+      let mutator: Mutator = this.#animations.length > 1 ? this.updateTransitions(timeFrame) : this.#animations[0].mutator;
       if (this.node)
         this.node.applyAnimation(mutator);
 
       return mutator;
     };
 
-    private updateTransitions(_time: number): Mutator {
-      const target: AnimationTransitionNode = <AnimationTransitionNode>this.#animations[this.#animations.length - 1];
-      target.update(_time, this.playmode, this.quantization);
+    private updateTransitions(_deltaTime: number): Mutator {
+      let target: AnimationNode = this.#animations[this.#animations.length - 1];
+      target.update(_deltaTime, this.playmode, this.quantization);
       target.weight = Math.min(target.time / target.duration, 1);
 
       if (target.weight == 1) {
         this.#timeLocal.set(target.time);
-        this.animation = target.animation;
+        this.#timeFrameStart = target.time;
+        this.#animations.length = 0;
+        this.#animations.push(target);
         return target.mutator;
       }
 
-      let totalWeight: number = target.weight;
-      for (let i: number = this.#animations.length - 1; i > 1; i--) {
-        const transition: AnimationTransitionNode = <AnimationTransitionNode>this.#animations[i - 1];
-        transition.weight = Math.min(transition.time / transition.duration, 1) * (1 - totalWeight);
+      // for (let i: number = this.#animations.length - 1; i > 1; i--) {
+      //   const transition: AnimationTransition = this.#animations[i - 1];
 
-        if (i < this.#animations.length - 2) { // fade out canceled transitions if there are more than 2
-          const push: AnimationTransitionNode = <AnimationTransitionNode>this.#animations[i + 2]; // the transition that pushed the current one over the threshold
-          transition.weight *= 1 - Math.min(push.time / push.duration, 1); // fade out at progression of the transition that pushed the current one out
-        }
+      //   if (i < this.#animations.length - 2) { // fade out canceled transitions if there are more than 2
+      //     const push: AnimationTransition = this.#animations[i + 2]; // the transition that pushed the current one over the threshold
+      //     transition.weight *= 1 - Math.min(push.time / push.duration, 1); // fade out at progression of the transition that pushed the current one out
+      //   }
 
-        if (transition.weight == 0.0)
-          this.#animations.splice(i - 1, 1);
-
-        totalWeight += transition.weight;
-      }
-
-      this.#animations[0].weight = Math.max(1 - totalWeight, 0);
+      //   if (transition.weight == 0.0)
+      //     this.#animations.splice(i - 1, 1);
+      // }
 
       return Animation.blend(this.#animations);
     }
