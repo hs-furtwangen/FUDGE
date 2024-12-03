@@ -13,7 +13,7 @@ namespace Fudge {
     [MIME.TEXT, ["ts", "json", "html", "htm", "css", "js", "txt"]],
     [MIME.MESH, ["obj"]],
     [MIME.AUDIO, ["mp3", "wav", "ogg"]],
-    [MIME.IMAGE, ["png", "jpg", "jpeg", "tif", "tga", "gif"]],
+    [MIME.IMAGE, ["png", "jpg", "jpeg", "tif", "tga", "gif", "svg"]],
     [MIME.GLTF, ["gltf", "glb"]]
   ]);
 
