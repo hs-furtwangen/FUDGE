@@ -122,7 +122,15 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    public static blend(_blends: { mutator: Mutator; weight?: number; blending?: ANIMATION_BLENDING }[]): Mutator {
+    public static blend(_blends: { mutator?: Mutator; weight?: number; blending?: ANIMATION_BLENDING }[]): Mutator {
+      _blends = _blends.filter(_blend => _blend.mutator != undefined);
+
+      if (_blends.length == 0)
+        return {};
+
+      if (_blends.length == 1)
+        return _blends[0].mutator;
+
       let mutator: Mutator = {};
       for (const node of _blends) {
         const weight: number = node.weight ?? 1;
@@ -139,31 +147,72 @@ namespace FudgeCore {
       return mutator;
     }
 
-    public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void {
-      for (let key in _blend) {
+    public static blendOverride(_base: Mutator, _blend: Mutator, _weight: number): void {
+      Animation.blendRecursive(_base, _blend, 1 - _weight, _weight);
+    }
+
+    public static blendAdditive(_base: Mutator, _blend: Mutator, _weight: number): void {
+      Animation.blendRecursive(_base, _blend, 1, _weight);
+    }
+
+    public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void {    
+      for (const key in _blend) {
         if (typeof _blend[key] == "number") {
           _base[key] = (_base[key] ?? 0) * _weightBase + _blend[key] * _weightBlend;
           continue;
         }
-
+    
         if (typeof _base[key] == "object") {
           let base: Mutator = _base[key];
           let blend: Mutator = _blend[key];
           if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && Quaternion.DOT(<Quaternion>base, <Quaternion>blend) < 0)
-            Quaternion.negate(<Quaternion>blend);
+            Quaternion.negate(<Quaternion>base);
           this.blendRecursive(base, blend, _weightBase, _weightBlend);
-
           continue;
         }
-
+    
         if (typeof _blend[key] === "object") {
-          _base[key] = {};
-          this.blendRecursive(_base[key], _blend[key], _weightBase, _weightBlend);
-
+          this.blendRecursive(_base[key] = {}, _blend[key], _weightBase, _weightBlend);
           continue;
         }
       }
     }
+
+    // public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number): void {
+    //   for (let key in _blend) {
+    //     if (typeof _blend[key] == "number") {
+    //       _base[key] = (_base[key] ?? 0) * _weightBase + _blend[key] * _weightBlend;
+    //       continue;
+    //     }
+
+    //     if (typeof _base[key] == "object") {
+    //       let base: Mutator = _base[key];
+    //       let blend: Mutator = _blend[key];
+    //       if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && Quaternion.DOT(<Quaternion>base, <Quaternion>blend) < 0)
+    //         Quaternion.negate(<Quaternion>base);
+    //       Animation.blendRecursive(base, blend, _weightBase, _weightBlend);
+
+    //       continue;
+    //     }
+
+    //     if (typeof _blend[key] === "object") {
+    //       let blend: Mutator = _blend[key];
+    //       if (key == "rotation" && blend.w != undefined) {
+    //         let quaternion: Quaternion = Recycler.reuse(Quaternion)
+    //           .set(blend.x, blend.y, blend.z, blend.w)
+    //           .power(_weightBlend);
+    //         _base[key] = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+    //         Recycler.store(quaternion);
+    //       } else {
+
+    //         _base[key] = {};
+    //         Animation.blendRecursive(_base[key], _blend[key], _weightBase, _weightBlend);
+    //       }
+
+    //       continue;
+    //     }
+    //   }
+    // }
 
     protected static registerSubclass(_subClass: typeof Animation): number { return Animation.subclasses.push(_subClass) - 1; }
 

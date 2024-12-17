@@ -18,14 +18,7 @@ namespace FudgeCore {
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
 
-    #mutator: Mutator;
-    #cancel: Mutator;
-    
-    #branch: AnimationNode;
-    #transition: AnimationNode;
-
-    #transitionTime: number;
-    #transitionDuration: number;
+    public branch: AnimationNode | AnimationLayers;
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -41,8 +34,6 @@ namespace FudgeCore {
       this.quantization = _quantization;
       this.animation = _animation;
 
-      // this.animation?.calculateTotalTime();
-
       this.addEventListener(EVENT.COMPONENT_REMOVE, () => this.activate(false));
       this.addEventListener(EVENT.COMPONENT_ADD, () => {
         this.node.addEventListener(EVENT.CHILD_REMOVE, () => this.activate(false));
@@ -52,7 +43,7 @@ namespace FudgeCore {
 
     @type(Animation) @enumerate
     public get animation(): Animation {
-      let motion: Animation | AnimationNode[] = this.branch?.motion;
+      let motion: Animation | AnimationNode[] = (<AnimationNode>this.branch).motion;
       if (motion instanceof Animation)
         return motion;
 
@@ -64,16 +55,6 @@ namespace FudgeCore {
         return;
 
       this.branch = new AnimationNode(_animation, { weight: 1 });
-    }
-
-    public get branch(): AnimationNode {
-      return this.#branch;
-    }
-
-    public set branch(_branch: AnimationNode) {
-      this.#branch = _branch;
-      this.#transition = null;
-      this.#cancel = null;
     }
 
     public set scale(_scale: number) {
@@ -90,19 +71,11 @@ namespace FudgeCore {
      * - set: jump to a certain sample time in the animation
      */
     public get time(): number {
-      return this.#timeLocal.get() % this.branch.getLength();
+      return this.#timeLocal.get();
     }
 
     public set time(_time: number) {
       this.jumpTo(_time);
-    }
-
-    public isPlaying(_branch: AnimationNode): boolean {
-      return this.#branch == _branch || this.#transition == _branch;
-    }
-
-    public isTransitioning(_to: AnimationNode): boolean {
-      return this.#transition == _to;
     }
 
     public activate(_on: boolean): void {
@@ -142,7 +115,6 @@ namespace FudgeCore {
      */
     public updateAnimation(_time: number): Mutator {
       // this.#previous = undefined; // TODO: check what to do with blend tree? TEST ALL USE CASES
-      // this.#animations[0].time = undefined;
       return this.updateAnimationLoop(null, _time);
     }
 
@@ -192,17 +164,6 @@ namespace FudgeCore {
     }
     //#endregion
 
-    public transit(_to: AnimationNode, _duration: number, _offset: number = 0): void {
-      _to.setTime(_offset);
-      this.#transitionTime = 0;
-      this.#transitionDuration = _duration;
-
-      if (this.#transition) 
-        this.#cancel = this.#mutator;
-      
-      this.#transition = _to;
-    }
-
     private activateListeners(_on: boolean): void {
       if (_on && (Project.mode != MODE.EDITOR || Project.mode == MODE.EDITOR && this.animateInEditor)) {
         Time.game.addEventListener(EVENT.TIME_SCALED, this.updateScale);
@@ -223,37 +184,13 @@ namespace FudgeCore {
       let timeFrame: number = _time - this.#timeFrameStart;
       this.#timeFrameStart = _time;
 
-      let branch: AnimationNode = this.#branch;
-      let transition: AnimationNode = this.#transition;
+      this.branch.update(timeFrame, this.playmode, this.quantization);
+      this.executeEvents(this.branch.events);
 
-      if (!this.#cancel) {
-        branch.update(timeFrame, this.playmode, this.quantization);
-        this.executeEvents(branch.events);
-        this.#mutator = branch.mutator;
-      }
-
-      if (transition) {
-        transition.update(timeFrame, this.playmode, this.quantization);
-        this.executeEvents(transition.events);
-
-        let progress: number = Math.min((this.#transitionTime += timeFrame) / this.#transitionDuration, 1);
-
-        if (this.#cancel) {
-          this.#mutator = {};
-          Animation.blendRecursive(this.#mutator, this.#cancel, 1, 1);
-        }
-
-        Animation.blendRecursive(this.#mutator, transition.mutator, 1 - progress, progress);
-
-        if (progress == 1) 
-          this.branch = transition;
-      }
-
-      
       if (this.node)
-        this.node.applyAnimation(this.#mutator);
+        this.node.applyAnimation(this.branch.mutator);
 
-      return this.#mutator;
+      return this.branch.mutator;
     };
 
     /**
@@ -261,6 +198,9 @@ namespace FudgeCore {
      * @param _events a list of names of custom events to fire
      */
     private executeEvents(_events: string[]): void {
+      if (!_events)
+        return;
+
       for (const event of _events)
         this.dispatchEvent(new Event(event));
     }
