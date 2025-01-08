@@ -138,10 +138,10 @@ namespace FudgeCore {
         const weight: number = layer.weight;
         switch (layer.blending) {
           case ANIMATION_BLENDING.ADDITIVE:
-            Animation.blendRecursive(mutator, layer.mutator, 1, weight);
+            mutator = Animation.blendAdditive(mutator, layer.mutator, weight);
             break;
           case ANIMATION_BLENDING.OVERRIDE:
-            Animation.blendRecursive(mutator, layer.mutator, 1 - weight, weight);
+            mutator = Animation.blendOverride(mutator, layer.mutator, weight);
             break;
         }
       }
@@ -151,79 +151,78 @@ namespace FudgeCore {
     }
   }
 
+  export class AnimationTransition {
+    public from: Partial<AnimationNode>;
+    public to: Partial<AnimationNode>;
+    public duration: number;
+    public time: number;
+
+    public mutator: Mutator;
+
+    public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _pose: Mutator): void {
+      this.time += _deltaTime;
+
+      this.from.update?.(_deltaTime, _playmode, _quantization);
+      this.to.update?.(_deltaTime, _playmode, _quantization);
+
+      let progress: number = Math.min(this.time / this.duration, 1);
+
+      let from: Mutator = this.from.mutator ?? _pose;
+      let to: Mutator = this.to.mutator ?? _pose;
+
+      if (from == to) {
+        this.mutator = null;
+        return;
+      }
+
+      this.mutator = Animation.blendOverride(from, to, progress, from == _pose || to == _pose);
+    }
+  }
+
   export class AnimationLayer {
-    public motion: AnimationNode | null;
-    
+    public motion: Partial<AnimationNode> | AnimationTransition;
+
     public weight: number;
     public blending: ANIMATION_BLENDING;
     public mutator: Mutator;
     public events: string[];
-    
-    #poseCancel: Mutator;
-    
-    #transitionTarget: AnimationNode | null;
-    #transitionTime: number;
-    #transitionDuration: number;
 
-    public constructor(_branch: AnimationNode, _options?: { weight?: number; blending?: ANIMATION_BLENDING }) {
-      this.motion = _branch;
+    public constructor(_motion: Partial<AnimationNode>, _options?: { weight?: number; blending?: ANIMATION_BLENDING }) {
+      this.motion = _motion;
       this.weight = _options?.weight ?? 1;
       this.blending = _options?.blending ?? ANIMATION_BLENDING.OVERRIDE;
     }
 
     public isPlaying(_branch: AnimationNode): boolean {
-      return this.motion == _branch || this.#transitionTarget == _branch;
+      return this.motion == _branch || (this.motion instanceof AnimationTransition && (this.motion.from == _branch || this.motion.to == _branch));
     }
 
     public isTransitioning(_to: AnimationNode): boolean {
-      return this.#transitionTarget == _to;
+      return this.motion instanceof AnimationTransition && this.motion.to == _to;
     }
 
-    public transit(_to: AnimationNode | null, _duration: number, _offset: number = 0): void {
-      _to?.setTime(_offset);
-      this.#transitionTime = 0;
-      this.#transitionDuration = _duration;
+    public transit(_to: Partial<AnimationNode>, _duration: number, _offset: number = 0): void {
+      _to?.setTime?.(_offset);
 
-      if (this.#transitionTarget)
-        this.#poseCancel = this.mutator;
+      let transtion: AnimationTransition = new AnimationTransition();
+      if (this.motion instanceof AnimationTransition) {
+        transtion.from = { mutator: this.motion.mutator };
+      } else {
+        transtion.from = this.motion;
+      }
+      transtion.to = _to;
+      transtion.duration = _duration;
+      transtion.time = 0;
 
-      this.#transitionTarget = _to;
+      this.motion = transtion;
     }
 
     public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _pose: Mutator): void {
-      this.motion?.update(_deltaTime, _playmode, _quantization);
+      this.motion?.update?.(_deltaTime, _playmode, _quantization, _pose);
       this.mutator = this.motion?.mutator;
 
-      if (this.#transitionTime != null) {
-        this.#transitionTarget?.update(_deltaTime, _playmode, _quantization);
-
-        let from: Mutator = this.motion?.mutator;
-        let to: Mutator = this.#transitionTarget?.mutator;
-
-        if (this.#poseCancel) // copy cancel mutator
-          Animation.blendOverride(from = {}, this.#poseCancel, 1);
-
-        let progress: number = Math.min((this.#transitionTime += _deltaTime) / this.#transitionDuration, 1);
-
-        if (to) {
-          if (!from)
-            Animation.blendOverride(from = {}, _pose, 1); // copy pose mutator
-          Animation.blendOverride(this.mutator = from, to, progress);
-        } else {
-          Animation.blendOverride(to = {}, _pose, 1); // copy pose mutator
-          Animation.blendOverride(this.mutator = to, from, 1 - progress);
-        }
-
-        if (progress == 1) {
-          this.motion = this.#transitionTarget;
-          this.#transitionTarget = null;
-          this.#poseCancel = null;
-          this.#transitionTime = null;
-          this.#transitionDuration = null;
-        }
-      }
+      if (this.motion instanceof AnimationTransition && this.motion.time >= this.motion.duration)
+        this.motion = this.motion.to;
     }
   }
 }
-
-

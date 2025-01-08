@@ -43,7 +43,7 @@ namespace FudgeCore {
 
     @type(Animation) @enumerate
     public get animation(): Animation {
-      let motion: Animation | AnimationNode[] = (<AnimationNode>this.branch).motion;
+      let motion: Animation | AnimationNode[] = (<AnimationNode>this.branch)?.motion;
       if (motion instanceof Animation)
         return motion;
 
