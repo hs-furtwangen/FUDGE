@@ -46,12 +46,16 @@ namespace FudgeCore {
      * Axis must be normalized. Angle is in degrees.
      */
     public static ROTATION(_axis: Vector3, _angle: number): Quaternion;
-    public static ROTATION(_vector: Vector3, _angle?: number): Quaternion {
+    /**
+     * Returns a quaternion that rotates coordinates when multiplied by, using the forward and up direction given.
+     */
+    public static ROTATION(_forward: Vector3, _up: Vector3): Quaternion;
+    public static ROTATION(_vector: Vector3, _angleOrUp?: number | Vector3): Quaternion {
       const result: Quaternion = Recycler.get(Quaternion);
-      if (_angle == undefined) {
+      if (_angleOrUp == undefined) {
         result.eulerAngles = _vector;
-      } else {
-        let halfAngle: number = _angle * Calc.deg2rad / 2;
+      } else if (typeof _angleOrUp == "number") {
+        let halfAngle: number = _angleOrUp * Calc.deg2rad / 2;
         let sinHalfAngle: number = Math.sin(halfAngle);
 
         result.set(
@@ -60,34 +64,22 @@ namespace FudgeCore {
           _vector.z * sinHalfAngle,
           Math.cos(halfAngle)
         );
+      } else {
+        const right: Vector3 = Vector3.CROSS(_angleOrUp, _vector);
+        const matrix: Matrix4x4 = Recycler.reuse(Matrix4x4);
+        matrix.set([
+          right.x, right.y, right.z, 0,
+          _angleOrUp.x, _angleOrUp.y, _angleOrUp.z, 0,
+          _vector.x, _vector.y, _vector.z, 0,
+          0, 0, 0, 1
+        ]);
+
+        result.copy(matrix.quaternion);
+        Recycler.storeMultiple(right, matrix);
       }
 
       return result;
     }
-
-    /**
-     * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
-     * ⚠️ UNTESTED!
-     */
-    // public static ROTATION(_axis: Vector3, _angle: number): Quaternion {
-    //   const result: Quaternion = Recycler.get(Quaternion);
-
-    //   // Normalize the axis
-    //   const axis: Vector3 = _axis.clone;
-    //   axis.normalize();
-
-    //   // Calculate the quaternion components
-    //   const halfAngle: number = _angle / 2;
-    //   const s: number = Math.sin(halfAngle);
-    //   result.x = axis.x * s;
-    //   result.y = axis.y * s;
-    //   result.z = axis.z * s;
-    //   result.w = Math.cos(halfAngle);
-
-    //   Recycler.store(axis);
-
-    //   return result;
-    // }
 
     /**
      * Computes and returns the product of two passed quaternions.
@@ -137,13 +129,14 @@ namespace FudgeCore {
      */
     public static SLERP(_from: Quaternion, _to: Quaternion, _factor: number): Quaternion {
       // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+      const result: Quaternion = Recycler.reuse(Quaternion);
       let cosHalfTheta: number = _from.w * _to.w + _from.x * _to.x + _from.y * _to.y + _from.z * _to.z;
-      if (Math.abs(cosHalfTheta) >= 1)
-        return _from;
+      if (Math.abs(cosHalfTheta) >= 1) 
+        return result.copy(_from);
+      
       let halfTheta: number = Math.acos(cosHalfTheta);
       let sinHalfTheta: number = Math.sqrt(1 - cosHalfTheta * cosHalfTheta);
       if (Math.abs(sinHalfTheta) < 0.001) {
-        let result: Quaternion = Recycler.get(Quaternion);
         result.set(
           (_from.x * 0.5 + _to.x * 0.5),
           (_from.y * 0.5 + _to.y * 0.5),
@@ -152,9 +145,9 @@ namespace FudgeCore {
         );
         return result;
       }
+      
       let ratioA: number = Math.sin((1 - _factor) * halfTheta) / sinHalfTheta;
       let ratioB: number = Math.sin(_factor * halfTheta) / sinHalfTheta;
-      let result: Quaternion = Recycler.get(Quaternion);
       result.set(
         (_from.x * ratioA + _to.x * ratioB),
         (_from.y * ratioA + _to.y * ratioB),
@@ -239,6 +232,7 @@ namespace FudgeCore {
 
       this.#eulerAngles.copy(_eulerAngles);
       this.#eulerAnglesDirty = false;
+      Recycler.store(halfAnglesInRadians);
     }
 
     /**

@@ -213,6 +213,68 @@ namespace FudgeCore {
     public static PROJECTION(_a: Vector3, _b: Vector3): Vector3 {
       return _a.clone.project(_b);
     }
+
+    /**
+     * Returns the linear interpolation of two vectors. Clamps the factor between 0 and 1.
+     */
+    public static LERP(_a: Vector3, _b: Vector3, _factor: number): Vector3 {
+      _factor = Calc.clamp(_factor, 0, 1);
+      let vector: Vector3 = Recycler.reuse(Vector3);
+      vector.set(
+        _a.x + (_b.x - _a.x) * _factor,
+        _a.y + (_b.y - _a.y) * _factor,
+        _a.z + (_b.z - _a.z) * _factor
+      );
+      return vector;
+    }
+
+    /**
+     * Smoothly interpolates between two vectors based on a critically damped spring model. 
+     * Allows to smooth toward a moving target with an ease-in/ease-out motion maintaining a continuous velocity.
+     * Does not overshoot.
+     * @param _current - The current value.
+     * @param _target - The target value.
+     * @param _velocity - The velocity at which the value is moving. This value is **modified** by the function and must be maintained in the outside context.
+     * @param _smoothTime - The time it would take for the value to reach the target if it were moving at maximum velocity for the entire duration. When following a moving target the smooth time equals the lag time allowing to calculate the `lag distance = target velocity * smooth time`.
+     * @param _timeFrame - The elapsed time since the last call to the function.
+     * @param _maxSpeed - An optional maximum speed that limits the velocity of the value. Defaults to Infinity.
+     * @source from Andrew Kirmse, Game Programming Gems 4, Chapter 1.10
+     */
+    public static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed: number = Infinity): Vector3 {
+      const omega: number = 2 / _smoothTime;
+      const x: number = omega * _timeFrame;
+      const exp: number = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x); // approximation of e ^ -omega * timeFrame
+      const change: Vector3 = Vector3.DIFFERENCE(_current, _target); // c = from - to  | to = from - c
+      
+      const maxChange: number = _maxSpeed * _smoothTime;
+      const magnitudeSquared: number = change.magnitudeSquared;
+      if (magnitudeSquared > maxChange * maxChange) {
+        change.scale(maxChange / Math.sqrt(magnitudeSquared));
+        _target = Vector3.DIFFERENCE(_current, change);
+      }
+      
+      // TODO: maybe optimize this...
+      const scaleChange: Vector3 = Vector3.SCALE(change, omega);
+      const sumVelocityScaleChange: Vector3 = Vector3.SUM(_velocity, scaleChange);
+      const temp: Vector3 = Vector3.SCALE(sumVelocityScaleChange, _timeFrame);
+
+      const scaleTemp: Vector3 = Vector3.SCALE(temp, omega);
+      const differenceVelocityScaleTemp: Vector3 = Vector3.DIFFERENCE(_velocity, scaleTemp);
+      const scaleDifferenceVelocityScaleTemp: Vector3 = Vector3.SCALE(differenceVelocityScaleTemp, exp);
+      _velocity.copy(scaleDifferenceVelocityScaleTemp);
+
+      const sumChangeTemp: Vector3 = Vector3.SUM(change, temp);
+      const scaleSumChangeTempExp: Vector3 = Vector3.SCALE(sumChangeTemp, exp);
+      const result: Vector3 = Vector3.SUM(_target, scaleSumChangeTempExp);
+
+      // without recycling...
+      // const temp: Vector3 = Vector3.SCALE(Vector3.SUM(_velocity, Vector3.SCALE(change, omega)), _timeFrame);
+      // _velocity.copy(Vector3.SCALE(Vector3.DIFFERENCE(_velocity, Vector3.SCALE(temp, omega)), exp));
+      // const result: Vector3 = Vector3.SUM(_target, Vector3.SCALE(Vector3.SUM(change, temp), exp));
+      
+      Recycler.storeMultiple(scaleChange, sumVelocityScaleChange, temp, scaleTemp, differenceVelocityScaleTemp, scaleDifferenceVelocityScaleTemp, sumChangeTemp, scaleSumChangeTempExp);
+      return result;
+    }
     //#endregion
 
     //#region Accessors

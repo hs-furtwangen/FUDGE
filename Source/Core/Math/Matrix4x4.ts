@@ -261,7 +261,7 @@ namespace FudgeCore {
 
     /**
      * Returns a matrix that rotates coordinates when multiplied by, using the rotation euler angles or unit quaternion given.
-     * Rotation occurs around the axis in the order Z-Y-X .
+     * Rotation occurs around the axis in the order Z-Y-X.
      */
     public static ROTATION(_rotation: Vector3 | Quaternion): Matrix4x4 {
       const mtxResult: Matrix4x4 = Recycler.get(Matrix4x4);
@@ -376,8 +376,8 @@ namespace FudgeCore {
         _m[4] = cosZ * sinY * sinX - sinZ * cosX; _m[5] = sinZ * sinY * sinX + cosZ * cosX; _m[6] = cosY * sinX;
         _m[8] = cosZ * sinY * cosX + sinZ * sinX; _m[9] = sinZ * sinY * cosX - cosZ * sinX; _m[10] = cosY * cosX;
       } else {
-        const rotationNormalized: Quaternion = Quaternion.NORMALIZATION(_rotation);
-        const x: number = rotationNormalized.x, y: number = rotationNormalized.y, z: number = rotationNormalized.z, w: number = rotationNormalized.w;
+        // const rotationNormalized: Quaternion = Quaternion.NORMALIZATION(_rotation);
+        const x: number = _rotation.x, y: number = _rotation.y, z: number = _rotation.z, w: number = _rotation.w;
         const xx: number = x * x, xy: number = x * y, xz: number = x * z, xw: number = x * w;
         const yy: number = y * y, yz: number = y * z, yw: number = y * w;
         const zz: number = z * z, zw: number = z * w;
@@ -390,7 +390,7 @@ namespace FudgeCore {
         // _m[0] = 1 - 2 * (yy + zz); _m[1] = 2 * (xy + zw);/**/ _m[2] = 2 * (xz - yw);
         // _m[4] = 2 * (xy - zw);/**/ _m[5] = 1 - 2 * (xx + zz); _m[6] = 2 * (yz + xw);
         // _m[8] = 2 * (xz + yw);/**/ _m[9] = 2 * (yz - xw);/**/ _m[10] = 1 - 2 * (xx + yy);
-        Recycler.store(rotationNormalized);
+        // Recycler.store(rotationNormalized);
       }
     }
     //#endregion
@@ -1093,18 +1093,22 @@ namespace FudgeCore {
           isFullVectorMutator(_mutator.rotation) ? this.#rotation : this.rotation; // hack to avoid unnecessary recalculation of rotation and scaling. This recalculation is unnecessary when we get a full mutator i.e. with x, y and z set
 
         let scaling: Vector3 = isFullVectorMutator(_mutator.scaling) ? this.#scaling : this.scaling;
-
-        if (_mutator.rotation)
+        
+        const isQuaternion: boolean = rotation instanceof Quaternion;
+        
+        if (_mutator.rotation) {
           rotation.mutate(_mutator.rotation);
+          if (isQuaternion)
+            rotation.normalize();
+        }
 
         if (_mutator.scaling)
           scaling.mutate(_mutator.scaling);
-
+        
         Matrix4x4.setRotation(m, rotation);
-        const isEulerRotation: boolean = rotation instanceof Vector3;
-        this.#rotationDirty = !isEulerRotation;
-        this.#quaternionDirty = isEulerRotation;
-
+        this.#rotationDirty = isQuaternion;
+        this.#quaternionDirty = !isQuaternion;
+        
         const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
         m[0] *= sx; m[1] *= sx; m[2] *= sx;
         m[4] *= sy; m[5] *= sy; m[6] *= sy;
