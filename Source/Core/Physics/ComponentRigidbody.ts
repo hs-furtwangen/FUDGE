@@ -293,14 +293,11 @@ namespace FudgeCore {
     /**
      * Sets the current ROTATION of the {@link Node} in the physical space, in degree.
      */
-    public setRotation(_value: Vector3): void {
-      let quat: OIMO.Quat = new OIMO.Quat();
-      let mtxRot: Matrix4x4 = Matrix4x4.IDENTITY();
-      mtxRot.rotate(new Vector3(_value.x, _value.y, _value.z));
-      let array: Float32Array = mtxRot.get();
-      let rot: OIMO.Mat3 = new OIMO.Mat3(array[0], array[4], array[8], array[1], array[5], array[9], array[2], array[6], array[10]);
-      quat.fromMat3(rot);
-      // quat.normalize();
+    public setRotation(_value: Vector3 | Quaternion): void {
+      let quaternion: Quaternion = _value instanceof Vector3 ? Quaternion.ROTATION(_value) : _value;
+      let quat: OIMO.Quat = new OIMO.Quat(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+      if (_value instanceof Vector3)
+        Recycler.store(quaternion);
       this.#rigidbody.setOrientation(quat);
     }
 
