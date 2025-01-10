@@ -18,7 +18,7 @@ namespace FudgeCore {
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
 
-    public branch: AnimationNode | AnimationLayers;
+    public branch: AnimationNode;
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -43,9 +43,8 @@ namespace FudgeCore {
 
     @type(Animation) @enumerate
     public get animation(): Animation {
-      let motion: Animation | AnimationNode[] = (<AnimationNode>this.branch)?.motion;
-      if (motion instanceof Animation)
-        return motion;
+      if (this.branch instanceof AnimationNodeAnimation)
+        return this.branch.animation;
 
       return null;
     }
@@ -54,7 +53,7 @@ namespace FudgeCore {
       if (!_animation)
         return;
 
-      this.branch = new AnimationNode(_animation, { weight: 1 });
+      this.branch = new AnimationNodeAnimation(_animation);
     }
 
     public set scale(_scale: number) {

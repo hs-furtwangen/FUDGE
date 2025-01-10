@@ -122,32 +122,6 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    public static blend(_blends: { mutator?: Mutator; weight?: number; blending?: ANIMATION_BLENDING }[]): Mutator {
-      _blends = _blends.filter(_blend => _blend.mutator != undefined);
-
-      if (_blends.length == 0)
-        return {};
-
-      if (_blends.length == 1)
-        return _blends[0].mutator;
-
-      let mutator: Mutator = {};
-      for (const node of _blends) {
-        const weight: number = node.weight ?? 1;
-        switch (node.blending ?? ANIMATION_BLENDING.OVERRIDE) {
-          case ANIMATION_BLENDING.ADDITIVE:
-            mutator = this.blendAdditive(mutator, node.mutator, weight);
-            break;
-          case ANIMATION_BLENDING.OVERRIDE:
-            mutator = this.blendOverride(mutator, node.mutator, weight);
-            break;
-        }
-      }
-
-      return mutator;
-    }
-
-
     public static blendOverride(_base: Mutator, _override: Mutator, _weight: number, _union: boolean = false): Mutator {
       return Animation.blendRecursive(_base, _override, 1 - _weight, _weight, _union);
     }
