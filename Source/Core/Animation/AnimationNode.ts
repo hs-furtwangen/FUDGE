@@ -1,12 +1,16 @@
 namespace FudgeCore {
 
+  /** Different blending modes to be used in an {@link AnimationNodeBlend}. */
   export enum ANIMATION_BLENDING {
+    /** Adds this animation the previous animations. */
     ADDITIVE = "Additive",
+    /** Overrides the previous animations using linear interpolation. */
     OVERRIDE = "Override"
   }
 
+  /** Base class for all animation nodes. */
   export abstract class AnimationNode {
-    /** The (blended) {@link Animation.getState animation mutator} at the state of the last {@link update}. */
+    /** The (blended) {@link Animation.getState animation mutator} at the state of the last call to {@link update}. */
     public mutator: Mutator;
     /** The {@link Animation.events events} that occured between the nodes last two {@link update}s. */
     public events: string[];
@@ -14,7 +18,9 @@ namespace FudgeCore {
     /** The playback speed */
     public speed: number;
 
+    /** The weight used for blending this node with others in an {@link AnimationNodeBlend}. Default: 1.*/
     public weight?: number;
+    /** The mode used for blending this node with others in an {@link AnimationNodeBlend}. Default: {@link ANIMATION_BLENDING.OVERRIDE}. */
     public blending?: ANIMATION_BLENDING;
 
     public constructor(_options?: { speed?: number; weight?: number; blending?: ANIMATION_BLENDING }) {
@@ -23,26 +29,28 @@ namespace FudgeCore {
       this.blending = _options?.blending;
     }
 
-    public abstract setTime(_time: number): void;
-
-    /** Returns the {@link Animation.totalTime length} of this nodes animation or the length of the first node in the subtree */
-    public abstract getLength(): number;
+    /** Resets the time. */
+    public abstract reset(): void;
 
     /** Updates the {@link mutator} and {@link events} according the given delta time, direction and quantization. */
     public abstract update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _pose?: Mutator): void;
   }
 
+  /** Evaluates a single {@link Animation} providing a {@link mutator} and {@link events}. Used as an input for other {@link AnimationNode}s. */
   export class AnimationNodeAnimation extends AnimationNode {
     public animation: Animation;
     public playmode: ANIMATION_PLAYMODE;
 
-    /** The time after the last {@link update}. */
+    /** The time after the last call to {@link update}. */
     public time: number;
 
-    public constructor(_animation: Animation, _options?: { speed?: number; playmode?: ANIMATION_PLAYMODE; weight?: number; blending?: ANIMATION_BLENDING });
+    /** The time offset from which the animation starts when reset. */
+    public offset?: number;
+
+    public constructor(_animation: Animation, _options?: { speed?: number; offset?: number; playmode?: ANIMATION_PLAYMODE; weight?: number; blending?: ANIMATION_BLENDING });
     public constructor();
     public constructor(_mutator: Mutator);
-    public constructor(_animation?: Animation | Mutator, _options?: { speed?: number; playmode?: ANIMATION_PLAYMODE; weight?: number; blending?: ANIMATION_BLENDING }) {
+    public constructor(_animation?: Animation | Mutator, _options?: { speed?: number; offset?: number; playmode?: ANIMATION_PLAYMODE; weight?: number; blending?: ANIMATION_BLENDING }) {
       super(_options);
 
       if (!_animation)
@@ -54,16 +62,14 @@ namespace FudgeCore {
       }
 
       this.animation = _animation;
+      this.offset = _options?.offset ?? 0;
       this.playmode = _options?.playmode;
       this.time = 0;
     }
 
-    public setTime(_time: number): void {
-      this.time = _time * this.speed;
-    }
-
-    public getLength(): number {
-      return this.animation.totalTime;
+    /** Resets this node to its {@link offset} time. */
+    public reset(): void {
+      this.time = this.offset;
     }
 
     public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
@@ -93,6 +99,56 @@ namespace FudgeCore {
     }
   }
 
+  /** 
+   * Blends multiple input {@link AnimationNode}s providing a blended {@link mutator} and the {@link events} from all nodes. 
+   * Each child node must specify its own blend {@link weight} and {@link blending}. Processes nodes sequentially, each node blends with the accumulated result.
+   * When combined with {@link AnimationNodeTransition}s as children, transitions from/into an empty state will blend from/into the accumulated result of this node.
+   * 
+   * **Example walk-run-blend:**
+   * ```typescript
+   * import ƒ = FudgeCore;
+   * // initialization
+   * const walk: ƒ.Animation = new ƒ.Animation();
+   * const run: ƒ.Animation = new ƒ.Animation();
+   * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+   * const nodeRun: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(run, { speed: run.totalTime / walk.totalTime }) // slow down the playback speed of run to synchronize the motion with walk.
+   * const nodeMove: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWalk, nodeRun]);
+   * const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(); // get the animation component
+   * cmpAnimation.branch = nodeMove;
+   * 
+   * // during the game
+   * nodeRun.weight = 0.5; // adjust the weight: 0 is walking, 1 is running.
+   * nodeMove.speed = 1 + nodeRun.weight * nodeRun.speed; // adjust the playback speed of the blend to account for the slowed down run animation.
+   * ```
+   * **Example transition-empty-state:**
+   * ```typescript
+   * import ƒ = FudgeCore;
+   * // initialization
+   * const idle: ƒ.Animation = new ƒ.Animation();
+   * const walk: ƒ.Animation = new ƒ.Animation();
+   * const draw: ƒ.Animation = new ƒ.Animation();
+   * const sheathe: ƒ.Animation = new ƒ.Animation();
+   * 
+   * const nodeEmpty: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation();
+   * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+   * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+   * const nodeDraw: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(draw, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+   * const nodeSheathe: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(sheathe, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+   * 
+   * const nodeWholeBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+   * const nodeUpperBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeEmpty);
+   * const nodeRoot: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWholeBody, nodeUpperBody]);
+   * const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(); // get the animation component
+   * cmpAnimation.branch = nodeRoot;
+   * 
+   * // during the game
+   * nodeWholeBody.transit(nodeWalk, 300); // transit whole body into walk.
+   * // in parallel to the whole body, the upper body can transit from empty to draw/sheath and back to empty.
+   * nodeUpperBody.transit(nodeDraw, 300); // transit upper body from empty into draw.
+   * nodeUpperBody.transit(nodeSheathe, 300); // transit upper body from draw into sheathe.
+   * nodeUpperBody.transit(nodeEmpty, 300); // transit upper body from sheathe into empty.
+   * ```
+   */
   export class AnimationNodeBlend extends AnimationNode {
     public nodes: AnimationNode[];
 
@@ -101,13 +157,9 @@ namespace FudgeCore {
       this.nodes = _nodes;
     }
 
-    public setTime(_time: number): void {
+    public reset(): void {
       for (const node of this.nodes)
-        node.setTime(_time);
-    }
-
-    public getLength(): number {
-      return this.nodes[0].getLength();
+        node.reset();
     }
 
     public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
@@ -125,20 +177,6 @@ namespace FudgeCore {
       for (let i: number = 1; i < this.nodes.length; i++) {
         const node: AnimationNode = this.nodes[i];
         node.update(_deltaTime, _playmode, _quantization, mutator);
-
-        if (Reflect.get(this, "test")) {
-          let n0: AnimationNodeAnimation = <AnimationNodeAnimation>this.nodes[i - 1];
-          let n1: AnimationNodeAnimation = <AnimationNodeAnimation>this.nodes[i];
-          let t0: number = n0.time;
-          let t1: number = n1.time;
-
-          let t0Norm: number = (t0 % n0.animation.totalTime) / n0.animation.totalTime;
-          let t1Norm: number = (t1 % n1.animation.totalTime) / n1.animation.totalTime;
-
-          if (t0Norm - t1Norm > 0.005) {
-            console.log(t0Norm, t1Norm);
-          }
-        }
 
         if (!node.mutator)
           continue;
@@ -160,6 +198,27 @@ namespace FudgeCore {
     }
   }
 
+  /** 
+   * Allows to transition from one {@link AnimationNode} to another over a specified time. 
+   * If nested inside an {@link AnimationNodeBlend}, transit from/into an empty state to blend from/into the accumulated result of the container blend node.
+   * 
+   * **Example:**
+   * ```typescript
+   * import ƒ = FudgeCore;
+   * // initialization
+   * const idle: ƒ.Animation = new ƒ.Animation();
+   * const walk: ƒ.Animation = new ƒ.Animation();
+   * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+   * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+   * const nodeTransition: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+   * const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(); // get the animation component
+   * cmpAnimation.branch = nodeTransition;
+   * 
+   * // during the game
+   * nodeTransition.transit(nodeWalk, 300); // transit to the walk animation in 300ms.
+   * nodeTransition.transit(nodeIdle, 300); // transit back to the idle animation.
+   * ```
+   */
   export class AnimationNodeTransition extends AnimationNode {
     public from: AnimationNode;
     public to: AnimationNode;
@@ -172,16 +231,14 @@ namespace FudgeCore {
       this.from = _animation;
     }
 
-    public setTime(_time: number): void {
-      this.time = _time;
+    public reset(): void {
+      this.from.reset();
+      this.to?.reset();
     }
 
-    public getLength(): number {
-      return this.duration;
-    }
-
-    public transit(_to: AnimationNode, _duration: number, _offset: number = 0): void {
-      _to.setTime(_offset);
+    /** Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}. If this node is nested inside  */
+    public transit(_to: AnimationNode, _duration: number): void {
+      _to.reset();
       if (this.to)
         this.from = new AnimationNodeAnimation(this.mutator);
       this.to = _to;
