@@ -1,14 +1,18 @@
 namespace FudgeCore {
 
-  /** Different blending modes to be used in an {@link AnimationNodeBlend}. */
+  /** Blending modes used in {@link AnimationNodeBlend}. */
   export enum ANIMATION_BLENDING {
-    /** Adds this animation the previous animations. */
+    /** Adds this animation to the previous animations. */
     ADDITIVE = "Additive",
     /** Overrides the previous animations using linear interpolation. */
     OVERRIDE = "Override"
   }
 
-  /** Base class for all animation nodes. */
+  /** 
+   * Base class for all animation nodes. Animation nodes form an animation graph enabling hierachical animation blending and animation transitions. 
+   * Can be attached to a {@link Node} via {@link ComponentAnimationGraph}. 
+   * @author Jonas Plotzky, HFU, 2024-2025
+   */
   export abstract class AnimationNode {
     /** The (blended) {@link Animation.getState animation mutator} at the state of the last call to {@link update}. */
     public mutator: Mutator;
@@ -19,24 +23,28 @@ namespace FudgeCore {
     public speed: number;
 
     /** The weight used for blending this node with others in an {@link AnimationNodeBlend}. Default: 1.*/
-    public weight?: number;
+    public weight: number;
     /** The mode used for blending this node with others in an {@link AnimationNodeBlend}. Default: {@link ANIMATION_BLENDING.OVERRIDE}. */
-    public blending?: ANIMATION_BLENDING;
+    public blending: ANIMATION_BLENDING;
 
     public constructor(_options?: { speed?: number; weight?: number; blending?: ANIMATION_BLENDING }) {
       this.speed = _options?.speed ?? 1;
-      this.weight = _options?.weight;
-      this.blending = _options?.blending;
+      this.weight = _options?.weight ?? 1;
+      this.blending = _options?.blending ?? ANIMATION_BLENDING.OVERRIDE;
     }
 
     /** Resets the time. */
     public abstract reset(): void;
 
-    /** Updates the {@link mutator} and {@link events} according the given delta time, direction and quantization. */
-    public abstract update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _pose?: Mutator): void;
+    /** Updates the {@link mutator} and {@link events} according the given delta time */
+    public abstract update(_deltaTime: number, _pose?: Mutator): void;
   }
 
-  /** Evaluates a single {@link Animation} providing a {@link mutator} and {@link events}. Used as an input for other {@link AnimationNode}s. */
+  /** 
+   * Evaluates a single {@link Animation} providing a {@link mutator} and {@link events}. 
+   * Used as an input for other {@link AnimationNode}s. 
+   * @author Jonas Plotzky, HFU, 2024-2025
+   */
   export class AnimationNodeAnimation extends AnimationNode {
     public animation: Animation;
     public playmode: ANIMATION_PLAYMODE;
@@ -72,11 +80,10 @@ namespace FudgeCore {
       this.time = this.offset;
     }
 
-    public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
+    public update(_deltaTime: number): void {
       if (!this.animation)
         return;
 
-      _playmode = this.playmode ?? _playmode;
       _deltaTime *= this.speed;
 
       let updatedTime: number = this.time + _deltaTime;
@@ -84,15 +91,12 @@ namespace FudgeCore {
       if (this.animation.totalTime == 0)
         return;
 
-      if (_quantization == ANIMATION_QUANTIZATION.FRAMES)
-        updatedTime = this.time + (1000 / this.animation.fps);
+      updatedTime = this.animation.getModalTime(updatedTime, this.playmode);
 
-      updatedTime = this.animation.getModalTime(updatedTime, _playmode);
+      let direction: number = this.animation.calculateDirection(updatedTime, this.playmode);
 
-      let direction: number = this.animation.calculateDirection(updatedTime, _playmode);
-
-      this.events = this.animation.getEventsToFire(this.time, updatedTime, _quantization, direction);
-      this.mutator = this.animation.getState(updatedTime % this.animation.totalTime, direction, _quantization);
+      this.events = this.animation.getEventsToFire(this.time, updatedTime, ANIMATION_QUANTIZATION.CONTINOUS, direction);
+      this.mutator = this.animation.getState(updatedTime % this.animation.totalTime, direction, ANIMATION_QUANTIZATION.CONTINOUS);
       this.time = updatedTime;
 
       return;
@@ -103,6 +107,7 @@ namespace FudgeCore {
    * Blends multiple input {@link AnimationNode}s providing a blended {@link mutator} and the {@link events} from all nodes. 
    * Each child node must specify its own blend {@link weight} and {@link blending}. Processes nodes sequentially, each node blends with the accumulated result.
    * When combined with {@link AnimationNodeTransition}s as children, transitions from/into an empty state will blend from/into the accumulated result of this node.
+   * @author Jonas Plotzky, HFU, 2024-2025
    * 
    * **Example walk-run-blend:**
    * ```typescript
@@ -113,8 +118,8 @@ namespace FudgeCore {
    * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
    * const nodeRun: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(run, { speed: run.totalTime / walk.totalTime }) // slow down the playback speed of run to synchronize the motion with walk.
    * const nodeMove: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWalk, nodeRun]);
-   * const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(); // get the animation component
-   * cmpAnimation.branch = nodeMove;
+   * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+   * cmpAnimationGraph.root = nodeMove;
    * 
    * // during the game
    * nodeRun.weight = 0.5; // adjust the weight: 0 is walking, 1 is running.
@@ -138,8 +143,8 @@ namespace FudgeCore {
    * const nodeWholeBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
    * const nodeUpperBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeEmpty);
    * const nodeRoot: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWholeBody, nodeUpperBody]);
-   * const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(); // get the animation component
-   * cmpAnimation.branch = nodeRoot;
+   * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+   * cmpAnimationGraph.root = nodeRoot;
    * 
    * // during the game
    * nodeWholeBody.transit(nodeWalk, 300); // transit whole body into walk.
@@ -162,7 +167,7 @@ namespace FudgeCore {
         node.reset();
     }
 
-    public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void {
+    public update(_deltaTime: number): void {
       if (this.nodes.length == 0) {
         this.mutator = null;
         this.events = [];
@@ -171,22 +176,22 @@ namespace FudgeCore {
 
       _deltaTime *= this.speed;
 
-      this.nodes[0].update(_deltaTime, _playmode, _quantization, {});
+      this.nodes[0].update(_deltaTime, {}); // TODO: add base pose snapshot to blend from
       let mutator: Mutator = this.nodes[0].mutator ?? {};
       let events: string[] = this.nodes[0].events ?? [];
       for (let i: number = 1; i < this.nodes.length; i++) {
         const node: AnimationNode = this.nodes[i];
-        node.update(_deltaTime, _playmode, _quantization, mutator);
+        node.update(_deltaTime, mutator);
 
         if (!node.mutator)
           continue;
 
-        switch (node.blending ?? ANIMATION_BLENDING.OVERRIDE) {
+        switch (node.blending) {
           case ANIMATION_BLENDING.ADDITIVE:
-            mutator = Animation.blendAdditive(mutator, node.mutator, node.weight ?? 1);
+            mutator = Animation.blendAdditive(mutator, node.mutator, node.weight);
             break;
           case ANIMATION_BLENDING.OVERRIDE:
-            mutator = Animation.blendOverride(mutator, node.mutator, node.weight ?? 1);
+            mutator = Animation.blendOverride(mutator, node.mutator, node.weight);
             break;
         }
 
@@ -201,6 +206,7 @@ namespace FudgeCore {
   /** 
    * Allows to transition from one {@link AnimationNode} to another over a specified time. 
    * If nested inside an {@link AnimationNodeBlend}, transit from/into an empty state to blend from/into the accumulated result of the container blend node.
+   * @author Jonas Plotzky, HFU, 2024-2025
    * 
    * **Example:**
    * ```typescript
@@ -211,8 +217,8 @@ namespace FudgeCore {
    * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
    * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
    * const nodeTransition: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
-   * const cmpAnimation: ƒ.ComponentAnimation = new ƒ.ComponentAnimation(); // get the animation component
-   * cmpAnimation.branch = nodeTransition;
+   * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+   * cmpAnimationGraph.root = nodeTransition;
    * 
    * // during the game
    * nodeTransition.transit(nodeWalk, 300); // transit to the walk animation in 300ms.
@@ -236,7 +242,7 @@ namespace FudgeCore {
       this.to?.reset();
     }
 
-    /** Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}. If this node is nested inside  */
+    /** Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}. */
     public transit(_to: AnimationNode, _duration: number): void {
       _to.reset();
       if (this.to)
@@ -246,12 +252,12 @@ namespace FudgeCore {
       this.time = 0;
     }
 
-    public update(_deltaTime: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION, _pose: Mutator): void {
+    public update(_deltaTime: number, _pose: Mutator): void {
       _deltaTime *= this.speed;
 
       this.time += _deltaTime;
 
-      this.from.update(_deltaTime, _playmode, _quantization);
+      this.from.update(_deltaTime);
 
       if (!this.to) {
         this.mutator = this.from.mutator;
@@ -259,7 +265,7 @@ namespace FudgeCore {
         return;
       }
 
-      this.to.update(_deltaTime, _playmode, _quantization);
+      this.to.update(_deltaTime);
 
       let progress: number = Math.min(this.time / this.duration, 1);
 

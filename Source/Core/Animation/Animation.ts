@@ -122,19 +122,32 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    public static blendOverride(_base: Mutator, _override: Mutator, _weight: number, _union: boolean = false): Mutator {
-      return Animation.blendRecursive(_base, _override, 1 - _weight, _weight, _union);
+    /** 
+     * Override the given base mutator with the given override mutator using linear interpolation between the values with the given weight.
+     * Set the intersect flag to only include properties in the result that exist in both of the given mutators.
+     */
+    public static blendOverride(_base: Mutator, _override: Mutator, _weight: number, _intersect: boolean = false): Mutator {
+      return Animation.blendRecursive(_base, _override, 1 - _weight, _weight, _intersect);
     }
 
-    public static blendAdditive(_base: Mutator, _blend: Mutator, _weight: number): Mutator {
-      return Animation.blendRecursive(_base, _blend, 1, _weight);
+    /**
+     * Add the given additive mutator to the given base mutator. The values of the additive mutator will be multiplied by the given weight.
+     */
+    public static blendAdditive(_base: Mutator, _add: Mutator, _weight: number): Mutator {
+      return Animation.blendRecursive(_base, _add, 1, _weight);
     }
 
-    public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number, _union: boolean = false): Mutator {
-      let mutator: Mutator = _union ? {} : { ..._base };
+    /**
+     * Blend the two given mutators together, using the given weights to determine the influence of each. 
+     * The resulting mutator will contain all properties of the base mutator, with the properties of the blend mutator blended in.
+     * Blend mutator properties that don't exist in the base mutator will be added to the result mutator.
+     * Set the intersect flag to only include properties in the result that exist in both of the given mutators.
+     */
+    public static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number, _intersect: boolean = false): Mutator {
+      let mutator: Mutator = _intersect ? {} : { ..._base };
 
       for (const key in _blend) {
-        if (_union && _base[key] == undefined)
+        if (_intersect && _base[key] == undefined)
           continue;
 
         if (typeof _blend[key] == "number") {
@@ -147,12 +160,12 @@ namespace FudgeCore {
           let blend: Mutator = _blend[key];
           if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && Quaternion.DOT(<Quaternion>base, <Quaternion>blend) < 0)
             Quaternion.negate(<Quaternion>base); // TODO: eliminate this side effect
-          mutator[key] = this.blendRecursive(base, blend, _weightBase, _weightBlend, _union);
+          mutator[key] = this.blendRecursive(base, blend, _weightBase, _weightBlend, _intersect);
           continue;
         }
 
         if (typeof _blend[key] === "object") {
-          mutator[key] = this.blendRecursive({}, _blend[key], _weightBase, _weightBlend, _union);
+          mutator[key] = this.blendRecursive({}, _blend[key], _weightBase, _weightBlend, _intersect);
           continue;
         }
       }
