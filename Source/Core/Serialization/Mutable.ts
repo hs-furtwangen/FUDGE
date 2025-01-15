@@ -76,6 +76,7 @@ namespace FudgeCore {
   // TODO: add support for arrays and enums
   // export function type<EnumValue extends string | number | symbol, Enum extends { [K in EnumValue]: EnumValue }>(_enum: Enum): (_value: unknown, _context: ClassPropertyContext<Serializable, EnumValue>) => void;
   export function type<Value, Constructor extends abstract new (...args: General[]) => Value>(_constructor: Constructor): (_value: unknown, _context: ClassPropertyContext<Value extends Node ? Node extends Value ? Component : Serializable : Serializable, Value>) => void;
+  export function type<Value extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => Value): (_value: unknown, _context: ClassPropertyContext<Serializable, Value>) => void;
   export function type(_constructor: Function): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       let meta: Metadata = _context.metadata;

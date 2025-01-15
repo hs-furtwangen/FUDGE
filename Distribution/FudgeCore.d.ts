@@ -304,6 +304,7 @@ declare namespace FudgeCore {
      * will be displayed via their {@link toString} method in the editor.
      */
     function type<Value, Constructor extends abstract new (...args: General[]) => Value>(_constructor: Constructor): (_value: unknown, _context: ClassPropertyContext<Value extends Node ? Node extends Value ? Component : Serializable : Serializable, Value>) => void;
+    function type<Value extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => Value): (_value: unknown, _context: ClassPropertyContext<Serializable, Value>) => void;
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
      *
@@ -512,6 +513,7 @@ declare namespace FudgeCore {
      */
     function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
     function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.

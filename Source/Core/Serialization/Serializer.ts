@@ -128,7 +128,10 @@ namespace FudgeCore {
    * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
    */
   export function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
+  // check if the actual type is assignable to the given type
   export function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+  // check if the given type (a primitive constructor) is assignable to the actual type (primitive).
+  export function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
   export function serialize(_constructor: Function, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
     // decorate class
     if (_context) { 
