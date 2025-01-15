@@ -51,5 +51,19 @@ namespace FudgeCore {
         types.pick = PICK;
       return types;
     }
+
+    public drawGizmosSelected(_cmpCamera: ComponentCamera): void {
+      if (this.pick != PICK.RADIUS)
+        return;
+
+      let translation: Vector3 = (this.node.getComponent(ComponentMesh)?.mtxWorld ?? this.node.mtxWorld).translation;
+
+      let color: Color = Color.CSS("white", 0.5);
+      let scaling: Vector3 = Recycler.get(Vector3).set(this.node.radius * 2, this.node.radius * 2, this.node.radius * 2);
+      let mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(translation, undefined, scaling);
+      Gizmos.drawSphere(mtxWorld, color);
+
+      Recycler.storeMultiple(mtxWorld, scaling, color);
+    }
   }
 }

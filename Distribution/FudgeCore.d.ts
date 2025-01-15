@@ -3455,6 +3455,7 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
+        drawGizmosSelected(_cmpCamera: ComponentCamera): void;
     }
 }
 declare namespace FudgeCore {
