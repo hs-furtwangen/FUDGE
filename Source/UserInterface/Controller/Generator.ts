@@ -40,7 +40,7 @@ namespace FudgeUserInterface {
       let div: HTMLDivElement = document.createElement("div");
 
       for (let key in mutatorTypes) {
-        let type: Object = mutatorTypes[key];
+        let type: Object | string = mutatorTypes[key];
         let value: Object = mutator[key];
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
@@ -53,7 +53,7 @@ namespace FudgeUserInterface {
           element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
         if (!element) { // undefined values without a type can't be displayed
-          console.warn("No interface created for ", _mutable.constructor.name, key);
+          console.warn("No interface created for", _mutable.constructor.name, key);
           continue;
         }
 
@@ -95,7 +95,7 @@ namespace FudgeUserInterface {
         if (_type instanceof Object) {
           let elementType: typeof CustomElement = CustomElement.get("Object");
           // @ts-ignore: instantiate abstract class
-          element = new elementType({ key: _key, label: _key, value: _value.toString() }, _type);
+          element = new elementType({ key: _key, label: _key, value: _value?.toString() }, _type);
         } else if (_value instanceof ƒ.MutableArray) { // TODO: delete?
           ƒ.Debug.fudge("MutableArray");
           // insert Array-Controller!

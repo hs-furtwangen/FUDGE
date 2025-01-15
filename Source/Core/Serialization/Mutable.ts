@@ -43,7 +43,7 @@ namespace FudgeCore {
    * Association of an attribute with its specified type (constructor).
    * @see {@link Metadata}.
    */
-  export type MetaAttributeTypes = Record<string | symbol, Function>;
+  export type MetaAttributeTypes = Record<string | symbol, Function | Object>;
 
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
@@ -72,12 +72,16 @@ namespace FudgeCore {
    * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator} 
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
+   * @author Jonas Plotzky, HFU, 2024-2025
    */
-  // TODO: add support for arrays and enums
-  // export function type<EnumValue extends string | number | symbol, Enum extends { [K in EnumValue]: EnumValue }>(_enum: Enum): (_value: unknown, _context: ClassPropertyContext<Serializable, EnumValue>) => void;
-  export function type<Value, Constructor extends abstract new (...args: General[]) => Value>(_constructor: Constructor): (_value: unknown, _context: ClassPropertyContext<Value extends Node ? Node extends Value ? Component : Serializable : Serializable, Value>) => void;
-  export function type<Value extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => Value): (_value: unknown, _context: ClassPropertyContext<Serializable, Value>) => void;
-  export function type(_constructor: Function): (_value: unknown, _context: ClassPropertyContext) => void {
+  // TODO: add support for arrays and maybe other collections?
+  // object type
+  export function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+  // primitive type
+  export function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  // enum type
+  export function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  export function type(_constructor: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       let meta: Metadata = _context.metadata;
       if (!Object.hasOwn(meta, "attributeTypes"))
@@ -247,7 +251,13 @@ namespace FudgeCore {
       let types: MutatorAttributeTypes = {};
       let metaTypes: MetaAttributeTypes = this.getMetaAttributeTypes();
       for (let attribute in _mutator) {
-        let type: string = metaTypes[attribute]?.name;
+        let metaType: Function | Object = metaTypes[attribute]; // constructor or enum
+        let type: string | Object;
+        if (typeof metaType == "function")
+          type = metaType.name;
+        else if (typeof metaType == "object")
+          type = metaType;
+
         let value: number | boolean | string | object | Function = _mutator[attribute];
 
         if (value != undefined && type == undefined)

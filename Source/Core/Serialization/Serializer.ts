@@ -84,7 +84,7 @@ namespace FudgeCore {
    * 
    * **Serialization:**
    * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-   * - Primitives will be serialized as is.
+   * - Primitives and enums will be serialized as is.
    * - {@link Serializable}s will be serialized nested. 
    * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
    * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
@@ -126,24 +126,30 @@ namespace FudgeCore {
    * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
    * will be displayed via their {@link toString} method in the editor.
    * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
+   * 
+   * @author Jonas Plotzky, HFU, 2024-2025
    */
+  // class decorator
   export function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
-  // check if the actual type is assignable to the given type
+  // object type, check if the actual type is assignable to the given type
   export function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-  // check if the given type (a primitive constructor) is assignable to the actual type (primitive).
+  // primitive type, check if the given type (a primitive constructor) is assignable to the actual type (primitive).
   export function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  export function serialize(_constructor: Function, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
+  // enum type
+  export function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  export function serialize(_constructor: Function | Object, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
     // decorate class
-    if (_context) { 
+    if (_context) {
       let meta: Metadata = _context.metadata;
+
+      const prototype: Serializable = (<Function>_constructor).prototype;
 
       // make getters enumerable
       if (meta.enumerateKeys)
         for (const key of meta.enumerateKeys)
-          Object.defineProperty((<Function>_constructor).prototype, key, { enumerable: true });
+          Object.defineProperty(prototype, key, { enumerable: true });
 
       // override serialize and deserialize methods
-      const prototype: Serializable = _constructor.prototype;
       const originalSerialize: Serializable["serialize"] = prototype.serialize;
       const originalDeserialize: Serializable["deserialize"] = prototype.deserialize;
       const serializables: Metadata["serializables"] = meta.serializables;
@@ -230,13 +236,14 @@ namespace FudgeCore {
 
       // determine serialization type and add to metadata
       let type: Metadata["serializables"][string];
-      if (<Function>_constructor == String || <Function>_constructor == Number || <Function>_constructor == Boolean)
+
+      if (_constructor == String || _constructor == Number || _constructor == Boolean || typeof _constructor == "object") // primitive or enum
         type = "primitive";
-      else if (<Function>_constructor == Node)
+      else if (_constructor == Node)
         type = "node";
-      else if (_constructor.prototype instanceof SerializableResource)
+      else if ((<Function>_constructor).prototype instanceof SerializableResource)
         type = "resource";
-      else if (_constructor.prototype.serialize && _constructor.prototype.deserialize)
+      else if ((<Function>_constructor).prototype.serialize && (<Function>_constructor).prototype.deserialize)
         type = "serializable";
 
       if (!type)
