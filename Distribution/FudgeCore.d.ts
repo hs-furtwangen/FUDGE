@@ -2271,11 +2271,22 @@ declare namespace FudgeCore {
         protected framesPerSecond: number;
         private eventsProcessed;
         constructor(_name?: string, _animStructure?: AnimationStructure, _fps?: number);
-        static blend(_mutators: {
-            mutator?: Mutator;
-            weight?: number;
-        }[]): Mutator;
-        static blendRecursive(_base: Mutator, _blend: Mutator, _weight: number): void;
+        /**
+         * Override the given base mutator with the given override mutator using linear interpolation between the values with the given weight.
+         * Set the intersect flag to only include properties in the result that exist in both of the given mutators.
+         */
+        static blendOverride(_base: Mutator, _override: Mutator, _weight: number, _intersect?: boolean): Mutator;
+        /**
+         * Add the given additive mutator to the given base mutator. The values of the additive mutator will be multiplied by the given weight.
+         */
+        static blendAdditive(_base: Mutator, _add: Mutator, _weight: number): Mutator;
+        /**
+         * Blend the two given mutators together, using the given weights to determine the influence of each.
+         * The resulting mutator will contain all properties of the base mutator, with the properties of the blend mutator blended in.
+         * Blend mutator properties that don't exist in the base mutator will be added to the result mutator.
+         * Set the intersect flag to only include properties in the result that exist in both of the given mutators.
+         */
+        static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number, _intersect?: boolean): Mutator;
         protected static registerSubclass(_subClass: typeof Animation): number;
         get getLabels(): Enumerator;
         get fps(): number;
@@ -2403,38 +2414,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-   * A node in an {@link AnimationBlendTree} that manages a weighted {@link Animation} or {@link AnimationBlendTree subtree}.
-   * {@link update Updates} and provides access to the node's current state ({@link time}, {@link mutator}, {@link events}).
-   * @author Jonas Plotzky, HFU, 2024
-   */
-    class AnimationBlendNode {
-        #private;
-        animation: Animation | AnimationBlendTree;
-        weight: number;
-        time: number;
-        constructor(_animation: Animation | AnimationBlendTree, _weight: number);
-        /** The (blended) {@link Animation.getState animation mutator} at the state of the last {@link update}. */
-        get mutator(): Mutator;
-        /** The {@link Animation.events events} that occured between the nodes last two {@link update}s. */
-        get events(): string[];
-        /** Returns the {@link Animation.totalTime length} of this nodes animation or the longest animation length in the subtree */
-        getLength(): number;
-        /**
-         * Updates the {@link time}, {@link mutator} and {@link events} according the given time, direction and quantization.
-         */
-        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
-    }
-    class AnimationTransitionNode extends AnimationBlendNode {
-        start: number;
-        duration: number;
-        constructor(_animation: Animation | AnimationBlendTree, _weight: number, _start: number, _duration: number);
-        update(_time: number, _playmode: ANIMATION_PLAYMODE, _quantization: ANIMATION_QUANTIZATION): void;
-    }
-    /** A tree of weighted {@link Animation}s to blend between them. Can be used as a {@link ComponentAnimation}s animation */
-    type AnimationBlendTree<T extends AnimationBlendNode = AnimationBlendNode> = Array<T>;
-}
-declare namespace FudgeCore {
-    /**
      * Calculates the values between {@link AnimationKey}s.
      * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`).
      * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
@@ -2526,6 +2505,164 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /** Blending modes used in {@link AnimationNodeBlend}. */
+    enum ANIMATION_BLENDING {
+        /** Adds this animation to the previous animations. */
+        ADDITIVE = "Additive",
+        /** Overrides the previous animations using linear interpolation. */
+        OVERRIDE = "Override"
+    }
+    /**
+     * Base class for all animation nodes. Animation nodes form an animation graph enabling hierachical animation blending and animation transitions.
+     * Can be attached to a {@link Node} via {@link ComponentAnimationGraph}.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     */
+    abstract class AnimationNode {
+        /** The (blended) {@link Animation.getState animation mutator} at the state of the last call to {@link update}. */
+        mutator: Mutator;
+        /** The {@link Animation.events events} that occured between the nodes last two {@link update}s. */
+        events: string[];
+        /** The playback speed */
+        speed: number;
+        /** The weight used for blending this node with others in an {@link AnimationNodeBlend}. Default: 1.*/
+        weight: number;
+        /** The mode used for blending this node with others in an {@link AnimationNodeBlend}. Default: {@link ANIMATION_BLENDING.OVERRIDE}. */
+        blending: ANIMATION_BLENDING;
+        constructor(_options?: {
+            speed?: number;
+            weight?: number;
+            blending?: ANIMATION_BLENDING;
+        });
+        /** Resets the time. */
+        abstract reset(): void;
+        /** Updates the {@link mutator} and {@link events} according the given delta time */
+        abstract update(_deltaTime: number, _pose?: Mutator): void;
+    }
+    /**
+     * Evaluates a single {@link Animation} providing a {@link mutator} and {@link events}.
+     * Used as an input for other {@link AnimationNode}s.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     */
+    class AnimationNodeAnimation extends AnimationNode {
+        animation: Animation;
+        playmode: ANIMATION_PLAYMODE;
+        /** The time after the last call to {@link update}. */
+        time: number;
+        /** The time offset from which the animation starts when reset. */
+        offset?: number;
+        constructor(_animation: Animation, _options?: {
+            speed?: number;
+            offset?: number;
+            playmode?: ANIMATION_PLAYMODE;
+            weight?: number;
+            blending?: ANIMATION_BLENDING;
+        });
+        constructor();
+        constructor(_mutator: Mutator);
+        /** Resets this node to its {@link offset} time. */
+        reset(): void;
+        update(_deltaTime: number): void;
+    }
+    /**
+     * Blends multiple input {@link AnimationNode}s providing a blended {@link mutator} and the {@link events} from all nodes.
+     * Each child node must specify its own blend {@link weight} and {@link blending}. Processes nodes sequentially, each node blends with the accumulated result.
+     * When combined with {@link AnimationNodeTransition}s as children, transitions from/into an empty state will blend from/into the accumulated result of this node.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     *
+     * **Example walk-run-blend:**
+     * ```typescript
+     * import ƒ = FudgeCore;
+     * // initialization
+     * const walk: ƒ.Animation = new ƒ.Animation();
+     * const run: ƒ.Animation = new ƒ.Animation();
+     * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+     * const nodeRun: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(run, { speed: run.totalTime / walk.totalTime }) // slow down the playback speed of run to synchronize the motion with walk.
+     * const nodeMove: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWalk, nodeRun]);
+     * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+     * cmpAnimationGraph.root = nodeMove;
+     *
+     * // during the game
+     * nodeRun.weight = 0.5; // adjust the weight: 0 is walking, 1 is running.
+     * nodeMove.speed = 1 + nodeRun.weight * nodeRun.speed; // adjust the playback speed of the blend to account for the slowed down run animation.
+     * ```
+     * **Example transition-empty-state:**
+     * ```typescript
+     * import ƒ = FudgeCore;
+     * // initialization
+     * const idle: ƒ.Animation = new ƒ.Animation();
+     * const walk: ƒ.Animation = new ƒ.Animation();
+     * const draw: ƒ.Animation = new ƒ.Animation();
+     * const sheathe: ƒ.Animation = new ƒ.Animation();
+     *
+     * const nodeEmpty: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation();
+     * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+     * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+     * const nodeDraw: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(draw, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+     * const nodeSheathe: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(sheathe, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+     *
+     * const nodeWholeBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+     * const nodeUpperBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeEmpty);
+     * const nodeRoot: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWholeBody, nodeUpperBody]);
+     * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+     * cmpAnimationGraph.root = nodeRoot;
+     *
+     * // during the game
+     * nodeWholeBody.transit(nodeWalk, 300); // transit whole body into walk.
+     * // in parallel to the whole body, the upper body can transit from empty to draw/sheath and back to empty.
+     * nodeUpperBody.transit(nodeDraw, 300); // transit upper body from empty into draw.
+     * nodeUpperBody.transit(nodeSheathe, 300); // transit upper body from draw into sheathe.
+     * nodeUpperBody.transit(nodeEmpty, 300); // transit upper body from sheathe into empty.
+     * ```
+     */
+    class AnimationNodeBlend extends AnimationNode {
+        nodes: AnimationNode[];
+        constructor(_nodes: AnimationNode[], _options?: {
+            speed?: number;
+            weight?: number;
+            blending?: ANIMATION_BLENDING;
+        });
+        reset(): void;
+        update(_deltaTime: number): void;
+    }
+    /**
+     * Allows to transition from one {@link AnimationNode} to another over a specified time.
+     * If nested inside an {@link AnimationNodeBlend}, transit from/into an empty state to blend from/into the accumulated result of the container blend node.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     *
+     * **Example:**
+     * ```typescript
+     * import ƒ = FudgeCore;
+     * // initialization
+     * const idle: ƒ.Animation = new ƒ.Animation();
+     * const walk: ƒ.Animation = new ƒ.Animation();
+     * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+     * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+     * const nodeTransition: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+     * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+     * cmpAnimationGraph.root = nodeTransition;
+     *
+     * // during the game
+     * nodeTransition.transit(nodeWalk, 300); // transit to the walk animation in 300ms.
+     * nodeTransition.transit(nodeIdle, 300); // transit back to the idle animation.
+     * ```
+     */
+    class AnimationNodeTransition extends AnimationNode {
+        from: AnimationNode;
+        to: AnimationNode;
+        duration: number;
+        time: number;
+        constructor(_animation: AnimationNode, _options?: {
+            speed?: number;
+            weight?: number;
+            blending?: ANIMATION_BLENDING;
+        });
+        reset(): void;
+        /** Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}. */
+        transit(_to: AnimationNode, _duration: number): void;
+        update(_deltaTime: number, _pose: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -2730,13 +2867,12 @@ declare namespace FudgeCore {
     class ComponentAnimation extends Component {
         #private;
         static readonly iSubclass: number;
+        animation: Animation;
         playmode: ANIMATION_PLAYMODE;
         quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
         animateInEditor: boolean;
-        constructor(_animation?: Animation | AnimationBlendTree, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
-        get animation(): Animation | AnimationBlendTree;
-        set animation(_animation: Animation | AnimationBlendTree);
+        constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
         set scale(_scale: number);
         get scale(): number;
         /**
@@ -2752,7 +2888,6 @@ declare namespace FudgeCore {
         jumpTo(_time: number): void;
         /**
          * Jumps to a certain label in the animation if defined
-         * ⚠️ Not supported for animation blend trees
          */
         jumpToLabel(_label: string): void;
         /**
@@ -2765,14 +2900,13 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        transit(_animation: Animation | AnimationBlendTree, _duration: number): void;
         private activateListeners;
         /**
-         * Updates the animation and all running transitions.
+         * Updates the Animation.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
-         */ private updateAnimationLoop;
-        private updateTransitions;
+         */
+        private updateAnimationLoop;
         /**
          * Fires all custom events the Animation should have fired between the last frame and the current frame.
          * @param _events a list of names of custom events to fire
@@ -2782,6 +2916,18 @@ declare namespace FudgeCore {
          * Updates the scale of the animation if the user changes it or if the global game timer changed its scale.
          */
         private updateScale;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Attaches an {@link AnimationNode animation graph} to a {@link Node} and animates it.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     */
+    class ComponentAnimationGraph extends Component {
+        static readonly iSubclass: number;
+        root: AnimationNode;
+        constructor(_root?: AnimationNode);
+        private update;
     }
 }
 declare namespace FudgeCore {
@@ -4530,7 +4676,7 @@ declare namespace FudgeCore {
         static ROTATION_Z(_angleInDegrees: number): Matrix4x4;
         /**
          * Returns a matrix that rotates coordinates when multiplied by, using the rotation euler angles or unit quaternion given.
-         * Rotation occurs around the axis in the order Z-Y-X .
+         * Rotation occurs around the axis in the order Z-Y-X.
          */
         static ROTATION(_rotation: Vector3 | Quaternion): Matrix4x4;
         /**
@@ -4865,9 +5011,9 @@ declare namespace FudgeCore {
          */
         static ROTATION(_axis: Vector3, _angle: number): Quaternion;
         /**
-         * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
-         * ⚠️ UNTESTED!
+         * Returns a quaternion that rotates coordinates when multiplied by, using the forward and up direction given.
          */
+        static ROTATION(_forward: Vector3, _up: Vector3): Quaternion;
         /**
          * Computes and returns the product of two passed quaternions.
          */
@@ -5120,6 +5266,23 @@ declare namespace FudgeCore {
          * Return the projection of a onto b
          */
         static PROJECTION(_a: Vector3, _b: Vector3): Vector3;
+        /**
+         * Returns the linear interpolation of two vectors. Clamps the factor between 0 and 1.
+         */
+        static LERP(_a: Vector3, _b: Vector3, _factor: number): Vector3;
+        /**
+         * Smoothly interpolates between two vectors based on a critically damped spring model.
+         * Allows to smooth toward a moving target with an ease-in/ease-out motion maintaining a continuous velocity.
+         * Does not overshoot.
+         * @param _current - The current value.
+         * @param _target - The target value.
+         * @param _velocity - The velocity at which the value is moving. This value is **modified** by the function and must be maintained in the outside context.
+         * @param _smoothTime - The time it would take for the value to reach the target if it were moving at maximum velocity for the entire duration. When following a moving target the smooth time equals the lag time allowing to calculate the `lag distance = target velocity * smooth time`.
+         * @param _timeFrame - The elapsed time since the last call to the function.
+         * @param _maxSpeed - An optional maximum speed that limits the velocity of the value. Defaults to Infinity.
+         * @source from Andrew Kirmse, Game Programming Gems 4, Chapter 1.10
+         */
+        static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed?: number): Vector3;
         /**
          * Returns the length of the vector
          */
@@ -6006,7 +6169,7 @@ declare namespace FudgeCore {
         /**
          * Sets the current ROTATION of the {@link Node} in the physical space, in degree.
          */
-        setRotation(_value: Vector3): void;
+        setRotation(_value: Vector3 | Quaternion): void;
         /** Get the current SCALING in the physical space. */
         getScaling(): Vector3;
         /** Scaling requires the collider to be completely recreated anew */

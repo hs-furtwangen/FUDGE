@@ -273,24 +273,24 @@ var FudgeCore;
         };
     }
     FudgeCore.type = type;
-    function enumerable(_value, _context) {
+    function enumerate(_value, _context) {
         let metadata = _context.metadata;
         if (_context.kind == "getter" || _context.kind == "accessor") {
             if (typeof _context.name != "string")
                 return;
             if (!Object.hasOwn(metadata, "enumerableKeys"))
-                metadata.enumerableKeys = [];
-            metadata.enumerableKeys.push(_context.name.toString());
+                metadata.enumerateKeys = [];
+            metadata.enumerateKeys.push(_context.name.toString());
             return;
         }
         if (_context.kind == "class") {
-            if (metadata.enumerableKeys)
-                for (const key of metadata.enumerableKeys)
+            if (metadata.enumerateKeys)
+                for (const key of metadata.enumerateKeys)
                     Object.defineProperty(_value.prototype, key, { enumerable: true });
             return;
         }
     }
-    FudgeCore.enumerable = enumerable;
+    FudgeCore.enumerate = enumerate;
     class Mutable extends FudgeCore.EventTargetUnified {
         static getMutatorFromPath(_mutator, _path) {
             let key = _path[0];
@@ -411,7 +411,75 @@ var FudgeCore;
         }
     }
     FudgeCore.Implementable = Implementable;
-    function serialize(_constructor) {
+    function serialize(_constructor, _context) {
+        if (_context) {
+            let meta = _context.metadata;
+            if (meta.enumerateKeys)
+                for (const key of meta.enumerateKeys)
+                    Object.defineProperty(_constructor.prototype, key, { enumerable: true });
+            const prototype = _constructor.prototype;
+            const originalSerialize = prototype.serialize;
+            const originalDeserialize = prototype.deserialize;
+            const serializables = meta.serializables;
+            prototype.serialize = function () {
+                const serialization = originalSerialize?.call(this) ?? {};
+                for (const key in serializables) {
+                    let value = Reflect.get(this, key);
+                    if (value == null)
+                        continue;
+                    switch (serializables[key]) {
+                        case "primitive":
+                            serialization[key] = value;
+                            break;
+                        case "serializable":
+                            serialization[key] = value.serialize();
+                            break;
+                        case "resource":
+                            serialization[key] = value.idResource;
+                            break;
+                        case "node":
+                            serialization[key] = FudgeCore.Node.PATH_FROM_TO(this, value);
+                            break;
+                    }
+                }
+                return serialization;
+            };
+            prototype.deserialize = async function (_serialization) {
+                if (originalDeserialize)
+                    await originalDeserialize.call(this, _serialization);
+                for (const key in serializables) {
+                    let value = _serialization[key];
+                    if (value == null)
+                        continue;
+                    switch (serializables[key]) {
+                        case "primitive":
+                            Reflect.set(this, key, value);
+                            break;
+                        case "serializable":
+                            await Reflect.get(this, key).deserialize(value);
+                            break;
+                        case "resource":
+                            Reflect.set(this, key, FudgeCore.Project.resources[value] ?? await FudgeCore.Project.getResource(value));
+                            break;
+                        case "node":
+                            let instance = this;
+                            const hndNodeDeserialized = () => {
+                                const hndGraphDeserialized = (_event) => {
+                                    Reflect.set(this, key, FudgeCore.Node.FIND(instance, value));
+                                    instance.node.removeEventListener("graphDeserialized", hndGraphDeserialized, true);
+                                    instance.node.removeEventListener("graphInstantiated", hndGraphDeserialized, true);
+                                    instance.removeEventListener("nodeDeserialized", hndNodeDeserialized);
+                                };
+                                instance.node.addEventListener("graphDeserialized", hndGraphDeserialized, true);
+                                instance.node.addEventListener("graphInstantiated", hndGraphDeserialized, true);
+                            };
+                            instance.addEventListener("nodeDeserialized", hndNodeDeserialized);
+                    }
+                }
+                return this;
+            };
+            return;
+        }
         return (_value, _context) => {
             if (typeof _context.name != "string")
                 return;
@@ -421,7 +489,7 @@ var FudgeCore;
             meta.attributeTypes[_context.name] = _constructor;
             let type;
             if (_constructor == String || _constructor == Number || _constructor == Boolean)
-                type = "primitve";
+                type = "primitive";
             else if (_constructor == FudgeCore.Node)
                 type = "node";
             else if (_constructor.prototype instanceof FudgeCore.SerializableResource)
@@ -433,6 +501,11 @@ var FudgeCore;
             if (!Object.hasOwn(meta, "serializables"))
                 meta.serializables = { ...meta.serializables };
             meta.serializables[_context.name] = type;
+            if (_context.kind != "getter")
+                return;
+            if (!Object.hasOwn(meta, "enumerableKeys"))
+                meta.enumerateKeys = [];
+            meta.enumerateKeys.push(_context.name.toString());
         };
     }
     FudgeCore.serialize = serialize;
@@ -460,30 +533,7 @@ var FudgeCore;
             let path = this.getFullPath(_object);
             if (!path)
                 throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
-            let serialization = _object.serialize();
-            let serializables = _object.constructor[Symbol.metadata]?.serializables;
-            if (serializables) {
-                for (const key in serializables) {
-                    let value = Reflect.get(_object, key);
-                    if (value == null)
-                        continue;
-                    switch (serializables[key]) {
-                        case "primitve":
-                            serialization[key] = value;
-                            break;
-                        case "serializable":
-                            serialization[key] = value.serialize();
-                            break;
-                        case "resource":
-                            serialization[key] = value.idResource;
-                            break;
-                        case "node":
-                            serialization[key] = FudgeCore.Node.PATH_FROM_TO(_object, value);
-                            break;
-                    }
-                }
-            }
-            return { [path]: serialization };
+            return { [path]: _object.serialize() };
         }
         static async deserialize(_serialization) {
             let reconstruct;
@@ -492,38 +542,6 @@ var FudgeCore;
                 for (path in _serialization) {
                     reconstruct = Serializer.reconstruct(path);
                     reconstruct = await reconstruct.deserialize(_serialization[path]);
-                    let serializables = reconstruct.constructor[Symbol.metadata]?.serializables;
-                    if (serializables) {
-                        for (const key in serializables) {
-                            let value = _serialization[path][key];
-                            if (value == null)
-                                continue;
-                            switch (serializables[key]) {
-                                case "primitve":
-                                    Reflect.set(reconstruct, key, value);
-                                    break;
-                                case "serializable":
-                                    await Reflect.get(reconstruct, key).deserialize(value);
-                                    break;
-                                case "resource":
-                                    Reflect.set(reconstruct, key, FudgeCore.Project.resources[value] ?? await FudgeCore.Project.getResource(value));
-                                    break;
-                                case "node":
-                                    let instance = reconstruct;
-                                    const hndNodeDeserialized = () => {
-                                        const hndGraphDeserialized = (_event) => {
-                                            Reflect.set(reconstruct, key, FudgeCore.Node.FIND(instance, value));
-                                            instance.node.removeEventListener("graphDeserialized", hndGraphDeserialized, true);
-                                            instance.node.removeEventListener("graphInstantiated", hndGraphDeserialized, true);
-                                            instance.removeEventListener("nodeDeserialized", hndNodeDeserialized);
-                                        };
-                                        instance.node.addEventListener("graphDeserialized", hndGraphDeserialized, true);
-                                        instance.node.addEventListener("graphInstantiated", hndGraphDeserialized, true);
-                                    };
-                                    instance.addEventListener("nodeDeserialized", hndNodeDeserialized);
-                            }
-                        }
-                    }
                     return reconstruct;
                 }
             }
@@ -3836,7 +3854,7 @@ var FudgeCore;
 (function (FudgeCore) {
     let Material = (() => {
         var _a;
-        let _classDecorators = [FudgeCore.enumerable, (_a = FudgeCore.SerializableResource).register.bind(_a)];
+        let _classDecorators = [FudgeCore.enumerate, (_a = FudgeCore.SerializableResource).register.bind(_a)];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -3847,7 +3865,7 @@ var FudgeCore;
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _get_coat_decorators = [FudgeCore.type(FudgeCore.Coat), FudgeCore.enumerable];
+                _get_coat_decorators = [FudgeCore.type(FudgeCore.Coat), FudgeCore.enumerate];
                 __esDecorate(this, null, _get_coat_decorators, { kind: "getter", name: "coat", static: false, private: false, access: { has: obj => "coat" in obj, get: obj => obj.coat }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 Material = _classThis = _classDescriptor.value;
@@ -4204,6 +4222,36 @@ var FudgeCore;
                 this.framesPerSecond = _fps;
                 this.calculateTotalTime();
                 FudgeCore.Project.register(this);
+            }
+            static blendOverride(_base, _override, _weight, _intersect = false) {
+                return Animation.blendRecursive(_base, _override, 1 - _weight, _weight, _intersect);
+            }
+            static blendAdditive(_base, _add, _weight) {
+                return Animation.blendRecursive(_base, _add, 1, _weight);
+            }
+            static blendRecursive(_base, _blend, _weightBase, _weightBlend, _intersect = false) {
+                let mutator = _intersect ? {} : { ..._base };
+                for (const key in _blend) {
+                    if (_intersect && _base[key] == undefined)
+                        continue;
+                    if (typeof _blend[key] == "number") {
+                        mutator[key] = (_base[key] ?? 0) * _weightBase + _blend[key] * _weightBlend;
+                        continue;
+                    }
+                    if (typeof _base[key] == "object") {
+                        let base = _base[key];
+                        let blend = _blend[key];
+                        if (base.x != undefined && base.y != undefined && base.z != undefined && base.w != undefined && FudgeCore.Quaternion.DOT(base, blend) < 0)
+                            FudgeCore.Quaternion.negate(base);
+                        mutator[key] = this.blendRecursive(base, blend, _weightBase, _weightBlend, _intersect);
+                        continue;
+                    }
+                    if (typeof _blend[key] === "object") {
+                        mutator[key] = this.blendRecursive({}, _blend[key], _weightBase, _weightBlend, _intersect);
+                        continue;
+                    }
+                }
+                return mutator;
             }
             static registerSubclass(_subClass) { return Animation.subclasses.push(_subClass) - 1; }
             get getLabels() {
@@ -4660,6 +4708,139 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
+    let ANIMATION_BLENDING;
+    (function (ANIMATION_BLENDING) {
+        ANIMATION_BLENDING["ADDITIVE"] = "Additive";
+        ANIMATION_BLENDING["OVERRIDE"] = "Override";
+    })(ANIMATION_BLENDING = FudgeCore.ANIMATION_BLENDING || (FudgeCore.ANIMATION_BLENDING = {}));
+    class AnimationNode {
+        constructor(_options) {
+            this.speed = _options?.speed ?? 1;
+            this.weight = _options?.weight ?? 1;
+            this.blending = _options?.blending ?? ANIMATION_BLENDING.OVERRIDE;
+        }
+    }
+    FudgeCore.AnimationNode = AnimationNode;
+    class AnimationNodeAnimation extends AnimationNode {
+        constructor(_animation, _options) {
+            super(_options);
+            if (!_animation)
+                return;
+            if (!(_animation instanceof FudgeCore.Animation)) {
+                this.mutator = _animation;
+                return;
+            }
+            this.animation = _animation;
+            this.offset = _options?.offset ?? 0;
+            this.playmode = _options?.playmode;
+            this.time = 0;
+        }
+        reset() {
+            this.time = this.offset;
+        }
+        update(_deltaTime) {
+            if (!this.animation)
+                return;
+            _deltaTime *= this.speed;
+            let updatedTime = this.time + _deltaTime;
+            if (this.animation.totalTime == 0)
+                return;
+            updatedTime = this.animation.getModalTime(updatedTime, this.playmode);
+            let direction = this.animation.calculateDirection(updatedTime, this.playmode);
+            this.events = this.animation.getEventsToFire(this.time, updatedTime, FudgeCore.ANIMATION_QUANTIZATION.CONTINOUS, direction);
+            this.mutator = this.animation.getState(updatedTime % this.animation.totalTime, direction, FudgeCore.ANIMATION_QUANTIZATION.CONTINOUS);
+            this.time = updatedTime;
+            return;
+        }
+    }
+    FudgeCore.AnimationNodeAnimation = AnimationNodeAnimation;
+    class AnimationNodeBlend extends AnimationNode {
+        constructor(_nodes, _options) {
+            super(_options);
+            this.nodes = _nodes;
+        }
+        reset() {
+            for (const node of this.nodes)
+                node.reset();
+        }
+        update(_deltaTime) {
+            if (this.nodes.length == 0) {
+                this.mutator = null;
+                this.events = [];
+                return;
+            }
+            _deltaTime *= this.speed;
+            this.nodes[0].update(_deltaTime, {});
+            let mutator = this.nodes[0].mutator ?? {};
+            let events = this.nodes[0].events ?? [];
+            for (let i = 1; i < this.nodes.length; i++) {
+                const node = this.nodes[i];
+                node.update(_deltaTime, mutator);
+                if (!node.mutator)
+                    continue;
+                switch (node.blending) {
+                    case ANIMATION_BLENDING.ADDITIVE:
+                        mutator = FudgeCore.Animation.blendAdditive(mutator, node.mutator, node.weight);
+                        break;
+                    case ANIMATION_BLENDING.OVERRIDE:
+                        mutator = FudgeCore.Animation.blendOverride(mutator, node.mutator, node.weight);
+                        break;
+                }
+                events = events.concat(node.events);
+            }
+            this.mutator = mutator;
+            this.events = events;
+        }
+    }
+    FudgeCore.AnimationNodeBlend = AnimationNodeBlend;
+    class AnimationNodeTransition extends AnimationNode {
+        constructor(_animation, _options) {
+            super(_options);
+            this.from = _animation;
+        }
+        reset() {
+            this.from.reset();
+            this.to?.reset();
+        }
+        transit(_to, _duration) {
+            _to.reset();
+            if (this.to)
+                this.from = new AnimationNodeAnimation(this.mutator);
+            this.to = _to;
+            this.duration = _duration;
+            this.time = 0;
+        }
+        update(_deltaTime, _pose) {
+            _deltaTime *= this.speed;
+            this.time += _deltaTime;
+            this.from.update(_deltaTime);
+            if (!this.to) {
+                this.mutator = this.from.mutator;
+                this.events = this.from.events;
+                return;
+            }
+            this.to.update(_deltaTime);
+            let progress = Math.min(this.time / this.duration, 1);
+            let from = this.from.mutator ?? _pose;
+            let to = this.to.mutator ?? _pose;
+            if (from == to) {
+                this.mutator = null;
+                return;
+            }
+            this.mutator = FudgeCore.Animation.blendOverride(from, to, progress, from == _pose || to == _pose);
+            this.events = this.to.events;
+            if (progress >= 1) {
+                this.from = this.to;
+                this.to = null;
+                this.duration = null;
+                this.time = null;
+            }
+        }
+    }
+    FudgeCore.AnimationNodeTransition = AnimationNodeTransition;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
     class AnimationSequence extends FudgeCore.Mutable {
         constructor(_keys = []) {
             super();
@@ -4765,7 +4946,7 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     let AnimationSprite = (() => {
-        let _classDecorators = [FudgeCore.enumerable];
+        let _classDecorators = [FudgeCore.enumerate];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -4776,7 +4957,7 @@ var FudgeCore;
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _get_texture_decorators = [FudgeCore.enumerable, FudgeCore.type(FudgeCore.Texture)];
+                _get_texture_decorators = [FudgeCore.enumerate, FudgeCore.type(FudgeCore.Texture)];
                 __esDecorate(this, null, _get_texture_decorators, { kind: "getter", name: "texture", static: false, private: false, access: { has: obj => "texture" in obj, get: obj => obj.texture }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 AnimationSprite = _classThis = _classDescriptor.value;
@@ -5210,6 +5391,28 @@ var FudgeCore;
         };
     })();
     FudgeCore.ComponentAnimation = ComponentAnimation;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class ComponentAnimationGraph extends FudgeCore.Component {
+        static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentAnimationGraph); }
+        constructor(_root) {
+            super();
+            this.update = () => {
+                if (!this.root || !this.node || !this.active)
+                    return;
+                this.root.update(FudgeCore.Loop.timeFrameGame);
+                this.root.events?.forEach(_event => this.dispatchEvent(new Event(_event)));
+                this.node.applyAnimation(this.root.mutator);
+            };
+            this.root = _root;
+            if (FudgeCore.Project.mode == FudgeCore.MODE.EDITOR)
+                return;
+            this.addEventListener("componentAdd", () => this.node.addEventListener("renderPrepare", this.update));
+            this.addEventListener("componentRemove", () => this.node.removeEventListener("renderPrepare", this.update));
+        }
+    }
+    FudgeCore.ComponentAnimationGraph = ComponentAnimationGraph;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -6112,7 +6315,7 @@ var FudgeCore;
     })(PARTICLE_SYSTEM_PLAYMODE = FudgeCore.PARTICLE_SYSTEM_PLAYMODE || (FudgeCore.PARTICLE_SYSTEM_PLAYMODE = {}));
     let ComponentParticleSystem = (() => {
         var _a;
-        let _classDecorators = [(_a = FudgeCore.RenderInjectorComponentParticleSystem).decorate.bind(_a), FudgeCore.enumerable];
+        let _classDecorators = [(_a = FudgeCore.RenderInjectorComponentParticleSystem).decorate.bind(_a), FudgeCore.enumerate];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -6127,7 +6330,7 @@ var FudgeCore;
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _particleSystem_decorators = [FudgeCore.type(FudgeCore.ParticleSystem)];
-                _get_size_decorators = [FudgeCore.enumerable];
+                _get_size_decorators = [FudgeCore.enumerate];
                 __esDecorate(this, null, _get_size_decorators, { kind: "getter", name: "size", static: false, private: false, access: { has: obj => "size" in obj, get: obj => obj.size }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, null, _particleSystem_decorators, { kind: "field", name: "particleSystem", static: false, private: false, access: { has: obj => "particleSystem" in obj, get: obj => obj.particleSystem, set: (obj, value) => { obj.particleSystem = value; } }, metadata: _metadata }, _particleSystem_initializers, _particleSystem_extraInitializers);
                 __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
@@ -8640,8 +8843,7 @@ var FudgeCore;
                 _m[10] = cosY * cosX;
             }
             else {
-                const rotationNormalized = FudgeCore.Quaternion.NORMALIZATION(_rotation);
-                const x = rotationNormalized.x, y = rotationNormalized.y, z = rotationNormalized.z, w = rotationNormalized.w;
+                const x = _rotation.x, y = _rotation.y, z = _rotation.z, w = _rotation.w;
                 const xx = x * x, xy = x * y, xz = x * z, xw = x * w;
                 const yy = y * y, yz = y * z, yw = y * w;
                 const zz = z * z, zw = z * w;
@@ -8655,7 +8857,6 @@ var FudgeCore;
                 _m[8] = 2 * (xz + yw);
                 _m[9] = 2 * (yz - xw);
                 _m[10] = ww - xx - yy + zz;
-                FudgeCore.Recycler.store(rotationNormalized);
             }
         }
         get translation() {
@@ -9072,14 +9273,17 @@ var FudgeCore;
                     this.#quaternion :
                     isFullVectorMutator(_mutator.rotation) ? this.#rotation : this.rotation;
                 let scaling = isFullVectorMutator(_mutator.scaling) ? this.#scaling : this.scaling;
-                if (_mutator.rotation)
+                const isQuaternion = rotation instanceof FudgeCore.Quaternion;
+                if (_mutator.rotation) {
                     rotation.mutate(_mutator.rotation);
+                    if (isQuaternion)
+                        rotation.normalize();
+                }
                 if (_mutator.scaling)
                     scaling.mutate(_mutator.scaling);
                 Matrix4x4.setRotation(m, rotation);
-                const isEulerRotation = rotation instanceof FudgeCore.Vector3;
-                this.#rotationDirty = !isEulerRotation;
-                this.#quaternionDirty = isEulerRotation;
+                this.#rotationDirty = isQuaternion;
+                this.#quaternionDirty = !isQuaternion;
                 const sx = scaling.x, sy = scaling.y, sz = scaling.z;
                 m[0] *= sx;
                 m[1] *= sx;
@@ -9419,15 +9623,27 @@ var FudgeCore;
         static NORMALIZATION(_q) {
             return _q.clone.normalize();
         }
-        static ROTATION(_vector, _angle) {
+        static ROTATION(_vector, _angleOrUp) {
             const result = FudgeCore.Recycler.get(Quaternion);
-            if (_angle == undefined) {
+            if (_angleOrUp == undefined) {
                 result.eulerAngles = _vector;
             }
-            else {
-                let halfAngle = _angle * FudgeCore.Calc.deg2rad / 2;
+            else if (typeof _angleOrUp == "number") {
+                let halfAngle = _angleOrUp * FudgeCore.Calc.deg2rad / 2;
                 let sinHalfAngle = Math.sin(halfAngle);
                 result.set(_vector.x * sinHalfAngle, _vector.y * sinHalfAngle, _vector.z * sinHalfAngle, Math.cos(halfAngle));
+            }
+            else {
+                const right = FudgeCore.Vector3.CROSS(_angleOrUp, _vector);
+                const matrix = FudgeCore.Recycler.reuse(FudgeCore.Matrix4x4);
+                matrix.set([
+                    right.x, right.y, right.z, 0,
+                    _angleOrUp.x, _angleOrUp.y, _angleOrUp.z, 0,
+                    _vector.x, _vector.y, _vector.z, 0,
+                    0, 0, 0, 1
+                ]);
+                result.copy(matrix.quaternion);
+                FudgeCore.Recycler.storeMultiple(right, matrix);
             }
             return result;
         }
@@ -9450,21 +9666,26 @@ var FudgeCore;
             return result;
         }
         static SLERP(_from, _to, _factor) {
+            const result = FudgeCore.Recycler.reuse(Quaternion);
             let cosHalfTheta = _from.w * _to.w + _from.x * _to.x + _from.y * _to.y + _from.z * _to.z;
             if (Math.abs(cosHalfTheta) >= 1)
-                return _from;
+                return result.copy(_from);
             let halfTheta = Math.acos(cosHalfTheta);
             let sinHalfTheta = Math.sqrt(1 - cosHalfTheta * cosHalfTheta);
             if (Math.abs(sinHalfTheta) < 0.001) {
-                let result = FudgeCore.Recycler.get(Quaternion);
                 result.set((_from.x * 0.5 + _to.x * 0.5), (_from.y * 0.5 + _to.y * 0.5), (_from.z * 0.5 + _to.z * 0.5), (_from.w * 0.5 + _to.w * 0.5));
                 return result;
             }
             let ratioA = Math.sin((1 - _factor) * halfTheta) / sinHalfTheta;
             let ratioB = Math.sin(_factor * halfTheta) / sinHalfTheta;
-            let result = FudgeCore.Recycler.get(Quaternion);
             result.set((_from.x * ratioA + _to.x * ratioB), (_from.y * ratioA + _to.y * ratioB), (_from.z * ratioA + _to.z * ratioB), (_from.w * ratioA + _to.w * ratioB));
             return result;
+        }
+        static negate(_q) {
+            _q.x = -_q.x;
+            _q.y = -_q.y;
+            _q.z = -_q.z;
+            _q.w = -_q.w;
         }
         get clone() {
             let result = FudgeCore.Recycler.reuse(Quaternion);
@@ -9504,6 +9725,7 @@ var FudgeCore;
             this.set(sinX * cosY * cosZ - cosX * sinY * sinZ, cosX * sinY * cosZ + sinX * cosY * sinZ, cosX * cosY * sinZ - sinX * sinY * cosZ, cosX * cosY * cosZ + sinX * sinY * sinZ);
             this.#eulerAngles.copy(_eulerAngles);
             this.#eulerAnglesDirty = false;
+            FudgeCore.Recycler.store(halfAnglesInRadians);
         }
         normalize() {
             let length = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2 + this.w ** 2);
@@ -9779,6 +10001,36 @@ var FudgeCore;
         }
         static PROJECTION(_a, _b) {
             return _a.clone.project(_b);
+        }
+        static LERP(_a, _b, _factor) {
+            _factor = FudgeCore.Calc.clamp(_factor, 0, 1);
+            let vector = FudgeCore.Recycler.reuse(Vector3);
+            vector.set(_a.x + (_b.x - _a.x) * _factor, _a.y + (_b.y - _a.y) * _factor, _a.z + (_b.z - _a.z) * _factor);
+            return vector;
+        }
+        static SMOOTHDAMP(_current, _target, _velocity, _smoothTime, _timeFrame, _maxSpeed = Infinity) {
+            const omega = 2 / _smoothTime;
+            const x = omega * _timeFrame;
+            const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+            const change = Vector3.DIFFERENCE(_current, _target);
+            const maxChange = _maxSpeed * _smoothTime;
+            const magnitudeSquared = change.magnitudeSquared;
+            if (magnitudeSquared > maxChange * maxChange) {
+                change.scale(maxChange / Math.sqrt(magnitudeSquared));
+                _target = Vector3.DIFFERENCE(_current, change);
+            }
+            const scaleChange = Vector3.SCALE(change, omega);
+            const sumVelocityScaleChange = Vector3.SUM(_velocity, scaleChange);
+            const temp = Vector3.SCALE(sumVelocityScaleChange, _timeFrame);
+            const scaleTemp = Vector3.SCALE(temp, omega);
+            const differenceVelocityScaleTemp = Vector3.DIFFERENCE(_velocity, scaleTemp);
+            const scaleDifferenceVelocityScaleTemp = Vector3.SCALE(differenceVelocityScaleTemp, exp);
+            _velocity.copy(scaleDifferenceVelocityScaleTemp);
+            const sumChangeTemp = Vector3.SUM(change, temp);
+            const scaleSumChangeTempExp = Vector3.SCALE(sumChangeTemp, exp);
+            const result = Vector3.SUM(_target, scaleSumChangeTempExp);
+            FudgeCore.Recycler.storeMultiple(scaleChange, sumVelocityScaleChange, temp, scaleTemp, differenceVelocityScaleTemp, scaleDifferenceVelocityScaleTemp, sumChangeTemp, scaleSumChangeTempExp);
+            return result;
         }
         get magnitude() {
             return Math.hypot(this.x, this.y, this.z);
@@ -10625,7 +10877,7 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     let MeshRelief = (() => {
-        let _classDecorators = [FudgeCore.enumerable];
+        let _classDecorators = [FudgeCore.enumerate];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -10636,7 +10888,7 @@ var FudgeCore;
             static { _classThis = this; }
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _get_texture_decorators = [FudgeCore.enumerable, FudgeCore.type(FudgeCore.TextureImage)];
+                _get_texture_decorators = [FudgeCore.enumerate, FudgeCore.type(FudgeCore.TextureImage)];
                 __esDecorate(this, null, _get_texture_decorators, { kind: "getter", name: "texture", static: false, private: false, access: { has: obj => "texture" in obj, get: obj => obj.texture }, metadata: _metadata }, null, _instanceExtraInitializers);
                 __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
                 MeshRelief = _classThis = _classDescriptor.value;
@@ -11506,12 +11758,10 @@ var FudgeCore;
             return eulerAngles;
         }
         setRotation(_value) {
-            let quat = new OIMO.Quat();
-            let mtxRot = FudgeCore.Matrix4x4.IDENTITY();
-            mtxRot.rotate(new FudgeCore.Vector3(_value.x, _value.y, _value.z));
-            let array = mtxRot.get();
-            let rot = new OIMO.Mat3(array[0], array[4], array[8], array[1], array[5], array[9], array[2], array[6], array[10]);
-            quat.fromMat3(rot);
+            let quaternion = _value instanceof FudgeCore.Vector3 ? FudgeCore.Quaternion.ROTATION(_value) : _value;
+            let quat = new OIMO.Quat(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+            if (_value instanceof FudgeCore.Vector3)
+                FudgeCore.Recycler.store(quaternion);
             this.#rigidbody.setOrientation(quat);
         }
         getScaling() {
