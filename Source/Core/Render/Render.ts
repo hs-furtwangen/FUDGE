@@ -74,7 +74,9 @@ namespace FudgeCore {
       let cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
 
       if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
+        PerformanceMonitor.startMeasure("prepare Matrix4x4_PRODUCT");
         let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
+        PerformanceMonitor.endMeasure("prepare Matrix4x4_PRODUCT");
         cmpMesh.mtxWorld.copy(mtxWorldMesh);
         Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
         let shader: ShaderInterface = cmpMaterial.material.getShader();
@@ -146,6 +148,7 @@ namespace FudgeCore {
     /**
      * Draws the scene from the point of view of the given camera
      */
+    @PerformanceMonitor.measure("Render.draw")
     public static draw(_cmpCamera: ComponentCamera): void {
       for (let node of Render.nodesAlpha)
         Reflect.set(node, "zCamera", _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z);

@@ -186,7 +186,7 @@ namespace UI {
     }
 
     public update = (): void => {
-      this.innerText = "FPS: " + ƒ.Loop.fpsRealAverage.toFixed(0);
+      this.textContent = "FPS: " + ƒ.Loop.fpsRealAverage.toFixed(0);
     };
   }
 
@@ -197,7 +197,7 @@ namespace UI {
     }
 
     public update = (): void => {
-      this.innerText = "Time: " + this.get();
+      this.textContent = "Time: " + this.get();
     };
 
     public get = (): string => {

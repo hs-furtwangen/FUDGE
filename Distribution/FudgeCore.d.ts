@@ -1,6 +1,33 @@
 /// <reference path="OimoPhysics.d.ts" />
 /// <reference types="webxr" />
 declare namespace FudgeCore {
+    interface PerformanceMeasurement {
+        start?: number;
+        frameTimeMin: number;
+        frameTimeMax: number;
+        frameTimeAvg: number;
+        callsPerFrame: number;
+        time: number;
+        calls: number;
+    }
+    class PerformanceMonitor {
+        static display: HTMLPreElement;
+        static measurements: {
+            [key: string]: PerformanceMeasurement;
+        };
+        private static readonly framesToAverage;
+        static measure(_name?: string): Function;
+        static startMeasure(_label: string): void;
+        static endMeasure(_label: string): number;
+        static startFrame(): void;
+        static endFrame(): void;
+    }
+    class PerformanceDisplay extends HTMLPreElement {
+        constructor();
+        update: () => void;
+    }
+}
+declare namespace FudgeCore {
     /**
      * Base class for the different DebugTargets, mainly for technical purpose of inheritance
      */
@@ -4901,6 +4928,7 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
+        mutateSync(_mutator: Mutator): void;
         mutate(_mutator: Mutator): Promise<void>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         protected reduceMutator(_mutator: Mutator): void;

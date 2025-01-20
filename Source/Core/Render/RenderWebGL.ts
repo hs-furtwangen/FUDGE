@@ -691,6 +691,7 @@ namespace FudgeCore {
     /**
      * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component
      */
+    @PerformanceMonitor.measure()
     protected static drawAmbientOcclusion(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       ShaderAmbientOcclusion.useProgram();
@@ -719,6 +720,7 @@ namespace FudgeCore {
     /**
      * Draws the bloom-effect over the color-buffer, using the given bloom-component
      */
+    @PerformanceMonitor.measure()
     protected static drawBloom(_cmpBloom: ComponentBloom): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       ShaderBloom.useProgram();
@@ -785,7 +787,9 @@ namespace FudgeCore {
     /**
      * Draw a mesh buffer using the given infos and the complete projection matrix
     */
+    @PerformanceMonitor.measure("Render.drawNode")
     protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
+      PerformanceMonitor.startMeasure("Render.drawNode get components");
       let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
       let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
       let cmpText: ComponentText = _node.getComponent(ComponentText);
@@ -795,21 +799,42 @@ namespace FudgeCore {
       let shader: ShaderInterface = cmpMaterial.material.getShader();
       if (drawParticles)
         shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
+      PerformanceMonitor.endMeasure("Render.drawNode get components");
 
+
+      PerformanceMonitor.startMeasure("Render.drawNode useProgram");
       shader.useProgram();
+      PerformanceMonitor.endMeasure("Render.drawNode useProgram");
+
+      PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
       coat.useRenderData(shader, cmpMaterial);
+      PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
+
 
       let mtxMeshToWorld: Matrix4x4 = cmpMesh.mtxWorld;
-
+      PerformanceMonitor.startMeasure("Render.drawNode calcMeshToView");
       if (cmpText?.isActive)
         mtxMeshToWorld = cmpText.useRenderData(mtxMeshToWorld, _cmpCamera);
+      PerformanceMonitor.startMeasure("Render.drawNode calcMeshToView mtxWorldToView");
+      let mtxWorldToView: Matrix4x4 = _cmpCamera.mtxWorldToView;
+      PerformanceMonitor.endMeasure("Render.drawNode calcMeshToView mtxWorldToView");
+      PerformanceMonitor.startMeasure("Render.drawNode calcMeshToView target");
+      let target: Vector3 = _cmpCamera.mtxWorld.translation;
+      PerformanceMonitor.endMeasure("Render.drawNode calcMeshToView target");
+      let mtxMeshToView: Matrix4x4 = RenderWebGL.calcMeshToView(_node, mtxMeshToWorld, mtxWorldToView, target);
+      PerformanceMonitor.endMeasure("Render.drawNode calcMeshToView");
 
-      let mtxMeshToView: Matrix4x4 = RenderWebGL.calcMeshToView(_node, mtxMeshToWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
+      PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
+
       let renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld, mtxMeshToView);
+
 
       if (cmpMesh.skeleton?.isActive)
         cmpMesh.skeleton.useRenderBuffer(shader);
 
+      PerformanceMonitor.endMeasure("Render.drawNode useRenderBuffers");
+
+      PerformanceMonitor.startMeasure("Render.drawNode other");
       let uniform: WebGLUniformLocation = shader.uniforms["u_vctCamera"];
       if (uniform)
         RenderWebGL.crc3.uniform3fv(uniform, _cmpCamera.mtxWorld.translation.get());
@@ -827,11 +852,14 @@ namespace FudgeCore {
       uniform = shader.uniforms["u_fAlphaClip"];
       if (uniform)
         RenderWebGL.crc3.uniform1f(uniform, cmpMaterial.material.alphaClip);
+      PerformanceMonitor.endMeasure("Render.drawNode other");
 
+      PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
         RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers, _node.getComponent(ComponentFaceCamera));
       else
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+      PerformanceMonitor.endMeasure("Render.drawNode drawElements");
     }
 
     protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera): void {
@@ -867,7 +895,10 @@ namespace FudgeCore {
         return Matrix4x4.PRODUCT(_mtxWorldToView, mtxMeshToView);
       }
 
-      return Matrix4x4.PRODUCT(_mtxWorldToView, _mtxMeshToWorld);
+      PerformanceMonitor.startMeasure("calcMeshToView Matrix4x4_PRODUCT");
+      const result: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorldToView, _mtxMeshToWorld);
+      PerformanceMonitor.endMeasure("calcMeshToView Matrix4x4_PRODUCT");
+      return result;
     }
 
     private static bindTexture(_shader: ShaderInterface, _texture: WebGLTexture, _unit: number, _uniform: string): void {

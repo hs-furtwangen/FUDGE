@@ -158,6 +158,7 @@ namespace FudgeCore {
      * May also be called from updateAnimation().
      */
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
+      PerformanceMonitor.startMeasure("updateAnimationLoop");
       if (this.animation.totalTime == 0) 
         return null;
 
@@ -176,6 +177,8 @@ namespace FudgeCore {
         if (this.node) {
           this.node.applyAnimation(mutator);
         }
+        PerformanceMonitor.endMeasure("updateAnimationLoop");
+
         return mutator;
       }
       return null;

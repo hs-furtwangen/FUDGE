@@ -78,6 +78,7 @@ namespace FudgeCore {
     }
 
     public static startFrame(): void {
+      PerformanceMonitor.startMeasure("Frame");
       for (const label in this.measurements) {
         this.measurements[label].time = 0;
         this.measurements[label].calls = 0;
@@ -85,6 +86,7 @@ namespace FudgeCore {
     }
 
     public static endFrame(): void {
+      PerformanceMonitor.endMeasure("Frame");
       for (const label in this.measurements) {
         const measurement: PerformanceMeasurement = this.measurements[label];
         if (measurement.calls > 0) {

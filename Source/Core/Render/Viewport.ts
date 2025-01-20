@@ -114,6 +114,7 @@ namespace FudgeCore {
      * Draw this viewport displaying its branch. By default, the transforms in the branch are recalculated first.
      * Pass `false` if calculation was already done for this frame 
      */
+    @PerformanceMonitor.measure("Viewport.draw")
     public draw(_prepareBranch: boolean = true): void {
       this.prepare(_prepareBranch);
 
@@ -144,6 +145,7 @@ namespace FudgeCore {
     /**
     * Adjusts all frames and the camera to fit the current size of the canvas. Prepares the branch for rendering.
     */
+    @PerformanceMonitor.measure("Viewport.prepare")
     public prepare(_prepareBranch: boolean = true): void {
       if (!this.#branch)
         return;

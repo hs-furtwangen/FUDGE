@@ -146,6 +146,7 @@ namespace FudgeCore {
     }
 
     private static loop(): void {
+      PerformanceMonitor.startFrame();
       let time: number;
       time = performance.now();
       Loop.ƒTimeFrameReal = time - Loop.ƒTimeFrameStartReal;
@@ -162,6 +163,7 @@ namespace FudgeCore {
       Loop.ƒFrames++;
       let event: Event = new Event(EVENT.LOOP_FRAME);
       Loop.targetStatic.dispatchEvent(event);
+      PerformanceMonitor.endFrame();
     }
 
     private static loopFrame(): void {
