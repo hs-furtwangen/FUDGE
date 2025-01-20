@@ -111,6 +111,15 @@ namespace FudgeCore {
         Recycler.store(position);
       }
 
+      let cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera);
+      if (cmpCamera && cmpCamera.isActive) {
+        PerformanceMonitor.startMeasure("Render.prepare mtxWorld * cmpCamera.mtxPivot");
+        const mtxWorldCamera: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpCamera.mtxPivot);
+        cmpCamera.mtxWorld.copy(mtxWorldCamera);
+        Recycler.store(mtxWorldCamera);
+        PerformanceMonitor.endMeasure("Render.prepare mtxWorld * cmpCamera.mtxPivot");
+      }
+
       if (firstLevel) {
         _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
         for (const cmpSkeleton of Render.componentsSkeleton) {

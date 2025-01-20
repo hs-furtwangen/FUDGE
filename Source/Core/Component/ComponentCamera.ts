@@ -23,6 +23,8 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentCamera);
 
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
+    public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
+
     public clrBackground: Color = new Color(0, 0, 0, 1); // The color of the background the camera will render.
     //private orthographic: boolean = false; // Determines whether the image will be rendered with perspective or orthographic projection.
     private projection: PROJECTION = PROJECTION.CENTRAL;
@@ -37,22 +39,6 @@ namespace FudgeCore {
     #mtxWorldToView: Matrix4x4;
     #mtxCameraInverse: Matrix4x4;
     #mtxProjection: Matrix4x4 = new Matrix4x4; // The matrix to multiply each scene objects transformation by, to determine where it will be drawn.
-
-    /**
-     * Returns the cameras worldtransformation matrix i.e. the transformation relative to the root of the graph
-     */
-    @PerformanceMonitor.measure("ComponentCamera.mtxWorld")
-    public get mtxWorld(): Matrix4x4 {
-      let mtxCamera: Matrix4x4 = this.mtxPivot.clone;
-      try {
-
-        mtxCamera = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
-      } catch (_error) {
-        // no container node or no world transformation found -> continue with pivot only
-        // TODO: maybe use if () then instead of try catch
-      }
-      return mtxCamera;
-    }
 
     /**
      * Returns the multiplication of the worldtransformation of the camera container, the pivot of this camera and the inversion of the projection matrix
