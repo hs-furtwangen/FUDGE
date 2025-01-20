@@ -4,7 +4,7 @@ namespace FudgeCore {
    * @author Jirka Dell'Oro-Friedl, HFU, 2021
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
    */
-  export class RecycableArray<T> {
+  export class RecycableArray<T> { // TODO: fix spelling Recycable -> Recyclable
     #length: number = 0;
     #array: Array<T> = new Array<T>();
     // #type: new () => T;
@@ -45,6 +45,9 @@ namespace FudgeCore {
      * Removes the last entry from the array and returns it.
      */
     public pop(): T {
+      if (this.#length == 0)
+        return undefined;
+
       this.#length--;
       return this.#array[this.#length];
     }

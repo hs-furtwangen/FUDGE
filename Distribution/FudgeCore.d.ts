@@ -274,7 +274,7 @@ declare namespace FudgeCore {
      * Association of an attribute with its specified type (constructor).
      * @see {@link Metadata}.
      */
-    type MetaAttributeTypes = Record<string | symbol, Function>;
+    type MetaAttributeTypes = Record<string | symbol, Function | Object>;
     /**
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
@@ -302,9 +302,11 @@ declare namespace FudgeCore {
      * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator}
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
+     * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function type<Value, Constructor extends abstract new (...args: General[]) => Value>(_constructor: Constructor): (_value: unknown, _context: ClassPropertyContext<Value extends Node ? Node extends Value ? Component : Serializable : Serializable, Value>) => void;
-    function type<Value extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => Value): (_value: unknown, _context: ClassPropertyContext<Serializable, Value>) => void;
+    function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
     /**
      * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
      *
@@ -468,7 +470,7 @@ declare namespace FudgeCore {
      *
      * **Serialization:**
      * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-     * - Primitives will be serialized as is.
+     * - Primitives and enums will be serialized as is.
      * - {@link Serializable}s will be serialized nested.
      * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
      * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
@@ -510,10 +512,13 @@ declare namespace FudgeCore {
      * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
      * will be displayed via their {@link toString} method in the editor.
      * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
+     *
+     * @author Jonas Plotzky, HFU, 2024-2025
      */
     function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
     function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
     function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -2463,6 +2468,8 @@ declare namespace FudgeCore {
      */
     export class AnimationGLTF extends AnimationGLTF_base {
         load(_url?: RequestInfo, _name?: string): Promise<AnimationGLTF>;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
     export {};
 }
