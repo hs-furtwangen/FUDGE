@@ -41,8 +41,8 @@ namespace FudgeCore {
     /**
      * Returns the cameras worldtransformation matrix i.e. the transformation relative to the root of the graph
      */
+    @PerformanceMonitor.measure("ComponentCamera.mtxWorld")
     public get mtxWorld(): Matrix4x4 {
-      PerformanceMonitor.startMeasure("ComponentCamera.mtxWorld");
       let mtxCamera: Matrix4x4 = this.mtxPivot.clone;
       try {
 
@@ -51,7 +51,6 @@ namespace FudgeCore {
         // no container node or no world transformation found -> continue with pivot only
         // TODO: maybe use if () then instead of try catch
       }
-      PerformanceMonitor.endMeasure("ComponentCamera.mtxWorld");
       return mtxCamera;
     }
 

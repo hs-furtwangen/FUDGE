@@ -25,6 +25,7 @@ namespace FudgeCore {
      * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
      * render passes.
      */
+    @PerformanceMonitor.measure("Render.prepare")
     public static prepare(_branch: Node, _options: RenderPrepareOptions = {}, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _shadersUsed: (ShaderInterface)[] = null): void {
       let firstLevel: boolean = (_shadersUsed == null);
       if (firstLevel) {
@@ -49,7 +50,9 @@ namespace FudgeCore {
       _branch.timestampUpdate = Render.timestampUpdate;
 
       if (_branch.cmpTransform && _branch.cmpTransform.isActive) {
+        PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxLocal");
         let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
+        PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxLocal");
         _branch.mtxWorld.copy(mtxWorldBranch);
         Recycler.store(mtxWorldBranch);
       } else
@@ -74,9 +77,9 @@ namespace FudgeCore {
       let cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
 
       if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
-        PerformanceMonitor.startMeasure("prepare Matrix4x4_PRODUCT");
+        PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxPivot");
         let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
-        PerformanceMonitor.endMeasure("prepare Matrix4x4_PRODUCT");
+        PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
         cmpMesh.mtxWorld.copy(mtxWorldMesh);
         Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
         let shader: ShaderInterface = cmpMaterial.material.getShader();

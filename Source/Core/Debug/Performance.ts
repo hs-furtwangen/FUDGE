@@ -22,9 +22,9 @@ namespace FudgeCore {
     private static readonly framesToAverage: number = 60;
 
     public static measure(_name?: string): Function {
-      return (_value: General, _context: ClassMethodDecoratorContext | ClassFieldDecoratorContext) => {
+      return (_value: General, _context: ClassMethodDecoratorContext | ClassGetterDecoratorContext | ClassFieldDecoratorContext) => {
         const name: string = _name ?? _context.name.toString();
-        if (_context.kind === "method") {
+        if (_context.kind === "method" || _context.kind === "getter") {
           return function (this: General, ..._args: General[]) {
             PerformanceMonitor.startMeasure(name);
             const result: General = _value.call(this, ..._args);

@@ -163,6 +163,7 @@ namespace FudgeCore {
     /**
      * Prepares all nodes in the branch for rendering by updating their world transforms etc.
      */
+    @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
       let mtxRoot: Matrix4x4 = Matrix4x4.IDENTITY();
       if (this.#branch.getParent())
@@ -209,6 +210,7 @@ namespace FudgeCore {
     /**
      * Adjust all frames involved in the rendering process from the display area in the client up to the renderer canvas
      */
+    @PerformanceMonitor.measure("Viewport.adjustFrames")
     public adjustFrames(): void {
       // get the rectangle of the canvas area as displayed (consider css)
       let rectClient: Rectangle = this.getClientRectangle();

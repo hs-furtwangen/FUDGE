@@ -895,9 +895,9 @@ namespace FudgeCore {
         return Matrix4x4.PRODUCT(_mtxWorldToView, mtxMeshToView);
       }
 
-      PerformanceMonitor.startMeasure("calcMeshToView Matrix4x4_PRODUCT");
+      PerformanceMonitor.startMeasure("calcMeshToView mtxWorldToView * mtxMeshToWorld");
       const result: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorldToView, _mtxMeshToWorld);
-      PerformanceMonitor.endMeasure("calcMeshToView Matrix4x4_PRODUCT");
+      PerformanceMonitor.endMeasure("calcMeshToView mtxWorldToView * mtxMeshToWorld");
       return result;
     }
 
