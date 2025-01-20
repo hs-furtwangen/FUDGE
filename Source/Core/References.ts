@@ -1,3 +1,4 @@
+/// <reference path="Debug/Performance.ts"/>
 /// <reference path="Debug/DebugTarget.ts"/>
 /// <reference path="Debug/Debug.ts"/>
 // / <reference path="Time/Time.ts"/>
