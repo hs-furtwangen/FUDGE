@@ -12,8 +12,10 @@ out vec4 vctFrag;
 
 // uniform sampler2D u_texDepthStencil;
 #if defined(TEXTURE)
+
   uniform sampler2D u_texColor;
   in vec2 v_vctTexture;
+  
 #endif
 
 // // 4x4 Bayer matrix for dithering

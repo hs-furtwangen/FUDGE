@@ -234,8 +234,10 @@ out vec4 vctFrag;
 
 // uniform sampler2D u_texDepthStencil;
 #if defined(TEXTURE)
+
   uniform sampler2D u_texColor;
   in vec2 v_vctTexture;
+  
 #endif
 
 // // 4x4 Bayer matrix for dithering
@@ -519,44 +521,12 @@ uniform vec2 u_vctSize;
 uniform vec4 u_vctColor;
 out ivec4 vctFrag;
 
-void main() {
-    int pixel = int(trunc(gl_FragCoord.x) + u_vctSize.x * trunc(gl_FragCoord.y));
+#if defined(TEXTURE)
 
-    if (pixel != u_id)
-      discard;
+  uniform sampler2D u_texColor;
+  in vec2 v_vctTexture;
 
-    uint icolor = uint(u_vctColor.r * 255.0) << 24 | uint(u_vctColor.g * 255.0) << 16 | uint(u_vctColor.b * 255.0) << 8 | uint(u_vctColor.a * 255.0);
-                
-    vctFrag = ivec4(floatBitsToInt(gl_FragCoord.z), icolor, 0, 0);
-}`;
-  shaderSources["ShaderPick.vert"] = /*glsl*/ `#version 300 es
-/**
-* Renders for Raycasting
-* @authors Jirka Dell'Oro-Friedl, HFU, 2019
-*/
-in vec3 a_vctPosition;       
-uniform mat4 u_mtxMeshToWorld; // u_mtxModel
-uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
-uniform mat4 u_mtxMeshToView;
-
-void main() {   
-  gl_Position = u_mtxWorldToView * u_mtxMeshToWorld * vec4(a_vctPosition, 1.0);
-}`;
-  shaderSources["ShaderPickTextured.frag"] = /*glsl*/ `#version 300 es
-/**
-* Renders for Raycasting
-* @authors Jirka Dell'Oro-Friedl, HFU, 2019
-*/
-precision mediump float;
-precision highp int;
-
-uniform int u_id;
-uniform vec2 u_vctSize;
-in vec2 v_vctTexture;
-uniform vec4 u_vctColor;
-uniform sampler2D u_texColor;
-
-out ivec4 vctFrag;
+#endif
 
 void main() {
   int pixel = int(trunc(gl_FragCoord.x) + u_vctSize.x * trunc(gl_FragCoord.y));
@@ -564,27 +534,50 @@ void main() {
   if (pixel != u_id)
     discard;
   
-  vec4 vctColor = u_vctColor * texture(u_texColor, v_vctTexture);
+  vec4 vctColor = u_vctColor;
+  
+  #if defined(TEXTURE)
+
+    vctColor *= texture(u_texColor, v_vctTexture);
+
+  #endif
+
   uint icolor = uint(vctColor.r * 255.0) << 24 | uint(vctColor.g * 255.0) << 16 | uint(vctColor.b * 255.0) << 8 | uint(vctColor.a * 255.0);
   
-  vctFrag = ivec4(floatBitsToInt(gl_FragCoord.z), icolor, floatBitsToInt(v_vctTexture.x), floatBitsToInt(v_vctTexture.y));
+  vctFrag = ivec4(floatBitsToInt(gl_FragCoord.z), icolor, 0, 0);
+
+  #if defined(TEXTURE)
+
+    vctFrag.b = floatBitsToInt(v_vctTexture.x);
+    vctFrag.a = floatBitsToInt(v_vctTexture.y);
+
+  #endif
 }`;
-  shaderSources["ShaderPickTextured.vert"] = /*glsl*/ `#version 300 es
+  shaderSources["ShaderPick.vert"] = /*glsl*/ `#version 300 es
 /**
 * Renders for Raycasting
 * @authors Jirka Dell'Oro-Friedl, HFU, 2019
 */
-in vec3 a_vctPosition;       
-in vec2 a_vctTexture;
 uniform mat4 u_mtxMeshToWorld; // u_mtxModel
 uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
-uniform mat3 u_mtxPivot;
 
-out vec2 v_vctTexture;
+in vec3 a_vctPosition;
 
-void main() {   
+#if defined(TEXTURE)
+
+  in vec2 a_vctTexture;
+  out vec2 v_vctTexture;
+
+#endif
+
+void main() {
   gl_Position = u_mtxWorldToView * u_mtxMeshToWorld * vec4(a_vctPosition, 1.0);
-  v_vctTexture = (u_mtxPivot * vec3(a_vctTexture, 1.0)).xy;
+
+  #if defined(TEXTURE)
+
+    v_vctTexture = a_vctTexture;
+
+  #endif
 }`;
   shaderSources["ShaderScreen.vert"] = /*glsl*/ `#version 300 es
 precision mediump float;
