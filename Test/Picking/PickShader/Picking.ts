@@ -6,9 +6,6 @@ namespace Picking {
   window.addEventListener("load", start);
   let cmpCamera: ƒ.ComponentCamera;
   let viewport: ƒ.Viewport;
-  let viewportPick: ƒ.Viewport = new ƒ.Viewport();
-  let cameraPick: ƒ.ComponentCamera;
-
   let mouse: ƒ.Vector2 = new ƒ.Vector2();
 
   let cursor: ƒAid.Node = new ƒAid.Node(
@@ -46,30 +43,19 @@ namespace Picking {
     // setup the viewport
     cmpCamera = new ƒ.ComponentCamera();
     Reflect.set(cmpCamera, "far", 7.3);
-    // Reflect.set(cmpCamera, "fieldOfView", 170);
+
     cmpCamera.mtxPivot.translateX(0.3);
     cmpCamera.mtxPivot.translateZ(2.1);
-    // cmpCamera.pivot.translateY(-2.1);
+
     cmpCamera.mtxPivot.lookAt(ƒ.Vector3.ZERO());
     viewport = new ƒ.Viewport();
     viewport.initialize("Viewport", graph, cmpCamera, canvas);
-    // FudgeAid.Viewport.expandCameraToInteractiveOrbit(viewport);
-    viewport.draw();
 
-    let canvasPick: HTMLCanvasElement = document.createElement("canvas");
-    canvasPick.width = 10;
-    canvasPick.height = 10;
-    cameraPick = new ƒ.ComponentCamera();
-    cameraPick.mtxPivot.copy(cmpCamera.mtxPivot);
-    cameraPick.projectCentral(1, 10);
-    viewportPick.initialize("pick", graph, cameraPick, canvasPick);
-    viewportPick.adjustingFrames = false;
-    // viewportPick.adjustingCamera = false;
+    viewport.draw();
 
     ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, update);
     ƒ.Loop.start(ƒ.LOOP_MODE.TIME_GAME, 30);
-    // canvas.addEventListener("mousemove", update);
-    // window.addEventListener("resize", viewport.createPickBuffers.bind(viewport));
+
 
     function update(_event: Event): void {
       viewport.draw();
@@ -78,17 +64,10 @@ namespace Picking {
   }
 
   function pick(): void {
-    let posProjection: ƒ.Vector2 = viewport.pointClientToProjection(mouse);
-    let ray: ƒ.Ray = new ƒ.Ray(new ƒ.Vector3(posProjection.x, posProjection.y, 1));
-    // let ray: ƒ.Ray = viewport.getRayFromClient(mouse);
-    cameraPick.mtxPivot.lookAt(ray.direction);
-    cameraPick.projectCentral(1, 0.001);
-
     cursor.getComponent(ƒ.ComponentMesh).activate(false);
-    // let picks: ƒ.Pick[] = viewportPick.pick();
     let picks: ƒ.Pick[] = ƒ.Picker.pickViewport(viewport, mouse);
     cursor.getComponent(ƒ.ComponentMesh).activate(true);
-    picks.sort((a: ƒ.Pick, b: ƒ.Pick) => a.zBuffer > b.zBuffer ? 1 : -1);
+    picks.sort((_a: ƒ.Pick, _b: ƒ.Pick) => _a.zBuffer > _b.zBuffer ? 1 : -1);
     for (let hit of picks) {
       data[hit.node.name] = hit.zBuffer;
     }

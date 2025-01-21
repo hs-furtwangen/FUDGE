@@ -152,6 +152,16 @@ namespace FudgeCore {
       if (!this.camera.isActive)
         return;
 
+      PerformanceMonitor.startMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
+      if (this.camera.node) {
+        const mtxWorldCamera: Matrix4x4 = Matrix4x4.PRODUCT(this.camera.node.mtxWorld, this.camera.mtxPivot);
+        this.camera.mtxWorld.copy(mtxWorldCamera);
+        Recycler.store(mtxWorldCamera);
+      } else {
+        this.camera.mtxWorld.copy(this.camera.mtxPivot);
+      }
+      PerformanceMonitor.endMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
+
       if (this.adjustingFrames)
         this.adjustFrames();
       if (this.adjustingCamera)
@@ -261,6 +271,7 @@ namespace FudgeCore {
       this.camera.projectCentral(
         rect.width / rect.height, this.camera.getFieldOfView(), this.camera.getDirection(), this.camera.getNear(), this.camera.getFar()
       );
+
       this.camera.resetWorldToView();
     }
     // #endregion
@@ -378,7 +389,7 @@ namespace FudgeCore {
 
     /**
      * Returns all the gizmos in the branch of this viewport that are active, filtered by {@link gizmosFilter}
-     */ 
+     */
     public getGizmos(_nodes: Node[] = Array.from(this.#branch.getIterator(true))): Gizmo[] {
       return _nodes
         .flatMap(_node => _node.getAllComponents())

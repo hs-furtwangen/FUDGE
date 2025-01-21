@@ -82,12 +82,14 @@ namespace FudgeCore {
         PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
         cmpMesh.mtxWorld.copy(mtxWorldMesh);
         Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
+
         let shader: ShaderInterface = cmpMaterial.material.getShader();
         let cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
         if (cmpParticleSystem && cmpParticleSystem.isActive && cmpParticleSystem.particleSystem != null)
           shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
         if (_shadersUsed.indexOf(shader) < 0)
           _shadersUsed.push(shader);
+        
         _branch.radius = cmpMesh.radius;
         if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
           Render.nodesAlpha.push(_branch); // add this node to render list
@@ -109,15 +111,6 @@ namespace FudgeCore {
         position = position.clone;
         _branch.radius = Math.max(_branch.radius, position.getDistance(_branch.mtxWorld.translation) + child.radius);
         Recycler.store(position);
-      }
-
-      let cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera);
-      if (cmpCamera && cmpCamera.isActive) {
-        PerformanceMonitor.startMeasure("Render.prepare mtxWorld * cmpCamera.mtxPivot");
-        const mtxWorldCamera: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpCamera.mtxPivot);
-        cmpCamera.mtxWorld.copy(mtxWorldCamera);
-        Recycler.store(mtxWorldCamera);
-        PerformanceMonitor.endMeasure("Render.prepare mtxWorld * cmpCamera.mtxPivot");
       }
 
       if (firstLevel) {

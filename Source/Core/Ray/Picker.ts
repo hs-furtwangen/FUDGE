@@ -14,15 +14,18 @@ namespace FudgeCore {
       if (_from.length == 0)
         return [];
 
-      let cmpCameraPick: ComponentCamera = new ComponentCamera();
-      cmpCameraPick.mtxPivot.translation = _ray.origin;
-      cmpCameraPick.mtxPivot.lookAt(Vector3.SUM(_ray.origin, _ray.direction));
+      let cmpCameraPick: ComponentCamera = new ComponentCamera(); // TODO: recycle camera
+      cmpCameraPick.mtxWorld.translation = _ray.origin;
+      cmpCameraPick.mtxWorld.lookAt(Vector3.SUM(_ray.origin, _ray.direction));
       cmpCameraPick.projectCentral(1, 0.001, FIELD_OF_VIEW.DIAGONAL, _min, _max);
 
+      let picks: Pick[];
       if (_from[0] instanceof Node)
-        return Render.pick(<Node[]>_from, cmpCameraPick);
+        picks = Render.pick(<Node[]>_from, cmpCameraPick);
       else
-        return Gizmos.pick(<Gizmo[]>_from, cmpCameraPick);
+        picks = Gizmos.pick(<Gizmo[]>_from, cmpCameraPick);
+
+      return picks;
     }
 
     /**
@@ -54,9 +57,9 @@ namespace FudgeCore {
       let posProjection: Vector2 = _viewport.pointClientToProjection(_posClient);
       let nodes: Node[] = Array.from(_viewport.getBranch().getIterator(true));
       let picks: Pick[] = Picker.pickCamera(nodes, _viewport.camera, posProjection);
-      if (_viewport.gizmosEnabled) 
+      if (_viewport.gizmosEnabled)
         picks = picks.concat(Picker.pickCamera(_viewport.getGizmos(nodes), _viewport.camera, posProjection)); // this is kind of wasteful because we do the same calculations twice
-      
+
       return picks;
     }
 

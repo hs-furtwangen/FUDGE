@@ -1478,7 +1478,7 @@ declare namespace FudgeCore {
         */
         protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
         protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera): void;
-        private static calcMeshToView;
+        private static faceCamera;
         private static bindTexture;
     }
 }
@@ -3150,6 +3150,7 @@ declare namespace FudgeCore {
         #private;
         static readonly iSubclass: number;
         mtxPivot: Matrix4x4;
+        readonly mtxWorld: Matrix4x4;
         clrBackground: Color;
         private projection;
         private fieldOfView;
@@ -3159,11 +3160,7 @@ declare namespace FudgeCore {
         private far;
         private backgroundEnabled;
         /**
-         * Returns the cameras worldtransformation matrix i.e. the transformation relative to the root of the graph
-         */
-        get mtxWorld(): Matrix4x4;
-        /**
-         * Returns the multiplication of the worldtransformation of the camera container, the pivot of this camera and the inversion of the projection matrix
+         * Returns {@link mtxProjection} * {@link mtxCameraInverse}
          * yielding the worldspace to viewspace matrix
          */
         get mtxWorldToView(): Matrix4x4;

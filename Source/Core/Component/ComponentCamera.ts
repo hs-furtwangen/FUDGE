@@ -38,17 +38,17 @@ namespace FudgeCore {
 
     #mtxWorldToView: Matrix4x4;
     #mtxCameraInverse: Matrix4x4;
-    #mtxProjection: Matrix4x4 = new Matrix4x4; // The matrix to multiply each scene objects transformation by, to determine where it will be drawn.
+    #mtxProjection: Matrix4x4;
 
     /**
-     * Returns the multiplication of the worldtransformation of the camera container, the pivot of this camera and the inversion of the projection matrix
+     * Returns {@link mtxProjection} * {@link mtxCameraInverse}
      * yielding the worldspace to viewspace matrix
      */
     public get mtxWorldToView(): Matrix4x4 {
       if (this.#mtxWorldToView)
         return this.#mtxWorldToView;
 
-      //TODO: optimize, no need to recalculate if neither mtxWorld nor pivot have changed
+      //TODO: optimize, no need to recalculate if neither mtxWorld nor mtxProjection have changed
       this.#mtxWorldToView = Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxCameraInverse);
       return this.#mtxWorldToView;
     }
@@ -60,7 +60,7 @@ namespace FudgeCore {
       if (this.#mtxCameraInverse)
         return this.#mtxCameraInverse;
 
-      //TODO: optimize, no need to recalculate if neither mtxWorld nor pivot have changed
+      //TODO: optimize, no need to recalculate if mtxWorld hasn't changed
       this.#mtxCameraInverse = Matrix4x4.INVERSE(this.mtxWorld);
       return this.#mtxCameraInverse;
     }
@@ -69,11 +69,6 @@ namespace FudgeCore {
      * Returns the projectionmatrix of this camera
      */
     public get mtxProjection(): Matrix4x4 {
-      if (this.#mtxProjection)
-        return this.#mtxProjection;
-
-      //TODO: optimize, no need to recalculate if neither mtxWorld nor pivot have changed
-      this.#mtxProjection = new Matrix4x4;
       return this.#mtxProjection;
     }
 

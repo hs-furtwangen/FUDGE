@@ -51,14 +51,11 @@ namespace FudgeCore {
       }
     }
 
-    protected static useRenderBuffers(this: Mesh, _shader: typeof Shader, _mtxMeshToWorld: Matrix4x4, _mtxMeshToView: Matrix4x4, _id?: number): RenderBuffers {
+    protected static useRenderBuffers(this: Mesh, _shader: typeof Shader, _mtxMeshToWorld: Matrix4x4, _id?: number): RenderBuffers {
       let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       let renderBuffers: RenderBuffers = this.getRenderBuffers();
 
       let uniform: WebGLUniformLocation;
-
-      uniform = _shader.uniforms["u_mtxMeshToView"];
-      crc3.uniformMatrix4fv(uniform, false, _mtxMeshToView.get());
 
       uniform = _shader.uniforms["u_mtxMeshToWorld"];
       if (uniform)

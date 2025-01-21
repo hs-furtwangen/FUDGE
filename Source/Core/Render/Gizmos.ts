@@ -128,6 +128,13 @@ namespace FudgeCore {
       Gizmos.#camera = _cmpCamera;
       Gizmos.posIcons.clear();
 
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      let mtxViewProjection: Float32Array = _cmpCamera.mtxWorldToView.get();
+      ShaderGizmo.useProgram();
+      crc3.uniformMatrix4fv(ShaderGizmo.uniforms["u_mtxWorldToView"], false, mtxViewProjection);
+      ShaderGizmoTextured.useProgram();
+      crc3.uniformMatrix4fv(ShaderGizmoTextured.uniforms["u_mtxWorldToView"], false, mtxViewProjection);
+
       for (const gizmo of _gizmos) {
         gizmo.drawGizmos?.(_cmpCamera, Gizmos.#picking);
         if (_selected?.includes(gizmo.node))
@@ -370,7 +377,7 @@ namespace FudgeCore {
       const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
-      let renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld), Gizmos.pickId);
+      let renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Gizmos.pickId);
 
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
     }
@@ -404,7 +411,7 @@ namespace FudgeCore {
         color.a = Calc.lerp(0, color.a, distance);
       }
 
-      let renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, mtxWorld), Gizmos.pickId);
+      let renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Gizmos.pickId);
       _texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
       crc3.uniform1i(shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
 
@@ -427,9 +434,7 @@ namespace FudgeCore {
     }
 
     private static bufferMatrix(_shader: ShaderInterface, _mtxWorld: Matrix4x4): void {
-      const mtxMeshToView: Matrix4x4 = Matrix4x4.PRODUCT(Gizmos.#camera.mtxWorldToView, _mtxWorld);
-      RenderWebGL.getRenderingContext().uniformMatrix4fv(_shader.uniforms["u_mtxMeshToView"], false, mtxMeshToView.get());
-      Recycler.store(mtxMeshToView);
+      RenderWebGL.getRenderingContext().uniformMatrix4fv(_shader.uniforms["u_mtxMeshToWorld"], false, _mtxWorld.get());
     }
 
     private static drawGizmos(_shader: ShaderInterface, _draw: Function, _count: number, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {

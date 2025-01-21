@@ -6,9 +6,8 @@
 precision mediump float;
 precision highp int;
 
-// uniform mat4 u_mtxViewProjection;
-// uniform mat4 u_mtxModel;
-uniform mat4 u_mtxMeshToView; // model-view-projection matrix
+uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
 
 in vec3 a_vctPosition;
 
@@ -20,7 +19,7 @@ in vec3 a_vctPosition;
 #endif
 
 void main() {
-  gl_Position = u_mtxMeshToView * vec4(a_vctPosition, 1.0);
+  gl_Position = u_mtxWorldToView * u_mtxMeshToWorld * vec4(a_vctPosition, 1.0);
 
   #if defined(TEXTURE)
 

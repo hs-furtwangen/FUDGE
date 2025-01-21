@@ -420,11 +420,15 @@ namespace FudgeCore {
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
       crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
 
-      // buffer size into pick shaders
+      const mtxWorldToView: Float32Array = _cmpCamera.mtxWorldToView.get();
+      // buffer size and camera matrix into pick shaders
       ShaderPick.useProgram();
       crc3.uniform2fv(ShaderPick.uniforms["u_vctSize"], [size, size]);
+      crc3.uniformMatrix4fv(ShaderPick.uniforms["u_mtxWorldToView"], false, mtxWorldToView);
+
       ShaderPickTextured.useProgram();
       crc3.uniform2fv(ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
+      crc3.uniformMatrix4fv(ShaderPickTextured.uniforms["u_mtxWorldToView"], false, mtxWorldToView);
 
       // render picks into pick buffer
       RenderWebGL.setBlendMode(BLEND.OPAQUE);
@@ -491,10 +495,10 @@ namespace FudgeCore {
 
         shader.useProgram();
         coat.useRenderData(shader, cmpMaterial);
-        let mtxMeshToView: Matrix4x4 = RenderWebGL.calcMeshToView(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorldToView, _cmpCamera.mtxWorld.translation);
+        let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
         let mesh: Mesh = cmpMesh.mesh;
-        let renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, node.mtxWorld, mtxMeshToView, picks.length);
+        let renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, mtxMeshToWorld, picks.length);
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
 
         picks.push(new Pick(node));
@@ -812,21 +816,15 @@ namespace FudgeCore {
 
 
       let mtxMeshToWorld: Matrix4x4 = cmpMesh.mtxWorld;
-      PerformanceMonitor.startMeasure("Render.drawNode calcMeshToView");
       if (cmpText?.isActive)
         mtxMeshToWorld = cmpText.useRenderData(mtxMeshToWorld, _cmpCamera);
-      PerformanceMonitor.startMeasure("Render.drawNode calcMeshToView mtxWorldToView");
-      let mtxWorldToView: Matrix4x4 = _cmpCamera.mtxWorldToView;
-      PerformanceMonitor.endMeasure("Render.drawNode calcMeshToView mtxWorldToView");
-      PerformanceMonitor.startMeasure("Render.drawNode calcMeshToView target");
-      let target: Vector3 = _cmpCamera.mtxWorld.translation;
-      PerformanceMonitor.endMeasure("Render.drawNode calcMeshToView target");
-      let mtxMeshToView: Matrix4x4 = RenderWebGL.calcMeshToView(_node, mtxMeshToWorld, mtxWorldToView, target);
-      PerformanceMonitor.endMeasure("Render.drawNode calcMeshToView");
+
+      if (!cmpParticleSystem?.isActive)
+        mtxMeshToWorld = RenderWebGL.faceCamera(_node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
 
-      let renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld, mtxMeshToView);
+      let renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
 
 
       if (cmpMesh.skeleton?.isActive)
@@ -885,20 +883,12 @@ namespace FudgeCore {
       crc3.depthMask(true);
     }
 
-    private static calcMeshToView(_node: Node, _mtxMeshToWorld: Matrix4x4, _mtxWorldToView: Matrix4x4, _target?: Vector3): Matrix4x4 {
-      // TODO: This could be a Render function as it does not do anything with WebGL
+    private static faceCamera(_node: Node, _mtxMeshToWorld: Matrix4x4, _mtxCamera: Matrix4x4): Matrix4x4 {
       let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
-      if (cmpFaceCamera && cmpFaceCamera.isActive) {
-        let mtxMeshToView: Matrix4x4; // mesh to world?
-        mtxMeshToView = _mtxMeshToWorld.clone;
-        mtxMeshToView.lookAt(_target, cmpFaceCamera.upLocal ? null : cmpFaceCamera.up, cmpFaceCamera.restrict);
-        return Matrix4x4.PRODUCT(_mtxWorldToView, mtxMeshToView);
-      }
+      if (cmpFaceCamera && cmpFaceCamera.isActive)
+        return Matrix4x4.LOOK_AT(_mtxMeshToWorld.translation, _mtxCamera.translation, cmpFaceCamera.upLocal ? _mtxMeshToWorld.up : cmpFaceCamera.up, cmpFaceCamera.restrict);;
 
-      PerformanceMonitor.startMeasure("calcMeshToView mtxWorldToView * mtxMeshToWorld");
-      const result: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorldToView, _mtxMeshToWorld);
-      PerformanceMonitor.endMeasure("calcMeshToView mtxWorldToView * mtxMeshToWorld");
-      return result;
+      return _mtxMeshToWorld;
     }
 
     private static bindTexture(_shader: ShaderInterface, _texture: WebGLTexture, _unit: number, _uniform: string): void {

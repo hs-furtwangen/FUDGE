@@ -282,8 +282,7 @@ namespace FudgeCore {
     /** After OimoPhysics.world filled the debug. Rendering calls. Setting this program to be used by the FUDGE rendering context. And draw each updated buffer and resetting them. */
     public drawBuffers(): void {
       this.shader.use();
-      let projection: Float32Array = Physics.mainCam.mtxWorldToView.get();
-      this.gl.uniformMatrix4fv(this.shader.getUniformLocation("u_mtxMeshToView"), false, projection);
+      this.gl.uniformMatrix4fv(this.shader.getUniformLocation("u_mtxWorldToView"), false, Physics.mainCam.mtxWorldToView.get());
 
 
       if (this.numPointData > 0) {
@@ -390,13 +389,13 @@ namespace FudgeCore {
 			varying vec3 vPosition;
 			varying vec3 vNormal;
 			varying vec3 vColor;
-			uniform mat4 u_mtxMeshToView;
+			uniform mat4 u_mtxWorldToView;
 
 			void main() {
 				vPosition = aPosition;
 				vColor = aColor;
 				vNormal = aNormal;
-				gl_Position = u_mtxMeshToView * vec4(aPosition,1.0);
+				gl_Position = u_mtxWorldToView * vec4(aPosition,1.0);
 				gl_PointSize = 6.0;
 			}`;
     }

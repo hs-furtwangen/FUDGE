@@ -6,8 +6,8 @@
 precision mediump float;
 precision highp int;
 
-uniform mat4 u_mtxMeshToWorld; // needed for FOG
-uniform mat4 u_mtxMeshToView;
+uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
 
 in vec3 a_vctPosition;
 in vec4 a_vctColor; // TODO: think about making vertex color optional
@@ -122,7 +122,6 @@ out vec4 v_vctColor;
 #if defined(SKIN)
 
   // Bones https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderChunk/skinning_pars_vertex.glsl.js
-  uniform mat4 u_mtxWorldToView;
   in uvec4 a_vctBones;
   in vec4 a_vctWeights;
 
@@ -135,7 +134,6 @@ out vec4 v_vctColor;
 
 #if defined(PARTICLE)
 
-  uniform mat4 u_mtxWorldToView;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
   uniform float u_fParticleSystemTime;
@@ -164,7 +162,7 @@ void main() {
 
   vec4 vctPosition = vec4(a_vctPosition, 1.0);
   mat4 mtxMeshToWorld = u_mtxMeshToWorld;
-  mat4 mtxMeshToView = u_mtxMeshToView;
+  mat4 mtxMeshToView = u_mtxWorldToView * u_mtxMeshToWorld;
 
   #if defined(FLAT) || defined(GOURAUD) || defined(PHONG) // only these work with particle and skinning
 
