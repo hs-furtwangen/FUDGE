@@ -14,10 +14,11 @@ namespace FudgeCore {
       if (_from.length == 0)
         return [];
 
-      let cmpCameraPick: ComponentCamera = new ComponentCamera(); // TODO: recycle camera
+      let cmpCameraPick: ComponentCamera = Recycler.reuse(ComponentCamera);
       cmpCameraPick.mtxWorld.translation = _ray.origin;
       cmpCameraPick.mtxWorld.lookAt(Vector3.SUM(_ray.origin, _ray.direction));
       cmpCameraPick.projectCentral(1, 0.001, FIELD_OF_VIEW.DIAGONAL, _min, _max);
+      cmpCameraPick.resetWorldToView();
 
       let picks: Pick[];
       if (_from[0] instanceof Node)
@@ -25,6 +26,7 @@ namespace FudgeCore {
       else
         picks = Gizmos.pick(<Gizmo[]>_from, cmpCameraPick);
 
+      Recycler.store(cmpCameraPick);
       return picks;
     }
 
