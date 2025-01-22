@@ -17,6 +17,7 @@ namespace FudgeCore {
     private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
+    private static readonly modificationsProcessed: Set<{ modified: boolean }> = new Set();
     private static timestampUpdate: number;
 
     //#region Prepare
@@ -26,16 +27,18 @@ namespace FudgeCore {
      * render passes.
      */
     @PerformanceMonitor.measure("Render.prepare")
-    public static prepare(_branch: Node, _options: RenderPrepareOptions = {}, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _shadersUsed: (ShaderInterface)[] = null): void {
+    public static prepare(_branch: Node, _options: RenderPrepareOptions = {}, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _shadersUsed: (ShaderInterface)[] = null, _recalculateTransforms?: boolean): void {
       let firstLevel: boolean = (_shadersUsed == null);
       if (firstLevel) {
         _shadersUsed = [];
+        _recalculateTransforms = false;
         Render.timestampUpdate = performance.now();
         Render.nodesSimple.reset();
         Render.nodesAlpha.reset();
         Render.nodesPhysics.reset();
         Render.componentsPick.reset();
         Render.componentsSkeleton.reset();
+        Render.modificationsProcessed.clear();
         Render.lights.forEach(_array => _array.reset());
         _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
       }
@@ -49,12 +52,16 @@ namespace FudgeCore {
       _branch.dispatchEventToTargetOnly(new Event(EVENT.RENDER_PREPARE));
       _branch.timestampUpdate = Render.timestampUpdate;
 
-      if (_branch.cmpTransform && _branch.cmpTransform.isActive) {
-        PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxLocal");
-        let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
-        PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxLocal");
-        _branch.mtxWorld.copy(mtxWorldBranch);
-        Recycler.store(mtxWorldBranch);
+      let cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
+      if (cmpTransform && cmpTransform.isActive) {
+        if ((_recalculateTransforms ||= cmpTransform.mtxLocal.modified)) {
+          PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxLocal");
+          let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
+          PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxLocal");
+          _branch.mtxWorld.copy(mtxWorldBranch);
+          Recycler.store(mtxWorldBranch);
+          Render.modificationsProcessed.add(cmpTransform.mtxLocal);
+        }
       } else
         _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
 
@@ -77,11 +84,15 @@ namespace FudgeCore {
       let cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
 
       if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
-        PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxPivot");
-        let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
-        PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
-        cmpMesh.mtxWorld.copy(mtxWorldMesh);
-        Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
+        if (cmpMesh.mtxPivot.modified || _branch.mtxWorld.modified) {
+          PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxPivot");
+          let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
+          PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
+          cmpMesh.mtxWorld.copy(mtxWorldMesh);
+          Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
+          Render.modificationsProcessed.add(cmpMesh.mtxPivot);
+          Render.modificationsProcessed.add(_branch.mtxWorld);
+        }
 
         let shader: ShaderInterface = cmpMaterial.material.getShader();
         let cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
@@ -89,7 +100,7 @@ namespace FudgeCore {
           shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
         if (_shadersUsed.indexOf(shader) < 0)
           _shadersUsed.push(shader);
-        
+
         _branch.radius = cmpMesh.radius;
         if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
           Render.nodesAlpha.push(_branch); // add this node to render list
@@ -103,7 +114,7 @@ namespace FudgeCore {
           Render.componentsSkeleton.push(cmpSkeleton);
 
       for (let child of _branch.getChildren()) {
-        Render.prepare(child, _options, _branch.mtxWorld, _shadersUsed);
+        Render.prepare(child, _options, _branch.mtxWorld, _shadersUsed, _recalculateTransforms);
 
         _branch.nNodesInBranch += child.nNodesInBranch;
         let cmpMeshChild: ComponentMesh = child.getComponent(ComponentMesh);
@@ -114,6 +125,9 @@ namespace FudgeCore {
       }
 
       if (firstLevel) {
+        for (const processed of Render.modificationsProcessed)
+          processed.modified = false;
+        
         _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
         for (const cmpSkeleton of Render.componentsSkeleton) {
           cmpSkeleton.update();
