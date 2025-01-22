@@ -114,14 +114,16 @@ namespace FudgeCore {
       width: min-content;
       position: absolute;
       left: 0;
-      top: 0;`;
+      top: 0;
+      z-index: 1000;
+      pointer-events: none;`;
       Loop.addEventListener(EVENT.LOOP_FRAME, this.update);
     }
 
     public update = (): void => {
       let longestString: number = Object.keys(PerformanceMonitor.measurements).reduce((_a, _b) => _a.length > _b.length ? _a : _b).length;
 
-      let text: string = "";
+      let text: string = `${"Performance Monitor".padEnd(longestString)} |  time  |  calls\n`;
       for (let key in PerformanceMonitor.measurements) {
         let measurement: PerformanceMeasurement = PerformanceMonitor.measurements[key];
         let avg: string = measurement.frameTimeAvg.toFixed(1).padStart(4);

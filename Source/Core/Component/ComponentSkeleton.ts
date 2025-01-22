@@ -78,7 +78,9 @@ namespace FudgeCore {
       this.mtxBones.length = 0;
 
       for (let i: number = 0; i < this.bones.length; i++) {
+        PerformanceMonitor.startMeasure("ComponentSkeleton.update mtxWorld * mtxBindInverses");
         let mtxBone: Matrix4x4 = Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i]);
+        PerformanceMonitor.endMeasure("ComponentSkeleton.update mtxWorld * mtxBindInverses");
         this.mtxBones.push(mtxBone);
       }
     }
