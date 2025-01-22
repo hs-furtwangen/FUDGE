@@ -673,10 +673,6 @@ namespace FudgeCore {
       if (cmpAmbientOcclusion?.isActive)
         RenderWebGL.drawAmbientOcclusion(_cmpCamera, cmpAmbientOcclusion);
 
-      // bloom pass
-      if (cmpBloom?.isActive)
-        RenderWebGL.drawBloom(cmpBloom);
-
       // transparent pass TODO: think about disabling depth write for all transparent objects -> this might make depth mask option in component particle system obsolete
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
       crc3.drawBuffers([WebGL2RenderingContext.COLOR_ATTACHMENT0]);
@@ -685,6 +681,10 @@ namespace FudgeCore {
       for (let node of _nodesAlpha)
         RenderWebGL.drawNode(node, _cmpCamera);
       // crc3.depthMask(true);
+
+      // bloom pass
+      if (cmpBloom?.isActive)
+        RenderWebGL.drawBloom(cmpBloom);
 
       // copy framebuffer to canvas
       crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
