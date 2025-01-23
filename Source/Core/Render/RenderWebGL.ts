@@ -498,8 +498,8 @@ namespace FudgeCore {
         let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
         let mesh: Mesh = cmpMesh.mesh;
-        let renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, mtxMeshToWorld, picks.length);
-        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+        const nIndices: number = mesh.useRenderBuffers(shader, mtxMeshToWorld, picks.length);
+        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
 
         picks.push(new Pick(node));
       }
@@ -824,8 +824,7 @@ namespace FudgeCore {
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
 
-      let renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
-
+      const nIndices: number = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
 
       if (cmpMesh.skeleton?.isActive)
         cmpMesh.skeleton.useRenderBuffer(shader);
@@ -854,13 +853,13 @@ namespace FudgeCore {
 
       PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
-        RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers, _node.getComponent(ComponentFaceCamera));
+        RenderWebGL.drawParticles(cmpParticleSystem, shader, nIndices, _node.getComponent(ComponentFaceCamera));
       else
-        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
       PerformanceMonitor.endMeasure("Render.drawNode drawElements");
     }
 
-    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera): void {
+    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _nIndices: number, _cmpFaceCamera: ComponentFaceCamera): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       crc3.depthMask(_cmpParticleSystem.depthMask);
@@ -877,7 +876,7 @@ namespace FudgeCore {
       crc3.uniform1i(_shader.uniforms["u_bParticleSystemFaceCamera"], faceCamera ? 1 : 0);
       crc3.uniform1i(_shader.uniforms["u_bParticleSystemRestrict"], faceCamera && _cmpFaceCamera.restrict ? 1 : 0);
 
-      crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, _renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
+      crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, _nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
 
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
       crc3.depthMask(true);

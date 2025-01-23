@@ -377,9 +377,9 @@ namespace FudgeCore {
       const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
-      let renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Gizmos.pickId);
+      const nIndices: number = _mesh.useRenderBuffers(shader, _mtxWorld, Gizmos.pickId);
 
-      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
+      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, nIndices, _color, _alphaOccluded);
     }
 
     /**
@@ -411,11 +411,11 @@ namespace FudgeCore {
         color.a = Calc.lerp(0, color.a, distance);
       }
 
-      let renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Gizmos.pickId);
+      const nIndices: number = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Gizmos.pickId);
       _texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
       crc3.uniform1i(shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
 
-      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
+      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, nIndices, color, _alphaOccluded);
 
       Recycler.storeMultiple(mtxWorld, color, back, up);
     }
@@ -443,7 +443,7 @@ namespace FudgeCore {
       if (_alphaOccluded > 0) {
         let color: Color = _color.clone;
         color.a *= _alphaOccluded;
-  
+
         // draw occluded parts where the depth test failed (by inverting the depth test + no depth write)
         crc3.depthFunc(WebGL2RenderingContext.GEQUAL);
         crc3.depthMask(false);
