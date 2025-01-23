@@ -23,8 +23,6 @@ out vec4 v_vctColor;
 
 #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
 
-  uniform mat4 u_mtxNormalMeshToWorld;
-
   in vec3 a_vctNormal;
   out vec3 v_vctNormal;
 
@@ -112,7 +110,6 @@ out vec4 v_vctColor;
 #if defined(MATCAP) // MatCap-shader generates texture coordinates from surface normals
   
   uniform mat4 u_mtxWorldToCamera;
-  uniform mat4 u_mtxNormalMeshToWorld;
 
   in vec3 a_vctNormal;
   out vec2 v_vctTexture;
@@ -164,9 +161,9 @@ void main() {
   mat4 mtxMeshToWorld = u_mtxMeshToWorld;
   mat4 mtxMeshToView = u_mtxWorldToView * u_mtxMeshToWorld;
 
-  #if defined(FLAT) || defined(GOURAUD) || defined(PHONG) // only these work with particle and skinning
+  #if defined(FLAT) || defined(GOURAUD) || defined(PHONG) || defined(MATCAP) // only these work with particle and skinning
 
-    mat4 mtxNormalMeshToWorld = u_mtxNormalMeshToWorld;
+    mat4 mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
 
   #endif
 
@@ -292,7 +289,7 @@ void main() {
     mat4 mtx_RotX = mat4(1, 0, 0, 0, 0, vctVertexInCamera.z, vctVertexInCamera.y, 0, 0, - vctVertexInCamera.y, vctVertexInCamera.z, 0, 0, 0, 0, 1);
     mat4 mtx_RotY = mat4(vctVertexInCamera.z, 0, - vctVertexInCamera.x, 0, 0, 1, 0, 0, vctVertexInCamera.x, 0, vctVertexInCamera.z, 0, 0, 0, 0, 1);
 
-    vec3 vctNormal = mat3(u_mtxNormalMeshToWorld) * a_vctNormal;
+    vec3 vctNormal = mat3(mtxNormalMeshToWorld) * a_vctNormal;
 
     // adds correction for things being far and to the side, but distortion for things being close
     vctNormal = mat3(mtx_RotX * mtx_RotY) * vctNormal;

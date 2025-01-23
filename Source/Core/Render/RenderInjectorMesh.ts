@@ -90,12 +90,6 @@ namespace FudgeCore {
       if (uniform)
         crc3.uniformMatrix4fv(uniform, false, _mtxMeshToWorld.get());
 
-      uniform = _shader.uniforms["u_mtxNormalMeshToWorld"];
-      if (uniform) {
-        let normalMatrix: Matrix4x4 = Matrix4x4.TRANSPOSE(Matrix4x4.INVERSE(_mtxMeshToWorld));
-        crc3.uniformMatrix4fv(uniform, false, normalMatrix.get());
-      }
-
       // feed in an id of the node if shader accepts u_id. Used for picking
       uniform = _shader.uniforms["u_id"];
       if (uniform)
