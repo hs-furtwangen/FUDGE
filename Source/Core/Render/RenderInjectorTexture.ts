@@ -4,15 +4,17 @@ namespace FudgeCore {
    * Gives WebGL Buffer the data from the {@link Texture}
    * @internal
    */
-  export class RenderInjectorTexture extends RenderInjector {
-    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
-      RenderInjector.inject(_constructor, RenderInjectorTexture);
-      Object.defineProperty(_constructor.prototype, "deleteRenderData", {
+  export class RenderInjectorTexture {
+    public static decorate(_constructor: typeof Texture, _context: ClassDecoratorContext): void {
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderData.name, {
+        value: RenderInjectorTexture.useRenderData
+      });
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.deleteRenderData.name, {
         value: RenderInjectorTexture.deleteRenderData
       });
     }
 
-    protected static injectTexture(this: Texture, _textureUnit: number = WebGL2RenderingContext.TEXTURE0): void {
+    protected static useRenderData(this: Texture, _textureUnit: number = WebGL2RenderingContext.TEXTURE0): void {
       let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       if (!this.renderData)
         this.renderData = RenderWebGL.assert<WebGLTexture>(crc3.createTexture()); // TODO: check if all WebGL-Creations are asserted

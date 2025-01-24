@@ -8,7 +8,7 @@ namespace FudgeCore {
     /**
      * Injects the functionality of this class into the constructor of the given {@link Coat}-subclass
      */
-    public static decorate(_constructor: Function, _context: ClassDecoratorContext): void {
+    public static decorate(_constructor: typeof Coat, _context: ClassDecoratorContext): void {
       RenderInjector.inject(_constructor, RenderInjectorCoat);
     }
 
