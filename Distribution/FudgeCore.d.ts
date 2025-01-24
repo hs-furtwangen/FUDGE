@@ -1477,7 +1477,7 @@ declare namespace FudgeCore {
          * Draw a mesh buffer using the given infos and the complete projection matrix
         */
         protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
-        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _renderBuffers: RenderBuffers, _cmpFaceCamera: ComponentFaceCamera): void;
+        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _nIndices: number, _cmpFaceCamera: ComponentFaceCamera): void;
         private static faceCamera;
         private static bindTexture;
     }
@@ -4925,7 +4925,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
-        mutateSync(_mutator: Mutator): void;
         mutate(_mutator: Mutator): Promise<void>;
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         protected reduceMutator(_mutator: Mutator): void;
@@ -7096,7 +7095,6 @@ declare namespace FudgeCore {
          */
         private static alphaOccluded;
         private static readonly arrayBuffer;
-        private static readonly indexBuffer;
         private static pickId;
         private static readonly posIcons;
         private static get wireCircle();
@@ -7200,13 +7198,15 @@ declare namespace FudgeCore {
         private static readonly nodesSimple;
         private static readonly nodesAlpha;
         private static readonly componentsSkeleton;
+        private static readonly modificationsProcessed;
         private static timestampUpdate;
         /**
          * Recursively iterates over the branch starting with the node given, recalculates all world transforms,
          * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
          * render passes.
+         * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
          */
-        static prepare(_branch: Node, _options?: RenderPrepareOptions, _mtxWorld?: Matrix4x4, _shadersUsed?: (ShaderInterface)[]): void;
+        static prepare(_branch: Node, _options?: RenderPrepareOptions, _mtxWorld?: Matrix4x4, _recalculate?: boolean): void;
         static addLights(_cmpLights: ComponentLight[]): void;
         /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
@@ -7217,18 +7217,20 @@ declare namespace FudgeCore {
          * Draws the scene from the point of view of the given camera
          */
         static draw(_cmpCamera: ComponentCamera): void;
+        private static prepareBranch;
         private static transformByPhysics;
     }
 }
 declare namespace FudgeCore {
     interface RenderBuffers {
-        vertices?: WebGLBuffer;
+        vao?: WebGLVertexArrayObject;
         indices?: WebGLBuffer;
-        textureUVs?: WebGLBuffer;
+        positions?: WebGLBuffer;
         normals?: WebGLBuffer;
+        textureUVs?: WebGLBuffer;
         colors?: WebGLBuffer;
-        bones?: WebGLBuffer;
         tangents?: WebGLBuffer;
+        bones?: WebGLBuffer;
         weights?: WebGLBuffer;
         nIndices?: number;
     }
@@ -7240,8 +7242,8 @@ declare namespace FudgeCore {
         buffers: RenderBuffers;
         mesh: Mesh;
         constructor(_mesh: Mesh);
-        get vertices(): Float32Array;
-        set vertices(_vertices: Float32Array);
+        get positions(): Float32Array;
+        set positions(_vertices: Float32Array);
         get indices(): Uint16Array;
         set indices(_indices: Uint16Array);
         get normals(): Float32Array;

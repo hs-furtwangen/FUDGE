@@ -498,8 +498,10 @@ namespace FudgeCore {
         let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
         let mesh: Mesh = cmpMesh.mesh;
-        const nIndices: number = mesh.useRenderBuffers(shader, mtxMeshToWorld, picks.length);
-        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+        const renderBuffers: RenderBuffers = mesh.useRenderBuffers(shader, mtxMeshToWorld, picks.length);
+        RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
+        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+        RenderWebGL.crc3.bindVertexArray(null);
 
         picks.push(new Pick(node));
       }
@@ -814,7 +816,6 @@ namespace FudgeCore {
       coat.useRenderData(shader, cmpMaterial);
       PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
 
-
       let mtxMeshToWorld: Matrix4x4 = cmpMesh.mtxWorld;
       if (cmpText?.isActive)
         mtxMeshToWorld = cmpText.useRenderData(mtxMeshToWorld, _cmpCamera);
@@ -822,14 +823,8 @@ namespace FudgeCore {
       if (!cmpParticleSystem?.isActive)
         mtxMeshToWorld = RenderWebGL.faceCamera(_node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
-      PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
-
-      const nIndices: number = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
-
       if (cmpMesh.skeleton?.isActive)
-        cmpMesh.skeleton.useRenderBuffer(shader);
-
-      PerformanceMonitor.endMeasure("Render.drawNode useRenderBuffers");
+        cmpMesh.skeleton.useRenderBuffer();
 
       PerformanceMonitor.startMeasure("Render.drawNode other");
       let uniform: WebGLUniformLocation = shader.uniforms["u_vctCamera"];
@@ -851,12 +846,21 @@ namespace FudgeCore {
         RenderWebGL.crc3.uniform1f(uniform, cmpMaterial.material.alphaClip);
       PerformanceMonitor.endMeasure("Render.drawNode other");
 
+      PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
+      const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
+      PerformanceMonitor.endMeasure("Render.drawNode useRenderBuffers");
+
+      PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
+      RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
+      PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
+
       PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
-        RenderWebGL.drawParticles(cmpParticleSystem, shader, nIndices, _node.getComponent(ComponentFaceCamera));
-      else
-        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+        RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers.nIndices, _node.getComponent(ComponentFaceCamera));
+      else 
+        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
       PerformanceMonitor.endMeasure("Render.drawNode drawElements");
+      RenderWebGL.crc3.bindVertexArray(null);
     }
 
     protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _nIndices: number, _cmpFaceCamera: ComponentFaceCamera): void {

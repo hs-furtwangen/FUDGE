@@ -21,8 +21,6 @@ namespace FudgeCore {
     public vertices: Vertices = new Vertices();
     public faces: Face[] = [];
 
-    // public renderBuffers: RenderBuffers; /* defined by RenderInjector*/
-
     /** bounding box AABB */
     protected ƒbox: Box;
     // TODO: explore mathematics for easy transformations of radius 
@@ -64,8 +62,8 @@ namespace FudgeCore {
      * Injected by {@link RenderInjectorMesh}.
      * Used by the render system.
      * @internal
-     */
-    public useRenderBuffers(_shader: ShaderInterface, _mtxMeshToWorld: Matrix4x4, _id?: number): number { return null; /* injected by RenderInjector*/ }
+     */ // TODO: rename this
+    public useRenderBuffers(_shader: ShaderInterface, _mtxMeshToWorld: Matrix4x4, _id?: number): RenderBuffers { return null; /* injected by RenderInjector*/ }
     /**
      * Injected by {@link RenderInjectorMesh}.
      * Used by the render system.
@@ -85,7 +83,7 @@ namespace FudgeCore {
     public clear(): void {
       this.ƒbox = undefined;
       this.ƒradius = undefined;
-
+      
       this.deleteRenderBuffers(this.renderMesh.buffers);
       this.renderMesh.clear();
     }

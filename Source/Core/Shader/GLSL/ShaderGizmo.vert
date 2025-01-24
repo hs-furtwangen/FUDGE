@@ -9,11 +9,11 @@ precision highp int;
 uniform mat4 u_mtxMeshToWorld; // u_mtxModel
 uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
 
-in vec3 a_vctPosition;
+layout(location = 0) in vec3 a_vctPosition;
 
 #if defined(TEXTURE)
 
-  in vec2 a_vctTexture;
+  layout(location = 2) in vec2 a_vctTexture;
   out vec2 v_vctTexture;
 
 #endif

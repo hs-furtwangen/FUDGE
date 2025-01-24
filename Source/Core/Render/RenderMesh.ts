@@ -1,13 +1,14 @@
 namespace FudgeCore {
 
   export interface RenderBuffers {
-    vertices?: WebGLBuffer;
+    vao?: WebGLVertexArrayObject;
     indices?: WebGLBuffer;
-    textureUVs?: WebGLBuffer;
+    positions?: WebGLBuffer;
     normals?: WebGLBuffer;
+    textureUVs?: WebGLBuffer;
     colors?: WebGLBuffer;
-    bones?: WebGLBuffer;
     tangents?: WebGLBuffer;
+    bones?: WebGLBuffer;
     weights?: WebGLBuffer;
     nIndices?: number;
   }
@@ -16,22 +17,22 @@ namespace FudgeCore {
    * Inserted into a {@link Mesh}, an instance of this class calculates and represents the mesh data in the form needed by the render engine
    */
   export class RenderMesh {
-    public buffers: RenderBuffers = null;
+    public buffers: RenderBuffers;
     public mesh: Mesh;
 
-    /** vertices of the actual point cloud, some points might be in the same location in order to refer to different texels */
-    #vertices: Float32Array;
     /** indices to create faces from the vertices, rotation determines direction of face-normal */
     #indices: Uint16Array;
-    /** texture coordinates associated with the vertices by the position in the array */
-    #textureUVs: Float32Array;
+    /** vertices of the actual point cloud, some points might be in the same location in order to refer to different texels */
+    #positions: Float32Array;
     /** vertex normals for smooth shading, interpolated between vertices during rendering */
     #normals: Float32Array;
+    /** texture coordinates associated with the vertices by the position in the array */
+    #textureUVs: Float32Array;
     /* colors */
     #colors: Float32Array;
     /** vertex tangents for normal mapping, based on the vertex normals and the UV coordinates */
     #tangents: Float32Array;
-    /** bones */
+    
     #bones: Uint8Array;
     #weights: Float32Array;
 
@@ -39,21 +40,21 @@ namespace FudgeCore {
       this.mesh = _mesh;
     }
 
-    public get vertices(): Float32Array {
-      return this.#vertices || ( // return cache or ...
+    public get positions(): Float32Array {
+      return this.#positions || ( // return cache or ...
         // ... flatten all vertex positions from cloud into a typed array
-        this.#vertices = new Float32Array(this.mesh.vertices.flatMap((_vertex: Vertex, _index: number) => {
+        this.#positions = new Float32Array(this.mesh.vertices.flatMap((_vertex: Vertex, _index: number) => {
           return [...this.mesh.vertices.position(_index).get()];
         })));
     }
-    public set vertices(_vertices: Float32Array) {
-      this.#vertices = _vertices;
+    public set positions(_vertices: Float32Array) {
+      this.#positions = _vertices;
     }
 
     public get indices(): Uint16Array {
       return this.#indices || ( // return cache or ...
         // ... flatten all indices from the faces into a typed array
-        this.#indices = new Uint16Array(this.mesh.faces.flatMap((_face: Face) => [..._face.indices])
+        this.#indices = new Uint16Array(this.mesh.faces.flatMap((_face: Face) => _face.indices)
         ));
     }
     public set indices(_indices: Uint16Array) {
@@ -137,7 +138,7 @@ namespace FudgeCore {
             let r: number = 1 / Vector2.CROSS(deltaUV0, deltaUV1);
             let faceTangent: Vector3 = Vector3.SCALE(Vector3.DIFFERENCE(Vector3.SCALE(deltaPos0, deltaUV1.y), Vector3.SCALE(deltaPos1, deltaUV0.y)), r);
             let faceBitangent: Vector3 = Vector3.SCALE(Vector3.DIFFERENCE(Vector3.SCALE(deltaPos1, -deltaUV0.x), Vector3.SCALE(deltaPos0, -deltaUV1.x)), r); // for winding order counter clockwise
-            
+
             tangents[i0].add(Vector3.SCALE(faceTangent, face.angles[0]));
             tangents[i1].add(Vector3.SCALE(faceTangent, face.angles[1]));
             tangents[i2].add(Vector3.SCALE(faceTangent, face.angles[2]));
@@ -229,9 +230,7 @@ namespace FudgeCore {
      * Clears this render mesh and all its buffers
      */
     public clear(): void {
-      this.buffers = null;
-
-      this.#vertices = null;
+      this.#positions = null;
       this.#indices = null;
       this.#textureUVs = null;
       this.#normals = null;

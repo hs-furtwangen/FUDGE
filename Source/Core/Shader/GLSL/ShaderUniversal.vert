@@ -9,8 +9,8 @@ precision highp int;
 uniform mat4 u_mtxMeshToWorld; // u_mtxModel
 uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
 
-in vec3 a_vctPosition;
-in vec4 a_vctColor; // TODO: think about making vertex color optional
+layout(location = 0) in vec3 a_vctPosition;
+layout(location = 3) in vec4 a_vctColor; // TODO: think about making vertex color optional
 
 out vec3 v_vctPosition;
 out vec4 v_vctColor;
@@ -23,7 +23,7 @@ out vec4 v_vctColor;
 
 #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
 
-  in vec3 a_vctNormal;
+  layout(location = 1) in vec3 a_vctNormal;
   out vec3 v_vctNormal;
 
 #endif
@@ -93,14 +93,14 @@ out vec4 v_vctColor;
 
   uniform mat3 u_mtxPivot;
 
-  in vec2 a_vctTexture;
+  layout(location = 2) in vec2 a_vctTexture;
   out vec2 v_vctTexture;
 
 #endif
 
 #if defined(NORMALMAP)
 
-  in vec4 a_vctTangent;
+  layout(location = 4) in vec4 a_vctTangent;
   out vec3 v_vctTangent;
   out vec3 v_vctBitangent;
 
@@ -111,7 +111,7 @@ out vec4 v_vctColor;
   
   uniform mat4 u_mtxWorldToCamera;
 
-  in vec3 a_vctNormal;
+  layout(location = 1) in vec3 a_vctNormal;
   out vec2 v_vctTexture;
 
 #endif
@@ -119,8 +119,8 @@ out vec4 v_vctColor;
 #if defined(SKIN)
 
   // Bones https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderChunk/skinning_pars_vertex.glsl.js
-  in uvec4 a_vctBones;
-  in vec4 a_vctWeights;
+  layout(location = 5) in uvec4 a_vctBones;
+  layout(location = 6) in vec4 a_vctWeights;
 
   const uint MAX_BONES = 256u; // CAUTION: this number must be the same as in RenderInjectorSkeletonInstance where the corresponding buffers are created
   layout(std140) uniform Skin {

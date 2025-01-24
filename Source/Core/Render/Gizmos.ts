@@ -27,7 +27,6 @@ namespace FudgeCore {
     private static alphaOccluded: number = 0.3; // currently gizmos can always be picked even if this is set to 0...
 
     private static readonly arrayBuffer: WebGLBuffer = RenderWebGL.assert(RenderWebGL.getRenderingContext().createBuffer());
-    private static readonly indexBuffer: WebGLBuffer = RenderWebGL.assert(RenderWebGL.getRenderingContext().createBuffer());
 
     private static pickId: number;
     private static readonly posIcons: Set<string> = new Set(); // cache the positions of icons to avoid drawing them within each other
@@ -35,6 +34,7 @@ namespace FudgeCore {
     static #camera: ComponentCamera;
 
     static #meshes: { [key: string]: Mesh } = {};
+    static #mapMeshToWireBuffers: WeakMap<Mesh, RenderBuffers> = new WeakMap();
 
     // TODO: think about drawing these on the fly instead of caching them. Then we could accept a position, radius etc. parameter and draw them independent from the mtxWorld
     private static get wireCircle(): Vector3[] {
@@ -287,25 +287,44 @@ namespace FudgeCore {
       const shader: typeof Shader = ShaderGizmo;
       shader.useProgram();
 
-      const indices: number[] = [];
-      const renderBuffers: RenderBuffers = _mesh.getRenderBuffers();
-      const renderMesh: RenderMesh = _mesh.renderMesh; // TODO: don't breach encapsulation here...
-      for (let i: number = 0; i < renderMesh.indices.length; i += 3) { // TODO: think about caching this in the mesh
-        const a: number = renderMesh.indices[i];
-        const b: number = renderMesh.indices[i + 1];
-        const c: number = renderMesh.indices[i + 2];
+      const wireBuffers: RenderBuffers = Gizmos.#mapMeshToWireBuffers.get(_mesh) ?? {};
 
-        // Add the line segments for the triangle to the line indices
-        indices.push(a, b, b, c, c, a);
+      if (!Gizmos.#mapMeshToWireBuffers.has(_mesh)) {
+        const indices: number[] = [];
+        const renderBuffers: RenderBuffers = _mesh.getRenderBuffers();
+        const renderMesh: RenderMesh = _mesh.renderMesh;
+        for (let i: number = 0; i < renderMesh.indices.length; i += 3) { // TODO: think about caching this in the mesh
+          const a: number = renderMesh.indices[i];
+          const b: number = renderMesh.indices[i + 1];
+          const c: number = renderMesh.indices[i + 2];
+  
+          // Add the line segments for the triangle to the line indices
+          indices.push(a, b, b, c, c, a);
+        }
+
+        // set up vertex attribute object
+        wireBuffers.vao = RenderWebGL.assert<WebGLVertexArrayObject>(crc3.createVertexArray());
+        wireBuffers.indices = RenderWebGL.assert(RenderWebGL.getRenderingContext().createBuffer());
+        wireBuffers.positions = renderBuffers.positions;
+        wireBuffers.nIndices = indices.length;
+
+        crc3.bindVertexArray(wireBuffers.vao);
+        crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, wireBuffers.indices);
+        crc3.bufferData(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), WebGL2RenderingContext.STATIC_DRAW);
+
+        crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderBuffers.positions);
+        crc3.enableVertexAttribArray(0);
+        crc3.vertexAttribPointer(0, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
+
+        crc3.bindVertexArray(null);
+        crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, null);
+        crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
       }
 
-      crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, Gizmos.indexBuffer);
-      crc3.bufferData(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), WebGL2RenderingContext.DYNAMIC_DRAW);
-
-      Gizmos.bufferPositions(shader, renderBuffers.vertices);
       Gizmos.bufferMatrix(shader, _mtxWorld);
-
-      Gizmos.drawGizmos(shader, Gizmos.drawElementsLines, indices.length, _color, _alphaOccluded);
+      crc3.bindVertexArray(wireBuffers.vao);
+      Gizmos.drawGizmos(shader, Gizmos.drawElementsLines, wireBuffers.nIndices, _color, _alphaOccluded);
+      crc3.bindVertexArray(null);
     }
 
     /**
@@ -377,9 +396,11 @@ namespace FudgeCore {
       const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
-      const nIndices: number = _mesh.useRenderBuffers(shader, _mtxWorld, Gizmos.pickId);
-
-      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, nIndices, _color, _alphaOccluded);
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      const renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Gizmos.pickId);
+      crc3.bindVertexArray(renderBuffers.vao);
+      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
+      crc3.bindVertexArray(null);
     }
 
     /**
@@ -411,11 +432,13 @@ namespace FudgeCore {
         color.a = Calc.lerp(0, color.a, distance);
       }
 
-      const nIndices: number = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Gizmos.pickId);
       _texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
       crc3.uniform1i(shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
 
-      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, nIndices, color, _alphaOccluded);
+      const renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Gizmos.pickId);
+      crc3.bindVertexArray(renderBuffers.vao);
+      Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
+      crc3.bindVertexArray(null);
 
       Recycler.storeMultiple(mtxWorld, color, back, up);
     }

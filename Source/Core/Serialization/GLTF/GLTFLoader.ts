@@ -583,7 +583,7 @@ namespace FudgeCore {
       checkMaxSupport(this, "JOINTS", 1);
       checkMaxSupport(this, "WEIGHTS", 1);
 
-      let vertices: Float32Array, indices: Uint16Array;
+      let positions: Float32Array, indices: Uint16Array;
       let normals: Float32Array, tangents: Float32Array;
       let colors: Float32Array, textureUVs: Float32Array;
       let bones: Uint8Array, weights: Float32Array;
@@ -601,7 +601,7 @@ namespace FudgeCore {
       }
 
       if (gltfPrimitive.attributes.POSITION != undefined)
-        vertices = await this.getFloat32Array(gltfPrimitive.attributes.POSITION);
+        positions = await this.getFloat32Array(gltfPrimitive.attributes.POSITION);
       else
         Debug.warn(`${this}: Mesh with index ${_iMesh} primitive ${_iPrimitive} has no position attribute. Primitive will be ignored.`);
 
@@ -638,10 +638,10 @@ namespace FudgeCore {
 
 
       // Create mesh vertices and faces so that normals and tangents can be calculated if missing. If they are not missing this could be omitted.
-      for (let iVector2: number = 0, iVector3: number = 0, iVector4: number = 0; iVector3 < vertices?.length; iVector2 += 2, iVector3 += 3, iVector4 += 4) {
+      for (let iVector2: number = 0, iVector3: number = 0, iVector4: number = 0; iVector3 < positions?.length; iVector2 += 2, iVector3 += 3, iVector4 += 4) {
         mesh.vertices.push(
           new Vertex(
-            new Vector3(vertices[iVector3 + 0], vertices[iVector3 + 1], vertices[iVector3 + 2]),
+            new Vector3(positions[iVector3 + 0], positions[iVector3 + 1], positions[iVector3 + 2]),
             textureUVs ?
               new Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]) :
               undefined,
@@ -680,7 +680,7 @@ namespace FudgeCore {
       }
 
 
-      mesh.renderMesh.vertices = vertices;
+      mesh.renderMesh.positions = positions;
       mesh.renderMesh.indices = indices;
       mesh.renderMesh.normals = normals;
       mesh.renderMesh.tangents = tangents;
