@@ -32,13 +32,13 @@ namespace FudgeCore {
      * Used by the render system.
      * @internal
      */
-    public useRenderBuffer(_shader: ShaderInterface): RenderBuffers { return null; /* injected by RenderInjector*/ }
+    public useRenderBuffer(): void { /* injected by RenderInjector*/ };
     /**
      * Injected by {@link RenderInjectorComponentSkeleton}.
      * Used by the render system.
      * @internal
      */
-    public updateRenderBuffer(): RenderBuffers { return null; /* injected by RenderInjector*/ }
+    public updateRenderBuffer(): void { /* injected by RenderInjector*/ }
     /**
      * Injected by {@link RenderInjectorComponentSkeleton}.
      * Used by the render system.
