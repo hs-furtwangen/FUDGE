@@ -43,7 +43,7 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2022
    * @internal
    */
-  export class RenderInjectorShaderParticleSystem extends RenderInjectorShader {
+  export class RenderInjectorShaderParticleSystem {
     public static readonly FUNCTIONS: { [key in ParticleData.FUNCTION]: Function } = {
       // [ParticleData.FUNCTION.VALUE]: (_parameters: string[]) => {
       //   return `(${_parameters[0]})`;
@@ -88,12 +88,12 @@ namespace FudgeCore {
 
     private static randomNumberIndexOffset: number = 0;
 
-    public static override decorate(_constructor: Function, _context: ClassDecoratorContext): void {
-      super.decorate(_constructor.prototype, _context);
-      Object.defineProperty(_constructor.prototype, "getVertexShaderSource", {
+    public static decorate(_constructor: typeof ShaderParticleSystem, _context: ClassDecoratorContext): void {
+      RenderInjectorShader.decorate(<typeof Shader><General>_constructor.prototype, _context);
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.getVertexShaderSource.name, {
         value: RenderInjectorShaderParticleSystem.getVertexShaderSource
       });
-      Object.defineProperty(_constructor.prototype, "getFragmentShaderSource", {
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.getFragmentShaderSource.name, {
         value: RenderInjectorShaderParticleSystem.getFragmentShaderSource
       });
     }
