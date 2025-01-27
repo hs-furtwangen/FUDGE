@@ -8,8 +8,14 @@ precision highp int;
 
 // MINIMAL
 uniform vec4 u_vctColor;
-uniform vec3 u_vctCamera; // needed for fog
 uniform float u_fAlphaClip;
+
+layout(std140) uniform Camera {
+  mat4 u_mtxWorldToCamera; // u_mtxView
+  mat4 u_mtxProjection; 
+  mat4 u_mtxWorldToView; // u_mtxViewProjection
+  vec3 u_vctCamera;
+};
 
 layout(std140) uniform Fog {
   bool u_bFogActive;

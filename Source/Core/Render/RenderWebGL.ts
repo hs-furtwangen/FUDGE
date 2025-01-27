@@ -35,15 +35,19 @@ namespace FudgeCore {
       NAME: "Lights",
       BINDING: 0
     },
+    CAMERA: {
+      NAME: "Camera",
+      BINDING: 1
+    },
     SKIN: {
       NAME: "Skin",
-      BINDING: 1
+      BINDING: 2
     },
     FOG: {
       NAME: "Fog",
-      BINDING: 2
+      BINDING: 3
     }
-  };
+  } as const;
 
   export const TEXTURE_LOCATION = { // eslint-disable-line
     COLOR: {
@@ -97,6 +101,7 @@ namespace FudgeCore {
     private static texPick: WebGLTexture;
     private static texDepthPick: WebGLTexture;
 
+    private static uboCamera: WebGLBuffer;
     private static uboLights: WebGLBuffer;
     private static uboLightsOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
     private static uboFog: WebGLBuffer;
@@ -133,6 +138,7 @@ namespace FudgeCore {
       RenderWebGL.initializeAttachments();
       RenderWebGL.adjustAttachments();
 
+      RenderWebGL.initializeCamera();
       RenderWebGL.initializeLights();
       RenderWebGL.initializeFog();
 
@@ -520,6 +526,28 @@ namespace FudgeCore {
     }
     //#endregion
 
+    protected static initializeCamera(): void {
+      RenderWebGL.uboCamera = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
+      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.CAMERA.BINDING, RenderWebGL.uboCamera);
+    }
+
+    protected static bufferCamera(_cmpCamera: ComponentCamera): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      const mtxView: Matrix4x4 = _cmpCamera.mtxCameraInverse;
+      const mtxProjection: Matrix4x4 = _cmpCamera.mtxProjection;
+      const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
+      const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
+
+      const data: Float32Array = new Float32Array(16 + 16 + 16 + 3);
+      data.set(mtxView.get(), 0);
+      data.set(mtxProjection.get(), 16);
+      data.set(mtxViewProjection.get(), 32);
+      data.set(vctPosition.get(), 48);
+
+      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboCamera);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
+
     protected static initializeFog(): void {
       RenderWebGL.uboFog = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
       RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.FOG.BINDING, RenderWebGL.uboFog);
@@ -666,6 +694,7 @@ namespace FudgeCore {
       const cmpBloom: ComponentBloom = _cmpCamera.node?.getComponent(ComponentBloom);
 
       RenderWebGL.bufferFog(cmpFog);
+      RenderWebGL.bufferCamera(_cmpCamera);
 
       // opaque pass 
       // TODO: think about disabling blending for all opaque objects, this might improve performance 
@@ -836,28 +865,14 @@ namespace FudgeCore {
         cmpMesh.skeleton.useRenderBuffer();
 
       PerformanceMonitor.startMeasure("Render.drawNode other");
-      let uniform: WebGLUniformLocation = shader.uniforms["u_vctCamera"];
-      if (uniform)
-        RenderWebGL.crc3.uniform3fv(uniform, _cmpCamera.mtxWorld.translation.get());
-
-      uniform = shader.uniforms["u_mtxWorldToView"];
-      if (uniform)
-        RenderWebGL.crc3.uniformMatrix4fv(uniform, false, _cmpCamera.mtxWorldToView.get());
-
-      uniform = shader.uniforms["u_mtxWorldToCamera"];
-      if (uniform) {
-        // let mtxWorldToCamera: Matrix4x4 = Matrix4x4.INVERSION(_cmpCamera.mtxWorld); // todo: optimize/store in camera
-        RenderWebGL.crc3.uniformMatrix4fv(uniform, false, _cmpCamera.mtxCameraInverse.get());
-      }
-
-      uniform = shader.uniforms["u_fAlphaClip"];
+      let uniform: WebGLUniformLocation = shader.uniforms["u_fAlphaClip"];
       if (uniform)
         RenderWebGL.crc3.uniform1f(uniform, cmpMaterial.material.alphaClip);
       PerformanceMonitor.endMeasure("Render.drawNode other");
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
       const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
-      
+
       // PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
       RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
       // PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
@@ -866,7 +881,7 @@ namespace FudgeCore {
       // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
         RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers.nIndices, _node.getComponent(ComponentFaceCamera));
-      else 
+      else
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
       // PerformanceMonitor.endMeasure("Render.drawNode drawElements");
       RenderWebGL.crc3.bindVertexArray(null);

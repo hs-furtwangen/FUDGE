@@ -64,17 +64,10 @@ namespace FudgeCore {
         this.program = program;
         this.uniforms = detectUniforms();
 
-        let blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.LIGHTS.NAME);
-        if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
-          crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.LIGHTS.BINDING);
-
-        blockIndex = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.SKIN.NAME);
-        if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
-          crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.SKIN.BINDING);
-
-        blockIndex = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.FOG.NAME);
-        if (blockIndex != WebGL2RenderingContext.INVALID_INDEX)
-          crc3.uniformBlockBinding(program, blockIndex, UNIFORM_BLOCKS.FOG.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCKS.LIGHTS.NAME, UNIFORM_BLOCKS.LIGHTS.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCKS.CAMERA.NAME, UNIFORM_BLOCKS.CAMERA.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCKS.SKIN.NAME, UNIFORM_BLOCKS.SKIN.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCKS.FOG.NAME, UNIFORM_BLOCKS.FOG.BINDING);
 
       } catch (_error) {
         Debug.error(_error);
@@ -112,6 +105,14 @@ namespace FudgeCore {
             detectedUniforms[info.name] = RenderWebGL.assert<WebGLUniformLocation>(location);
         }
         return detectedUniforms;
+      }
+
+      function bindUniformBlock(_program: WebGLProgram, _uniformBlockName: string, _uniformBlockBinding: GLuint): void {
+        let blockIndex: number = crc3.getUniformBlockIndex(_program, _uniformBlockName);
+        if (blockIndex == WebGL2RenderingContext.INVALID_INDEX)
+          return;
+
+        crc3.uniformBlockBinding(_program, blockIndex, _uniformBlockBinding);
       }
     }
   }

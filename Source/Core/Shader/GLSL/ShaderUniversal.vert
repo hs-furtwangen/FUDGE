@@ -7,19 +7,19 @@ precision mediump float;
 precision highp int;
 
 uniform mat4 u_mtxMeshToWorld; // u_mtxModel
-uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
+
+layout(std140) uniform Camera {
+  mat4 u_mtxWorldToCamera; // u_mtxView
+  mat4 u_mtxProjection; 
+  mat4 u_mtxWorldToView; // u_mtxViewProjection
+  vec3 u_vctCamera;
+};
 
 layout(location = 0) in vec3 a_vctPosition;
 layout(location = 3) in vec4 a_vctColor; // TODO: think about making vertex color optional
 
 out vec3 v_vctPosition;
 out vec4 v_vctColor;
-
-#if defined(FLAT) || defined(GOURAUD) || defined(PHONG) || defined(PARTICLE) || defined(MATCAP)
-
-  uniform vec3 u_vctCamera;
-
-#endif
 
 #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
 
@@ -108,8 +108,6 @@ out vec4 v_vctColor;
 
 // MATCAP: offer buffers for UVs and pivot matrix
 #if defined(MATCAP) // MatCap-shader generates texture coordinates from surface normals
-  
-  uniform mat4 u_mtxWorldToCamera;
 
   layout(location = 1) in vec3 a_vctNormal;
   out vec2 v_vctTexture;
