@@ -101,7 +101,7 @@ namespace FudgeCore {
     private static texPick: WebGLTexture;
     private static texDepthPick: WebGLTexture;
 
-    private static uboCamera: WebGLBuffer;
+    private static uboCamera: WebGLBuffer; // TODO: technically we should have one buffer per camera, and switch between them, similar to how skeletons are handled. But having cameras outside of any scene proves to be a problem...
     private static uboLights: WebGLBuffer;
     private static uboLightsOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
     private static uboFog: WebGLBuffer;
@@ -456,15 +456,14 @@ namespace FudgeCore {
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
       crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
 
-      const mtxWorldToView: Float32Array = _cmpCamera.mtxWorldToView.get();
-      // buffer size and camera matrix into pick shaders
+      RenderWebGL.bufferCamera(_cmpCamera);
+
+      // buffer size into pick shaders
       ShaderPick.useProgram();
       crc3.uniform2fv(ShaderPick.uniforms["u_vctSize"], [size, size]);
-      crc3.uniformMatrix4fv(ShaderPick.uniforms["u_mtxWorldToView"], false, mtxWorldToView);
 
       ShaderPickTextured.useProgram();
       crc3.uniform2fv(ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
-      crc3.uniformMatrix4fv(ShaderPickTextured.uniforms["u_mtxWorldToView"], false, mtxWorldToView);
 
       // render picks into pick buffer
       RenderWebGL.setBlendMode(BLEND.OPAQUE);

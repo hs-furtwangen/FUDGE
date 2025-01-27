@@ -565,7 +565,13 @@ void main() {
 * @authors Jirka Dell'Oro-Friedl, HFU, 2019
 */
 uniform mat4 u_mtxMeshToWorld; // u_mtxModel
-uniform mat4 u_mtxWorldToView; // u_mtxViewProjection
+
+layout(std140) uniform Camera {
+  mat4 u_mtxWorldToCamera; // u_mtxView
+  mat4 u_mtxProjection; 
+  mat4 u_mtxWorldToView; // u_mtxViewProjection
+  vec3 u_vctCamera;
+};
 
 layout(location = 0) in vec3 a_vctPosition;
 
