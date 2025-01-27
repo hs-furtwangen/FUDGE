@@ -313,8 +313,8 @@ namespace FudgeCore {
         crc3.bufferData(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), WebGL2RenderingContext.STATIC_DRAW);
 
         crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderBuffers.positions);
-        crc3.enableVertexAttribArray(0);
-        crc3.vertexAttribPointer(0, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
+        crc3.enableVertexAttribArray(SHADER_ATTRIBUTE.POSITION);
+        crc3.vertexAttribPointer(SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
 
         crc3.bindVertexArray(null);
         crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, null);
@@ -447,9 +447,8 @@ namespace FudgeCore {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, _buffer);
-      let attribute: number = _shader.attributes["a_vctPosition"];
-      crc3.enableVertexAttribArray(attribute);
-      crc3.vertexAttribPointer(attribute, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
+      crc3.enableVertexAttribArray(SHADER_ATTRIBUTE.POSITION);
+      crc3.vertexAttribPointer(SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
     }
 
     private static bufferColor(_shader: ShaderInterface, _color: Color): void {

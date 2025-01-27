@@ -47,15 +47,15 @@ namespace FudgeCore {
       crc3.bindVertexArray(buffers.vao);
       crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
-      setAttributeBuffer(buffers.positions, 0, 3, WebGL2RenderingContext.FLOAT);
-      setAttributeBuffer(buffers.normals, 1, 3, WebGL2RenderingContext.FLOAT);
-      setAttributeBuffer(buffers.textureUVs, 2, 2, WebGL2RenderingContext.FLOAT);
-      setAttributeBuffer(buffers.colors, 3, 4, WebGL2RenderingContext.FLOAT);
-      setAttributeBuffer(buffers.tangents, 4, 4, WebGL2RenderingContext.FLOAT);
+      setAttributeBuffer(buffers.positions, SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT);
+      setAttributeBuffer(buffers.normals, SHADER_ATTRIBUTE.NORMAL, 3, WebGL2RenderingContext.FLOAT);
+      setAttributeBuffer(buffers.textureUVs, SHADER_ATTRIBUTE.TEXCOORDS, 2, WebGL2RenderingContext.FLOAT);
+      setAttributeBuffer(buffers.colors, SHADER_ATTRIBUTE.COLOR, 4, WebGL2RenderingContext.FLOAT);
+      setAttributeBuffer(buffers.tangents, SHADER_ATTRIBUTE.TANGENT, 4, WebGL2RenderingContext.FLOAT);
       if (buffers.bones)
-        setAttributeBuffer(buffers.bones, 5, 4, WebGL2RenderingContext.UNSIGNED_BYTE);
+        setAttributeBuffer(buffers.bones, SHADER_ATTRIBUTE.BONES, 4, WebGL2RenderingContext.UNSIGNED_BYTE);
       if (buffers.weights)
-        setAttributeBuffer(buffers.weights, 6, 4, WebGL2RenderingContext.FLOAT);
+        setAttributeBuffer(buffers.weights, SHADER_ATTRIBUTE.WEIGHTS, 4, WebGL2RenderingContext.FLOAT);
 
       crc3.bindVertexArray(null);
       crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
@@ -85,12 +85,12 @@ namespace FudgeCore {
     protected static useRenderBuffers(this: Mesh, _shader: typeof Shader, _mtxMeshToWorld: Matrix4x4, _id?: number): RenderBuffers {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      PerformanceMonitor.startMeasure("buffer u_mtxMeshToWorld");
+      // PerformanceMonitor.startMeasure("buffer u_mtxMeshToWorld");
       let uniform: WebGLUniformLocation; // TODO: move this somewhere else
       uniform = _shader.uniforms["u_mtxMeshToWorld"];
       if (uniform)
         crc3.uniformMatrix4fv(uniform, false, _mtxMeshToWorld.get());
-      PerformanceMonitor.endMeasure("buffer u_mtxMeshToWorld");
+      // PerformanceMonitor.endMeasure("buffer u_mtxMeshToWorld");
 
       // feed in an id of the node if shader accepts u_id. Used for picking // TODO: move this somewhere else
       uniform = _shader.uniforms["u_id"];

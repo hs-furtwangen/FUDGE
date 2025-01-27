@@ -19,6 +19,16 @@ namespace FudgeCore {
     NEVER, LESS, EQUAL, LESS_EQUAL, GREATER, NOT_EQUAL, GREATER_EQUAL, ALWAYS
   }
 
+  export enum SHADER_ATTRIBUTE { // keep in sync with shader source code
+    POSITION,
+    NORMAL,
+    TEXCOORDS,
+    COLOR,
+    TANGENT,
+    BONES,
+    WEIGHTS
+  }
+
   // we want type inference here so we can use vs code to search for references
   export const UNIFORM_BLOCKS = { // eslint-disable-line
     LIGHTS: {
@@ -807,7 +817,6 @@ namespace FudgeCore {
         shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
       PerformanceMonitor.endMeasure("Render.drawNode get components");
 
-
       PerformanceMonitor.startMeasure("Render.drawNode useProgram");
       shader.useProgram();
       PerformanceMonitor.endMeasure("Render.drawNode useProgram");
@@ -848,18 +857,18 @@ namespace FudgeCore {
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
       const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(shader, mtxMeshToWorld);
+      
+      // PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
+      RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
+      // PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
       PerformanceMonitor.endMeasure("Render.drawNode useRenderBuffers");
 
-      PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
-      RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
-      PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
-
-      PerformanceMonitor.startMeasure("Render.drawNode drawElements");
+      // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
         RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers.nIndices, _node.getComponent(ComponentFaceCamera));
       else 
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
-      PerformanceMonitor.endMeasure("Render.drawNode drawElements");
+      // PerformanceMonitor.endMeasure("Render.drawNode drawElements");
       RenderWebGL.crc3.bindVertexArray(null);
     }
 
