@@ -38,7 +38,6 @@ namespace FudgeCore {
       let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       if (this.program) {
         crc3.deleteProgram(this.program);
-        delete this.attributes;
         delete this.uniforms;
         delete this.program;
       }
@@ -63,7 +62,6 @@ namespace FudgeCore {
         }
 
         this.program = program;
-        this.attributes = detectAttributes();
         this.uniforms = detectUniforms();
 
         let blockIndex: number = crc3.getUniformBlockIndex(program, UNIFORM_BLOCKS.LIGHTS.NAME);
@@ -99,21 +97,6 @@ namespace FudgeCore {
           return null;
         }
         return webGLShader;
-      }
-
-      function detectAttributes(): { [name: string]: number } {
-        let detectedAttributes: { [name: string]: number } = {};
-        let attributeCount: number = crc3.getProgramParameter(program, WebGL2RenderingContext.ACTIVE_ATTRIBUTES);
-        for (let i: number = 0; i < attributeCount; i++) {
-          let attributeInfo: WebGLActiveInfo = RenderWebGL.assert<WebGLActiveInfo>(crc3.getActiveAttrib(program, i));
-          if (!attributeInfo) {
-            break;
-          }
-
-          detectedAttributes[attributeInfo.name] = crc3.getAttribLocation(program, attributeInfo.name);
-
-        }
-        return detectedAttributes;
       }
 
       function detectUniforms(): { [name: string]: WebGLUniformLocation } {

@@ -15,7 +15,6 @@ namespace FudgeCore {
   export interface ShaderInterface {
     define: string[];
     program: WebGLProgram;
-    attributes: { [name: string]: number };
     uniforms: { [name: string]: WebGLUniformLocation };
     /** Returns the vertex shader source code for the render engine */
     getVertexShaderSource(): string;
@@ -33,7 +32,7 @@ namespace FudgeCore {
    * Static superclass for the representation of WebGl shaderprograms. 
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
    */
-  // TODO: define attribute/uniforms as layout and use those consistently in shaders
+  // TODO: define uniforms as layout and use those consistently in shaders
   @RenderInjectorShader.decorate
   export abstract class Shader {
     /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
@@ -46,7 +45,6 @@ namespace FudgeCore {
     // public static fragmentShaderSource: string;
 
     public static program: WebGLProgram;
-    public static attributes: { [name: string]: number };
     public static uniforms: { [name: string]: WebGLUniformLocation };
 
     /** The type of coat that can be used with this shader to create a material */
