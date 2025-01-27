@@ -128,12 +128,7 @@ namespace FudgeCore {
       Gizmos.#camera = _cmpCamera;
       Gizmos.posIcons.clear();
 
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      let mtxViewProjection: Float32Array = _cmpCamera.mtxWorldToView.get();
-      ShaderGizmo.useProgram();
-      crc3.uniformMatrix4fv(ShaderGizmo.uniforms["u_mtxWorldToView"], false, mtxViewProjection);
-      ShaderGizmoTextured.useProgram();
-      crc3.uniformMatrix4fv(ShaderGizmoTextured.uniforms["u_mtxWorldToView"], false, mtxViewProjection);
+      RenderWebGL.bufferCamera(_cmpCamera);
 
       for (const gizmo of _gizmos) {
         gizmo.drawGizmos?.(_cmpCamera, Gizmos.#picking);

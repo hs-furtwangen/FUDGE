@@ -416,6 +416,26 @@ namespace FudgeCore {
       crc3.bindTexture(crc3.TEXTURE_2D, null);
     }
 
+    /**
+     * Buffer the camera data into the camera ubo
+     */
+    public static bufferCamera(_cmpCamera: ComponentCamera): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      const mtxView: Matrix4x4 = _cmpCamera.mtxCameraInverse;
+      const mtxProjection: Matrix4x4 = _cmpCamera.mtxProjection;
+      const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
+      const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
+
+      const data: Float32Array = new Float32Array(16 + 16 + 16 + 3);
+      data.set(mtxView.get(), 0);
+      data.set(mtxProjection.get(), 16);
+      data.set(mtxViewProjection.get(), 32);
+      data.set(vctPosition.get(), 48);
+
+      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboCamera);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
+
     //#region Picking
     /**
      * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
@@ -529,23 +549,6 @@ namespace FudgeCore {
     protected static initializeCamera(): void {
       RenderWebGL.uboCamera = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
       RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.CAMERA.BINDING, RenderWebGL.uboCamera);
-    }
-
-    protected static bufferCamera(_cmpCamera: ComponentCamera): void {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const mtxView: Matrix4x4 = _cmpCamera.mtxCameraInverse;
-      const mtxProjection: Matrix4x4 = _cmpCamera.mtxProjection;
-      const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
-      const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
-
-      const data: Float32Array = new Float32Array(16 + 16 + 16 + 3);
-      data.set(mtxView.get(), 0);
-      data.set(mtxProjection.get(), 16);
-      data.set(mtxViewProjection.get(), 32);
-      data.set(vctPosition.get(), 48);
-
-      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboCamera);
-      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
     }
 
     protected static initializeFog(): void {
