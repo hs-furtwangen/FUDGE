@@ -1,4 +1,3 @@
-///<reference path="RenderInjector.ts"/>
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorCoat.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
@@ -30,7 +29,7 @@ namespace FudgeCore {
   }
 
   // we want type inference here so we can use vs code to search for references
-  export const UNIFORM_BLOCKS = { // eslint-disable-line
+  export const UNIFORM_BLOCK = { // eslint-disable-line
     LIGHTS: {
       NAME: "Lights",
       BINDING: 0
@@ -39,13 +38,17 @@ namespace FudgeCore {
       NAME: "Camera",
       BINDING: 1
     },
+    MATERIAL: {
+      NAME: "Material",
+      BINDING: 2
+    },
     SKIN: {
       NAME: "Skin",
-      BINDING: 2
+      BINDING: 3
     },
     FOG: {
       NAME: "Fog",
-      BINDING: 3
+      BINDING: 4
     }
   } as const;
 
@@ -529,7 +532,8 @@ namespace FudgeCore {
         let shader: ShaderInterface = coat instanceof CoatTextured ? ShaderPickTextured : ShaderPick;
 
         shader.useProgram();
-        coat.useRenderData(shader, cmpMaterial);
+        coat.useRenderData();
+        // TODO: buffer node specific properties into shader
         let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
         let mesh: Mesh = cmpMesh.mesh;
@@ -547,12 +551,12 @@ namespace FudgeCore {
 
     protected static initializeCamera(): void {
       RenderWebGL.uboCamera = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
-      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.CAMERA.BINDING, RenderWebGL.uboCamera);
+      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.CAMERA.BINDING, RenderWebGL.uboCamera);
     }
 
     protected static initializeFog(): void {
       RenderWebGL.uboFog = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
-      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.FOG.BINDING, RenderWebGL.uboFog);
+      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.FOG.BINDING, RenderWebGL.uboFog);
     }
 
     /**
@@ -596,7 +600,7 @@ namespace FudgeCore {
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
       crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
-      crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.LIGHTS.BINDING, RenderWebGL.uboLights);
+      crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGL.uboLights);
     }
 
     /**
@@ -853,7 +857,8 @@ namespace FudgeCore {
       PerformanceMonitor.endMeasure("Render.drawNode useProgram");
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
-      coat.useRenderData(shader, cmpMaterial);
+      coat.useRenderData();
+      // coat.useRenderData(shader, cmpMaterial);
       PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
 
       let mtxMeshToWorld: Matrix4x4 = cmpMesh.mtxWorld;
@@ -867,9 +872,10 @@ namespace FudgeCore {
         cmpMesh.skeleton.useRenderBuffer();
 
       PerformanceMonitor.startMeasure("Render.drawNode other");
-      let uniform: WebGLUniformLocation = shader.uniforms["u_fAlphaClip"];
+      let uniform: WebGLUniformLocation = shader.uniforms["u_mtxPivot"];
       if (uniform)
-        RenderWebGL.crc3.uniform1f(uniform, cmpMaterial.material.alphaClip);
+        RenderWebGL.crc3.uniformMatrix3fv(shader.uniforms["u_mtxPivot"], false, cmpMaterial.mtxPivot.get());
+
       PerformanceMonitor.endMeasure("Render.drawNode other");
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");

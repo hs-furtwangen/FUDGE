@@ -413,9 +413,9 @@ namespace FudgeCore {
 
               // TODO: maybe this should be a fudge material property
               const gltfMaterial: GLTF.Material = this.#gltf.materials[iMaterial];
-              if (gltfMaterial) 
+              if (gltfMaterial)
                 cmpMaterial.sortForAlpha = gltfMaterial.alphaMode == "BLEND";
-              
+
             }
 
             subComponents.push([cmpMesh, cmpMaterial]);
@@ -763,6 +763,9 @@ namespace FudgeCore {
             new CoatRemissiveTextured(color, await this.getTexture(gltfBaseColorTexture.index), diffuse, specular, intensity, metallic) :
         isLit ? new CoatColored(color) : new CoatRemissive(color, diffuse, specular, intensity, metallic);
 
+      if (gltfMaterial.alphaCutoff != undefined)
+        coat.alphaClip = gltfMaterial.alphaCutoff;
+
       let shader: typeof Shader;
       if (_flat) { // TODO: make flat a flag in the material so that we can have flat mesh with phong shading gradients
         shader = gltfBaseColorTexture ?
@@ -783,8 +786,7 @@ namespace FudgeCore {
       const material: Material = _material ?? new MaterialGLTF(gltfMaterial.name);
       material.name = gltfMaterial.name;
       material.coat = coat;
-      if (gltfMaterial.alphaCutoff != undefined)
-        material.alphaClip = gltfMaterial.alphaCutoff;
+
       Reflect.set(material, "shaderType", shader);
       // material.setShader(shader);
       if (material instanceof MaterialGLTF)

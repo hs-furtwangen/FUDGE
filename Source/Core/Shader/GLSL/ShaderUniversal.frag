@@ -6,15 +6,22 @@
 precision mediump float;
 precision highp int;
 
-// MINIMAL
-uniform vec4 u_vctColor;
-uniform float u_fAlphaClip;
-
 layout(std140) uniform Camera {
   mat4 u_mtxWorldToCamera; // u_mtxView
   mat4 u_mtxProjection; 
   mat4 u_mtxWorldToView; // u_mtxViewProjection
   vec3 u_vctCamera;
+};
+
+layout(std140) uniform Material {
+  uniform vec4 u_vctColor;
+
+  uniform float u_fDiffuse;
+  uniform float u_fSpecular;
+  uniform float u_fIntensity;
+  uniform float u_fMetallic;
+
+  uniform float u_fAlphaClip;
 };
 
 layout(std140) uniform Fog {
@@ -46,7 +53,6 @@ layout(location = 2) out vec4 vctFragNormal;
 
 #if defined(GOURAUD)
 
-  uniform float u_fMetallic;
   in vec3 v_vctDiffuse;
   in vec3 v_vctSpecular;
 
@@ -59,11 +65,6 @@ layout(location = 2) out vec4 vctFragNormal;
 #endif
 
 #if defined(PHONG) || defined(FLAT)
-
-  uniform float u_fDiffuse;
-  uniform float u_fSpecular;
-  uniform float u_fIntensity;
-  uniform float u_fMetallic;
 
   struct Light {
     vec4 vctColor;

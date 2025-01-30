@@ -2,7 +2,6 @@ namespace FudgeCore {
   /**
    * The simplest {@link Coat} providing just a color
    */
-  @RenderInjectorCoat.decorate
   export class CoatColored extends Coat {
     public color: Color;
 

@@ -17,6 +17,7 @@ namespace FudgeCore {
     private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
+    private static readonly coats: Set<Coat> = new Set(); // TODO: test if sets are an appropriate data structure here
     private static readonly modificationsProcessed: Set<{ modified: boolean }> = new Set();
     private static timestampUpdate: number;
 
@@ -34,6 +35,7 @@ namespace FudgeCore {
       Render.nodesPhysics.reset();
       Render.componentsPick.reset();
       Render.componentsSkeleton.reset();
+      Render.coats.clear();
       Render.modificationsProcessed.clear();
       Render.lights.forEach(_array => _array.reset());
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
@@ -47,6 +49,8 @@ namespace FudgeCore {
         cmpSkeleton.update();
         cmpSkeleton.updateRenderBuffer();
       }
+      for (const coat of Render.coats)
+        coat.updateRenderData();
       Render.bufferLights(Render.lights);
     }
 
@@ -143,6 +147,10 @@ namespace FudgeCore {
           Render.nodesAlpha.push(_branch); // add this node to render list
         else
           Render.nodesSimple.push(_branch); // add this node to render list
+
+        let material: Material = cmpMaterial.material;
+        if (material)
+          Render.coats.add(material.coat);
       }
 
       let cmpSkeletons: ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);

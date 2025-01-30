@@ -10,11 +10,6 @@ namespace FudgeCore {
     /** The name to call the Material by. */
     public name: string;
     public idResource: string = undefined;
-    
-    /**
-     * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
-     */
-    public alphaClip: number = 0.01;
 
     private shaderType: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
@@ -88,7 +83,6 @@ namespace FudgeCore {
         idResource: this.idResource,
         shader: this.shaderType.name,
         coat: Serializer.serialize(this.#coat),
-        alphaClip: this.alphaClip
       };
       return serialization;
     }
@@ -98,8 +92,6 @@ namespace FudgeCore {
       this.shaderType = (<General>FudgeCore)[_serialization.shader];
       let coat: Coat = <Coat>await Serializer.deserialize(_serialization.coat);
       this.coat = coat;
-      if (_serialization.alphaClip != undefined)
-        this.alphaClip = _serialization.alphaClip;
       return this;
     }
 

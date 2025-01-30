@@ -4,74 +4,71 @@ namespace FudgeCore {
    * Gives WebGL Buffer the data from the {@link Coat}
    * @internal
    */
-  export class RenderInjectorCoat extends RenderInjector {
-    /**
-     * Injects the functionality of this class into the constructor of the given {@link Coat}-subclass
-     */
+  export class RenderInjectorCoat {
     public static decorate(_constructor: typeof Coat, _context: ClassDecoratorContext): void {
-      RenderInjector.inject(_constructor, RenderInjectorCoat);
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderData.name, {
+        value: RenderInjectorCoat.useRenderData
+      });
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.updateRenderData.name, {
+        value: RenderInjectorCoat.updateRenderData
+      });
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.deleteRenderData.name, {
+        value: RenderInjectorCoat.deleteRenderData
+      });
     }
 
-    protected static injectCoatColored(this: CoatColored, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      let uniform: WebGLUniformLocation = _shader.uniforms["u_vctColor"];
-      let color: Color = Color.PRODUCT(this.color, _cmpMaterial.clrPrimary);
-      RenderWebGL.getRenderingContext().uniform4fv(uniform, color.get());
-      Recycler.store(color);
+    protected static useRenderData(this: Coat): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+
+      if (this instanceof CoatTextured) 
+        this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+      
+      if (this instanceof CoatRemissiveTexturedNormals) 
+        this.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+      
+      if (this instanceof CoatToon) 
+        this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+
+      if (this.renderBuffer)
+        crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.MATERIAL.BINDING, this.renderBuffer);
     }
 
-    protected static injectCoatRemissive(this: CoatRemissive, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      RenderInjectorCoat.injectCoatColored.call(this, _shader, _cmpMaterial);
-      let uniform: WebGLUniformLocation;
-      uniform = _shader.uniforms["u_fDiffuse"];
-      RenderWebGL.getRenderingContext().uniform1f(uniform, this.diffuse);
-      uniform = _shader.uniforms["u_fMetallic"];
-      RenderWebGL.getRenderingContext().uniform1f(uniform, this.metallic);
-      uniform = _shader.uniforms["u_fSpecular"];
-      RenderWebGL.getRenderingContext().uniform1f(uniform, this.specular);
-      uniform = _shader.uniforms["u_fIntensity"];
-      RenderWebGL.getRenderingContext().uniform1f(uniform, this.intensity);
+    protected static updateRenderData(this: Coat): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      const data: Float32Array = new Float32Array(4 + 1 + 1 + 1 + 1 + 1);
+      
+      if (this instanceof CoatColored) 
+        data.set(this.color.get(), 0);
+      
+      if (this instanceof CoatRemissive || this instanceof CoatRemissiveTextured) {
+        data[4] = this.diffuse;
+        data[5] = this.specular;
+        data[6] = this.intensity;
+        data[7] = this.metallic;
+      }
+
+      if (this instanceof CoatTextured) 
+        this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+      
+      if (this instanceof CoatRemissiveTexturedNormals) 
+        this.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+      
+      if (this instanceof CoatToon) 
+        this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+
+      data[8] = this.alphaClip;
+
+      // buffer data to bound buffer
+      this.renderBuffer ??= RenderWebGL.assert(crc3.createBuffer());
+      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.renderBuffer);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
     }
 
-    protected static injectCoatTextured(this: CoatTextured, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      RenderInjectorCoat.injectCoatColored.call(this, _shader, _cmpMaterial);
+    protected static deleteRenderData(this: Coat): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
-      crc3.uniform1i(_shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
-      crc3.uniformMatrix3fv(_shader.uniforms["u_mtxPivot"], false, _cmpMaterial.mtxPivot.get());
-    }
-
-    protected static injectCoatRemissiveTextured(this: CoatRemissiveTextured, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      RenderInjectorCoat.injectCoatRemissive.call(this, _shader, _cmpMaterial);
-
-      let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
-      crc3.uniform1i(_shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
-      crc3.uniformMatrix3fv(_shader.uniforms["u_mtxPivot"], false, _cmpMaterial.mtxPivot.get());
-    }
-
-    protected static injectCoatRemissiveTexturedNormals(this: CoatRemissiveTexturedNormals, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      RenderInjectorCoat.injectCoatRemissiveTextured.call(this, _shader, _cmpMaterial);
-
-      let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      this.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
-      crc3.uniform1i(_shader.uniforms[TEXTURE_LOCATION.NORMAL.UNIFORM], TEXTURE_LOCATION.NORMAL.INDEX);
-    }
-
-    protected static injectCoatToon(this: CoatToon, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      RenderInjectorCoat.injectCoatRemissive.call(this, _shader, _cmpMaterial);
-
-      let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
-      crc3.uniform1i(_shader.uniforms[TEXTURE_LOCATION.TOON.UNIFORM], TEXTURE_LOCATION.TOON.INDEX);
-    }
-
-    protected static injectCoatToonTextured(this: CoatToon, _shader: typeof Shader, _cmpMaterial: ComponentMaterial): void {
-      RenderInjectorCoat.injectCoatRemissiveTextured.call(this, _shader, _cmpMaterial);
-
-      let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
-      crc3.uniform1i(_shader.uniforms[TEXTURE_LOCATION.TOON.UNIFORM], TEXTURE_LOCATION.TOON.INDEX);
+      if (this.renderBuffer)
+        crc3.deleteBuffer(this.renderBuffer);
     }
   }
 }

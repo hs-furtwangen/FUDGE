@@ -2,7 +2,6 @@ namespace FudgeCore {
   /**
    * A {@link Coat} providing a color and parameters for the phong shading model.
    */
-  @RenderInjectorCoat.decorate
   export class CoatRemissive extends CoatColored {
     public diffuse: number;
     public specular: number;

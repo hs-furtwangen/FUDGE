@@ -648,15 +648,22 @@ void main() {
 precision mediump float;
 precision highp int;
 
-// MINIMAL
-uniform vec4 u_vctColor;
-uniform float u_fAlphaClip;
-
 layout(std140) uniform Camera {
   mat4 u_mtxWorldToCamera; // u_mtxView
   mat4 u_mtxProjection; 
   mat4 u_mtxWorldToView; // u_mtxViewProjection
   vec3 u_vctCamera;
+};
+
+layout(std140) uniform Material {
+  uniform vec4 u_vctColor;
+
+  uniform float u_fDiffuse;
+  uniform float u_fSpecular;
+  uniform float u_fIntensity;
+  uniform float u_fMetallic;
+
+  uniform float u_fAlphaClip;
 };
 
 layout(std140) uniform Fog {
@@ -688,7 +695,6 @@ layout(location = 2) out vec4 vctFragNormal;
 
 #if defined(GOURAUD)
 
-  uniform float u_fMetallic;
   in vec3 v_vctDiffuse;
   in vec3 v_vctSpecular;
 
@@ -701,11 +707,6 @@ layout(location = 2) out vec4 vctFragNormal;
 #endif
 
 #if defined(PHONG) || defined(FLAT)
-
-  uniform float u_fDiffuse;
-  uniform float u_fSpecular;
-  uniform float u_fIntensity;
-  uniform float u_fMetallic;
 
   struct Light {
     vec4 vctColor;
@@ -953,6 +954,18 @@ layout(std140) uniform Camera {
   vec3 u_vctCamera;
 };
 
+layout(std140) uniform Material {
+  uniform vec4 u_vctColor;
+
+  uniform float u_fDiffuse;
+  uniform float u_fSpecular;
+  uniform float u_fIntensity;
+  uniform float u_fMetallic;
+
+  uniform float u_fAlphaClip;
+};
+
+
 layout(location = 0) in vec3 a_vctPosition;
 layout(location = 3) in vec4 a_vctColor; // TODO: think about making vertex color optional
 
@@ -974,10 +987,6 @@ out vec4 v_vctColor;
 
 #if defined(GOURAUD)
 
-  uniform float u_fDiffuse;
-  uniform float u_fSpecular;
-  uniform float u_fIntensity;
-
   out vec3 v_vctDiffuse;
   out vec3 v_vctSpecular;
 
@@ -995,7 +1004,7 @@ out vec4 v_vctColor;
     uint u_nLightsDirectional;
     uint u_nLightsPoint;
     uint u_nLightsSpot;
-    uint padding; // Add padding to align to 16 bytes
+    uint ligthsPadding; // Add padding to align to 16 bytes
     Light u_ambient;
     Light u_directional[MAX_LIGHTS_DIRECTIONAL];
     Light u_point[MAX_LIGHTS_POINT];

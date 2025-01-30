@@ -4,7 +4,6 @@ namespace FudgeCore {
   /**
    * A {@link Coat} providing a texture and additional data for texturing
    */
-  @RenderInjectorCoat.decorate
   export class CoatRemissiveTexturedNormals extends CoatRemissiveTextured {
 
     @type(Texture)

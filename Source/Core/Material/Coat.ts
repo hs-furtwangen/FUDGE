@@ -4,22 +4,44 @@ namespace FudgeCore {
    * {@link Material}s reference {@link Coat} and {@link Shader}.   
    * The method useRenderData will be injected by {@link RenderInjector} at runtime, extending the functionality of this class to deal with the renderer.
    */
-  export class Coat extends Mutable implements Serializable {
+  @RenderInjectorCoat.decorate
+  export class Coat extends Mutable implements Serializable { // TODO: refactor into composition based structure
     // public name: string = "Coat";
-    // protected renderData: { [key: string]: unknown }; // this wasn't used anywhere...
+    /**
+     * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+     */
+    public alphaClip: number = 0.01;
+
+    protected renderBuffer: unknown;
 
     /**
-     * Sets the render-parameters from this and the given material inside the given shader.
-     * Injected by {@link RenderInjectorCoat}. Used by the render system.
+     * Injected by {@link RenderInjectorCoat}.
+     * Used by the render system.
      * @internal
      */
-    public useRenderData(_shader: ShaderInterface, _cmpMaterial: ComponentMaterial): void {/* injected by RenderInjector*/ }
+    public useRenderData(): void { /* injected by RenderInjector*/ };
+    /**
+     * Injected by {@link RenderInjectorCoat}.
+     * Used by the render system.
+     * @internal
+     */
+    public updateRenderData(): void { /* injected by RenderInjector*/ }
+    /**
+     * Injected by {@link RenderInjectorCoat}.
+     * Used by the render system.
+     * @internal
+     */
+    public deleteRenderData(): void {/* injected by RenderInjector*/ }
 
     //#region Transfer
     public serialize(): Serialization {
-      return {};
+      return {
+        alphaClip: this.alphaClip
+      };
     }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      if (_serialization.alphaClip !== undefined)
+        this.alphaClip = _serialization.alphaClip;
       return this;
     }
 

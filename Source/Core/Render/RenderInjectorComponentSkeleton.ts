@@ -5,7 +5,6 @@ namespace FudgeCore {
    * @internal
    */
   export class RenderInjectorComponentSkeleton {
-
     public static decorate(_constructor: typeof ComponentSkeleton, _context: ClassDecoratorContext): void {
       Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderBuffer.name, {
         value: RenderInjectorComponentSkeleton.useRenderBuffer
@@ -22,7 +21,7 @@ namespace FudgeCore {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       if (this.renderBuffer)
-        crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCKS.SKIN.BINDING, this.renderBuffer);
+        crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.SKIN.BINDING, this.renderBuffer);
     }
 
     protected static updateRenderBuffer(this: ComponentSkeleton): void {

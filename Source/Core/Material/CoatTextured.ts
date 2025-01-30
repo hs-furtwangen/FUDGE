@@ -2,7 +2,6 @@ namespace FudgeCore {
   /**
    * A {@link Coat} providing a texture and additional data for texturing
    */
-  @RenderInjectorCoat.decorate
   export class CoatTextured extends CoatColored {
 
     @type(Texture)

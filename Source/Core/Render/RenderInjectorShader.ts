@@ -64,11 +64,24 @@ namespace FudgeCore {
         this.program = program;
         this.uniforms = detectUniforms();
 
-        bindUniformBlock(program, UNIFORM_BLOCKS.LIGHTS.NAME, UNIFORM_BLOCKS.LIGHTS.BINDING);
-        bindUniformBlock(program, UNIFORM_BLOCKS.CAMERA.NAME, UNIFORM_BLOCKS.CAMERA.BINDING);
-        bindUniformBlock(program, UNIFORM_BLOCKS.SKIN.NAME, UNIFORM_BLOCKS.SKIN.BINDING);
-        bindUniformBlock(program, UNIFORM_BLOCKS.FOG.NAME, UNIFORM_BLOCKS.FOG.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.LIGHTS.NAME, UNIFORM_BLOCK.LIGHTS.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.CAMERA.NAME, UNIFORM_BLOCK.CAMERA.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.MATERIAL.NAME, UNIFORM_BLOCK.MATERIAL.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.SKIN.NAME, UNIFORM_BLOCK.SKIN.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.FOG.NAME, UNIFORM_BLOCK.FOG.BINDING);
 
+        crc3.useProgram(this.program);
+        let uniform: WebGLUniformLocation = this.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM];
+        if (uniform)
+          crc3.uniform1i(uniform, TEXTURE_LOCATION.COLOR.INDEX);
+        
+        uniform = this.uniforms[TEXTURE_LOCATION.NORMAL.UNIFORM];
+        if (uniform)
+          crc3.uniform1i(uniform, TEXTURE_LOCATION.NORMAL.INDEX);
+
+        uniform = this.uniforms[TEXTURE_LOCATION.TOON.UNIFORM];
+        if (uniform)
+          crc3.uniform1i(uniform, TEXTURE_LOCATION.TOON.INDEX);
       } catch (_error) {
         Debug.error(_error);
         debugger;
@@ -110,6 +123,11 @@ namespace FudgeCore {
       function bindUniformBlock(_program: WebGLProgram, _uniformBlockName: string, _uniformBlockBinding: GLuint): void {
         let blockIndex: number = crc3.getUniformBlockIndex(_program, _uniformBlockName);
         if (blockIndex == WebGL2RenderingContext.INVALID_INDEX)
+          return;
+
+        let referencedByVertexShader: boolean = crc3.getActiveUniformBlockParameter(_program, blockIndex, WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER);
+        let referencedByFragmentShader: boolean = crc3.getActiveUniformBlockParameter(_program, blockIndex, WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER);
+        if (!referencedByVertexShader && !referencedByFragmentShader)
           return;
 
         crc3.uniformBlockBinding(_program, blockIndex, _uniformBlockBinding);
