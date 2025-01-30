@@ -258,7 +258,7 @@ namespace FudgeCore {
      */
     public static drawLines(_vertices: Vector3[], _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const shader: typeof Shader = ShaderGizmo;
+      const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
       const lineData: Float32Array = new Float32Array(_vertices.length * 3);
@@ -279,7 +279,7 @@ namespace FudgeCore {
      */
     public static drawWireMesh(_mesh: Mesh, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const shader: typeof Shader = ShaderGizmo;
+      const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
       const wireBuffers: RenderBuffers = Gizmos.#mapMeshToWireBuffers.get(_mesh) ?? {};
