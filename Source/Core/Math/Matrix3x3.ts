@@ -387,6 +387,13 @@ namespace FudgeCore {
       return new Float32Array(this.data);
     }
 
+    /**
+     * Returns the original array of the elements of this matrix.
+     */
+    public getData(): Float32Array {
+      return this.data;
+    }
+
     public serialize(): Serialization {
       // this.getMutator();
       let serialization: Serialization = {

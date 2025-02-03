@@ -54,7 +54,7 @@ namespace FudgeCore {
     /**
      * Computes and returns the product of two passed matrices.
      */
-    @PerformanceMonitor.measure("Matrix4x4.PRODUCT")
+    // @PerformanceMonitor.measure("Matrix4x4.PRODUCT")
     public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4 {
       let a: Float32Array = _mtxLeft.data;
       let b: Float32Array = _mtxRight.data;
@@ -980,6 +980,13 @@ namespace FudgeCore {
     public get(): Float32Array {
       // TODO: optimization, it shouldn't always return a copy, since this bloats memory
       return new Float32Array(this.data);
+    }
+
+    /**
+     * Returns the original array of the elements of this matrix.
+     */
+    public getData(): Float32Array {
+      return this.data;
     }
 
     /**
