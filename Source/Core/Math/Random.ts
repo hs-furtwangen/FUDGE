@@ -121,6 +121,13 @@ namespace FudgeCore {
     public getVector2(_corner0: Vector2, _corner1: Vector2): Vector2 {
       return new Vector2(this.getRange(_corner0.x, _corner1.x), this.getRange(_corner0.y, _corner1.y));
     }
+
+    /**
+     * Returns a color with its r, g, b values set to random numbers in the range of [0, 1[.
+     */
+    public getColor(): Color {
+      return new Color(this.getNorm(), this.getNorm(), this.getNorm(), 1);
+    }
   }
 
   /**
