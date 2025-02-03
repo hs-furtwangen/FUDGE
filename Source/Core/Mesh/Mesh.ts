@@ -63,7 +63,7 @@ namespace FudgeCore {
      * Used by the render system.
      * @internal
      */ // TODO: rename this
-    public useRenderBuffers(_shader: ShaderInterface, _mtxMeshToWorld: Matrix4x4, _id?: number): RenderBuffers { return null; /* injected by RenderInjector*/ }
+    public useRenderBuffers(): RenderBuffers { return null; /* injected by RenderInjector*/ }
     /**
      * Injected by {@link RenderInjectorMesh}.
      * Used by the render system.

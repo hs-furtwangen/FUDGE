@@ -67,6 +67,7 @@ namespace FudgeCore {
         bindUniformBlock(program, UNIFORM_BLOCK.LIGHTS.NAME, UNIFORM_BLOCK.LIGHTS.BINDING);
         bindUniformBlock(program, UNIFORM_BLOCK.CAMERA.NAME, UNIFORM_BLOCK.CAMERA.BINDING);
         bindUniformBlock(program, UNIFORM_BLOCK.MATERIAL.NAME, UNIFORM_BLOCK.MATERIAL.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.NODE.NAME, UNIFORM_BLOCK.NODE.BINDING);
         bindUniformBlock(program, UNIFORM_BLOCK.SKIN.NAME, UNIFORM_BLOCK.SKIN.BINDING);
         bindUniformBlock(program, UNIFORM_BLOCK.FOG.NAME, UNIFORM_BLOCK.FOG.BINDING);
 

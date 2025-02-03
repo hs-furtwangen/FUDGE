@@ -648,6 +648,15 @@ void main() {
 precision mediump float;
 precision highp int;
 
+// uniform vec4 u_vctColorPrimary; // component material color
+
+
+layout(std140) uniform Node {
+  uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+  uniform mat3 u_mtxPivot; // texture pivot matrix
+  uniform vec4 u_vctColorPrimary; // component material color
+};
+
 layout(std140) uniform Camera {
   mat4 u_mtxWorldToCamera; // u_mtxView
   mat4 u_mtxProjection; 
@@ -873,7 +882,7 @@ void main() {
 
   #endif
 
-  vec4 vctColor = u_vctColor * v_vctColor;
+  vec4 vctColor = u_vctColor * u_vctColorPrimary * v_vctColor;
 
   #if defined(GOURAUD)
 
@@ -945,7 +954,14 @@ void main() {
 precision mediump float;
 precision highp int;
 
-uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+// uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+// uniform vec4 u_vctColorPrimary; // component material color
+
+layout(std140) uniform Node {
+  uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+  uniform mat3 u_mtxPivot; // texture pivot matrix
+  uniform vec4 u_vctColorPrimary; // component material color
+};
 
 layout(std140) uniform Camera {
   mat4 u_mtxWorldToCamera; // u_mtxView
@@ -1038,8 +1054,7 @@ out vec4 v_vctColor;
 
 #if defined(TEXTURE) || defined(NORMALMAP)
 
-  uniform mat3 u_mtxPivot;
-
+  // uniform mat3 u_mtxPivot; // texture pivot matrix
   layout(location = 2) in vec2 a_vctTexture;
   out vec2 v_vctTexture;
 

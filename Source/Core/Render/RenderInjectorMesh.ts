@@ -81,22 +81,8 @@ namespace FudgeCore {
       }
     }
 
-    // TODO: rename this!
-    protected static useRenderBuffers(this: Mesh, _shader: typeof Shader, _mtxMeshToWorld: Matrix4x4, _id?: number): RenderBuffers {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-
-      // PerformanceMonitor.startMeasure("buffer u_mtxMeshToWorld");
-      let uniform: WebGLUniformLocation; // TODO: move this somewhere else
-      uniform = _shader.uniforms["u_mtxMeshToWorld"];
-      if (uniform)
-        crc3.uniformMatrix4fv(uniform, false, _mtxMeshToWorld.get());
-      // PerformanceMonitor.endMeasure("buffer u_mtxMeshToWorld");
-
-      // feed in an id of the node if shader accepts u_id. Used for picking // TODO: move this somewhere else
-      uniform = _shader.uniforms["u_id"];
-      if (uniform)
-        crc3.uniform1i(uniform, _id);
-
+    // TODO: remove this this!
+    protected static useRenderBuffers(this: Mesh): RenderBuffers {
       return this.getRenderBuffers();
     }
 

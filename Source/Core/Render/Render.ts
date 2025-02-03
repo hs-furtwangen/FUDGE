@@ -38,6 +38,7 @@ namespace FudgeCore {
       Render.coats.clear();
       Render.modificationsProcessed.clear();
       Render.lights.forEach(_array => _array.reset());
+      Render.uboNodesManager.reset();
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
 
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
@@ -51,6 +52,7 @@ namespace FudgeCore {
       }
       for (const coat of Render.coats)
         coat.updateRenderData();
+      Render.uboNodesManager.updateRenderbuffer();
       Render.bufferLights(Render.lights);
     }
 
@@ -141,6 +143,8 @@ namespace FudgeCore {
           Render.modificationsProcessed.add(cmpMesh.mtxPivot);
           Render.modificationsProcessed.add(_branch.mtxWorld);
         }
+
+        Render.uboNodesManager.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, _branch.getComponent(ComponentFaceCamera));
 
         _branch.radius = cmpMesh.radius;
         if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha

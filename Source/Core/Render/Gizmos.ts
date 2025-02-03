@@ -392,7 +392,10 @@ namespace FudgeCore {
       shader.useProgram();
 
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const renderBuffers: RenderBuffers = _mesh.useRenderBuffers(shader, _mtxWorld, Gizmos.pickId);
+      
+      RenderWebGL.useNodeUniforms(shader, _mtxWorld, null, null, Gizmos.pickId);
+      
+      const renderBuffers: RenderBuffers = _mesh.useRenderBuffers();
       crc3.bindVertexArray(renderBuffers.vao);
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
       crc3.bindVertexArray(null);
@@ -430,7 +433,9 @@ namespace FudgeCore {
       _texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
       crc3.uniform1i(shader.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM], TEXTURE_LOCATION.COLOR.INDEX);
 
-      const renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers(shader, mtxWorld, Gizmos.pickId);
+      RenderWebGL.useNodeUniforms(shader, mtxWorld, null, null, Gizmos.pickId);
+      
+      const renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers();
       crc3.bindVertexArray(renderBuffers.vao);
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
       crc3.bindVertexArray(null);

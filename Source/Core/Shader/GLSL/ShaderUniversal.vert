@@ -6,7 +6,11 @@
 precision mediump float;
 precision highp int;
 
-uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+layout(std140) uniform Node {
+  uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+  uniform mat3 u_mtxPivot; // texture pivot matrix
+  uniform vec4 u_vctColorPrimary; // component material color
+};
 
 layout(std140) uniform Camera {
   mat4 u_mtxWorldToCamera; // u_mtxView
@@ -98,8 +102,6 @@ out vec4 v_vctColor;
 #endif
 
 #if defined(TEXTURE) || defined(NORMALMAP)
-
-  uniform mat3 u_mtxPivot;
 
   layout(location = 2) in vec2 a_vctTexture;
   out vec2 v_vctTexture;
