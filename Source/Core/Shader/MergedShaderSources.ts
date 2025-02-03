@@ -648,9 +648,6 @@ void main() {
 precision mediump float;
 precision highp int;
 
-// uniform vec4 u_vctColorPrimary; // component material color
-
-
 layout(std140) uniform Node {
   uniform mat4 u_mtxMeshToWorld; // u_mtxModel
   uniform mat3 u_mtxPivot; // texture pivot matrix
@@ -954,13 +951,13 @@ void main() {
 precision mediump float;
 precision highp int;
 
-// uniform mat4 u_mtxMeshToWorld; // u_mtxModel
-// uniform vec4 u_vctColorPrimary; // component material color
-
 layout(std140) uniform Node {
   uniform mat4 u_mtxMeshToWorld; // u_mtxModel
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
+
+  // uniform bool u_bBillboardActive;
+  // uniform bool u_bBillboardRestrict;
 };
 
 layout(std140) uniform Camera {
@@ -980,7 +977,6 @@ layout(std140) uniform Material {
 
   uniform float u_fAlphaClip;
 };
-
 
 layout(location = 0) in vec3 a_vctPosition;
 layout(location = 3) in vec4 a_vctColor; // TODO: think about making vertex color optional
@@ -1054,7 +1050,6 @@ out vec4 v_vctColor;
 
 #if defined(TEXTURE) || defined(NORMALMAP)
 
-  // uniform mat3 u_mtxPivot; // texture pivot matrix
   layout(location = 2) in vec2 a_vctTexture;
   out vec2 v_vctTexture;
 
@@ -1098,16 +1093,6 @@ out vec4 v_vctColor;
   uniform bool u_bParticleSystemFaceCamera;
   uniform bool u_bParticleSystemRestrict;
 
-  mat4 lookAt(vec3 _vctTranslation, vec3 _vctTarget) {
-    vec3 vctUp = vec3(0.0, 1.0, 0.0);
-    vec3 zAxis = normalize(_vctTarget - _vctTranslation);
-    vec3 xAxis = normalize(cross(vctUp, zAxis));
-    vec3 yAxis = u_bParticleSystemRestrict ? vctUp : normalize(cross(zAxis, xAxis));
-    zAxis = u_bParticleSystemRestrict ? normalize(cross(xAxis, vctUp)) : zAxis;
-
-    return mat4(xAxis.x, xAxis.y, xAxis.z, 0.0, yAxis.x, yAxis.y, yAxis.z, 0.0, zAxis.x, zAxis.y, zAxis.z, 0.0, _vctTranslation.x, _vctTranslation.y, _vctTranslation.z, 1.0);
-  }
-
   float fetchRandomNumber(int _iOffset, int _iParticleSystemRandomNumbersSize, int _iParticleSystemRandomNumbersLength) {
     _iOffset = gl_InstanceID + _iOffset % _iParticleSystemRandomNumbersLength;
     return texelFetch(u_particleSystemRandomNumbers, ivec2(_iOffset % _iParticleSystemRandomNumbersSize, _iOffset / _iParticleSystemRandomNumbersSize), 0).r;
@@ -1115,17 +1100,37 @@ out vec4 v_vctColor;
 
 #endif
 
+mat4 lookAtCamera(mat4 _mtxWorld, bool _bRestrict) {
+  vec3 vctUp = vec3(0.0, 1.0, 0.0);
+
+  vec3 vctPosition = _mtxWorld[3].xyz;
+
+  // vec3 zAxis = normalize(u_vctCamera - vctPosition); // look at camera position
+  vec3 zAxis = normalize(-vec3(u_mtxWorldToCamera[0].z, u_mtxWorldToCamera[1].z, u_mtxWorldToCamera[2].z)); // look in camera direction
+
+  vec3 xAxis = normalize(cross(vctUp, zAxis));
+  vec3 yAxis = _bRestrict ? vctUp : normalize(cross(zAxis, xAxis));
+  zAxis = _bRestrict ? normalize(cross(xAxis, vctUp)) : zAxis;
+
+  vec3 vctScale = vec3(length(_mtxWorld[0].xyz), length(_mtxWorld[1].xyz), length(_mtxWorld[2].xyz));
+
+  mat4 billboardMatrix = mat4(
+    vec4(xAxis * vctScale.x, 0.0),
+    vec4(yAxis * vctScale.y, 0.0),
+    vec4(zAxis * vctScale.z, 0.0),
+    vec4(vctPosition, 1.0)
+  );
+
+  return billboardMatrix;
+}
+
 void main() {
 
   vec4 vctPosition = vec4(a_vctPosition, 1.0);
   mat4 mtxMeshToWorld = u_mtxMeshToWorld;
-  mat4 mtxMeshToView = u_mtxWorldToView * u_mtxMeshToWorld;
 
-  #if defined(FLAT) || defined(GOURAUD) || defined(PHONG) || defined(MATCAP) // only these work with particle and skinning
-
-    mat4 mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
-
-  #endif
+  // if (u_bBillboardActive) 
+  //   mtxMeshToWorld = lookAtCamera(mtxMeshToWorld, u_bBillboardRestrict);
 
   #if defined(PARTICLE)
   
@@ -1136,15 +1141,8 @@ void main() {
     /*$mtxLocal*/
     /*$mtxWorld*/
     mtxMeshToWorld = /*$mtxWorld*/ mtxMeshToWorld /*$mtxLocal*/;
-    if(u_bParticleSystemFaceCamera) mtxMeshToWorld = lookAt(vec3(mtxMeshToWorld[3][0], mtxMeshToWorld[3][1], mtxMeshToWorld[3][2]), u_vctCamera) *
-      mat4(length(vec3(mtxMeshToWorld[0][0], mtxMeshToWorld[1][0], mtxMeshToWorld[2][0])), 0.0, 0.0, 0.0, 0.0, length(vec3(mtxMeshToWorld[0][1], mtxMeshToWorld[1][1], mtxMeshToWorld[2][1])), 0.0, 0.0, 0.0, 0.0, length(vec3(mtxMeshToWorld[0][2], mtxMeshToWorld[1][2], mtxMeshToWorld[2][2])), 0.0, 0.0, 0.0, 0.0, 1.0);
-    mtxMeshToView = u_mtxWorldToView * mtxMeshToWorld;
-
-    #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
-
-      mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
-
-    #endif
+    if(u_bParticleSystemFaceCamera) 
+      mtxMeshToWorld = lookAtCamera(mtxMeshToWorld, u_bParticleSystemRestrict);
 
   #endif
 
@@ -1155,13 +1153,13 @@ void main() {
       a_vctWeights.z * u_mtxBones[a_vctBones.z] +
       a_vctWeights.w * u_mtxBones[a_vctBones.w];
 
-    mtxMeshToView = u_mtxWorldToView * mtxMeshToWorld;
+  #endif
 
-    #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
+  mat4 mtxMeshToView = u_mtxWorldToView * mtxMeshToWorld;
 
-      mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
+  #if defined(FLAT) || defined(GOURAUD) || defined(PHONG) || defined(MATCAP) // only these work with particle and skinning
 
-    #endif
+    mat4 mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
 
   #endif
 
