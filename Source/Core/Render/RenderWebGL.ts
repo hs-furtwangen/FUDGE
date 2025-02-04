@@ -1,4 +1,3 @@
-///<reference path="RenderWebGLUniformBufferManager.ts"/>
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorCoat.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
@@ -91,7 +90,6 @@ namespace FudgeCore {
    */
   export abstract class RenderWebGL extends EventTargetStatic {
     protected static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
-    protected static uboNodesManager: UniformBufferManagerNode;
 
     private static rectRender: Rectangle = RenderWebGL.getCanvasRect();
 
@@ -150,12 +148,6 @@ namespace FudgeCore {
       RenderWebGL.initializeCamera();
       RenderWebGL.initializeLights();
       RenderWebGL.initializeFog();
-
-      // TODO: make this a setting
-      const maxNodes: number = 2000;
-      const uboNodeBlockSize: number = 32 * 4; // 32 floats, 4 bytes each
-
-      RenderWebGL.uboNodesManager = new UniformBufferManagerNode(RenderWebGL.crc3, UNIFORM_BLOCK.NODE.BINDING, uboNodeBlockSize, maxNodes);
 
       return crc3;
     }
@@ -564,7 +556,8 @@ namespace FudgeCore {
         let shader: ShaderInterface = coat instanceof CoatTextured ? ShaderPickTextured : ShaderPick;
 
         shader.useProgram();
-        coat.useRenderData();
+        UniformBufferManagerMaterial.instance.useRenderData(coat);
+        // coat.useRenderData();
 
         let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
         RenderWebGL.useNodeUniforms(shader, mtxMeshToWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, picks.length);
@@ -870,7 +863,7 @@ namespace FudgeCore {
     /**
      * Draw a mesh buffer using the given infos and the complete projection matrix
     */
-    @PerformanceMonitor.measure("Render.drawNode")
+    // @PerformanceMonitor.measure("Render.drawNode")
     protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
       PerformanceMonitor.startMeasure("Render.drawNode get components");
       let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
@@ -890,7 +883,8 @@ namespace FudgeCore {
       PerformanceMonitor.endMeasure("Render.drawNode useProgram");
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
-      coat.useRenderData();
+      UniformBufferManagerMaterial.instance.useRenderData(coat);
+
       PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
 
       if (cmpMesh.skeleton?.isActive)
@@ -906,16 +900,16 @@ namespace FudgeCore {
       if (cmpFaceCamera?.isActive && !cmpParticleSystem?.isActive)
         mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
-      RenderWebGL.uboNodesManager.useRenderData(_node, mtxWorldOverride);
+      UniformBufferManagerNode.instance.useRenderData(_node, mtxWorldOverride);
       PerformanceMonitor.endMeasure("Render.drawNode other");
 
-      PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
-      const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers();
+      PerformanceMonitor.startMeasure("Render.drawNode getRenderBuffers");
+      const renderBuffers: RenderBuffers = cmpMesh.mesh.getRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
+      PerformanceMonitor.endMeasure("Render.drawNode getRenderBuffers");
 
-      // PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
-      RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
-      // PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
-      PerformanceMonitor.endMeasure("Render.drawNode useRenderBuffers");
+      PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
+      RenderWebGL.crc3.bindVertexArray(renderBuffers.vao); // TODO: find out why this gets slower the more different meshes are drawn???
+      PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
 
       // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
@@ -962,6 +956,163 @@ namespace FudgeCore {
       crc3.activeTexture(_unit);
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, _texture);
       crc3.uniform1i(_shader.uniforms[_uniform], _unit - WebGL2RenderingContext.TEXTURE0);
+    }
+  }
+
+  export abstract class UniformBufferManager<T extends WeakKey> {
+    protected offsets: WeakMap<T, number> = new WeakMap<T, number>(); // Maps the nodes to their respective byte offset in the uboNodes buffer
+
+    /** The uniform block size (inside the shader) in bytes, may include layout std140 padding */
+    protected blockSize: number;
+    protected blockBinding: number;
+
+    protected buffer: WebGLBuffer;
+    /** The offset in bytes between the beginning of consecutive object block data, set to a multiple of {@link WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT} */
+    protected spaceBuffer: number;
+
+    protected data: Float32Array;
+    /** The offset in elements between the beginning of consecutive object block data */
+    protected spaceData: number;
+
+    protected count: number = 0;
+
+    protected crc3: WebGL2RenderingContext;
+
+    public constructor(_crc3: WebGL2RenderingContext, _blockBinding: number, _blockSize: number, _maxObjects: number) {
+      this.crc3 = _crc3;
+      this.blockSize = _blockSize;
+      this.blockBinding = _blockBinding;
+
+      const alignment: number = _crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+      this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment; // round to multiple of alignment
+      this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
+      this.data = new Float32Array(this.spaceData * _maxObjects);
+
+      this.buffer = _crc3.createBuffer();
+      _crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
+      _crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
+
+    public grow(): void {
+      const data: Float32Array = new Float32Array(this.data.length * 1.5);
+      data.set(this.data);
+      this.data = data;
+
+      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
+      this.crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
+
+    public reset(): void {
+      this.count = 0;
+    }
+
+    public updateRenderbuffer(): void {
+      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
+      this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.data, 0, this.count * this.spaceData);
+    }
+
+    public useRenderData(_object: T): void {
+      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.offsets.get(_object), this.blockSize);
+    }
+
+    public abstract updateRenderData(..._args: General[]): void;
+  }
+
+  export class UniformBufferManagerNode extends UniformBufferManager<Node> {
+    public static readonly instance: UniformBufferManagerNode = new UniformBufferManagerNode();
+
+    private constructor() {
+      const maxNodes: number = 256;
+      const blockSize: number = 32 * 4; // 32 floats, 4 bytes each
+      super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
+    }
+
+    public useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void {
+      let offset: number = this.offsets.get(_node);
+      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, offset, this.blockSize);
+
+      if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we have to override the world matrix here
+        this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.get());
+    }
+
+    public updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color): void {
+      const offset: number = this.count * this.spaceData;
+      if (offset + this.spaceData > this.data.length)
+        this.grow();
+      
+      const data: Float32Array = this.data;
+      // mtx world
+      data.set(_mtxWorld.getData(), offset);
+
+      // mtx pivot
+      let dataPivot: Float32Array = _mtxPivot.get();
+      data[offset + 16] = dataPivot[0];
+      data[offset + 17] = dataPivot[1];
+      data[offset + 18] = dataPivot[2];
+      // data[offsetPivot + 19] = padding
+      data[offset + 20] = dataPivot[3];
+      data[offset + 21] = dataPivot[4];
+      data[offset + 22] = dataPivot[5];
+      // data[offsetPivot + 23] = padding
+      data[offset + 24] = dataPivot[6];
+      data[offset + 25] = dataPivot[7];
+      data[offset + 26] = dataPivot[8];
+      // data[offsetPivot + 27] = padding
+
+      // color
+      data[offset + 28] = _color.r;
+      data[offset + 29] = _color.g;
+      data[offset + 30] = _color.b;
+      data[offset + 31] = _color.a;
+
+      // if (_cmpFaceCamera) {
+      //   data[offset + 32] = _cmpFaceCamera.isActive ? 1 : 0;
+      //   data[offset + 33] = _cmpFaceCamera.restrict ? 1 : 0;
+      // }
+
+      this.offsets.set(_node, this.count * this.spaceBuffer);
+      this.count++;
+    }
+  }
+
+  export class UniformBufferManagerMaterial extends UniformBufferManager<Coat> {
+    public static readonly instance: UniformBufferManagerMaterial = new UniformBufferManagerMaterial();
+
+    private constructor() {
+      const blockSize: number = (4 + 1 + 1 + 1 + 1 + 1) * 4; // vct4 color, float diffuse, float specular, float intensity, float metallic, float alphaClip
+      super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, 100);
+    }
+
+    public updateRenderData(_coat: Coat): void {
+      const offset: number = this.count * this.spaceData;
+      if (offset + this.spaceData > this.data.length)
+        this.grow();
+
+      const data: Float32Array = this.data;
+
+      if (_coat instanceof CoatColored) 
+        data.set(_coat.color.get(), offset);
+      
+      if (_coat instanceof CoatRemissive || _coat instanceof CoatRemissiveTextured) {
+        data[offset + 4] = _coat.diffuse;
+        data[offset + 5] = _coat.specular;
+        data[offset + 6] = _coat.intensity;
+        data[offset + 7] = _coat.metallic;
+      }
+
+      data[offset + 8] = _coat.alphaClip;
+
+      if (_coat instanceof CoatTextured) 
+        _coat.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+      
+      if (_coat instanceof CoatRemissiveTexturedNormals) 
+        _coat.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+      
+      if (_coat instanceof CoatToon) 
+        _coat.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+
+      this.offsets.set(_coat, this.count * this.spaceBuffer);
+      this.count++;
     }
   }
 }

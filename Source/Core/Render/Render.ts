@@ -38,7 +38,8 @@ namespace FudgeCore {
       Render.coats.clear();
       Render.modificationsProcessed.clear();
       Render.lights.forEach(_array => _array.reset());
-      Render.uboNodesManager.reset();
+      UniformBufferManagerNode.instance.reset();
+      UniformBufferManagerMaterial.instance.reset();
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
 
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
@@ -52,7 +53,9 @@ namespace FudgeCore {
       }
       for (const coat of Render.coats)
         coat.updateRenderData();
-      Render.uboNodesManager.updateRenderbuffer();
+
+      UniformBufferManagerNode.instance.updateRenderbuffer();
+      UniformBufferManagerMaterial.instance.updateRenderbuffer();
       Render.bufferLights(Render.lights);
     }
 
@@ -105,9 +108,9 @@ namespace FudgeCore {
       let cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
       if (cmpTransform && cmpTransform.isActive) {
         if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
-          PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxLocal");
+          // PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxLocal");
           let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
-          PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxLocal");
+          // PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxLocal");
           _branch.mtxWorld.copy(mtxWorldBranch);
           Recycler.store(mtxWorldBranch);
           Render.modificationsProcessed.add(cmpTransform.mtxLocal);
@@ -135,16 +138,16 @@ namespace FudgeCore {
 
       if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
         if (cmpMesh.mtxPivot.modified || _branch.mtxWorld.modified) {
-          PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxPivot");
+          // PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxPivot");
           let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
-          PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
+          // PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
           cmpMesh.mtxWorld.copy(mtxWorldMesh);
           Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
           Render.modificationsProcessed.add(cmpMesh.mtxPivot);
           Render.modificationsProcessed.add(_branch.mtxWorld);
         }
 
-        Render.uboNodesManager.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary);
+        UniformBufferManagerNode.instance.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary);
 
         _branch.radius = cmpMesh.radius;
         if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
