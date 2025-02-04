@@ -5,17 +5,27 @@ namespace FudgeCore {
    */
   export class ComponentMesh extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMesh);
-    public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
     @type(Mesh)
     public mesh: Mesh;
     public skeleton: ComponentSkeleton;
 
+    #mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
+
     public constructor(_mesh?: Mesh, _skeleton?: ComponentSkeleton) {
       super();
       this.mesh = _mesh;
       this.skeleton = _skeleton;
+    }
+
+    public get mtxPivot(): Matrix4x4 {
+      return this.#mtxPivot;
+    }
+
+    public set mtxPivot(_mtx: Matrix4x4) {
+      this.#mtxPivot = _mtx;
+      this.#mtxPivot.modified = true;
     }
 
     public get radius(): number {
