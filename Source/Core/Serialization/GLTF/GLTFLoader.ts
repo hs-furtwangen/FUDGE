@@ -1064,6 +1064,7 @@ namespace FudgeCore {
       const byteStride: number = _bufferView.byteStride;
 
       const arrayConstructor: TypedArrayConstructor = toArrayConstructor[_componentType];
+      //@ts-ignore because the TypedArrayConstructor type is not assignable to the TypedArray type
       const array: TypedArray = new arrayConstructor(buffer, byteOffset, byteLength / arrayConstructor.BYTES_PER_ELEMENT);
 
       if (byteStride != undefined) {

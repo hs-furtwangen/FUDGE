@@ -9,7 +9,7 @@ namespace FBX {
     public offset: number;
     public readonly view: DataView;
 
-    public constructor(_buffer: ArrayBuffer) {
+    public constructor(_buffer: ArrayBufferLike) {
       this.view = new DataView(_buffer);
       this.offset = 0;
     }
