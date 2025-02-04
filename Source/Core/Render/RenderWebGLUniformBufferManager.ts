@@ -34,6 +34,15 @@ namespace FudgeCore {
       _crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
     }
 
+    public grow(): void {
+      const data: Float32Array = new Float32Array(this.data.length * 1.5);
+      data.set(this.data);
+      this.data = data;
+
+      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
+      this.crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
+
     public reset(): void {
       this.count = 0;
     }
@@ -43,7 +52,10 @@ namespace FudgeCore {
       this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.data, 0, this.count * this.spaceData);
     }
 
-    public abstract useRenderData(..._args: General[]): void;
+    public useRenderData(_object: T): void {
+      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.offsets.get(_object), this.blockSize);
+    }
+
     public abstract updateRenderData(..._args: General[]): void;
   }
 
@@ -57,9 +69,11 @@ namespace FudgeCore {
     }
 
     public updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color): void {
-      const data: Float32Array = this.data;
       const offset: number = this.count * this.spaceData;
-
+      if (offset + this.spaceData > this.data.length)
+        this.grow();
+      
+      const data: Float32Array = this.data;
       // mtx world
       data.set(_mtxWorld.getData(), offset);
 
@@ -95,4 +109,17 @@ namespace FudgeCore {
       this.count++;
     }
   }
+
+  // export class UniformBufferManagerMaterial extends UniformBufferManager<Coat> {
+
+
+  //   public updateRenderData(_coat: Coat): void {
+  //     const data: Float32Array = this.data;
+  //     const offset: number = this.count * this.spaceData;
+
+
+  //     this.offsets.set(_coat, this.count * this.spaceBuffer);
+  //     this.count++;
+  //   }
+  // }
 }
