@@ -144,7 +144,7 @@ namespace FudgeCore {
           Render.modificationsProcessed.add(_branch.mtxWorld);
         }
 
-        Render.uboNodesManager.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, _branch.getComponent(ComponentFaceCamera));
+        Render.uboNodesManager.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary);
 
         _branch.radius = cmpMesh.radius;
         if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha

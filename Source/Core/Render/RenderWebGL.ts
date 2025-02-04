@@ -1,3 +1,4 @@
+///<reference path="RenderWebGLUniformBufferManager.ts"/>
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorCoat.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
@@ -84,99 +85,13 @@ namespace FudgeCore {
     }
   } as const;
 
-
-  export class UniformBufferManager<T extends WeakKey> {
-    private offsets: WeakMap<T, number> = new WeakMap<T, number>(); // Maps the nodes to their respective byte offset in the uboNodes buffer
-
-    /** The uniform block size (inside the shader) in bytes, may include layout std140 padding */
-    private blockSize: number;
-
-    private buffer: WebGLBuffer;
-    /** The offset in bytes between the beginning of consecutive object block data, set to a multiple of {@link WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT} */
-    private spaceBuffer: number;
-
-    private data: Float32Array;
-    /** The offset in elements between the beginning of consecutive object block data */
-    private spaceData: number;
-
-    private count: number = 0;
-
-    private crc3: WebGL2RenderingContext;
-
-    public constructor(_crc3: WebGL2RenderingContext, _blockSize: number, _maxObjects: number) {
-      this.crc3 = _crc3;
-      const alignment: number = _crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
-      this.blockSize = _blockSize; // 128 bytes
-      this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment; // round to multiple of alignment
-      this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
-      this.data = new Float32Array(this.spaceData * _maxObjects);
-
-      this.buffer = _crc3.createBuffer();
-      _crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      _crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
-    }
-
-    public reset(): void {
-      this.count = 0;
-    }
-
-    public useRenderbuffer(_object: T, _mtxWorldOverride?: Matrix4x4): void {
-      let offset: number = this.offsets.get(_object);
-      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.NODE.BINDING, this.buffer, offset, this.blockSize);
-
-      if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we have to override the world matrix here
-        this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.get());
-    }
-
-    public updateRenderbuffer(): void {
-      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.data, 0, this.count * this.spaceData);
-    }
-
-    public updateRenderData(_object: T, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _cmpFaceCamera?: ComponentFaceCamera): void {
-      const data: Float32Array = this.data;
-      const offset: number = this.count * this.spaceData;
-
-      data.set(_mtxWorld.getData(), offset);
-
-      let dataPivot: Float32Array = _mtxPivot.get();
-      let offsetPivot: number = offset + 16;
-      // Column 1
-      data[offsetPivot] = dataPivot[0];
-      data[offsetPivot + 1] = dataPivot[1];
-      data[offsetPivot + 2] = dataPivot[2];
-      // Column 2
-      data[offsetPivot + 4] = dataPivot[3];
-      data[offsetPivot + 5] = dataPivot[4];
-      data[offsetPivot + 6] = dataPivot[5];
-      // Column 3
-      data[offsetPivot + 8] = dataPivot[6];
-      data[offsetPivot + 9] = dataPivot[7];
-      data[offsetPivot + 10] = dataPivot[8];
-
-      let offsetColor: number = offset + 28;
-      data[offsetColor] = _color.r;
-      data[offsetColor + 1] = _color.g;
-      data[offsetColor + 2] = _color.b;
-      data[offsetColor + 3] = _color.a;
-
-      if (_cmpFaceCamera) {
-        data[offset + 32] = _cmpFaceCamera.isActive ? 1 : 0;
-        data[offset + 33] = _cmpFaceCamera.restrict ? 1 : 0;
-      }
-
-      this.offsets.set(_object, this.count * this.spaceBuffer);
-      this.count++;
-    }
-  }
-
   /**
    * Base class for RenderManager, handling the connection to the rendering system, in this case WebGL.
    * Methods and attributes of this class should not be called directly, only through {@link Render}
    */
   export abstract class RenderWebGL extends EventTargetStatic {
     protected static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
-    protected static uboNodesManager: UniformBufferManager<Node>;
+    protected static uboNodesManager: UniformBufferManagerNode;
 
     private static rectRender: Rectangle = RenderWebGL.getCanvasRect();
 
@@ -236,7 +151,11 @@ namespace FudgeCore {
       RenderWebGL.initializeLights();
       RenderWebGL.initializeFog();
 
-      RenderWebGL.uboNodesManager = new UniformBufferManager(RenderWebGL.crc3, 34 * 4, 2000);
+      // TODO: make this a setting
+      const maxNodes: number = 2000;
+      const uboNodeBlockSize: number = 32 * 4; // 32 floats, 4 bytes each
+
+      RenderWebGL.uboNodesManager = new UniformBufferManagerNode(RenderWebGL.crc3, UNIFORM_BLOCK.NODE.BINDING, uboNodeBlockSize, maxNodes);
 
       return crc3;
     }
@@ -987,7 +906,7 @@ namespace FudgeCore {
       if (cmpFaceCamera?.isActive && !cmpParticleSystem?.isActive)
         mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
-      RenderWebGL.uboNodesManager.useRenderbuffer(_node, mtxWorldOverride);
+      RenderWebGL.uboNodesManager.useRenderData(_node, mtxWorldOverride);
       PerformanceMonitor.endMeasure("Render.drawNode other");
 
       PerformanceMonitor.startMeasure("Render.drawNode useRenderBuffers");
