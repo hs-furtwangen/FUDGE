@@ -52,7 +52,7 @@ namespace FudgeCore {
         cmpSkeleton.updateRenderBuffer();
       }
       for (const coat of Render.coats)
-        coat.updateRenderData();
+        UniformBufferManagerMaterial.instance.updateRenderData(coat);
 
       UniformBufferManagerNode.instance.updateRenderbuffer();
       UniformBufferManagerMaterial.instance.updateRenderbuffer();

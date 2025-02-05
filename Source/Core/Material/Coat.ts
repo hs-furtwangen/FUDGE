@@ -4,34 +4,12 @@ namespace FudgeCore {
    * {@link Material}s reference {@link Coat} and {@link Shader}.   
    * The method useRenderData will be injected by {@link RenderInjector} at runtime, extending the functionality of this class to deal with the renderer.
    */
-  @RenderInjectorCoat.decorate
   export class Coat extends Mutable implements Serializable { // TODO: refactor into composition based structure
     // public name: string = "Coat";
     /**
      * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
      */
     public alphaClip: number = 0.01;
-
-    protected renderBuffer: unknown;
-
-    /**
-     * Injected by {@link RenderInjectorCoat}.
-     * Used by the render system.
-     * @internal
-     */
-    public useRenderData(): void { /* injected by RenderInjector*/ };
-    /**
-     * Injected by {@link RenderInjectorCoat}.
-     * Used by the render system.
-     * @internal
-     */
-    public updateRenderData(): void { /* injected by RenderInjector*/ }
-    /**
-     * Injected by {@link RenderInjectorCoat}.
-     * Used by the render system.
-     * @internal
-     */
-    public deleteRenderData(): void {/* injected by RenderInjector*/ }
 
     //#region Transfer
     public serialize(): Serialization {
