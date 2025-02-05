@@ -959,7 +959,7 @@ namespace FudgeCore {
   }
 
   export abstract class UniformBufferManager<T extends WeakKey> {
-    protected offsets: WeakMap<T, number> = new WeakMap<T, number>(); // Maps the nodes to their respective byte offset in the uboNodes buffer
+    protected mapObjectToOffset: WeakMap<T, number> = new WeakMap<T, number>(); // Maps the objects to their respective byte offset in the gpu buffer
 
     /** The uniform block size (inside the shader) in bytes, includes layout std140 padding */
     protected blockSize: number;
@@ -1002,17 +1002,17 @@ namespace FudgeCore {
     }
 
     public useRenderData(_object: T): void {
-      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.offsets.get(_object), this.blockSize);
+      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.mapObjectToOffset.get(_object), this.blockSize);
     }
 
     public store(_object: T): number {
-      const offset: number = this.count * this.spaceData;
-      this.offsets.set(_object, this.count * this.spaceBuffer);
+      const offsetData: number = this.count * this.spaceData;
+      this.mapObjectToOffset.set(_object, this.count * this.spaceBuffer); // offset in bytes
       this.count++;
-      if (offset + this.spaceData > this.data.length)
+      if (offsetData + this.spaceData > this.data.length)
         this.grow();
 
-      return offset;
+      return offsetData;
     }
 
     private grow(): void {
@@ -1037,7 +1037,7 @@ namespace FudgeCore {
     }
 
     public useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void {
-      let offset: number = this.offsets.get(_node);
+      let offset: number = this.mapObjectToOffset.get(_node);
       this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, offset, this.blockSize);
 
       if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we may need to override the world matrix here
