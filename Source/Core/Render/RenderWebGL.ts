@@ -1,5 +1,4 @@
 ///<reference path="RenderInjectorShader.ts"/>
-///<reference path="RenderInjectorCoat.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
 ///<reference path="RenderInjectorShaderParticleSystem.ts"/>
 ///<reference path="RenderInjectorComponentParticleSystem.ts"/>
@@ -865,7 +864,7 @@ namespace FudgeCore {
     */
     // @PerformanceMonitor.measure("Render.drawNode")
     protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
-      PerformanceMonitor.startMeasure("Render.drawNode get components");
+      // PerformanceMonitor.startMeasure("Render.drawNode get components");
       let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
       let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
       let cmpText: ComponentText = _node.getComponent(ComponentText);
@@ -876,21 +875,21 @@ namespace FudgeCore {
       let shader: ShaderInterface = cmpMaterial.material.getShader();
       if (drawParticles)
         shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
-      PerformanceMonitor.endMeasure("Render.drawNode get components");
+      // PerformanceMonitor.endMeasure("Render.drawNode get components");
 
-      PerformanceMonitor.startMeasure("Render.drawNode useProgram");
+      // PerformanceMonitor.startMeasure("Render.drawNode useProgram");
       shader.useProgram();
-      PerformanceMonitor.endMeasure("Render.drawNode useProgram");
+      // PerformanceMonitor.endMeasure("Render.drawNode useProgram");
 
-      PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
+      // PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
       UniformBufferManagerMaterial.instance.useRenderData(coat);
 
-      PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
+      // PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
 
       if (cmpMesh.skeleton?.isActive)
         cmpMesh.skeleton.useRenderBuffer();
 
-      PerformanceMonitor.startMeasure("Render.drawNode other");
+      // PerformanceMonitor.startMeasure("Render.drawNode other");
 
       let mtxWorldOverride: Matrix4x4;
 
@@ -901,15 +900,15 @@ namespace FudgeCore {
         mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
       UniformBufferManagerNode.instance.useRenderData(_node, mtxWorldOverride);
-      PerformanceMonitor.endMeasure("Render.drawNode other");
+      // PerformanceMonitor.endMeasure("Render.drawNode other");
 
-      PerformanceMonitor.startMeasure("Render.drawNode getRenderBuffers");
+      // PerformanceMonitor.startMeasure("Render.drawNode getRenderBuffers");
       const renderBuffers: RenderBuffers = cmpMesh.mesh.getRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
-      PerformanceMonitor.endMeasure("Render.drawNode getRenderBuffers");
+      // PerformanceMonitor.endMeasure("Render.drawNode getRenderBuffers");
 
-      PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
+      // PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
       RenderWebGL.crc3.bindVertexArray(renderBuffers.vao); // TODO: find out why this gets slower the more different meshes are drawn???
-      PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
+      // PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
 
       // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
@@ -962,7 +961,7 @@ namespace FudgeCore {
   export abstract class UniformBufferManager<T extends WeakKey> {
     protected offsets: WeakMap<T, number> = new WeakMap<T, number>(); // Maps the nodes to their respective byte offset in the uboNodes buffer
 
-    /** The uniform block size (inside the shader) in bytes, may include layout std140 padding */
+    /** The uniform block size (inside the shader) in bytes, includes layout std140 padding */
     protected blockSize: number;
     protected blockBinding: number;
 
@@ -993,15 +992,6 @@ namespace FudgeCore {
       _crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
     }
 
-    public grow(): void {
-      const data: Float32Array = new Float32Array(this.data.length * 1.5);
-      data.set(this.data);
-      this.data = data;
-
-      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      this.crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
-    }
-
     public reset(): void {
       this.count = 0;
     }
@@ -1015,7 +1005,26 @@ namespace FudgeCore {
       this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.offsets.get(_object), this.blockSize);
     }
 
-    public abstract updateRenderData(..._args: General[]): void;
+    public store(_object: T): number {
+      const offset: number = this.count * this.spaceData;
+      this.offsets.set(_object, this.count * this.spaceBuffer);
+      this.count++;
+      if (offset + this.spaceData > this.data.length)
+        this.grow();
+
+      return offset;
+    }
+
+    private grow(): void {
+      const data: Float32Array = new Float32Array(this.data.length * 1.5);
+      data.set(this.data);
+      this.data = data;
+
+      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
+      this.crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+    }
+
+    public abstract updateRenderData(_object: T, ..._data: General[]): void;
   }
 
   export class UniformBufferManagerNode extends UniformBufferManager<Node> {
@@ -1031,15 +1040,13 @@ namespace FudgeCore {
       let offset: number = this.offsets.get(_node);
       this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, offset, this.blockSize);
 
-      if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we have to override the world matrix here
+      if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we may need to override the world matrix here
         this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.get());
     }
 
     public updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color): void {
-      const offset: number = this.count * this.spaceData;
-      if (offset + this.spaceData > this.data.length)
-        this.grow();
-      
+      const offset: number = this.store(_node);
+
       const data: Float32Array = this.data;
       // mtx world
       data.set(_mtxWorld.getData(), offset);
@@ -1069,9 +1076,6 @@ namespace FudgeCore {
       //   data[offset + 32] = _cmpFaceCamera.isActive ? 1 : 0;
       //   data[offset + 33] = _cmpFaceCamera.restrict ? 1 : 0;
       // }
-
-      this.offsets.set(_node, this.count * this.spaceBuffer);
-      this.count++;
     }
   }
 
@@ -1084,9 +1088,7 @@ namespace FudgeCore {
     }
 
     public updateRenderData(_coat: Coat): void {
-      const offset: number = this.count * this.spaceData;
-      if (offset + this.spaceData > this.data.length)
-        this.grow();
+      const offset: number = this.store(_coat);
 
       const data: Float32Array = this.data;
 
@@ -1110,9 +1112,6 @@ namespace FudgeCore {
       
       if (_coat instanceof CoatToon) 
         _coat.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
-
-      this.offsets.set(_coat, this.count * this.spaceBuffer);
-      this.count++;
     }
   }
 }
