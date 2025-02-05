@@ -5,7 +5,6 @@ namespace FudgeCore {
    * @internal
    */
   export class RenderInjectorMesh {
-
     /**
      * Injects the functionality of this class into the constructor of the given {@link Mesh}-subclass
      */
@@ -22,18 +21,23 @@ namespace FudgeCore {
     }
 
     protected static getRenderBuffers(this: Mesh): RenderBuffers {
-      if (this.renderMesh.buffers)
-        return this.renderMesh.buffers;
+      let buffers: RenderBuffers = this.renderMesh.buffers;
+      if (buffers)
+        return buffers;
 
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const buffers: RenderBuffers = {
+      const vao: WebGLVertexArrayObject = RenderWebGL.assert<WebGLVertexArrayObject>(crc3.createVertexArray());
+      crc3.bindVertexArray(vao);
+
+      buffers = {
         indices: createBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, this.renderMesh.indices),
         positions: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.positions),
         normals: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.normals),
         textureUVs: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.textureUVs),
         colors: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.colors),
         tangents: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.tangents),
-        nIndices: this.renderMesh.indices.length
+        nIndices: this.renderMesh.indices.length,
+        vao: vao
       };
 
       if (this.renderMesh.bones)
@@ -41,11 +45,6 @@ namespace FudgeCore {
 
       if (this.renderMesh.weights)
         buffers.weights = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.weights);
-
-      // set up vertex array object
-      buffers.vao = RenderWebGL.assert<WebGLVertexArrayObject>(crc3.createVertexArray());
-      crc3.bindVertexArray(buffers.vao);
-      crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
       setAttributeBuffer(buffers.positions, SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT);
       setAttributeBuffer(buffers.normals, SHADER_ATTRIBUTE.NORMAL, 3, WebGL2RenderingContext.FLOAT);
@@ -57,17 +56,12 @@ namespace FudgeCore {
       if (buffers.weights)
         setAttributeBuffer(buffers.weights, SHADER_ATTRIBUTE.WEIGHTS, 4, WebGL2RenderingContext.FLOAT);
 
-      crc3.bindVertexArray(null);
-      crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
-      crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, null);
-
       return this.renderMesh.buffers = buffers;
 
       function createBuffer(_type: GLenum, _array: Float32Array | Uint16Array | Uint8Array): WebGLBuffer {
         let buffer: WebGLBuffer = RenderWebGL.assert<WebGLBuffer>(crc3.createBuffer());
         crc3.bindBuffer(_type, buffer);
         crc3.bufferData(_type, _array, WebGL2RenderingContext.STATIC_DRAW);
-        crc3.bindBuffer(_type, null);
         return buffer;
       }
 
@@ -81,9 +75,11 @@ namespace FudgeCore {
       }
     }
 
-    // TODO: remove this this!
     protected static useRenderBuffers(this: Mesh): RenderBuffers {
-      return this.getRenderBuffers();
+      const buffers: RenderBuffers = this.getRenderBuffers();
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      crc3.bindVertexArray(buffers.vao);
+      return buffers;
     }
 
     protected static deleteRenderBuffers(_renderBuffers: RenderBuffers): void {

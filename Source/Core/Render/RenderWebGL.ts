@@ -562,9 +562,7 @@ namespace FudgeCore {
         RenderWebGL.useNodeUniforms(shader, mtxMeshToWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, picks.length);
 
         const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers();
-        RenderWebGL.crc3.bindVertexArray(renderBuffers.vao);
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
-        RenderWebGL.crc3.bindVertexArray(null);
 
         picks.push(new Pick(node));
       }
@@ -869,7 +867,6 @@ namespace FudgeCore {
       let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
       let cmpText: ComponentText = _node.getComponent(ComponentText);
       let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
-      let coat: Coat = cmpMaterial.material.coat;
       let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
       let drawParticles: boolean = cmpParticleSystem && cmpParticleSystem.isActive;
       let shader: ShaderInterface = cmpMaterial.material.getShader();
@@ -882,7 +879,7 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.drawNode useProgram");
 
       // PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
-      UniformBufferManagerMaterial.instance.useRenderData(coat);
+      UniformBufferManagerMaterial.instance.useRenderData(cmpMaterial.material.coat);
 
       // PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
 
@@ -903,12 +900,8 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.drawNode other");
 
       // PerformanceMonitor.startMeasure("Render.drawNode getRenderBuffers");
-      const renderBuffers: RenderBuffers = cmpMesh.mesh.getRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
+      const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
       // PerformanceMonitor.endMeasure("Render.drawNode getRenderBuffers");
-
-      // PerformanceMonitor.startMeasure("Render.drawNode bindVertexArray");
-      RenderWebGL.crc3.bindVertexArray(renderBuffers.vao); // TODO: find out why this gets slower the more different meshes are drawn???
-      // PerformanceMonitor.endMeasure("Render.drawNode bindVertexArray");
 
       // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
@@ -916,7 +909,6 @@ namespace FudgeCore {
       else
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
       // PerformanceMonitor.endMeasure("Render.drawNode drawElements");
-      RenderWebGL.crc3.bindVertexArray(null);
     }
 
     protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _nIndices: number, _cmpFaceCamera: ComponentFaceCamera): void {
@@ -1087,6 +1079,19 @@ namespace FudgeCore {
       super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, 100);
     }
 
+    public useRenderData(_coat: Coat): void {
+      super.useRenderData(_coat);
+
+      if (_coat instanceof CoatTextured) 
+        _coat.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+      
+      if (_coat instanceof CoatRemissiveTexturedNormals) 
+        _coat.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+      
+      if (_coat instanceof CoatToon) 
+        _coat.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+    }
+
     public updateRenderData(_coat: Coat): void {
       const offset: number = this.store(_coat);
 
@@ -1103,15 +1108,6 @@ namespace FudgeCore {
       }
 
       data[offset + 8] = _coat.alphaClip;
-
-      if (_coat instanceof CoatTextured) 
-        _coat.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
-      
-      if (_coat instanceof CoatRemissiveTexturedNormals) 
-        _coat.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
-      
-      if (_coat instanceof CoatToon) 
-        _coat.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
     }
   }
 }
