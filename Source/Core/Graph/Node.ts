@@ -367,10 +367,7 @@ namespace FudgeCore {
      * Returns the first compontent found of the given class attached this node or null, if list is empty or doesn't exist
      */
     public getComponent<T extends Component>(_class: new () => T): T {
-      let list: T[] = <T[]>this.components[_class.name];
-      if (list)
-        return list[0];
-      return null;
+      return <T>this.components[_class.name]?.[0];
     }
 
     /**
