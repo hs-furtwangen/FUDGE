@@ -159,18 +159,9 @@ namespace FudgeCore {
      * Computes and returns a matrix with the given translation, its z-axis pointing directly in the given direction,
      * and a minimal angle between its y-axis and the given up-{@link Vector3}. Ideally up should be perpendicular to the given direction.
      */
-    public static LOOK_IN(_translation: Vector3, _direction: Vector3, _up: Vector3 = Vector3.Y()): Matrix4x4 {
-      let zAxis: Vector3 = Vector3.NORMALIZATION(_direction);
-      let xAxis: Vector3 = Vector3.NORMALIZATION(Vector3.CROSS(_up, zAxis));
-      let yAxis: Vector3 = Vector3.NORMALIZATION(Vector3.CROSS(zAxis, xAxis));
-      const mtxResult: Matrix4x4 = Recycler.reuse(Matrix4x4);
-      mtxResult.set([
-        xAxis.x, xAxis.y, xAxis.z, 0,
-        yAxis.x, yAxis.y, yAxis.z, 0,
-        zAxis.x, zAxis.y, zAxis.z, 0,
-        _translation.x, _translation.y, _translation.z, 1
-      ]);
-      Recycler.storeMultiple(zAxis, xAxis, yAxis);
+    public static LOOK_IN(_translation: Vector3, _direction: Vector3, _up: Vector3 = Vector3.Y(), _restrict: boolean = false): Matrix4x4 {
+      const mtxResult: Matrix4x4 = Matrix4x4.COMPOSITION(_translation);
+      mtxResult.lookIn(_direction, _up, _restrict);
       return mtxResult;
     }
 
@@ -802,11 +793,24 @@ namespace FudgeCore {
      * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
      * Up should be perpendicular to the given direction. If no up-vector is provided, {@link up} is used.
      */
-    public lookIn(_direction: Vector3, _up: Vector3 = this.up): Matrix4x4 {
-      const mtxResult: Matrix4x4 = Matrix4x4.LOOK_IN(this.translation, _direction, _up);
-      mtxResult.scale(this.scaling);
-      this.set(mtxResult.data);
-      Recycler.store(mtxResult);
+    public lookIn(_direction: Vector3, _up: Vector3 = this.up, _restrict: boolean = false): Matrix4x4 {
+      let zAxis: Vector3 = Vector3.NORMALIZATION(_direction);
+      let xAxis: Vector3 = Vector3.NORMALIZATION(Vector3.CROSS(_up, zAxis));
+      let yAxis: Vector3 = _restrict ? _up : Vector3.NORMALIZATION(Vector3.CROSS(zAxis, xAxis));
+      zAxis = _restrict ? Vector3.NORMALIZATION(Vector3.CROSS(xAxis, _up)) : zAxis;
+
+      xAxis.scale(this.scaling.x);
+      yAxis.scale(this.scaling.y);
+      zAxis.scale(this.scaling.z);
+
+      this.set([
+        xAxis.x, xAxis.y, xAxis.z, 0,
+        yAxis.x, yAxis.y, yAxis.z, 0,
+        zAxis.x, zAxis.y, zAxis.z, 0,
+        this.translation.x, this.translation.y, this.translation.z, 1
+      ]);
+
+      Recycler.storeMultiple(xAxis, zAxis);
       return this;
     }
 
