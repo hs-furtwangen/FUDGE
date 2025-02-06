@@ -390,15 +390,11 @@ namespace FudgeCore {
     public static drawMesh(_mesh: Mesh, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {
       const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
-
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       
       RenderWebGL.useNodeUniforms(shader, _mtxWorld, null, null, Gizmos.pickId);
       
       const renderBuffers: RenderBuffers = _mesh.useRenderBuffers();
-      crc3.bindVertexArray(renderBuffers.vao);
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, _color, _alphaOccluded);
-      crc3.bindVertexArray(null);
     }
 
     /**
@@ -436,9 +432,7 @@ namespace FudgeCore {
       RenderWebGL.useNodeUniforms(shader, mtxWorld, null, null, Gizmos.pickId);
       
       const renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers();
-      crc3.bindVertexArray(renderBuffers.vao);
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
-      crc3.bindVertexArray(null);
 
       Recycler.storeMultiple(mtxWorld, color, back, up);
     }
