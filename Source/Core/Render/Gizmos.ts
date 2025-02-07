@@ -267,7 +267,11 @@ namespace FudgeCore {
         lineData.set(point.get(), i * 3);
       }
 
-      Gizmos.bufferPositions(shader, Gizmos.arrayBuffer);
+      crc3.bindVertexArray(null);
+      crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, Gizmos.arrayBuffer);
+      crc3.enableVertexAttribArray(SHADER_ATTRIBUTE.POSITION);
+      crc3.vertexAttribPointer(SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
+
       Gizmos.bufferMatrix(shader, _mtxWorld);
       crc3.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, lineData, WebGL2RenderingContext.DYNAMIC_DRAW);
 
@@ -310,16 +314,11 @@ namespace FudgeCore {
         crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderBuffers.positions);
         crc3.enableVertexAttribArray(SHADER_ATTRIBUTE.POSITION);
         crc3.vertexAttribPointer(SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
-
-        crc3.bindVertexArray(null);
-        crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, null);
-        crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
       }
 
       Gizmos.bufferMatrix(shader, _mtxWorld);
       crc3.bindVertexArray(wireBuffers.vao);
       Gizmos.drawGizmos(shader, Gizmos.drawElementsLines, wireBuffers.nIndices, _color, _alphaOccluded);
-      crc3.bindVertexArray(null);
     }
 
     /**
@@ -435,14 +434,6 @@ namespace FudgeCore {
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
 
       Recycler.storeMultiple(mtxWorld, color, back, up);
-    }
-
-    private static bufferPositions(_shader: ShaderInterface, _buffer: WebGLBuffer): void {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-
-      crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, _buffer);
-      crc3.enableVertexAttribArray(SHADER_ATTRIBUTE.POSITION);
-      crc3.vertexAttribPointer(SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT, false, 0, 0);
     }
 
     private static bufferColor(_shader: ShaderInterface, _color: Color): void {
