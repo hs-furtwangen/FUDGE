@@ -103,6 +103,9 @@ namespace FudgeCore {
     private static texDepthStencil: WebGLTexture; // stores the depth of each pixel, currently unused
     private static texBloomSamples: WebGLTexture[]; // stores down and upsampled versions of the color texture, used for bloom
 
+    private static texDepthStencilOutline: WebGLTexture;
+
+
     private static fboPick: WebGLBuffer;
     private static texPick: WebGLTexture;
     private static texDepthPick: WebGLTexture;
@@ -332,39 +335,42 @@ namespace FudgeCore {
      * Initializes different framebuffers aswell as texture attachments to use as render targets
      */
     public static initializeAttachments(): void {
-      RenderWebGL.crc3.getExtension("EXT_color_buffer_float"); // TODO: disable ssao if not supported
+      const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
 
-      RenderWebGL.fboMain = RenderWebGL.assert<WebGLFramebuffer>(RenderWebGL.crc3.createFramebuffer());
-      RenderWebGL.fboPost = RenderWebGL.assert<WebGLFramebuffer>(RenderWebGL.crc3.createFramebuffer());
+      crc3.getExtension("EXT_color_buffer_float"); // TODO: disable ssao if not supported
+
+      RenderWebGL.fboMain = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
+      RenderWebGL.fboPost = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
       RenderWebGL.fboTarget = null;
-      RenderWebGL.fboPick = RenderWebGL.assert(RenderWebGL.crc3.createFramebuffer());
+      RenderWebGL.fboPick = RenderWebGL.assert(crc3.createFramebuffer());
 
       RenderWebGL.texColor = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texPosition = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-      RenderWebGL.texNormal = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+      RenderWebGL.texNormal = createTexture(WebGL2RenderingContext.LINEAR, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texDepthStencil = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texNoise = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texDepthPick = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
+      RenderWebGL.texDepthStencilOutline = createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+
       RenderWebGL.texBloomSamples = new Array(6);
       for (let i: number = 0; i < RenderWebGL.texBloomSamples.length; i++)
         RenderWebGL.texBloomSamples[i] = createTexture(WebGL2RenderingContext.LINEAR, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
-      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
-      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
-      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
-      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
-      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
 
-      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
-      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
-      RenderWebGL.crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick, 0);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick, 0);
 
-      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 
       function createTexture(_filter: number, _wrap: number): WebGLTexture {
-        const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
         const texture: WebGLTexture = RenderWebGL.assert<WebGLTexture>(crc3.createTexture());
         crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, texture);
         crc3.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER, _filter);
@@ -398,6 +404,9 @@ namespace FudgeCore {
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
+
+      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline);
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
 
       for (let i: number = 0, divisor: number = 1; i < RenderWebGL.texBloomSamples.length; i++, divisor *= 2) {
@@ -720,6 +729,7 @@ namespace FudgeCore {
       const cmpFog: ComponentFog = _cmpCamera.node?.getComponent(ComponentFog);
       const cmpAmbientOcclusion: ComponentAmbientOcclusion = _cmpCamera.node?.getComponent(ComponentAmbientOcclusion);
       const cmpBloom: ComponentBloom = _cmpCamera.node?.getComponent(ComponentBloom);
+      const cmpOutline: ComponentOutline = _cmpCamera.node?.getComponent(ComponentOutline);
 
       RenderWebGL.bufferFog(cmpFog);
       RenderWebGL.bufferCamera(_cmpCamera);
@@ -754,6 +764,9 @@ namespace FudgeCore {
       // bloom pass
       if (cmpBloom?.isActive)
         RenderWebGL.drawBloom(cmpBloom);
+
+      if (cmpOutline?.isActive)
+        RenderWebGL.drawOutline(cmpOutline.nodes, _cmpCamera);
 
       // copy framebuffer to canvas
       crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
@@ -855,6 +868,39 @@ namespace FudgeCore {
       crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
 
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
+    }
+
+    protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);
+
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, null, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline, 0);
+      
+      RenderWebGL.clear();
+
+      crc3.disable(WebGL2RenderingContext.BLEND);
+      for (let selected of _nodes)
+        for (const node of selected) {
+          if (node.getComponent(ComponentMesh) && node.getComponent(ComponentMaterial))
+            RenderWebGL.drawNode(node, _cmpCamera);
+        }
+      crc3.enable(WebGL2RenderingContext.BLEND);
+
+      ShaderOutline.useProgram();
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, null, 0);
+      
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, null, 0);
+      crc3.drawBuffers([WebGL2RenderingContext.COLOR_ATTACHMENT0]);
+      RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencilOutline, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
+      RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencil, WebGL2RenderingContext.TEXTURE1, "u_texDepthScene");
+
+
+      crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(crc3.canvas.width), 1 / Math.round(crc3.canvas.height)); // half texel size
+    
+      crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
     }
 
     /**
@@ -1082,13 +1128,13 @@ namespace FudgeCore {
     public useRenderData(_coat: Coat): void {
       super.useRenderData(_coat);
 
-      if (_coat instanceof CoatTextured) 
+      if (_coat instanceof CoatTextured)
         _coat.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
-      
-      if (_coat instanceof CoatRemissiveTexturedNormals) 
+
+      if (_coat instanceof CoatRemissiveTexturedNormals)
         _coat.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
-      
-      if (_coat instanceof CoatToon) 
+
+      if (_coat instanceof CoatToon)
         _coat.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
     }
 
@@ -1097,9 +1143,9 @@ namespace FudgeCore {
 
       const data: Float32Array = this.data;
 
-      if (_coat instanceof CoatColored) 
+      if (_coat instanceof CoatColored)
         data.set(_coat.color.get(), offset);
-      
+
       if (_coat instanceof CoatRemissive || _coat instanceof CoatRemissiveTextured) {
         data[offset + 4] = _coat.diffuse;
         data[offset + 5] = _coat.specular;
