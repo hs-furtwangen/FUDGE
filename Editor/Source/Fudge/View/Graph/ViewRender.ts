@@ -9,6 +9,7 @@ namespace Fudge {
    */
   export class ViewRender extends View {
     private cmrOrbit: ƒAid.CameraOrbit;
+    private cmpOutline: ƒ.ComponentOutline;
     private viewport: ƒ.Viewport;
     private canvas: HTMLCanvasElement;
     private graph: ƒ.Graph;
@@ -104,6 +105,10 @@ namespace Fudge {
       item = new remote.MenuItem({ label: "Render Continuously", id: String(CONTEXTMENU.RENDER_CONTINUOUSLY), type: "checkbox", click: _callback });
       menu.append(item);
 
+
+      item = new remote.MenuItem({ label: "Selection Outline", id: String(CONTEXTMENU.SELECTION_OUTLINE), type: "checkbox", click: _callback, checked: true });
+      menu.append(item);
+
       return menu;
     }
 
@@ -137,6 +142,9 @@ namespace Fudge {
           break;
         case String(CONTEXTMENU.RENDER_CONTINUOUSLY):
           this.setRenderContinously(_item.checked);
+          break;
+        case String(CONTEXTMENU.SELECTION_OUTLINE):
+          this.cmpOutline.activate(_item.checked);
           break;
         default:
           if (!(_item.id in this.gizmosFilter))
@@ -206,6 +214,9 @@ namespace Fudge {
       this.cmrOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(this.viewport, false, undefined, undefined, undefined, redraw, translateOnPick);
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.addEventListener(ƒ.EVENT.RENDER_PREPARE_START, this.hndPrepare);
+
+      this.cmpOutline = new ƒ.ComponentOutline([], ƒ.Color.CSS("DeepPink"), ƒ.Color.CSS("DeepPink", 0.3));
+      cmpCamera.node.addComponent(this.cmpOutline);
 
       this.setGraph(null);
 
@@ -290,6 +301,7 @@ namespace Fudge {
           }
           if (detail.node) {
             this.node = detail.node;
+            this.cmpOutline.selection = [this.node];
             this.transformator.mtxLocal = this.node.mtxLocal;
             this.transformator.mtxWorld = this.node.mtxWorld;
 
