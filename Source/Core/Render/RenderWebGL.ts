@@ -766,7 +766,7 @@ namespace FudgeCore {
         RenderWebGL.drawBloom(cmpBloom);
 
       if (cmpOutline?.isActive)
-        RenderWebGL.drawOutline(cmpOutline.nodes, _cmpCamera);
+        RenderWebGL.drawOutline(cmpOutline.selection, _cmpCamera, cmpOutline);
 
       // copy framebuffer to canvas
       crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
@@ -870,7 +870,7 @@ namespace FudgeCore {
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
     }
 
-    protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void {
+    protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);
@@ -897,6 +897,9 @@ namespace FudgeCore {
       RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencilOutline, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
       RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencil, WebGL2RenderingContext.TEXTURE1, "u_texDepthScene");
 
+
+      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.get());
+      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
 
       crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(crc3.canvas.width), 1 / Math.round(crc3.canvas.height)); // half texel size
     

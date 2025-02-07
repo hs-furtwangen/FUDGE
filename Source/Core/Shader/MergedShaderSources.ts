@@ -320,6 +320,8 @@ precision mediump float;
 precision highp int;
 
 uniform vec2 u_vctTexel;
+uniform vec4 u_vctColor;
+uniform vec4 u_vctColorOccluded;
 
 uniform sampler2D u_texDepthOutline;
 uniform sampler2D u_texDepthScene;
@@ -350,9 +352,9 @@ void main() {
 
   float fDepthScene = texture(u_texDepthScene, v_vctTexture).r;
   if (fDepthMin < fDepthScene)
-    vctFrag = vec4(1.0, 0.0, 0.0, 1.0);
+    vctFrag = u_vctColor;
   else
-    vctFrag = vec4(0.0, 1.0, 0.0, 1.0);
+    vctFrag = u_vctColorOccluded;
 }`;
   shaderSources["ShaderPhong.frag"] = /*glsl*/ `#version 300 es
 /**
