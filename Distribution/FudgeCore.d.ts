@@ -928,8 +928,26 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
+    abstract class UniformBufferManager<T extends WeakKey> {
+        protected mapObjectToOffset: WeakMap<T, number>;
+        /** The uniform block size (inside the shader) in bytes, includes layout std140 padding */
+        protected blockSize: number;
+        protected blockBinding: number;
+        protected buffer: WebGLBuffer;
+        /** The offset in bytes between the beginning of consecutive object block data, set to a multiple of {@link WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT} */
+        protected spaceBuffer: number;
+        protected data: Float32Array;
+        /** The offset in elements between the beginning of consecutive object block data */
+        protected spaceData: number;
+        protected count: number;
+        protected crc3: WebGL2RenderingContext;
+        protected constructor(_crc3: WebGL2RenderingContext, _blockBinding: number, _blockSize: number, _maxObjects: number);
+        resetRenderData(): void;
+        updateRenderbuffer(): void;
+        useRenderData(_object: T): void;
+        store(_object: T): number;
+        private grow;
+    }
 }
 declare namespace FudgeCore {
 }
@@ -1287,18 +1305,39 @@ declare namespace FudgeCore {
         GREATER_EQUAL = 6,
         ALWAYS = 7
     }
-    const UNIFORM_BLOCKS: {
-        LIGHTS: {
-            NAME: string;
-            BINDING: number;
+    enum SHADER_ATTRIBUTE {
+        POSITION = 0,
+        NORMAL = 1,
+        TEXCOORDS = 2,
+        COLOR = 3,
+        TANGENT = 4,
+        BONES = 5,
+        WEIGHTS = 6
+    }
+    const UNIFORM_BLOCK: {
+        readonly LIGHTS: {
+            readonly NAME: "Lights";
+            readonly BINDING: 0;
         };
-        SKIN: {
-            NAME: string;
-            BINDING: number;
+        readonly CAMERA: {
+            readonly NAME: "Camera";
+            readonly BINDING: 1;
         };
-        FOG: {
-            NAME: string;
-            BINDING: number;
+        readonly MATERIAL: {
+            readonly NAME: "Material";
+            readonly BINDING: 2;
+        };
+        readonly NODE: {
+            readonly NAME: "Node";
+            readonly BINDING: 3;
+        };
+        readonly SKIN: {
+            readonly NAME: "Skin";
+            readonly BINDING: 4;
+        };
+        readonly FOG: {
+            readonly NAME: "Fog";
+            readonly BINDING: 5;
         };
     };
     const TEXTURE_LOCATION: {
@@ -1344,9 +1383,11 @@ declare namespace FudgeCore {
         private static texNoise;
         private static texDepthStencil;
         private static texBloomSamples;
+        private static texDepthStencilOutline;
         private static fboPick;
         private static texPick;
         private static texDepthPick;
+        private static uboCamera;
         private static uboLights;
         private static uboLightsOffsets;
         private static uboFog;
@@ -1437,6 +1478,11 @@ declare namespace FudgeCore {
          */
         static adjustAttachments(): void;
         /**
+         * Buffer the camera data into the camera ubo
+         */
+        static bufferCamera(_cmpCamera: ComponentCamera): void;
+        static useNodeUniforms(_shader: ShaderInterface, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _id?: number): void;
+        /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
          * for each pickable object in the line of sight and returns that as an unsorted array of {@link Pick}s.
          * The function to render the objects into the pick buffer must be provided by the caller.
@@ -1450,6 +1496,7 @@ declare namespace FudgeCore {
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
         protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
+        protected static initializeCamera(): void;
         protected static initializeFog(): void;
         /**
          * Buffer the fog parameters into the fog ubo
@@ -1473,13 +1520,26 @@ declare namespace FudgeCore {
          * Draws the bloom-effect over the color-buffer, using the given bloom-component
          */
         protected static drawBloom(_cmpBloom: ComponentBloom): void;
+        protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void;
         /**
          * Draw a mesh buffer using the given infos and the complete projection matrix
         */
         protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
-        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _nIndices: number, _cmpFaceCamera: ComponentFaceCamera): void;
+        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _nIndices: number): void;
         private static faceCamera;
         private static bindTexture;
+    }
+    class UniformBufferManagerNode extends UniformBufferManager<Node> {
+        static readonly instance: UniformBufferManagerNode;
+        private constructor();
+        useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void;
+        updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void;
+    }
+    class UniformBufferManagerMaterial extends UniformBufferManager<Coat> {
+        static readonly instance: UniformBufferManagerMaterial;
+        private constructor();
+        useRenderData(_coat: Coat): void;
+        updateRenderData(_coat: Coat): void;
     }
 }
 declare namespace FudgeCore {
@@ -2071,10 +2131,6 @@ declare namespace FudgeCore {
         /** The name to call the Material by. */
         name: string;
         idResource: string;
-        /**
-         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
-         */
-        alphaClip: number;
         private shaderType;
         constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
         /**
@@ -3412,16 +3468,30 @@ declare namespace FudgeCore {
      * @authors Jirka Dell'Oro-Friedl, HFU, 2019
      */
     class ComponentMesh extends Component {
+        #private;
         static readonly iSubclass: number;
-        mtxPivot: Matrix4x4;
         readonly mtxWorld: Matrix4x4;
         mesh: Mesh;
         skeleton: ComponentSkeleton;
         constructor(_mesh?: Mesh, _skeleton?: ComponentSkeleton);
+        get mtxPivot(): Matrix4x4;
+        set mtxPivot(_mtx: Matrix4x4);
         get radius(): number;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         drawGizmosSelected(): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Attached to a {@link Node} with an attached {@link ComponentCamera} this causes all nodes in {@link selection} to be drawn with a 1px outline.
+     * @authors Jonas Plotzky, HFU, 2025
+     */
+    class ComponentOutline extends Component {
+        color: Color;
+        colorOccluded: Color;
+        selection: Iterable<Node>;
+        constructor(_selection?: Node[], _color?: Color, _colorOccluded?: Color);
     }
 }
 declare namespace FudgeCore {
@@ -4145,6 +4215,10 @@ declare namespace FudgeCore {
      * The method useRenderData will be injected by {@link RenderInjector} at runtime, extending the functionality of this class to deal with the renderer.
      */
     class Coat extends Mutable implements Serializable {
+        /**
+         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+         */
+        alphaClip: number;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         protected reduceMutator(_mutator: Mutator): void;
@@ -4630,6 +4704,10 @@ declare namespace FudgeCore {
          * Returns an array of the elements of this matrix.
          */
         get(): Float32Array;
+        /**
+         * Returns the original array of the elements of this matrix.
+         */
+        getData(): Float32Array;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
@@ -4687,7 +4765,7 @@ declare namespace FudgeCore {
          * Computes and returns a matrix with the given translation, its z-axis pointing directly in the given direction,
          * and a minimal angle between its y-axis and the given up-{@link Vector3}. Ideally up should be perpendicular to the given direction.
          */
-        static LOOK_IN(_translation: Vector3, _direction: Vector3, _up?: Vector3): Matrix4x4;
+        static LOOK_IN(_translation: Vector3, _direction: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
         /**
          * Computes and returns a matrix with the given translation, its y-axis matching the given up-{@link Vector3}
          * and its z-axis facing towards the given target at a minimal angle, respetively calculating yaw only.
@@ -4854,7 +4932,7 @@ declare namespace FudgeCore {
          * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
          * Up should be perpendicular to the given direction. If no up-vector is provided, {@link up} is used.
          */
-        lookIn(_direction: Vector3, _up?: Vector3): Matrix4x4;
+        lookIn(_direction: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
         /**
          * Same as {@link Matrix4x4.lookAt}, but optimized and needs testing
          */
@@ -4894,6 +4972,10 @@ declare namespace FudgeCore {
          * Returns an array of the elements of this matrix.
          */
         get(): Float32Array;
+        /**
+         * Returns the original array of the elements of this matrix.
+         */
+        getData(): Float32Array;
         /**
          * Return cardinal x-axis
          */
@@ -5204,6 +5286,10 @@ declare namespace FudgeCore {
          * Returns a random two-dimensional vector in the limits of the rectangle defined by the vectors given as [_corner0, _corner1[
          */
         getVector2(_corner0: Vector2, _corner1: Vector2): Vector2;
+        /**
+         * Returns a color with its r, g, b values set to random numbers in the range of [0, 1[.
+         */
+        getColor(): Color;
     }
     /**
      * Standard {@link Random}-instance using Math.random().
@@ -7171,7 +7257,6 @@ declare namespace FudgeCore {
          * Draws an icon from a {@link Texture} on a {@link MeshQuad}. The icon is affected by the given transform and color.
          */
         static drawIcon(_texture: Texture, _mtxWorld: Matrix4x4, _color: Color, _alphaOccluded?: number): void;
-        private static bufferPositions;
         private static bufferColor;
         private static bufferMatrix;
         private static drawGizmos;
@@ -7198,6 +7283,7 @@ declare namespace FudgeCore {
         private static readonly nodesSimple;
         private static readonly nodesAlpha;
         private static readonly componentsSkeleton;
+        private static readonly coats;
         private static readonly modificationsProcessed;
         private static timestampUpdate;
         /**
@@ -7526,7 +7612,7 @@ declare namespace FBX {
     class BufferReader {
         offset: number;
         readonly view: DataView;
-        constructor(_buffer: ArrayBuffer);
+        constructor(_buffer: ArrayBufferLike);
         getChar(_offset?: number): string;
         getBool(_offset?: number): boolean;
         getUint8(_offset?: number): number;
@@ -8635,9 +8721,6 @@ declare namespace FudgeCore {
     interface ShaderInterface {
         define: string[];
         program: WebGLProgram;
-        attributes: {
-            [name: string]: number;
-        };
         uniforms: {
             [name: string]: WebGLUniformLocation;
         };
@@ -8657,9 +8740,6 @@ declare namespace FudgeCore {
         static readonly subclasses: typeof Shader[];
         static define: string[];
         static program: WebGLProgram;
-        static attributes: {
-            [name: string]: number;
-        };
         static uniforms: {
             [name: string]: WebGLUniformLocation;
         };
@@ -8788,6 +8868,13 @@ declare namespace FudgeCore {
         static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
+    }
+}
+declare namespace FudgeCore {
+    abstract class ShaderOutline extends Shader {
+        static define: string[];
+        static getVertexShaderSource(): string;
+        static getFragmentShaderSource(): string;
     }
 }
 declare namespace FudgeCore {

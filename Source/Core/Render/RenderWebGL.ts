@@ -1,3 +1,4 @@
+///<reference path="RenderWebGLBufferManager.ts"/>
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
 ///<reference path="RenderInjectorShaderParticleSystem.ts"/>
@@ -877,7 +878,7 @@ namespace FudgeCore {
 
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, null, 0);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline, 0);
-      
+
       RenderWebGL.clear();
 
       crc3.disable(WebGL2RenderingContext.BLEND);
@@ -891,7 +892,7 @@ namespace FudgeCore {
       ShaderOutline.useProgram();
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-      
+
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, null, 0);
       crc3.drawBuffers([WebGL2RenderingContext.COLOR_ATTACHMENT0]);
       RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencilOutline, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
@@ -902,7 +903,7 @@ namespace FudgeCore {
       crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
 
       crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(crc3.canvas.width), 1 / Math.round(crc3.canvas.height)); // half texel size
-    
+
       crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
     }
 
@@ -917,7 +918,7 @@ namespace FudgeCore {
       let cmpText: ComponentText = _node.getComponent(ComponentText);
       let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
       let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
-      let drawParticles: boolean = cmpParticleSystem && cmpParticleSystem.isActive;
+      let drawParticles: boolean = cmpParticleSystem?.isActive;
       let shader: ShaderInterface = cmpMaterial.material.getShader();
       if (drawParticles)
         shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
@@ -942,7 +943,7 @@ namespace FudgeCore {
       if (cmpText?.isActive)
         mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
 
-      if (cmpFaceCamera?.isActive && !cmpParticleSystem?.isActive)
+      if (cmpFaceCamera?.isActive && !drawParticles)
         mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
       UniformBufferManagerNode.instance.useRenderData(_node, mtxWorldOverride);
@@ -954,33 +955,22 @@ namespace FudgeCore {
 
       // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
-        RenderWebGL.drawParticles(cmpParticleSystem, shader, renderBuffers.nIndices, _node.getComponent(ComponentFaceCamera));
-      else
+        RenderWebGL.drawParticles(cmpParticleSystem, renderBuffers.nIndices);
+      else 
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+      
       // PerformanceMonitor.endMeasure("Render.drawNode drawElements");
     }
 
-    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _shader: ShaderInterface, _nIndices: number, _cmpFaceCamera: ComponentFaceCamera): void {
+    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _nIndices: number): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
+      _cmpParticleSystem.useRenderData();
       crc3.depthMask(_cmpParticleSystem.depthMask);
       RenderWebGL.setBlendMode(_cmpParticleSystem.blendMode);
-      crc3.uniform1i(_shader.uniforms["u_iBlendMode"], _cmpParticleSystem.blendMode);
-      _cmpParticleSystem.useRenderData();
-
-      crc3.uniform1f(_shader.uniforms["u_fParticleSystemDuration"], _cmpParticleSystem.duration);
-      crc3.uniform1f(_shader.uniforms["u_fParticleSystemSize"], _cmpParticleSystem.size);
-      crc3.uniform1f(_shader.uniforms["u_fParticleSystemTime"], _cmpParticleSystem.time);
-      crc3.uniform1i(_shader.uniforms[TEXTURE_LOCATION.PARTICLE.UNIFORM], TEXTURE_LOCATION.PARTICLE.INDEX);
-
-      let faceCamera: boolean = _cmpFaceCamera && _cmpFaceCamera.isActive;
-      crc3.uniform1i(_shader.uniforms["u_bParticleSystemFaceCamera"], faceCamera ? 1 : 0);
-      crc3.uniform1i(_shader.uniforms["u_bParticleSystemRestrict"], faceCamera && _cmpFaceCamera.restrict ? 1 : 0);
-
       crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, _nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
-
-      RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
       crc3.depthMask(true);
+      RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
     }
 
     private static faceCamera(_node: Node, _mtxMeshToWorld: Matrix4x4, _mtxCamera: Matrix4x4): Matrix4x4 {
@@ -998,82 +988,12 @@ namespace FudgeCore {
       crc3.uniform1i(_shader.uniforms[_uniform], _unit - WebGL2RenderingContext.TEXTURE0);
     }
   }
-
-  export abstract class UniformBufferManager<T extends WeakKey> {
-    protected mapObjectToOffset: WeakMap<T, number> = new WeakMap<T, number>(); // Maps the objects to their respective byte offset in the gpu buffer
-
-    /** The uniform block size (inside the shader) in bytes, includes layout std140 padding */
-    protected blockSize: number;
-    protected blockBinding: number;
-
-    protected buffer: WebGLBuffer;
-    /** The offset in bytes between the beginning of consecutive object block data, set to a multiple of {@link WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT} */
-    protected spaceBuffer: number;
-
-    protected data: Float32Array;
-    /** The offset in elements between the beginning of consecutive object block data */
-    protected spaceData: number;
-
-    protected count: number = 0;
-
-    protected crc3: WebGL2RenderingContext;
-
-    public constructor(_crc3: WebGL2RenderingContext, _blockBinding: number, _blockSize: number, _maxObjects: number) {
-      this.crc3 = _crc3;
-      this.blockSize = _blockSize;
-      this.blockBinding = _blockBinding;
-
-      const alignment: number = _crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
-      this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment; // round to multiple of alignment
-      this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
-      this.data = new Float32Array(this.spaceData * _maxObjects);
-
-      this.buffer = _crc3.createBuffer();
-      _crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      _crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
-    }
-
-    public reset(): void {
-      this.count = 0;
-    }
-
-    public updateRenderbuffer(): void {
-      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.data, 0, this.count * this.spaceData);
-    }
-
-    public useRenderData(_object: T): void {
-      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.mapObjectToOffset.get(_object), this.blockSize);
-    }
-
-    public store(_object: T): number {
-      const offsetData: number = this.count * this.spaceData;
-      this.mapObjectToOffset.set(_object, this.count * this.spaceBuffer); // offset in bytes
-      this.count++;
-      if (offsetData + this.spaceData > this.data.length)
-        this.grow();
-
-      return offsetData;
-    }
-
-    private grow(): void {
-      const data: Float32Array = new Float32Array(this.data.length * 1.5);
-      data.set(this.data);
-      this.data = data;
-
-      this.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      this.crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
-    }
-
-    public abstract updateRenderData(_object: T, ..._data: General[]): void;
-  }
-
   export class UniformBufferManagerNode extends UniformBufferManager<Node> {
     public static readonly instance: UniformBufferManagerNode = new UniformBufferManagerNode();
 
     private constructor() {
       const maxNodes: number = 256;
-      const blockSize: number = 32 * 4; // 32 floats, 4 bytes each
+      const blockSize: number = (16 + 12 + 4 + 1 + 1 + 1 + 1 + 1 + 1) * 4; // mat4 mtxWorld, mat3 mtxPivot, vec4 color, float blendMode, float duration, float size, float time, bool faceCameraActive, bool faceCameraRestrict, 
       super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
     }
 
@@ -1085,7 +1005,7 @@ namespace FudgeCore {
         this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.get());
     }
 
-    public updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color): void {
+    public updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void {
       const offset: number = this.store(_node);
 
       const data: Float32Array = this.data;
@@ -1113,10 +1033,14 @@ namespace FudgeCore {
       data[offset + 30] = _color.b;
       data[offset + 31] = _color.a;
 
-      // if (_cmpFaceCamera) {
-      //   data[offset + 32] = _cmpFaceCamera.isActive ? 1 : 0;
-      //   data[offset + 33] = _cmpFaceCamera.restrict ? 1 : 0;
-      // }
+      if (_cmpParticleSystem) {
+        data[offset + 32] = _cmpParticleSystem.blendMode;
+        data[offset + 33] = _cmpParticleSystem.duration;
+        data[offset + 34] = _cmpParticleSystem.size;
+        data[offset + 35] = _cmpParticleSystem.time;
+        data[offset + 36] = _cmpFaceCamera?.isActive ? 1 : 0;
+        data[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
+      }
     }
   }
 
@@ -1124,8 +1048,9 @@ namespace FudgeCore {
     public static readonly instance: UniformBufferManagerMaterial = new UniformBufferManagerMaterial();
 
     private constructor() {
+      const maxMaterials: number = 128;
       const blockSize: number = (4 + 1 + 1 + 1 + 1 + 1) * 4; // vct4 color, float diffuse, float specular, float intensity, float metallic, float alphaClip
-      super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, 100);
+      super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
     }
 
     public useRenderData(_coat: Coat): void {

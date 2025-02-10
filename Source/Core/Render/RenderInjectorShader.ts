@@ -83,6 +83,11 @@ namespace FudgeCore {
         uniform = this.uniforms[TEXTURE_LOCATION.TOON.UNIFORM];
         if (uniform)
           crc3.uniform1i(uniform, TEXTURE_LOCATION.TOON.INDEX);
+
+        uniform = this.uniforms[TEXTURE_LOCATION.PARTICLE.UNIFORM];
+        if (uniform)
+          crc3.uniform1i(uniform, TEXTURE_LOCATION.PARTICLE.INDEX);
+
       } catch (_error) {
         Debug.error(_error);
         debugger;

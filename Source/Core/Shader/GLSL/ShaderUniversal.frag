@@ -10,6 +10,14 @@ layout(std140) uniform Node {
   uniform mat4 u_mtxMeshToWorld; // u_mtxModel
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
+
+  uniform int u_iBlendMode;
+  uniform float u_fParticleSystemDuration;
+  uniform float u_fParticleSystemSize;
+  uniform float u_fParticleSystemTime;
+
+  uniform bool u_bFaceCameraActive;
+  uniform bool u_bFaceCameraRestrict;
 };
 
 layout(std140) uniform Camera {
@@ -148,12 +156,6 @@ layout(location = 2) out vec4 vctFragNormal;
   uniform sampler2D u_texNormal;
   in vec3 v_vctTangent;
   in vec3 v_vctBitangent;
-
-#endif
-
-#if defined(PARTICLE)
-
-  uniform int u_iBlendMode;
 
 #endif
 

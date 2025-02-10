@@ -3,6 +3,7 @@ namespace FudgeCore {
    * Attaches a {@link Mesh} to the node
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
+  @enumerate
   export class ComponentMesh extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMesh);
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
@@ -19,6 +20,7 @@ namespace FudgeCore {
       this.skeleton = _skeleton;
     }
 
+    @enumerate
     public get mtxPivot(): Matrix4x4 {
       return this.#mtxPivot;
     }

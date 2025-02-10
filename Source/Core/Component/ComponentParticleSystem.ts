@@ -13,7 +13,6 @@ namespace FudgeCore {
    * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
    * @author Jonas Plotzky, HFU, 2022
    */
-  @RenderInjectorComponentParticleSystem.decorate
   @enumerate
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
@@ -86,6 +85,7 @@ namespace FudgeCore {
      * Injected by {@link RenderInjectorComponentParticleSystem}. Used by the render system.
      * @internal 
      */
+    @RenderInjectorComponentParticleSystem.decorate
     public useRenderData(): void {/* injected by RenderInjector*/ }
 
     /** 
@@ -93,6 +93,7 @@ namespace FudgeCore {
      * Injected by {@link RenderInjectorComponentParticleSystem}. 
      * @internal
      */
+    @RenderInjectorComponentParticleSystem.decorate
     public deleteRenderData(): void {/* injected by RenderInjector*/ }
 
     //#region transfer

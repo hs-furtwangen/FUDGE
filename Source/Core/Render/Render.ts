@@ -38,8 +38,9 @@ namespace FudgeCore {
       Render.coats.clear();
       Render.modificationsProcessed.clear();
       Render.lights.forEach(_array => _array.reset());
-      UniformBufferManagerNode.instance.reset();
-      UniformBufferManagerMaterial.instance.reset();
+      UniformBufferManagerNode.instance.resetRenderData();
+      UniformBufferManagerMaterial.instance.resetRenderData();
+
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
 
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
@@ -147,7 +148,10 @@ namespace FudgeCore {
           Render.modificationsProcessed.add(_branch.mtxWorld);
         }
 
-        UniformBufferManagerNode.instance.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary);
+
+        let cmpFaceCamera: ComponentFaceCamera = _branch.getComponent(ComponentFaceCamera);
+        let cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
+        UniformBufferManagerNode.instance.updateRenderData(_branch, cmpMesh.mtxWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, cmpFaceCamera, cmpParticleSystem);
 
         _branch.radius = cmpMesh.radius;
         if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha

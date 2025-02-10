@@ -11,8 +11,13 @@ layout(std140) uniform Node {
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
 
-  // uniform bool u_bBillboardActive;
-  // uniform bool u_bBillboardRestrict;
+  uniform int u_iBlendMode;
+  uniform float u_fParticleSystemDuration;
+  uniform float u_fParticleSystemSize;
+  uniform float u_fParticleSystemTime;
+
+  uniform bool u_bFaceCameraActive;
+  uniform bool u_bFaceCameraRestrict;
 };
 
 layout(std140) uniform Camera {
@@ -139,14 +144,11 @@ out vec4 v_vctColor;
 
 #endif
 
+
+
 #if defined(PARTICLE)
 
-  uniform float u_fParticleSystemDuration;
-  uniform float u_fParticleSystemSize;
-  uniform float u_fParticleSystemTime;
   uniform sampler2D u_particleSystemRandomNumbers;
-  uniform bool u_bParticleSystemFaceCamera;
-  uniform bool u_bParticleSystemRestrict;
 
   float fetchRandomNumber(int _iOffset, int _iParticleSystemRandomNumbersSize, int _iParticleSystemRandomNumbersLength) {
     _iOffset = gl_InstanceID + _iOffset % _iParticleSystemRandomNumbersLength;
@@ -196,8 +198,8 @@ void main() {
     /*$mtxLocal*/
     /*$mtxWorld*/
     mtxMeshToWorld = /*$mtxWorld*/ mtxMeshToWorld /*$mtxLocal*/;
-    if(u_bParticleSystemFaceCamera) 
-      mtxMeshToWorld = lookAtCamera(mtxMeshToWorld, u_bParticleSystemRestrict);
+    if(u_bFaceCameraActive) 
+      mtxMeshToWorld = lookAtCamera(mtxMeshToWorld, u_bFaceCameraRestrict);
 
   #endif
 
