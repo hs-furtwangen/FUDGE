@@ -284,7 +284,7 @@ namespace FudgeCore {
       this.shader.use();
       this.gl.uniformMatrix4fv(this.shader.getUniformLocation("u_mtxWorldToView"), false, Physics.mainCam.mtxWorldToView.get());
 
-
+      this.gl.bindVertexArray(null);
       if (this.numPointData > 0) {
         this.pointIboData = [];  //Buffer size matching to whats needed
         for (let i: number = 0; i < this.numPointData; i++) {
