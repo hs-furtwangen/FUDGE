@@ -114,7 +114,7 @@ namespace FudgeCore {
      * Draw this viewport displaying its branch. By default, the transforms in the branch are recalculated first.
      * Pass `false` if calculation was already done for this frame 
      */
-    @PerformanceMonitor.measure("Viewport.draw")
+    // @PerformanceMonitor.measure("Viewport.draw")
     public draw(_prepareBranch: boolean = true): void {
       this.prepare(_prepareBranch);
 
@@ -145,14 +145,14 @@ namespace FudgeCore {
     /**
     * Adjusts all frames and the camera to fit the current size of the canvas. Prepares the branch for rendering.
     */
-    @PerformanceMonitor.measure("Viewport.prepare")
+    // @PerformanceMonitor.measure("Viewport.prepare")
     public prepare(_prepareBranch: boolean = true): void {
       if (!this.#branch)
         return;
       if (!this.camera.isActive)
         return;
 
-      PerformanceMonitor.startMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
+      // PerformanceMonitor.startMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
       if (this.camera.node) {
         const mtxWorldCamera: Matrix4x4 = Matrix4x4.PRODUCT(this.camera.node.mtxWorld, this.camera.mtxPivot);
         this.camera.mtxWorld.copy(mtxWorldCamera);
@@ -160,7 +160,7 @@ namespace FudgeCore {
       } else {
         this.camera.mtxWorld.copy(this.camera.mtxPivot);
       }
-      PerformanceMonitor.endMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
+      // PerformanceMonitor.endMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
 
       if (this.adjustingFrames)
         this.adjustFrames();
@@ -173,7 +173,7 @@ namespace FudgeCore {
     /**
      * Prepares all nodes in the branch for rendering by updating their world transforms etc.
      */
-    @PerformanceMonitor.measure("Viewport.prepareBranch")
+    // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
       let mtxRoot: Matrix4x4 = Matrix4x4.IDENTITY();
       if (this.#branch.getParent())
@@ -220,7 +220,7 @@ namespace FudgeCore {
     /**
      * Adjust all frames involved in the rendering process from the display area in the client up to the renderer canvas
      */
-    @PerformanceMonitor.measure("Viewport.adjustFrames")
+    // @PerformanceMonitor.measure("Viewport.adjustFrames")
     public adjustFrames(): void {
       // get the rectangle of the canvas area as displayed (consider css)
       let rectClient: Rectangle = this.getClientRectangle();

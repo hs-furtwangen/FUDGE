@@ -58,6 +58,7 @@ namespace FudgeCore {
           frameTimeMin: Number.MAX_VALUE,
           frameTimeMax: -Number.MAX_VALUE,
           frameTimeAvg: 0,
+          
           callsPerFrame: 0,
           time: 0,
           calls: 0
@@ -126,7 +127,7 @@ namespace FudgeCore {
       let text: string = `${"Performance Monitor".padEnd(longestString)} |  time  |  calls\n`;
       for (let key in PerformanceMonitor.measurements) {
         let measurement: PerformanceMeasurement = PerformanceMonitor.measurements[key];
-        let avg: string = measurement.frameTimeAvg.toFixed(1).padStart(4);
+        let avg: string = measurement.frameTimeAvg.toFixed(2).padStart(4);
         let calls: string = measurement.callsPerFrame.toString().padStart(3);
         text += `${key.padEnd(longestString)} | ${avg}ms | ${calls}cpf\n`;
       }
