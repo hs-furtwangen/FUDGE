@@ -883,7 +883,7 @@ namespace FudgeCore {
       crc3.disable(WebGL2RenderingContext.BLEND);
       for (let selected of _nodes)
         for (const node of selected) {
-          if (node.getComponent(ComponentMesh) && node.getComponent(ComponentMaterial))
+          if (node.getComponent(ComponentMesh)?.isActive && node.getComponent(ComponentMaterial)?.isActive)
             RenderWebGL.drawNode(node, _cmpCamera);
         }
       crc3.enable(WebGL2RenderingContext.BLEND);

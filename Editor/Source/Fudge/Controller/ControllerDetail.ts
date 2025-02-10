@@ -66,7 +66,7 @@ namespace Fudge {
 
       let { mutable, key } = this.getTargetMutableAndKey(_event);
       let metaTypes: ƒ.MetaAttributeTypes = (<ƒ.Mutable>mutable).getMetaAttributeTypes?.() ?? {};
-      let metaType: Function = metaTypes[key];
+      let metaType: Object | Function = metaTypes[key];
       // console.log(key, metaTypes, metaType);
 
       let sources: Object[] = ƒui.Clipboard.dragDrop.get();
