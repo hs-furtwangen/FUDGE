@@ -11,6 +11,28 @@ namespace FudgeCore {
      */
     public alphaClip: number = 0.01;
 
+    /** @internal reroute to {@link RenderManagerCoat.resetRenderData} */
+    @RenderManagerCoat.decorate
+    public static resetRenderData(): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerCoat.updateRenderbuffer} */
+    @RenderManagerCoat.decorate
+    public static updateRenderbuffer(): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerCoat.updateRenderData} */
+    @RenderManagerCoat.decorate
+    protected static updateRenderData(_coat: Coat): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerCoat.useRenderData} */
+    @RenderManagerCoat.decorate
+    protected static useRenderData(_coat: Coat): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerCoat.updateRenderData} */
+    public updateRenderData(): void { Coat.updateRenderData(this); };
+
+    /** @internal reroute to {@link RenderManagerCoat.useRenderData} */
+    public useRenderData(): void { Coat.useRenderData(this); };
+
     //#region Transfer
     public serialize(): Serialization {
       return {

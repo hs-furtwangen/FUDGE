@@ -92,6 +92,22 @@ namespace FudgeCore {
       return to;
     }
 
+    /** @internal reroute to {@link RenderManagerNode.resetRenderData} */
+    @RenderManagerNode.decorate
+    public static resetRenderData(): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerNode.updateRenderbuffer} */
+    @RenderManagerNode.decorate
+    public static updateRenderbuffer(): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerNode.updateRenderData} */
+    @RenderManagerNode.decorate 
+    protected static updateRenderData(_node: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderManagerNode.useRenderData} */
+    @RenderManagerNode.decorate 
+    protected static useRenderData(_node: Node, _mtxWorldOverride: Matrix4x4): void { /* injected */ };
+
     public get isActive(): boolean {
       return this.active;
     }
@@ -144,6 +160,12 @@ namespace FudgeCore {
     public [Symbol.iterator](): IterableIterator<Node> {
       return this.getIterator();
     }
+
+    /** @internal reroute to {@link RenderManagerNode.updateRenderData} */
+    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem); };
+    
+    /** @internal reroute to {@link RenderManagerNode.useRenderData} */
+    public useRenderData(_mtxWorldOverride: Matrix4x4): void { Node.useRenderData(this, _mtxWorldOverride); };
 
     /**
      * De- / Activate this node. Inactive nodes will not be processed by the renderer.

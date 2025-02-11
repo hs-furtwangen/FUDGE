@@ -643,311 +643,10 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    interface MapClassToComponents {
-        [className: string]: Component[];
-    }
-    /**
-     * Represents a node in the scenetree.
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Graph
-     */
-    class Node extends EventTargetUnified implements Serializable {
-        #private;
-        name: string;
-        readonly mtxWorld: Matrix4x4;
-        timestampUpdate: number;
-        /** The number of nodes of the whole branch including this node and all successors */
-        nNodesInBranch: number;
-        /** The radius of the bounding sphere in world dimensions enclosing the geometry of this node and all successors in the branch */
-        radius: number;
-        private parent;
-        private children;
-        private components;
-        private listeners;
-        private captures;
-        private active;
-        /**
-         * Creates a new node with a name and initializes all attributes
-         */
-        constructor(_name: string);
-        /**
-         * Return the mutator-like path string to get from one node to another or null if no path is found e.g.:
-         * ```typescript
-         * "node/parent/children/1/components/ComponentSkeleton/0"
-         * ```
-         */
-        static PATH_FROM_TO(_from: Node | Component, _to: Node | Component): string | null;
-        /**
-         * Return the {@link Node} or {@link Component} found at the given path starting from the given node or undefined if not found
-         */
-        static FIND<T = Node | Component>(_from: Node | Component, _path: string): T;
-        get isActive(): boolean;
-        /**
-         * Shortcut to retrieve this nodes {@link ComponentTransform}
-         */
-        get cmpTransform(): ComponentTransform;
-        /**
-         * Shortcut to retrieve the local {@link Matrix4x4} attached to this nodes {@link ComponentTransform}
-         * Fails if no {@link ComponentTransform} is attached
-         */
-        get mtxLocal(): Matrix4x4;
-        get mtxWorldInverse(): Matrix4x4;
-        /**
-         * Returns the number of children attached to this
-         */
-        get nChildren(): number;
-        /**
-         * Generator yielding the node and all decendants in the graph below for iteration
-         * Inactive nodes and their descendants can be filtered
-         */
-        getIterator(_active?: boolean): IterableIterator<Node>;
-        /**
-         * Returns an iterator over this node and all its descendants in the graph below
-         */
-        [Symbol.iterator](): IterableIterator<Node>;
-        /**
-         * De- / Activate this node. Inactive nodes will not be processed by the renderer.
-         */
-        activate(_on: boolean): void;
-        /**
-         * Returns a reference to this nodes parent node
-         */
-        getParent(): Node | null;
-        /**
-         * Traces back the ancestors of this node and returns the first
-         */
-        getAncestor(): Node | null;
-        /**
-         * Traces the hierarchy upwards to the first ancestor and returns the path through the graph to this node
-         */
-        getPath(): Node[];
-        /**
-         * Returns child at the given index in the list of children
-         */
-        getChild(_index: number): Node;
-        /**
-         * Returns a clone of the list of children
-         */
-        getChildren(): Node[];
-        /**
-         * Returns an array of references to childnodes with the supplied name.
-         */
-        getChildrenByName(_name: string): Node[];
-        /**
-         * Simply calls {@link addChild}. This reference is here solely because appendChild is the equivalent method in DOM.
-         * See and preferably use {@link addChild}
-         */
-        readonly appendChild: (_child: Node) => void;
-        /**
-         * Adds the given reference to a node to the list of children, if not already in
-         * @throws Error when trying to add an ancestor of this
-         */
-        addChild(_child: Node): void;
-        /**
-         * Adds the given reference to a node to the list of children at the given index. If it is already a child, it is moved to the new position.
-         */
-        addChild(_child: Node, _index: number): void;
-        /**
-         * Removes the reference to the give node from the list of children
-         */
-        removeChild(_child: Node): void;
-        /**
-         * Removes all references in the list of children
-         */
-        removeAllChildren(): void;
-        /**
-         * Returns the position of the node in the list of children or -1 if not found
-         */
-        findChild(_search: Node): number;
-        /**
-         * Replaces a child node with another, preserving the position in the list of children
-         */
-        replaceChild(_replace: Node, _with: Node): boolean;
-        /**
-         * Returns true if the given timestamp matches the last update timestamp this node underwent, else false
-         */
-        isUpdated(_timestampUpdate: number): boolean;
-        /**
-         * Returns true if this node is a descendant of the given node, directly or indirectly, else false
-         */
-        isDescendantOf(_ancestor: Node): boolean;
-        /**
-         * Applies a Mutator from {@link Animation} to all its components and transfers it to its children.
-         */
-        applyAnimation(_mutator: Mutator): void;
-        /**
-         * Returns a list of all components attached to this node, independent of type.
-         */
-        getAllComponents(): Component[];
-        /**
-         * Returns a clone of the list of components of the given class attached to this node.
-         */
-        getComponents<T extends Component>(_class: new () => T): T[];
-        /**
-         * Returns the first compontent found of the given class attached this node or null, if list is empty or doesn't exist
-         */
-        getComponent<T extends Component>(_class: new () => T): T;
-        /**
-         * Attach the given component to this node. Identical to {@link addComponent}
-         */
-        attach(_component: Component): void;
-        /**
-         * Attach the given component to this node
-         */
-        addComponent(_component: Component): void;
-        /**
-         * Detach the given component from this node. Identical to {@link removeComponent}
-         */
-        detach(_component: Component): void;
-        /**
-         * Removes all components of the given class attached to this node.
-         */
-        removeComponents(_class: new () => Component): void;
-        /**
-         * Removes the given component from the node, if it was attached, and sets its parent to null.
-         */
-        removeComponent(_component: Component): void;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        toString(): string;
-        /**
-         * Creates a string as representation of this node and its descendants
-         */
-        toHierarchyString(_node?: Node, _level?: number): string;
-        /**
-         * Adds an event listener to the node. The given handler will be called when a matching event is passed to the node.
-         * Deviating from the standard EventTarget, here the _handler must be a function and _capture is the only option.
-         */
-        addEventListener(_type: EVENT | string, _handler: EventListenerUnified, _capture?: boolean): void;
-        /**
-         * Removes an event listener from the node. The signature must match the one used with addEventListener
-         */
-        removeEventListener(_type: EVENT | string, _handler: EventListenerUnified, _capture?: boolean): void;
-        /**
-         * Dispatches a synthetic event to target. This implementation always returns true (standard: return true only if either event's cancelable attribute value is false or its preventDefault() method was not invoked)
-         * The event travels into the hierarchy to this node dispatching the event, invoking matching handlers of the nodes ancestors listening to the capture phase,
-         * than the matching handler of the target node in the target phase, and back out of the hierarchy in the bubbling phase, invoking appropriate handlers of the anvestors
-         */
-        dispatchEvent(_event: Event): boolean;
-        /**
-         * Dispatches a synthetic event to target without travelling through the graph hierarchy neither during capture nor bubbling phase
-         */
-        dispatchEventToTargetOnly(_event: Event): boolean;
-        /**
-         * Broadcasts a synthetic event to this node and from there to all nodes deeper in the hierarchy,
-         * invoking matching handlers of the nodes listening to the capture phase. Watch performance when there are many nodes involved
-         */
-        broadcastEvent(_event: Event): void;
-        private broadcastEventRecursive;
-        private callListeners;
-    }
 }
 declare namespace FudgeCore {
-    /**
-     * Superclass for all {@link Component}s that can be attached to {@link Node}s.
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
-     */
-    abstract class Component extends Mutable implements Serializable, Gizmo {
-        #private;
-        /** subclasses get a iSubclass number for identification */
-        static readonly iSubclass: number;
-        /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
-        static readonly baseClass: typeof Component;
-        /** list of all the subclasses derived from this class, if they registered properly*/
-        static readonly subclasses: typeof Component[];
-        protected singleton: boolean;
-        protected active: boolean;
-        constructor();
-        protected static registerSubclass(_subclass: typeof Component): number;
-        get isActive(): boolean;
-        /**
-         * Is true, when only one instance of the component class can be attached to a node
-         */
-        get isSingleton(): boolean;
-        /**
-         * Retrieves the node, this component is currently attached to
-         */
-        get node(): Node | null;
-        /**
-         * De- / Activate this component. Inactive components will not be processed by the renderer.
-         */
-        activate(_on: boolean): void;
-        /**
-         * Tries to attach the component to the given node, removing it from the node it was attached to if applicable
-         */
-        attachToNode(_container: Node | null): void;
-        /**
-         * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
-         */
-        drawGizmos?(_cmpCamera?: ComponentCamera): void;
-        /**
-         * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
-         */
-        drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
-    }
 }
 declare namespace FudgeCore {
-    /**
-     * Wraps a regular Javascript Array and offers very limited functionality geared solely towards avoiding garbage colletion.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
-     */
-    class RecycableArray<T> {
-        #private;
-        get length(): number;
-        /**
-         * Sets the virtual length of the array to zero but keeps the entries beyond.
-         */
-        reset(): void;
-        /**
-         * Recycle this array
-         */
-        recycle(): void;
-        /**
-         * Appends a new entry to the end of the array, and returns the new length of the array.
-         */
-        push(_entry: T): number;
-        /**
-         * Removes the last entry from the array and returns it.
-         */
-        pop(): T;
-        /**
-         * Recycles the object following the last in the array and increases the array length
-         * It must be assured, that none of the objects in the array is still in any use of any kind!
-         */
-        [Symbol.iterator](): IterableIterator<T>;
-        /**
-         * Returns a copy of the array sorted according to the given compare function
-         */
-        getSorted(_sort: (a: T, b: T) => number): T[];
-    }
-}
-declare namespace FudgeCore {
-    abstract class UniformBufferManager<T extends WeakKey> {
-        protected mapObjectToOffset: WeakMap<T, number>;
-        /** The uniform block size (inside the shader) in bytes, includes layout std140 padding */
-        protected blockSize: number;
-        protected blockBinding: number;
-        protected buffer: WebGLBuffer;
-        /** The offset in bytes between the beginning of consecutive object block data, set to a multiple of {@link WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT} */
-        protected spaceBuffer: number;
-        protected data: Float32Array;
-        /** The offset in elements between the beginning of consecutive object block data */
-        protected spaceData: number;
-        protected count: number;
-        protected crc3: WebGL2RenderingContext;
-        protected constructor(_crc3: WebGL2RenderingContext, _blockBinding: number, _blockSize: number, _maxObjects: number);
-        resetRenderData(): void;
-        updateRenderbuffer(): void;
-        useRenderData(_object: T): void;
-        store(_object: T): number;
-        private grow;
-    }
 }
 declare namespace FudgeCore {
 }
@@ -1529,20 +1228,293 @@ declare namespace FudgeCore {
         private static faceCamera;
         private static bindTexture;
     }
-    class UniformBufferManagerNode extends UniformBufferManager<Node> {
-        static readonly instance: UniformBufferManagerNode;
-        private constructor();
-        useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void;
-        updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void;
+}
+declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
+    interface MapClassToComponents {
+        [className: string]: Component[];
     }
-    class UniformBufferManagerMaterial extends UniformBufferManager<Coat> {
-        static readonly instance: UniformBufferManagerMaterial;
-        private constructor();
-        useRenderData(_coat: Coat): void;
-        updateRenderData(_coat: Coat): void;
+    /**
+     * Represents a node in the scenetree.
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Graph
+     */
+    class Node extends EventTargetUnified implements Serializable {
+        #private;
+        name: string;
+        readonly mtxWorld: Matrix4x4;
+        timestampUpdate: number;
+        /** The number of nodes of the whole branch including this node and all successors */
+        nNodesInBranch: number;
+        /** The radius of the bounding sphere in world dimensions enclosing the geometry of this node and all successors in the branch */
+        radius: number;
+        private parent;
+        private children;
+        private components;
+        private listeners;
+        private captures;
+        private active;
+        /**
+         * Creates a new node with a name and initializes all attributes
+         */
+        constructor(_name: string);
+        /**
+         * Return the mutator-like path string to get from one node to another or null if no path is found e.g.:
+         * ```typescript
+         * "node/parent/children/1/components/ComponentSkeleton/0"
+         * ```
+         */
+        static PATH_FROM_TO(_from: Node | Component, _to: Node | Component): string | null;
+        /**
+         * Return the {@link Node} or {@link Component} found at the given path starting from the given node or undefined if not found
+         */
+        static FIND<T = Node | Component>(_from: Node | Component, _path: string): T;
+        get isActive(): boolean;
+        /**
+         * Shortcut to retrieve this nodes {@link ComponentTransform}
+         */
+        get cmpTransform(): ComponentTransform;
+        /**
+         * Shortcut to retrieve the local {@link Matrix4x4} attached to this nodes {@link ComponentTransform}
+         * Fails if no {@link ComponentTransform} is attached
+         */
+        get mtxLocal(): Matrix4x4;
+        get mtxWorldInverse(): Matrix4x4;
+        /**
+         * Returns the number of children attached to this
+         */
+        get nChildren(): number;
+        /**
+         * Generator yielding the node and all decendants in the graph below for iteration
+         * Inactive nodes and their descendants can be filtered
+         */
+        getIterator(_active?: boolean): IterableIterator<Node>;
+        /**
+         * Returns an iterator over this node and all its descendants in the graph below
+         */
+        [Symbol.iterator](): IterableIterator<Node>;
+        /**
+         * De- / Activate this node. Inactive nodes will not be processed by the renderer.
+         */
+        activate(_on: boolean): void;
+        /**
+         * Returns a reference to this nodes parent node
+         */
+        getParent(): Node | null;
+        /**
+         * Traces back the ancestors of this node and returns the first
+         */
+        getAncestor(): Node | null;
+        /**
+         * Traces the hierarchy upwards to the first ancestor and returns the path through the graph to this node
+         */
+        getPath(): Node[];
+        /**
+         * Returns child at the given index in the list of children
+         */
+        getChild(_index: number): Node;
+        /**
+         * Returns a clone of the list of children
+         */
+        getChildren(): Node[];
+        /**
+         * Returns an array of references to childnodes with the supplied name.
+         */
+        getChildrenByName(_name: string): Node[];
+        /**
+         * Simply calls {@link addChild}. This reference is here solely because appendChild is the equivalent method in DOM.
+         * See and preferably use {@link addChild}
+         */
+        readonly appendChild: (_child: Node) => void;
+        /**
+         * Adds the given reference to a node to the list of children, if not already in
+         * @throws Error when trying to add an ancestor of this
+         */
+        addChild(_child: Node): void;
+        /**
+         * Adds the given reference to a node to the list of children at the given index. If it is already a child, it is moved to the new position.
+         */
+        addChild(_child: Node, _index: number): void;
+        /**
+         * Removes the reference to the give node from the list of children
+         */
+        removeChild(_child: Node): void;
+        /**
+         * Removes all references in the list of children
+         */
+        removeAllChildren(): void;
+        /**
+         * Returns the position of the node in the list of children or -1 if not found
+         */
+        findChild(_search: Node): number;
+        /**
+         * Replaces a child node with another, preserving the position in the list of children
+         */
+        replaceChild(_replace: Node, _with: Node): boolean;
+        /**
+         * Returns true if the given timestamp matches the last update timestamp this node underwent, else false
+         */
+        isUpdated(_timestampUpdate: number): boolean;
+        /**
+         * Returns true if this node is a descendant of the given node, directly or indirectly, else false
+         */
+        isDescendantOf(_ancestor: Node): boolean;
+        /**
+         * Applies a Mutator from {@link Animation} to all its components and transfers it to its children.
+         */
+        applyAnimation(_mutator: Mutator): void;
+        /**
+         * Returns a list of all components attached to this node, independent of type.
+         */
+        getAllComponents(): Component[];
+        /**
+         * Returns a clone of the list of components of the given class attached to this node.
+         */
+        getComponents<T extends Component>(_class: new () => T): T[];
+        /**
+         * Returns the first compontent found of the given class attached this node or null, if list is empty or doesn't exist
+         */
+        getComponent<T extends Component>(_class: new () => T): T;
+        /**
+         * Attach the given component to this node. Identical to {@link addComponent}
+         */
+        attach(_component: Component): void;
+        /**
+         * Attach the given component to this node
+         */
+        addComponent(_component: Component): void;
+        /**
+         * Detach the given component from this node. Identical to {@link removeComponent}
+         */
+        detach(_component: Component): void;
+        /**
+         * Removes all components of the given class attached to this node.
+         */
+        removeComponents(_class: new () => Component): void;
+        /**
+         * Removes the given component from the node, if it was attached, and sets its parent to null.
+         */
+        removeComponent(_component: Component): void;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        toString(): string;
+        /**
+         * Creates a string as representation of this node and its descendants
+         */
+        toHierarchyString(_node?: Node, _level?: number): string;
+        /**
+         * Adds an event listener to the node. The given handler will be called when a matching event is passed to the node.
+         * Deviating from the standard EventTarget, here the _handler must be a function and _capture is the only option.
+         */
+        addEventListener(_type: EVENT | string, _handler: EventListenerUnified, _capture?: boolean): void;
+        /**
+         * Removes an event listener from the node. The signature must match the one used with addEventListener
+         */
+        removeEventListener(_type: EVENT | string, _handler: EventListenerUnified, _capture?: boolean): void;
+        /**
+         * Dispatches a synthetic event to target. This implementation always returns true (standard: return true only if either event's cancelable attribute value is false or its preventDefault() method was not invoked)
+         * The event travels into the hierarchy to this node dispatching the event, invoking matching handlers of the nodes ancestors listening to the capture phase,
+         * than the matching handler of the target node in the target phase, and back out of the hierarchy in the bubbling phase, invoking appropriate handlers of the anvestors
+         */
+        dispatchEvent(_event: Event): boolean;
+        /**
+         * Dispatches a synthetic event to target without travelling through the graph hierarchy neither during capture nor bubbling phase
+         */
+        dispatchEventToTargetOnly(_event: Event): boolean;
+        /**
+         * Broadcasts a synthetic event to this node and from there to all nodes deeper in the hierarchy,
+         * invoking matching handlers of the nodes listening to the capture phase. Watch performance when there are many nodes involved
+         */
+        broadcastEvent(_event: Event): void;
+        private broadcastEventRecursive;
+        private callListeners;
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Superclass for all {@link Component}s that can be attached to {@link Node}s.
+     * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
+     */
+    abstract class Component extends Mutable implements Serializable, Gizmo {
+        #private;
+        /** subclasses get a iSubclass number for identification */
+        static readonly iSubclass: number;
+        /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
+        static readonly baseClass: typeof Component;
+        /** list of all the subclasses derived from this class, if they registered properly*/
+        static readonly subclasses: typeof Component[];
+        protected singleton: boolean;
+        protected active: boolean;
+        constructor();
+        protected static registerSubclass(_subclass: typeof Component): number;
+        get isActive(): boolean;
+        /**
+         * Is true, when only one instance of the component class can be attached to a node
+         */
+        get isSingleton(): boolean;
+        /**
+         * Retrieves the node, this component is currently attached to
+         */
+        get node(): Node | null;
+        /**
+         * De- / Activate this component. Inactive components will not be processed by the renderer.
+         */
+        activate(_on: boolean): void;
+        /**
+         * Tries to attach the component to the given node, removing it from the node it was attached to if applicable
+         */
+        attachToNode(_container: Node | null): void;
+        /**
+         * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
+         */
+        drawGizmos?(_cmpCamera?: ComponentCamera): void;
+        /**
+         * See {@link drawGizmos}. Only displayed while the corresponding node is selected.
+         */
+        drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Wraps a regular Javascript Array and offers very limited functionality geared solely towards avoiding garbage colletion.
+     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
+     */
+    class RecycableArray<T> {
+        #private;
+        get length(): number;
+        /**
+         * Sets the virtual length of the array to zero but keeps the entries beyond.
+         */
+        reset(): void;
+        /**
+         * Recycle this array
+         */
+        recycle(): void;
+        /**
+         * Appends a new entry to the end of the array, and returns the new length of the array.
+         */
+        push(_entry: T): number;
+        /**
+         * Removes the last entry from the array and returns it.
+         */
+        pop(): T;
+        /**
+         * Recycles the object following the last in the array and increases the array length
+         * It must be assured, that none of the objects in the array is still in any use of any kind!
+         */
+        [Symbol.iterator](): IterableIterator<T>;
+        /**
+         * Returns a copy of the array sorted according to the given compare function
+         */
+        getSorted(_sort: (a: T, b: T) => number): T[];
+    }
 }
 declare namespace FudgeCore {
     const enum EVENT_PHYSICS {

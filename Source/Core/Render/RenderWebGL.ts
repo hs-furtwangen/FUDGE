@@ -1,4 +1,6 @@
-///<reference path="RenderWebGLBufferManager.ts"/>
+///<reference path="RenderBufferManager.ts"/>
+///<reference path="RenderManagerCoat.ts"/>
+///<reference path="RenderManagerNode.ts"/>
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
 ///<reference path="RenderInjectorShaderParticleSystem.ts"/>
@@ -105,7 +107,6 @@ namespace FudgeCore {
     private static texBloomSamples: WebGLTexture[]; // stores down and upsampled versions of the color texture, used for bloom
 
     private static texDepthStencilOutline: WebGLTexture;
-
 
     private static fboPick: WebGLBuffer;
     private static texPick: WebGLTexture;
@@ -565,8 +566,7 @@ namespace FudgeCore {
         let shader: ShaderInterface = coat instanceof CoatTextured ? ShaderPickTextured : ShaderPick;
 
         shader.useProgram();
-        UniformBufferManagerMaterial.instance.useRenderData(coat);
-        // coat.useRenderData();
+        coat.useRenderData();
 
         let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
         RenderWebGL.useNodeUniforms(shader, mtxMeshToWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, picks.length);
@@ -929,7 +929,7 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.drawNode useProgram");
 
       // PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
-      UniformBufferManagerMaterial.instance.useRenderData(cmpMaterial.material.coat);
+      cmpMaterial.material.coat.useRenderData();
 
       // PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
 
@@ -946,7 +946,8 @@ namespace FudgeCore {
       if (cmpFaceCamera?.isActive && !drawParticles)
         mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
-      UniformBufferManagerNode.instance.useRenderData(_node, mtxWorldOverride);
+      // RenderWebGL.useRenderDataNode(_node, mtxWorldOverride);
+      _node.useRenderData(mtxWorldOverride);
       // PerformanceMonitor.endMeasure("Render.drawNode other");
 
       // PerformanceMonitor.startMeasure("Render.drawNode getRenderBuffers");
@@ -986,102 +987,6 @@ namespace FudgeCore {
       crc3.activeTexture(_unit);
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, _texture);
       crc3.uniform1i(_shader.uniforms[_uniform], _unit - WebGL2RenderingContext.TEXTURE0);
-    }
-  }
-  export class UniformBufferManagerNode extends UniformBufferManager<Node> {
-    public static readonly instance: UniformBufferManagerNode = new UniformBufferManagerNode();
-
-    private constructor() {
-      const maxNodes: number = 256;
-      const blockSize: number = (16 + 12 + 4 + 1 + 1 + 1 + 1 + 1 + 1) * 4; // mat4 mtxWorld, mat3 mtxPivot, vec4 color, float blendMode, float duration, float size, float time, bool faceCameraActive, bool faceCameraRestrict, 
-      super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
-    }
-
-    public useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void {
-      let offset: number = this.mapObjectToOffset.get(_node);
-      this.crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, offset, this.blockSize);
-
-      if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we may need to override the world matrix here
-        this.crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.get());
-    }
-
-    public updateRenderData(_node: Node, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void {
-      const offset: number = this.store(_node);
-
-      const data: Float32Array = this.data;
-      // mtx world
-      data.set(_mtxWorld.getData(), offset);
-
-      // mtx pivot
-      let dataPivot: Float32Array = _mtxPivot.get();
-      data[offset + 16] = dataPivot[0];
-      data[offset + 17] = dataPivot[1];
-      data[offset + 18] = dataPivot[2];
-      // data[offsetPivot + 19] = padding
-      data[offset + 20] = dataPivot[3];
-      data[offset + 21] = dataPivot[4];
-      data[offset + 22] = dataPivot[5];
-      // data[offsetPivot + 23] = padding
-      data[offset + 24] = dataPivot[6];
-      data[offset + 25] = dataPivot[7];
-      data[offset + 26] = dataPivot[8];
-      // data[offsetPivot + 27] = padding
-
-      // color
-      data[offset + 28] = _color.r;
-      data[offset + 29] = _color.g;
-      data[offset + 30] = _color.b;
-      data[offset + 31] = _color.a;
-
-      if (_cmpParticleSystem) {
-        data[offset + 32] = _cmpParticleSystem.blendMode;
-        data[offset + 33] = _cmpParticleSystem.duration;
-        data[offset + 34] = _cmpParticleSystem.size;
-        data[offset + 35] = _cmpParticleSystem.time;
-        data[offset + 36] = _cmpFaceCamera?.isActive ? 1 : 0;
-        data[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
-      }
-    }
-  }
-
-  export class UniformBufferManagerMaterial extends UniformBufferManager<Coat> {
-    public static readonly instance: UniformBufferManagerMaterial = new UniformBufferManagerMaterial();
-
-    private constructor() {
-      const maxMaterials: number = 128;
-      const blockSize: number = (4 + 1 + 1 + 1 + 1 + 1) * 4; // vct4 color, float diffuse, float specular, float intensity, float metallic, float alphaClip
-      super(RenderWebGL.getRenderingContext(), UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
-    }
-
-    public useRenderData(_coat: Coat): void {
-      super.useRenderData(_coat);
-
-      if (_coat instanceof CoatTextured)
-        _coat.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
-
-      if (_coat instanceof CoatRemissiveTexturedNormals)
-        _coat.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
-
-      if (_coat instanceof CoatToon)
-        _coat.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
-    }
-
-    public updateRenderData(_coat: Coat): void {
-      const offset: number = this.store(_coat);
-
-      const data: Float32Array = this.data;
-
-      if (_coat instanceof CoatColored)
-        data.set(_coat.color.get(), offset);
-
-      if (_coat instanceof CoatRemissive || _coat instanceof CoatRemissiveTextured) {
-        data[offset + 4] = _coat.diffuse;
-        data[offset + 5] = _coat.specular;
-        data[offset + 6] = _coat.intensity;
-        data[offset + 7] = _coat.metallic;
-      }
-
-      data[offset + 8] = _coat.alphaClip;
     }
   }
 }
