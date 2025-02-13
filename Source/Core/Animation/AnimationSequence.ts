@@ -151,16 +151,10 @@ namespace FudgeCore {
      */
     private regenerateFunctions(): void {
       for (let i: number = 0; i < this.keys.length; i++) {
-        let f: AnimationFunction = new AnimationFunction(this.keys[i]);
-        this.keys[i].functionOut = f;
-        if (i == this.keys.length - 1) {
-          //TODO: check if this is even useful. Maybe update the runcondition to length - 1 instead. Might be redundant if functionIn is removed, see TODO in AnimationKey.
-          f.setKeyOut = this.keys[0];
-          this.keys[0].functionIn = f;
-          break;
-        }
-        f.setKeyOut = this.keys[i + 1];
-        this.keys[i + 1].functionIn = f;
+        const key: AnimationKey = this.keys[i];
+        const keyNext: AnimationKey = this.keys[i + 1];
+        const f: AnimationFunction = new AnimationFunction(key, keyNext);
+        key.functionOut = f;
       }
     }
   }

@@ -15,9 +15,6 @@ namespace FudgeCore {
    * @author Lukas Scheuerle, HFU, 2019
    */
   export class AnimationKey extends Mutable implements Serializable {
-    // TODO: check if functionIn can be removed
-    /**Don't modify this unless you know what you're doing.*/
-    public functionIn: AnimationFunction;
     /**Don't modify this unless you know what you're doing.*/
     public functionOut: AnimationFunction;
 
@@ -55,7 +52,6 @@ namespace FudgeCore {
 
     public set time(_time: number) {
       this.#time = _time;
-      this.functionIn.calculate();
       this.functionOut.calculate();
     }
 
@@ -65,7 +61,6 @@ namespace FudgeCore {
 
     public set value(_value: number) {
       this.#value = _value;
-      this.functionIn.calculate();
       this.functionOut.calculate();
     }
 
@@ -75,7 +70,6 @@ namespace FudgeCore {
 
     public set interpolation(_interpolation: ANIMATION_INTERPOLATION) {
       this.#interpolation = _interpolation;
-      this.functionIn.calculate();
       this.functionOut.calculate();
     }
 
@@ -85,7 +79,6 @@ namespace FudgeCore {
 
     public set slopeIn(_slope: number) {
       this.#slopeIn = _slope;
-      this.functionIn.calculate();
     }
 
     public get slopeOut(): number {
