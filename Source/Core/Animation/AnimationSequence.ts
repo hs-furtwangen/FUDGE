@@ -5,7 +5,7 @@ namespace FudgeCore {
    * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022
    */
   export class AnimationSequence extends Mutable implements Serializable {
-    private keys: AnimationKey[];
+    protected keys: AnimationKey[];
 
     public constructor(_keys: AnimationKey[] = []) {
       super();
@@ -22,7 +22,7 @@ namespace FudgeCore {
      * @param _time the point in time at which to evaluate the sequence in milliseconds.
      * @returns the value of the sequence at the given time. undefined if there are no keys.
      */
-    public evaluate(_time: number): number {
+    public evaluate(_time: number, _frame?: number): number {
       if (this.keys.length == 0)
         return undefined; //TODO: shouldn't return 0 but something indicating no change, like null. probably needs to be changed in Node as well to ignore non-numeric values in the applyAnimation function
       if (this.keys.length == 1 || this.keys[0].time >= _time)
@@ -149,13 +149,29 @@ namespace FudgeCore {
     /**
      * Utility function that (re-)generates all functions in the sequence.
      */
-    private regenerateFunctions(): void {
-      for (let i: number = 0; i < this.keys.length; i++) {
-        const key: AnimationKey = this.keys[i];
-        const keyNext: AnimationKey = this.keys[i + 1];
+    protected regenerateFunctions(_keys: AnimationKey[] = this.keys): void {
+      for (let i: number = 0; i < _keys.length; i++) {
+        const key: AnimationKey = _keys[i];
+        const keyNext: AnimationKey = _keys[i + 1];
         const f: AnimationFunction = new AnimationFunction(key, keyNext);
         key.functionOut = f;
       }
+    }
+  }
+
+  /**
+   * A sequence of {@link AnimationKey}s sampled from an original sequence. In a sampled sequence, the keys are stored at indices corresponding to discrete frames in accordance with the {@link Animation}'s frames per second.
+   * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame. 
+   * @authors Jonas Plotzky, HFU, 2025
+   */
+  export class AnimationSequenceSampled extends AnimationSequence {
+    /** Evaluates the sequence at the given frame and time. */
+    public override evaluate(_time: number, _frame?: number): number {
+      return this.keys[_frame]?.functionOut.evaluate(_time);
+    }
+
+    protected override regenerateFunctions(_keys: AnimationKey[] = this.keys): void {
+      super.regenerateFunctions([...new Set(_keys)]); // remove duplicates, as sampled sequences may contain the same key repeated times
     }
   }
 }

@@ -55,7 +55,9 @@ namespace FudgeCore {
     /**forward, rastered */
     RASTERED,
     /**backward, rastered */
-    RASTEREDREVERSE
+    RASTEREDREVERSE,
+    /** forward, sampled at discrete frame times */
+    SAMPLED
   }
 
   /**
@@ -103,7 +105,7 @@ namespace FudgeCore {
     public name: string;
     public totalTime: number = 0; // Why isn't this called duration or length?
     public labels: AnimationLabel = {}; // a label marks a specific time to conveniently jump to using a text identifier
-    // stepsPerSecond: number = 10;
+    public sampled: boolean = false; // TODO: if set the cache needs to be adjusted (animationStructuresProcessed)
     public animationStructure: AnimationStructure; // TODO: if set the cache needs to be adjusted (animationStructuresProcessed)
     public events: AnimationEventTrigger = {};
     protected framesPerSecond: number = 60; // TODO: change this and its accessors to #framesPerSecond?
@@ -207,11 +209,16 @@ namespace FudgeCore {
       let animationStructure: ANIMATION_STRUCTURE_TYPE;
 
       if (_quantization == ANIMATION_QUANTIZATION.CONTINOUS)
-        animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
+        if (this.sampled)
+          animationStructure = ANIMATION_STRUCTURE_TYPE.SAMPLED;
+        else
+          animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
       else
         animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE : ANIMATION_STRUCTURE_TYPE.RASTERED;
 
-      m = this.traverseStructureForMutator(this.getProcessedAnimationStructure(animationStructure), _time);
+      let frame: number = this.sampled ? Math.floor(_time * this.framesPerSecond / 1000) : undefined;
+      m = this.traverseStructureForMutator(this.getProcessedAnimationStructure(animationStructure), _time, frame);
+
       return m;
     }
 
@@ -259,7 +266,6 @@ namespace FudgeCore {
       delete this.events[_name];
       this.eventsProcessed.clear();
     }
-
 
     /**
      * (Re-)Calculate the total time of the Animation. Calculation-heavy, use only if actually needed.
@@ -323,6 +329,7 @@ namespace FudgeCore {
         name: this.name,
         labels: {},
         events: {},
+        sampled: this.sampled,
         framesPerSecond: this.framesPerSecond
         // sps: this.stepsPerSecond
       };
@@ -339,6 +346,7 @@ namespace FudgeCore {
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
       this.name = _serialization.name;
+      this.sampled = _serialization.sampled;
       this.framesPerSecond = _serialization.framesPerSecond;
       // this.stepsPerSecond = _serialization.sps;
       this.labels = {};
@@ -423,13 +431,13 @@ namespace FudgeCore {
     /**
      * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time
      */
-    private traverseStructureForMutator(_structure: AnimationStructure, _time: number): Mutator {
+    private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _frame?: number): Mutator {
       let newMutator: Mutator = {};
       for (let n in _structure) {
         if (_structure[n] instanceof AnimationSequence) {
-          newMutator[n] = (<AnimationSequence>_structure[n]).evaluate(_time);
+          newMutator[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame);
         } else {
-          newMutator[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time);
+          newMutator[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame);
         }
       }
 
@@ -475,6 +483,9 @@ namespace FudgeCore {
             break;
           case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
             ae = this.traverseStructureForNewStructure(this.getProcessedAnimationStructure(ANIMATION_STRUCTURE_TYPE.REVERSE), this.calculateRasteredSequence.bind(this));
+            break;
+          case ANIMATION_STRUCTURE_TYPE.SAMPLED:
+            ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateSampledSequence.bind(this));
             break;
           default:
             return {};
@@ -560,6 +571,26 @@ namespace FudgeCore {
         seq.addKey(key);
       }
       return seq;
+    }
+
+    /**
+     * Creates a {@link AnimationSequenceSampled} out of a given sequence.
+     */
+    private calculateSampledSequence(_sequence: AnimationSequence): AnimationSequenceSampled {
+      const frameTime: number = 1000 / this.framesPerSecond;
+      const nFrames: number = Math.ceil(this.totalTime / frameTime);
+
+      let keysOriginal: AnimationKey[] = _sequence.getKeys();
+      let keysSampled: AnimationKey[] = new Array(nFrames + 1);
+
+      for (let iSampled: number = 0, iOriginal: number = 0, time: number = 0; iSampled <= nFrames; iSampled++, time += frameTime) {
+        while (iOriginal < keysOriginal.length - 1 && keysOriginal[iOriginal + 1].time <= time + 1e-3)
+          iOriginal++;
+
+        keysSampled[iSampled] = keysOriginal[iOriginal];
+      }
+
+      return new AnimationSequenceSampled(keysSampled);;
     }
 
     /**
