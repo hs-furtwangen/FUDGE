@@ -21,6 +21,13 @@ namespace FudgeCore {
     private static readonly modificationsProcessed: Set<{ modified: boolean }> = new Set();
     private static timestampUpdate: number;
 
+    private static readonly prepareEvent: ( { currentTarget: Event["currentTarget"] } & Event) = (() => { // reuse the same event for all dispatches
+      let event: Event = new Event(EVENT.RENDER_PREPARE);
+      Object.defineProperty(event, "eventPhase", { writable: true, value: Event.AT_TARGET });
+      Object.defineProperty(event, "currentTarget", { writable: true });
+      return event;
+    })();
+
     /**
      * Recursively iterates over the branch starting with the node given, recalculates all world transforms, 
      * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
@@ -29,6 +36,7 @@ namespace FudgeCore {
      */
     @PerformanceMonitor.measure("Render.prepare")
     public static prepare(_branch: Node, _options: RenderPrepareOptions = {}, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _recalculate: boolean = false): void {
+      PerformanceMonitor.startMeasure("Render.prepare pre");
       Render.timestampUpdate = performance.now();
       Render.nodesSimple.reset();
       Render.nodesAlpha.reset();
@@ -40,11 +48,15 @@ namespace FudgeCore {
       Render.lights.forEach(_array => _array.reset());
       Node.resetRenderData();
       Coat.resetRenderData();
-
+      
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
+      PerformanceMonitor.endMeasure("Render.prepare pre");
 
+      PerformanceMonitor.startMeasure("Render.prepare prepareBranch");
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
+      PerformanceMonitor.endMeasure("Render.prepare prepareBranch");
 
+      PerformanceMonitor.startMeasure("Render.prepare post");
       for (const processed of Render.modificationsProcessed)
         processed.modified = false;
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
@@ -59,6 +71,7 @@ namespace FudgeCore {
       Coat.updateRenderbuffer();
 
       Render.bufferLights(Render.lights);
+      PerformanceMonitor.endMeasure("Render.prepare post");
     }
 
     public static addLights(_cmpLights: ComponentLight[]): void {
@@ -104,45 +117,58 @@ namespace FudgeCore {
       _branch.nNodesInBranch = 1;
       _branch.radius = 0;
 
-      _branch.dispatchEventToTargetOnly(new Event(EVENT.RENDER_PREPARE));
+      // PerformanceMonitor.startMeasure("Render.prepareBranch dispatch prepare");
+      // Reflect.set(Render.prepareEvent, "currentTarget", _branch);
+      Render.prepareEvent.currentTarget = _branch;
+      _branch.dispatchPreparedEventToTargetOnly(Render.prepareEvent);
+      // PerformanceMonitor.endMeasure("Render.prepareBranch dispatch prepare");
+
       _branch.timestampUpdate = Render.timestampUpdate;
 
-      let cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
-      if (cmpTransform && cmpTransform.isActive) {
+      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpTransform");
+      const cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
+      if (cmpTransform?.isActive) {
         if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
-          // PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxLocal");
+          // PerformanceMonitor.startMeasure("Render.prepareBranch mtxWorld * mtxLocal");
           let mtxWorldBranch: Matrix4x4 = Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal);
-          // PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxLocal");
+          // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxLocal");
           _branch.mtxWorld.copy(mtxWorldBranch);
           Recycler.store(mtxWorldBranch);
           Render.modificationsProcessed.add(cmpTransform.mtxLocal);
         }
       } else
         _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
+      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpTransform");
 
-      let cmpRigidbody: ComponentRigidbody = _branch.getComponent(ComponentRigidbody);
-      if (cmpRigidbody && cmpRigidbody.isActive) { //TODO: support de-/activation throughout
+      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpRigidbody");
+      const cmpRigidbody: ComponentRigidbody = _branch.getComponent(ComponentRigidbody);
+      if (cmpRigidbody?.isActive) { //TODO: support de-/activation throughout
         Render.nodesPhysics.push(_branch); // add this node to physics list
         if (!_options?.ignorePhysics)
           this.transformByPhysics(_branch, cmpRigidbody);
       }
+      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpRigidbody");
 
-      let cmpPick: ComponentPick = _branch.getComponent(ComponentPick);
-      if (cmpPick && cmpPick.isActive) {
+      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpPick");
+      const cmpPick: ComponentPick = _branch.getComponent(ComponentPick);
+      if (cmpPick?.isActive) {
         Render.componentsPick.push(cmpPick); // add this component to pick list
       }
+      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpPick");
 
-      let cmpLights: ComponentLight[] = _branch.getComponents(ComponentLight);
+      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpLight");
+      const cmpLights: ComponentLight[] = _branch.getComponents(ComponentLight);
       Render.addLights(cmpLights);
+      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpLight");
 
-      let cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
-      let cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
-
-      if (cmpMesh && cmpMesh.isActive && cmpMaterial && cmpMaterial.isActive) {
+      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpMesh cmpMaterial");
+      const cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
+      const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
+      if (cmpMesh?.isActive && cmpMaterial?.isActive) {
         if (cmpMesh.mtxPivot.modified || _branch.mtxWorld.modified) {
-          // PerformanceMonitor.startMeasure("Render.prepare mtxWorld * mtxPivot");
+          // PerformanceMonitor.startMeasure("Render.prepareBranch mtxWorld * mtxPivot");
           let mtxWorldMesh: Matrix4x4 = Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot);
-          // PerformanceMonitor.endMeasure("Render.prepare mtxWorld * mtxPivot");
+          // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxPivot");
           cmpMesh.mtxWorld.copy(mtxWorldMesh);
           Recycler.store(mtxWorldMesh); // TODO: examine, why recycling this causes meshes to be misplaced...
           Render.modificationsProcessed.add(cmpMesh.mtxPivot);
@@ -163,22 +189,36 @@ namespace FudgeCore {
         if (material)
           Render.coats.add(material.coat);
       }
+      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
-      let cmpSkeletons: ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
+      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpSkeleton");
+      const cmpSkeletons: ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
       for (let cmpSkeleton of cmpSkeletons)
-        if (cmpSkeleton && cmpSkeleton.isActive)
+        if (cmpSkeleton?.isActive)
           Render.componentsSkeleton.push(cmpSkeleton);
+      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpSkeleton");
 
       for (let child of _branch.getChildren()) {
         Render.prepareBranch(child, _options, _branch.mtxWorld, _recalculate);
-
         _branch.nNodesInBranch += child.nNodesInBranch;
-        let cmpMeshChild: ComponentMesh = child.getComponent(ComponentMesh);
-        let position: Vector3 = cmpMeshChild ? cmpMeshChild.mtxWorld.translation : child.mtxWorld.translation;
-        position = position.clone;
-        _branch.radius = Math.max(_branch.radius, position.getDistance(_branch.mtxWorld.translation) + child.radius);
-        Recycler.store(position);
+
+        // PerformanceMonitor.startMeasure("Render.prepareBranch touch children");
+        // let cmpMeshChild: ComponentMesh = child.getComponent(ComponentMesh);
+        // let position: Vector3 = cmpMeshChild ? cmpMeshChild.mtxWorld.translation : child.mtxWorld.translation;
+        // // position = position.clone;
+        // _branch.radius = Math.max(_branch.radius, position.getDistance(_branch.mtxWorld.translation) + child.radius);
+        // // Recycler.store(position);
+        // PerformanceMonitor.endMeasure("Render.prepareBranch touch children");
       }
+
+      // PerformanceMonitor.startMeasure("Render.prepareBranch touch parent");
+      let parent: Node = _branch.getParent();
+      if (parent) {
+        // parent.nNodesInBranch += _branch.nNodesInBranch;
+        let position: Vector3 = cmpMesh?.mtxWorld.translation ?? _branch.mtxWorld.translation;
+        parent.radius = Math.max(parent.radius, position.getDistance(parent.mtxWorld.translation) + _branch.radius);
+      }
+      // PerformanceMonitor.endMeasure("Render.prepareBranch touch parent");
     }
 
     private static transformByPhysics(_node: Node, _cmpRigidbody: ComponentRigidbody): void {

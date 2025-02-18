@@ -101,11 +101,11 @@ namespace FudgeCore {
     public static updateRenderbuffer(): void { /* injected */ };
 
     /** @internal reroute to {@link RenderManagerNode.updateRenderData} */
-    @RenderManagerNode.decorate 
+    @RenderManagerNode.decorate
     protected static updateRenderData(_node: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { /* injected */ };
 
     /** @internal reroute to {@link RenderManagerNode.useRenderData} */
-    @RenderManagerNode.decorate 
+    @RenderManagerNode.decorate
     protected static useRenderData(_node: Node, _mtxWorldOverride: Matrix4x4): void { /* injected */ };
 
     public get isActive(): boolean {
@@ -163,7 +163,7 @@ namespace FudgeCore {
 
     /** @internal reroute to {@link RenderManagerNode.updateRenderData} */
     public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem); };
-    
+
     /** @internal reroute to {@link RenderManagerNode.useRenderData} */
     public useRenderData(_mtxWorldOverride: Matrix4x4): void { Node.useRenderData(this, _mtxWorldOverride); };
 
@@ -350,9 +350,9 @@ namespace FudgeCore {
           let mutatorsForType: Mutator[] = _mutator.components[componentType];
           if (componentsOfType != undefined && mutatorsForType != undefined) {
             for (const i in mutatorsForType) {
-              PerformanceMonitor.startMeasure("applyAnimation mutate components");
+              // PerformanceMonitor.startMeasure("applyAnimation mutate components");
               componentsOfType[i].mutate(mutatorsForType[i], null, false);
-              PerformanceMonitor.endMeasure("applyAnimation mutate components");
+              // PerformanceMonitor.endMeasure("applyAnimation mutate components");
             }
           }
         }
@@ -613,6 +613,20 @@ namespace FudgeCore {
       this.callListeners(this.listeners[_event.type], _event); // TODO: examine if this should go to the captures instead of the listeners
       return true;
     }
+    /**
+     * @internal Dispatches a synthetic event directly to the target only. Event phase and current target are not set automatically.
+     */
+    public dispatchPreparedEventToTargetOnly(_event: Event): boolean {
+      this.callListeners(this.listeners[_event.type], _event);
+      return true;
+    }
+    // /**
+    //  * Dispatches a synthetic event to target without travelling through the graph hierarchy neither during capture nor bubbling phase
+    //  */
+    // public dispatchEventToTargetOnly(_event: Event): boolean {
+    //   this.callListeners(this.listeners[_event.type], _event); // TODO: examine if this should go to the captures instead of the listeners
+    //   return true;
+    // }
     /**
      * Broadcasts a synthetic event to this node and from there to all nodes deeper in the hierarchy,
      * invoking matching handlers of the nodes listening to the capture phase. Watch performance when there are many nodes involved
