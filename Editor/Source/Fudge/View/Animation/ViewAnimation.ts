@@ -7,7 +7,7 @@ namespace Fudge {
    * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022 | Jirka Dell'Oro-Friedl, HFU, 2023
    */
   export class ViewAnimation extends View {
-    public keySelected: ƒ.AnimationKey;
+    public keySelected: ƒ.AnimationKey<number>;
     private node: ƒ.Node;
     private cmpAnimation: ƒ.ComponentAnimation;
     private animation: ƒ.Animation;

@@ -631,7 +631,7 @@ declare namespace Fudge {
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022 | Jirka Dell'Oro-Friedl, HFU, 2023
      */
     class ViewAnimation extends View {
-        keySelected: ƒ.AnimationKey;
+        keySelected: ƒ.AnimationKey<number>;
         private node;
         private cmpAnimation;
         private animation;
@@ -661,7 +661,7 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     interface ViewAnimationSequence {
-        data: ƒ.AnimationSequence;
+        data: ƒ.AnimationSequence<number>;
         color: string;
     }
     /**

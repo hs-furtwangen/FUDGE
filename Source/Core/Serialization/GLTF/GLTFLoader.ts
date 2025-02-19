@@ -510,6 +510,11 @@ namespace FudgeCore {
 
       const animationStructure: AnimationStructure = {};
       for (const gltfChannel of gltfAnimation.channels) {
+        if (gltfChannel.target.path == "weights") {
+          Debug.warn(`${this}: Animation with index ${_iAnimation} has a target path of 'weights'. FUDGE does not support morph targets.`);
+          continue;
+        }
+
         const gltfNode: GLTF.Node = this.#gltf.nodes[gltfChannel.target.node];
         if (!gltfNode)
           continue;
@@ -522,9 +527,10 @@ namespace FudgeCore {
         }
 
         // node.components.ComponentTransform[0].mtxLocal
-        let mtxLocal: AnimationSequenceMatrix4x4 = <AnimationSequenceMatrix4x4>((((node.components ??= {}).ComponentTransform ??= [])[0] ??= {}).mtxLocal ??= {});
+        type AnimationSequenceMatrix4x4 = { translation?: AnimationSequence<Vector3>; rotation?: AnimationSequence<Quaternion>; scaling?: AnimationSequence<Vector3> };
+        let mtxLocal: AnimationSequenceMatrix4x4 = ((((node.components ??= {}).ComponentTransform ??= [])[0] ??= {}).mtxLocal ??= {});
         mtxLocal[toInternTransformation[gltfChannel.target.path]] =
-          await this.getAnimationSequenceVector(gltfAnimation.samplers[gltfChannel.sampler], gltfChannel.target.path);
+          <General>await this.getAnimationSequence(gltfAnimation.samplers[gltfChannel.sampler], gltfChannel.target.path);
       }
 
       const animation: Animation = _animation ?? new AnimationGLTF();
@@ -1102,7 +1108,7 @@ namespace FudgeCore {
       return this.#buffers[_iBuffer];
     }
 
-    private async getAnimationSequenceVector(_sampler: GLTF.AnimationSampler, _transformationType: GLTF.AnimationChannelTarget["path"]): Promise<AnimationSequenceVector3 | AnimationSequenceVector4> {
+    private async getAnimationSequence(_sampler: GLTF.AnimationSampler, _transformationType: GLTF.AnimationChannelTarget["path"]): Promise<AnimationSequence<Vector3 | Quaternion>> {
       const input: Float32Array = await this.getFloat32Array(_sampler.input);
       const output: Float32Array = await this.getFloat32Array(_sampler.output);
 
@@ -1110,16 +1116,16 @@ namespace FudgeCore {
       const isRotation: boolean = _transformationType == "rotation";
       const vectorLength: number = isRotation ? 4 : 3; // rotation is stored as quaternion
       const interpolation: ANIMATION_INTERPOLATION = this.toInternInterpolation(_sampler.interpolation);
-      const isCubic: true | undefined = interpolation == ANIMATION_INTERPOLATION.CUBIC ? true : undefined;
+      const isCubic: boolean = interpolation == ANIMATION_INTERPOLATION.CUBIC;
       const vectorsPerInput: number = isCubic ? 3 : 1; // cubic interpolation uses 3 values per input: in-tangent, property value and out-tangent. https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#interpolation-cubic
 
       // used only for rotation interpolation
       let lastRotation: Quaternion;
       let nextRotation: Quaternion;
 
-      const sequences: { x: AnimationKey[]; y: AnimationKey[]; z: AnimationKey[]; w?: AnimationKey[] } = { x: [], y: [], z: [] };
+      const sequence: AnimationKey<General>[] = [];
+
       if (isRotation) {
-        sequences.w = [];
         lastRotation = Recycler.get(Quaternion);
         nextRotation = Recycler.get(Quaternion);
       }
@@ -1130,24 +1136,33 @@ namespace FudgeCore {
         const iOutputSlopeOut: number = iOutput + vectorLength;
         const time: number = millisPerSecond * input[iInput];
 
+        let value: Vector3 | Quaternion;
+        let slopeIn: Vector3 | Quaternion;
+        let slopeOut: Vector3 | Quaternion;
+
         if (isRotation) {
           // Take the shortest path between two rotations, i.e. if the dot product is negative then the next quaternion needs to be negated.
           // q and -q represent the same rotation but interpolation will take either the long way or the short way around the sphere depending on which we use.
           nextRotation.set(output[iOutput + 0], output[iOutput + 1], output[iOutput + 2], output[iOutput + 3]);
           if (Quaternion.DOT(lastRotation, nextRotation) < 0)
             nextRotation.negate();
-          output[iOutput + 0] = nextRotation.x;
-          output[iOutput + 1] = nextRotation.y;
-          output[iOutput + 2] = nextRotation.z;
-          output[iOutput + 3] = nextRotation.w;
+
           lastRotation.set(nextRotation.x, nextRotation.y, nextRotation.z, nextRotation.w);
+          value = nextRotation.clone;
+          if (isCubic) {
+            slopeIn = new Quaternion(output[iOutputSlopeIn + 0], output[iOutputSlopeIn + 1], output[iOutputSlopeIn + 2], output[iOutputSlopeIn + 3]);
+            slopeOut = new Quaternion(output[iOutputSlopeOut + 0], output[iOutputSlopeOut + 1], output[iOutputSlopeOut + 2], output[iOutputSlopeOut + 3]);
+          }
+        } else {
+          value = new Vector3(output[iOutput + 0], output[iOutput + 1], output[iOutput + 2]);
+
+          if (isCubic) {
+            slopeIn = new Vector3(output[iOutputSlopeIn + 0], output[iOutputSlopeIn + 1], output[iOutputSlopeIn + 2]);
+            slopeOut = new Vector3(output[iOutputSlopeOut + 0], output[iOutputSlopeOut + 1], output[iOutputSlopeOut + 2]);
+          }
         }
 
-        sequences.x.push(new AnimationKey(time, output[iOutput + 0], interpolation, isCubic && output[iOutputSlopeIn + 0] / millisPerSecond, isCubic && output[iOutputSlopeOut + 0] / millisPerSecond));
-        sequences.y.push(new AnimationKey(time, output[iOutput + 1], interpolation, isCubic && output[iOutputSlopeIn + 1] / millisPerSecond, isCubic && output[iOutputSlopeOut + 1] / millisPerSecond));
-        sequences.z.push(new AnimationKey(time, output[iOutput + 2], interpolation, isCubic && output[iOutputSlopeIn + 2] / millisPerSecond, isCubic && output[iOutputSlopeOut + 2] / millisPerSecond));
-        if (isRotation)
-          sequences.w.push(new AnimationKey(time, output[iOutput + 3], interpolation, isCubic && output[iOutputSlopeIn + 3] / millisPerSecond, isCubic && output[iOutputSlopeOut + 3] / millisPerSecond));
+        sequence.push(new AnimationKey(time, value, interpolation, slopeIn, slopeOut));
       }
 
       if (isRotation) {
@@ -1155,7 +1170,7 @@ namespace FudgeCore {
         Recycler.store(nextRotation);
       }
 
-      return Object.fromEntries(Object.entries(sequences).map(([_key, _value]) => [_key, new AnimationSequence(_value)]));
+      return new AnimationSequence(sequence, isRotation ? Quaternion : Vector3);
     }
 
     private toInternInterpolation(_interpolation: GLTF.AnimationSampler["interpolation"]): ANIMATION_INTERPOLATION {
@@ -1181,11 +1196,10 @@ namespace FudgeCore {
   type TypedArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Float32Array;
   type TypedArrayConstructor = Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor | Int8ArrayConstructor | Int16ArrayConstructor | Float32ArrayConstructor;
 
-  const toInternTransformation: Record<GLTF.AnimationChannelTarget["path"], string> = {
+  const toInternTransformation: Record<Exclude<GLTF.AnimationChannelTarget["path"], "weights">, "translation" | "rotation" | "scaling"> = {
     "translation": "translation",
     "rotation": "rotation",
-    "scale": "scaling",
-    "weights": "weights"
+    "scale": "scaling"
   };
 
   // number of components defined by 'type'

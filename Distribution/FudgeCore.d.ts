@@ -2254,26 +2254,10 @@ declare function ifNumber(_check: number, _default: number): number;
 declare namespace FudgeCore {
     /**
      * Holds information about the AnimationStructure that the Animation uses to map the Sequences to the Attributes.
-     * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequence}s.
+     * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
      */
     interface AnimationStructure {
-        [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence;
-    }
-    interface AnimationSequenceVector3 extends AnimationStructure {
-        x?: AnimationSequence;
-        y?: AnimationSequence;
-        z?: AnimationSequence;
-    }
-    interface AnimationSequenceVector4 extends AnimationStructure {
-        x?: AnimationSequence;
-        y?: AnimationSequence;
-        z?: AnimationSequence;
-        w?: AnimationSequence;
-    }
-    interface AnimationSequenceMatrix4x4 extends AnimationStructure {
-        rotation?: AnimationSequenceVector3 | AnimationSequenceVector4;
-        scale?: AnimationSequenceVector3;
-        translation?: AnimationSequenceVector3;
+        [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | Vector3 | Quaternion>;
     }
     /**
     * An associative array mapping names of lables to timestamps.
@@ -2316,7 +2300,7 @@ declare namespace FudgeCore {
     }
     /**
      * Describes and controls and animation by yielding mutators
-     * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
+     * according to the stored {@link AnimationStructure} and {@link AnimationSequenceNumber}s
      * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
      * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
      */
@@ -2328,6 +2312,7 @@ declare namespace FudgeCore {
         name: string;
         totalTime: number;
         labels: AnimationLabel;
+        sampled: boolean;
         animationStructure: AnimationStructure;
         events: AnimationEventTrigger;
         protected framesPerSecond: number;
@@ -2447,11 +2432,15 @@ declare namespace FudgeCore {
          */
         private calculateReverseSequence;
         /**
-         * Creates a rastered {@link AnimationSequence} out of a given sequence.
+         * Creates a rastered {@link AnimationSequenceNumber} out of a given sequence.
          * @param _sequence The sequence to calculate the new sequence out of
          * @returns the rastered sequence.
          */
         private calculateRasteredSequence;
+        /**
+         * Creates a {@link AnimationSequenceSampled} out of a given sequence.
+         */
+        private calculateSampledSequence;
         /**
          * Creates a new reversed {@link AnimationEventTrigger} object based on the given one.
          * @param _events the event object to calculate the new one out of
@@ -2476,42 +2465,52 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Calculates the values between {@link AnimationKey}s.
+     * Calculates the values between {@link AnimationKeyNumber}s.
      * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`).
      * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
      * @author Lukas Scheuerle, HFU, 2019
      */
-    class AnimationFunction {
-        private a;
-        private b;
-        private c;
-        private d;
-        private keyIn;
-        private keyOut;
-        constructor(_keyIn: AnimationKey, _keyOut?: AnimationKey);
-        set setKeyIn(_keyIn: AnimationKey);
-        set setKeyOut(_keyOut: AnimationKey);
+    abstract class AnimationFunction<T extends number | Vector3 | Quaternion> {
+        protected a: T;
+        protected b: T;
+        protected c: T;
+        protected d: T;
+        protected keyIn: AnimationKey<T>;
+        protected keyOut: AnimationKey<T>;
+        constructor(_keyIn: AnimationKey<T>, _keyOut?: AnimationKey<T>);
         /**
          * Returns the parameter values of this cubic function. `f(x) = ax³ + bx² + cx + d`
          * Used by editor.
          */
         getParameters(): {
-            a: number;
-            b: number;
-            c: number;
-            d: number;
+            a: T;
+            b: T;
+            c: T;
+            d: T;
         };
         /**
          * Calculates the value of the function at the given time.
          * @param _time the point in time at which to evaluate the function in milliseconds. Will be corrected for offset internally.
          * @returns the value at the given time
          */
-        evaluate(_time: number): number;
+        abstract evaluate(_time: number): T;
         /**
          * (Re-)Calculates the parameters of the cubic function.
          * See https://math.stackexchange.com/questions/3173469/calculate-cubic-equation-from-two-points-and-two-slopes-variably
          * and https://jirkadelloro.github.io/FUDGE/Documentation/Logs/190410_Notizen_LS
          */
+        abstract calculate(): void;
+    }
+    class AnimationFunctionNumber extends AnimationFunction<number> {
+        evaluate(_time: number): number;
+        calculate(): void;
+    }
+    class AnimationFunctionVector3 extends AnimationFunction<Vector3> {
+        evaluate(_time: number): Vector3;
+        calculate(): void;
+    }
+    class AnimationFunctionQuaternion extends AnimationFunction<Quaternion> {
+        evaluate(_time: number): Quaternion;
         calculate(): void;
     }
 }
@@ -2539,32 +2538,30 @@ declare namespace FudgeCore {
      * Also holds a reference to the {@link AnimationFunction}s that come in and out of the sides.
      * The {@link AnimationFunction}s are handled by the {@link AnimationSequence}s.
      * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
-     * @author Lukas Scheuerle, HFU, 2019
+     * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    class AnimationKey extends Mutable implements Serializable {
+    class AnimationKey<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
         #private;
         /**Don't modify this unless you know what you're doing.*/
-        functionIn: AnimationFunction;
-        /**Don't modify this unless you know what you're doing.*/
-        functionOut: AnimationFunction;
-        constructor(_time?: number, _value?: number, _interpolation?: ANIMATION_INTERPOLATION, _slopeIn?: number, _slopeOut?: number);
+        functionOut: AnimationFunction<T>;
+        constructor(_time?: number, _value?: T, _interpolation?: ANIMATION_INTERPOLATION, _slopeIn?: T, _slopeOut?: T);
         /**
          * Static comparation function to use in an array sort function to sort the keys by their time.
          * @param _a the animation key to check
          * @param _b the animation key to check against
          * @returns >0 if a>b, 0 if a=b, <0 if a<b
          */
-        static compare(_a: AnimationKey, _b: AnimationKey): number;
+        static compare<T extends number | Vector3 | Quaternion, K extends AnimationKey<T>>(_a: K, _b: K): number;
         get time(): number;
         set time(_time: number);
-        get value(): number;
-        set value(_value: number);
+        get value(): T;
+        set value(_value: T);
         get interpolation(): ANIMATION_INTERPOLATION;
         set interpolation(_interpolation: ANIMATION_INTERPOLATION);
-        get slopeIn(): number;
-        set slopeIn(_slope: number);
-        get slopeOut(): number;
-        set slopeOut(_slope: number);
+        get slopeIn(): T;
+        set slopeIn(_slope: T);
+        get slopeOut(): T;
+        set slopeOut(_slope: T);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
@@ -2730,64 +2727,78 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    type AnimationValueType<T extends number | Vector3 | Quaternion> = T extends number ? NumberConstructor : T extends Vector3 ? typeof Vector3 : T extends Quaternion ? typeof Quaternion : never;
     /**
      * A sequence of {@link AnimationKey}s that is mapped to an attribute of a {@link Node} or its {@link Component}s inside the {@link Animation}.
      * Provides functions to modify said keys
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022
      */
-    class AnimationSequence extends Mutable implements Serializable {
-        private keys;
-        constructor(_keys?: AnimationKey[]);
+    class AnimationSequence<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
+        #private;
+        protected keys: AnimationKey<T>[];
+        constructor(_keys: AnimationKey<T>[], _valueType: AnimationValueType<T>);
         get length(): number;
+        get valueType(): AnimationValueType<T>;
+        private set valueType(value);
         /**
          * Evaluates the sequence at the given point in time.
          * @param _time the point in time at which to evaluate the sequence in milliseconds.
          * @returns the value of the sequence at the given time. undefined if there are no keys.
          */
-        evaluate(_time: number): number;
+        evaluate(_time: number, _frame?: number): T;
         /**
          * Adds a new key to the sequence.
          * @param _key the key to add
          */
-        addKey(_key: AnimationKey): void;
+        addKey(_key: AnimationKey<T>): void;
         /**
          * Modifys a given key in the sequence.
          * @param _key the key to add
          */
-        modifyKey(_key: AnimationKey, _time?: number, _value?: number): void;
+        modifyKey(_key: AnimationKey<T>, _time?: number, _value?: T): void;
         /**
          * Removes a given key from the sequence.
          * @param _key the key to remove
          */
-        removeKey(_key: AnimationKey): void;
+        removeKey(_key: AnimationKey<T>): void;
         /**
          * Find a key in the sequence exactly matching the given time.
          */
-        findKey(_time: number): AnimationKey;
+        findKey(_time: number): AnimationKey<T>;
         /**
          * Removes the Animation Key at the given index from the keys.
          * @param _index the zero-based index at which to remove the key
          * @returns the removed AnimationKey if successful, null otherwise.
          */
-        removeKeyAtIndex(_index: number): AnimationKey;
+        removeKeyAtIndex(_index: number): AnimationKey<T>;
         /**
          * Gets a key from the sequence at the desired index.
          * @param _index the zero-based index at which to get the key
          * @returns the AnimationKey at the index if it exists, null otherwise.
          */
-        getKey(_index: number): AnimationKey;
+        getKey(_index: number): AnimationKey<T>;
         /**
          * Returns this sequence's keys. This is not a copy, but the actual array used internally. Handle with care!
          * Used by Editor.
          */
-        getKeys(): AnimationKey[];
+        getKeys(): AnimationKey<T>[];
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
         /**
          * Utility function that (re-)generates all functions in the sequence.
          */
-        private regenerateFunctions;
+        protected regenerateFunctions(_keys?: AnimationKey<T>[]): void;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+    /**
+     * A sequence of {@link AnimationKeyNumber}s sampled from an original sequence. In a sampled sequence, the keys are stored at indices corresponding to discrete frames in accordance with the {@link Animation}'s frames per second.
+     * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame.
+     * @authors Jonas Plotzky, HFU, 2025
+     */
+    class AnimationSequenceSampled<T extends number | Vector3 | Quaternion> extends AnimationSequence<T> {
+        /** Evaluates the sequence at the given frame and time. */
+        evaluate(_time: number, _frame?: number): T;
+        protected regenerateFunctions(_keys?: AnimationKey<T>[]): void;
     }
 }
 declare namespace FudgeCore {
@@ -7258,6 +7269,7 @@ declare namespace FudgeCore {
         private static readonly coats;
         private static readonly modificationsProcessed;
         private static timestampUpdate;
+        private static readonly prepareEvent;
         /**
          * Recursively iterates over the branch starting with the node given, recalculates all world transforms,
          * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
@@ -8669,7 +8681,7 @@ declare namespace FudgeCore {
         private getBufferData;
         private getBufferViewData;
         private getBuffer;
-        private getAnimationSequenceVector;
+        private getAnimationSequence;
         private toInternInterpolation;
     }
 }

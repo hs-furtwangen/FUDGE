@@ -8,12 +8,12 @@ namespace Fudge {
   }
 
   export interface ViewAnimationSequence {
-    data: ƒ.AnimationSequence;
+    data: ƒ.AnimationSequence<number>;
     color: string;
   }
 
   interface ViewAnimationKey {
-    data: ƒ.AnimationKey;
+    data: ƒ.AnimationKey<number>;
     color: string;
     path2D: Path2D;
     type: "key";
@@ -218,7 +218,7 @@ namespace Fudge {
           this.draw();
           break;
         case "Delete Key":
-          let sequence: ƒ.AnimationSequence = this.sequences.find(_sequence => _sequence.data.getKeys().includes(targetKey.data)).data;
+          let sequence: ƒ.AnimationSequence<number> = this.sequences.find(_sequence => _sequence.data.getKeys().includes(targetKey.data)).data;
           if (sequence.length < 2) {
             ƒ.Debug.warn("Only one key left in sequence. Delete property instead.");
             break;
@@ -543,7 +543,7 @@ namespace Fudge {
           });
       }
 
-      function getBezierPoints(_animationFunction: ƒ.AnimationFunction, _keyStart: ƒ.AnimationKey, _keyEnd: ƒ.AnimationKey): ƒ.Vector2[] {
+      function getBezierPoints(_animationFunction: ƒ.AnimationFunctionNumber, _keyStart: ƒ.AnimationKey<number>, _keyEnd: ƒ.AnimationKey<number>): ƒ.Vector2[] {
         let parameters: { a: number; b: number; c: number; d: number } = _animationFunction.getParameters();
         const polarForm: (u: number, v: number, w: number) => number = (_u, _v, _w) => {
           return (
@@ -762,8 +762,8 @@ namespace Fudge {
       translation.x = Math.max(0, translation.x);
       translation.x = Math.round(translation.x / pixelPerFrame) * pixelPerFrame;
 
-      let key: ƒ.AnimationKey = this.selectedKey.data;
-      let sequence: ƒ.AnimationSequence = this.sequences.find(_sequence => _sequence.data.getKeys().includes(key)).data;
+      let key: ƒ.AnimationKey<number> = this.selectedKey.data;
+      let sequence: ƒ.AnimationSequence<number> = this.sequences.find(_sequence => _sequence.data.getKeys().includes(key)).data;
       sequence.modifyKey(key, translation.x, this.mode == SHEET_MODE.DOPE || _event.shiftKey ? null : translation.y);
       this.animation.calculateTotalTime();
       this.playbackTime = key.time;

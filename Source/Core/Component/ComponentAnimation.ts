@@ -157,8 +157,9 @@ namespace FudgeCore {
      * Uses the built-in time unless a different time is specified.
      * May also be called from updateAnimation().
      */
+    @PerformanceMonitor.measure()
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
-      PerformanceMonitor.startMeasure("updateAnimationLoop");
+      // PerformanceMonitor.startMeasure("updateAnimationLoop");
       if (this.animation.totalTime == 0) 
         return null;
 
@@ -166,18 +167,31 @@ namespace FudgeCore {
       if (this.quantization == ANIMATION_QUANTIZATION.FRAMES) {
         time = this.#previous + (1000 / this.animation.fps);
       }
+      // PerformanceMonitor.startMeasure("updateAnimationLoop calculateDirection");
       let direction: number = this.animation.calculateDirection(time, this.playmode);
+      // PerformanceMonitor.endMeasure("updateAnimationLoop calculateDirection");
+
+      // PerformanceMonitor.startMeasure("updateAnimationLoop getModalTime");
       time = this.animation.getModalTime(time, this.playmode, this.#timeLocal.getOffset());
+      // PerformanceMonitor.endMeasure("updateAnimationLoop getModalTime");
+
+      // PerformanceMonitor.startMeasure("updateAnimationLoop executeEvents");
       this.executeEvents(this.animation.getEventsToFire(this.#previous, time, this.quantization, direction));
+      // PerformanceMonitor.endMeasure("updateAnimationLoop executeEvents");
 
       if (this.#previous != time) {
         this.#previous = time;
         time = time % this.animation.totalTime;
+        PerformanceMonitor.startMeasure("updateAnimationLoop getState");
         let mutator: Mutator = this.animation.getState(time, direction, this.quantization);
+        PerformanceMonitor.endMeasure("updateAnimationLoop getState");
+
         if (this.node) {
+          PerformanceMonitor.startMeasure("updateAnimationLoop applyAnimation");
           this.node.applyAnimation(mutator);
+          PerformanceMonitor.endMeasure("updateAnimationLoop applyAnimation");
         }
-        PerformanceMonitor.endMeasure("updateAnimationLoop");
+        // PerformanceMonitor.endMeasure("updateAnimationLoop");
 
         return mutator;
       }

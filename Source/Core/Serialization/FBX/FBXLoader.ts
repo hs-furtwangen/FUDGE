@@ -1,4 +1,24 @@
 namespace FudgeCore {
+  // TODO: remove this and replace it with a more generic approach
+  interface AnimationSequenceVector3 extends AnimationStructure {
+    x?: AnimationSequence<number>;
+    y?: AnimationSequence<number>;
+    z?: AnimationSequence<number>;
+  }
+
+  interface AnimationSequenceVector4 extends AnimationStructure {
+    x?: AnimationSequence<number>;
+    y?: AnimationSequence<number>;
+    z?: AnimationSequence<number>;
+    w?: AnimationSequence<number>;
+  }
+
+  interface AnimationSequenceMatrix4x4 extends AnimationStructure {
+    rotation?: AnimationSequenceVector3 | AnimationSequenceVector4;
+    scale?: AnimationSequenceVector3;
+    translation?: AnimationSequenceVector3;
+  }
+
   /**
    * Asset loader for Filmbox files.
    * @author Matthias Roming, HFU, 2023
@@ -432,7 +452,7 @@ namespace FudgeCore {
       for (const valueName in _animNode) if (valueName == "dX" || valueName == "dY" || valueName == "dZ") {
         const value: FBX.AnimCurve | number = _animNode[valueName];
         if (typeof value != "number") {
-          const sequence: AnimationSequence = new AnimationSequence();
+          const sequence: AnimationSequence<number> = new AnimationSequence([], Number);
           for (let i: number = 0; i < value.KeyTime.length; ++i) {
             // According to the reference time is defined as a signed int64, unit being 1/46186158000 seconds
             // ref: https://archive.blender.org/wiki/index.php/User:Mont29/Foundation/FBX_File_Structure/#Some_Specific_Property_Types
@@ -460,7 +480,7 @@ namespace FudgeCore {
           .filter((_time, _index, _times) => _time != _times[_index + 1]) // remove duplicates
           .map(_time => { // find keys for all axes at time
             return { x: findKey(vectorSequence.x), y: findKey(vectorSequence.y), z: findKey(vectorSequence.z) };
-            function findKey(_sequence: AnimationSequence): AnimationKey {
+            function findKey(_sequence: AnimationSequence<number>): AnimationKey<number> {
               return _sequence?.getKeys().find(_key => _key.time == _time);
             }
           })

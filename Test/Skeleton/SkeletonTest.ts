@@ -116,18 +116,10 @@ namespace SkeletonTest {
     // const skeletonInstance: ƒ.SkeletonInstance = await ƒ.SkeletonInstance.CREATE(skeleton);
 
     // setup skeleton animator
-    const sequenceRotation: ƒ.AnimationSequence = new ƒ.AnimationSequence();
-    sequenceRotation.addKey(new ƒ.AnimationKey(0, 0));
-    sequenceRotation.addKey(new ƒ.AnimationKey(1000, 90));
-    sequenceRotation.addKey(new ƒ.AnimationKey(2000, 0));
-    const sequenceScaling: ƒ.AnimationSequence = new ƒ.AnimationSequence();
-    sequenceScaling.addKey(new ƒ.AnimationKey(0, 1));
-    sequenceScaling.addKey(new ƒ.AnimationKey(1000, 1.25));
-    sequenceScaling.addKey(new ƒ.AnimationKey(2000, 1));
-    const sequenceTranslation: ƒ.AnimationSequence = new ƒ.AnimationSequence();
-    sequenceTranslation.addKey(new ƒ.AnimationKey(0, -0.5));
-    sequenceTranslation.addKey(new ƒ.AnimationKey(1000, 0.5));
-    sequenceTranslation.addKey(new ƒ.AnimationKey(2000, -0.5));
+    const sequenceRotation: ƒ.AnimationSequence<number> = new ƒ.AnimationSequence([new ƒ.AnimationKey(0, 0), new ƒ.AnimationKey(1000, 90), new ƒ.AnimationKey(2000, 0)], Number);
+    const sequenceScaling: ƒ.AnimationSequence<number> = new ƒ.AnimationSequence([new ƒ.AnimationKey(0, 1), new ƒ.AnimationKey(1000, 1.25), new ƒ.AnimationKey(2000, 1)], Number);
+    const sequenceTranslation: ƒ.AnimationSequence<number> = new ƒ.AnimationSequence([new ƒ.AnimationKey(0, -0.5), new ƒ.AnimationKey(1000, 0.5), new ƒ.AnimationKey(2000, -0.5)], Number);
+
     const animation: ƒ.Animation = new ƒ.Animation("AnimationSkeletonCylinder", {
       children: {
         LowerBone: {

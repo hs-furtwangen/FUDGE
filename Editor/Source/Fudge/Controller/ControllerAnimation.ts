@@ -29,7 +29,7 @@ namespace Fudge {
 
     public update(_mutator: ƒ.Mutator, _time?: number): void {
       let colorIndex: number = 0;
-      let keySelected: ƒ.AnimationKey = this.view.keySelected;
+      let keySelected: ƒ.AnimationKey<number> = this.view.keySelected;
 
       updateRecursive(this.dom, _mutator, this.animation.animationStructure, _time);
 
@@ -44,7 +44,7 @@ namespace Fudge {
 
           if (element instanceof ƒui.CustomElement && structureOrSequence instanceof ƒ.AnimationSequence) {
             element.classList.remove("selected");
-            let key: ƒ.AnimationKey = structureOrSequence.findKey(_time);
+            let key: ƒ.AnimationKey<number> = structureOrSequence.findKey(_time);
             if (key) {// key found at exactly the given time, take its value
               value = key.value;
               if (key == keySelected)
@@ -68,10 +68,10 @@ namespace Fudge {
 
     // modify or add key
     public updateSequence(_time: number, _element: ƒui.CustomElement, _add: boolean = false): void {
-      let sequence: ƒ.AnimationSequence = Reflect.get(_element, "animationSequence");
+      let sequence: ƒ.AnimationSequence<number> = Reflect.get(_element, "animationSequence");
       if (!sequence) return;
 
-      let key: ƒ.AnimationKey = sequence.findKey(_time);
+      let key: ƒ.AnimationKey<number> = sequence.findKey(_time);
       if (!key) {
         if (_add) {
           key = new ƒ.AnimationKey(_time, <number>_element.getMutatorValue());
@@ -84,7 +84,7 @@ namespace Fudge {
     }
 
     public nextKey(_time: number, _direction: "forward" | "backward"): number {
-      let nextKey: ƒ.AnimationKey = this.sequences
+      let nextKey: ƒ.AnimationKey<number> = this.sequences
         .flatMap(_sequence => _sequence.data.getKeys())
         .sort(_direction == "forward" && ((_a, _b) => _a.time - _b.time) || _direction == "backward" && ((_a, _b) => _b.time - _a.time))
         .find(_key => _direction == "forward" && _key.time > _time || _direction == "backward" && _key.time < _time);
@@ -95,14 +95,14 @@ namespace Fudge {
     }
 
     public addProperty(_path: string[], _node: ƒ.Node, _time: number): void {
-      let structure: ƒ.AnimationSequence | ƒ.AnimationStructure = this.animation.animationStructure;
+      let structure: ƒ.AnimationSequence<number> | ƒ.AnimationStructure = this.animation.animationStructure;
       for (let i: number = 0; i < _path.length - 1; i++) {
         let key: string = _path[i];
         if (!(key in structure))
           structure[key] = {};
         structure = structure[key];
       }
-      let sequence: ƒ.AnimationSequence = new ƒ.AnimationSequence();
+      let sequence: ƒ.AnimationSequence<number> = new ƒ.AnimationSequence<number>([], Number);
       sequence.addKey(new ƒ.AnimationKey(_time, 0));
       structure[_path[_path.length - 1]] = sequence;
     }

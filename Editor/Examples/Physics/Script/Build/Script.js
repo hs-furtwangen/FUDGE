@@ -14,18 +14,18 @@ var Script;
             if (ƒ.Project.mode == ƒ.MODE.EDITOR)
                 return;
             // Listen to this component being added to or removed from a node
-            this.addEventListener("componentAdd" /* COMPONENT_ADD */, this.hndEvent);
-            this.addEventListener("componentRemove" /* COMPONENT_REMOVE */, this.hndEvent);
+            this.addEventListener("componentAdd" /* ƒ.EVENT.COMPONENT_ADD */, this.hndEvent);
+            this.addEventListener("componentRemove" /* ƒ.EVENT.COMPONENT_REMOVE */, this.hndEvent);
         }
         // Activate the functions of this component as response to events
         hndEvent = (_event) => {
             switch (_event.type) {
-                case "componentAdd" /* COMPONENT_ADD */:
+                case "componentAdd" /* ƒ.EVENT.COMPONENT_ADD */:
                     ƒ.Debug.log(this.message, this.node);
                     break;
-                case "componentRemove" /* COMPONENT_REMOVE */:
-                    this.removeEventListener("componentAdd" /* COMPONENT_ADD */, this.hndEvent);
-                    this.removeEventListener("componentRemove" /* COMPONENT_REMOVE */, this.hndEvent);
+                case "componentRemove" /* ƒ.EVENT.COMPONENT_REMOVE */:
+                    this.removeEventListener("componentAdd" /* ƒ.EVENT.COMPONENT_ADD */, this.hndEvent);
+                    this.removeEventListener("componentRemove" /* ƒ.EVENT.COMPONENT_REMOVE */, this.hndEvent);
                     break;
             }
         };
@@ -40,7 +40,7 @@ var Script;
     document.addEventListener("interactiveViewportStarted", start);
     function start(_event) {
         viewport = _event.detail;
-        ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, update);
+        ƒ.Loop.addEventListener("loopFrame" /* ƒ.EVENT.LOOP_FRAME */, update);
         ƒ.Loop.start(); // start the game loop to continously draw the viewport and update the audiosystem
     }
     function update(_event) {

@@ -1,5 +1,4 @@
 namespace FudgeCore {
-  
   export enum ANIMATION_INTERPOLATION {
     CONSTANT,
     LINEAR,
@@ -12,28 +11,32 @@ namespace FudgeCore {
    * Also holds a reference to the {@link AnimationFunction}s that come in and out of the sides. 
    * The {@link AnimationFunction}s are handled by the {@link AnimationSequence}s.
    * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
-   * @author Lukas Scheuerle, HFU, 2019
+   * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export class AnimationKey extends Mutable implements Serializable {
+  export class AnimationKey<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
     /**Don't modify this unless you know what you're doing.*/
-    public functionOut: AnimationFunction;
+    public functionOut: AnimationFunction<T>;
 
-    #time: number;
-    #value: number;
     #interpolation: ANIMATION_INTERPOLATION;
+    #time: number;
+    #value: T;
+    #slopeIn: T;
+    #slopeOut: T;
 
-    #slopeIn: number = 0;
-    #slopeOut: number = 0;
-
-    public constructor(_time: number = 0, _value: number = 0, _interpolation: ANIMATION_INTERPOLATION = ANIMATION_INTERPOLATION.CUBIC, _slopeIn: number = 0, _slopeOut: number = 0) {
+    public constructor(_time: number = 0, _value?: T, _interpolation: ANIMATION_INTERPOLATION = ANIMATION_INTERPOLATION.CUBIC, _slopeIn?: T, _slopeOut?: T) {
       super();
       this.#time = _time;
       this.#value = _value;
       this.#interpolation = _interpolation;
       this.#slopeIn = _slopeIn;
       this.#slopeOut = _slopeOut;
-
-      this.functionOut = new AnimationFunction(this, null);
+      if (typeof this.#value == "object") { // TODO: test
+        this.#slopeIn ??= <T>Reflect.construct(this.#value.constructor, [0, 0, 0, 0]);
+        this.#slopeOut ??= <T>Reflect.construct(this.#value.constructor, [0, 0, 0, 0]);
+      } else if (typeof this.#value == "number") {
+        this.#slopeIn ??= <T>0;
+        this.#slopeOut ??= <T>0;
+      }
     }
 
     /**
@@ -42,7 +45,7 @@ namespace FudgeCore {
      * @param _b the animation key to check against
      * @returns >0 if a>b, 0 if a=b, <0 if a<b
      */
-    public static compare(_a: AnimationKey, _b: AnimationKey): number {
+    public static compare<T extends number | Vector3 | Quaternion, K extends AnimationKey<T>>(_a: K, _b: K): number {
       return _a.time - _b.time;
     }
 
@@ -55,11 +58,11 @@ namespace FudgeCore {
       this.functionOut.calculate();
     }
 
-    public get value(): number {
+    public get value(): T {
       return this.#value;
     }
 
-    public set value(_value: number) {
+    public set value(_value: T) {
       this.#value = _value;
       this.functionOut.calculate();
     }
@@ -73,19 +76,19 @@ namespace FudgeCore {
       this.functionOut.calculate();
     }
 
-    public get slopeIn(): number {
+    public get slopeIn(): T {
       return this.#slopeIn;
     }
 
-    public set slopeIn(_slope: number) {
+    public set slopeIn(_slope: T) {
       this.#slopeIn = _slope;
     }
 
-    public get slopeOut(): number {
+    public get slopeOut(): T {
       return this.#slopeOut;
     }
 
-    public set slopeOut(_slope: number) {
+    public set slopeOut(_slope: T) {
       this.#slopeOut = _slope;
       this.functionOut.calculate();
     }
@@ -107,11 +110,6 @@ namespace FudgeCore {
       this.#interpolation = _serialization.interpolation;
       this.#slopeIn = _serialization.slopeIn;
       this.#slopeOut = _serialization.slopeOut;
-      // if (_serialization.interpolation == undefined)
-      //   if (_serialization.constant) // TODO: remove this when constant is removed
-      //     this.#interpolation = "constant";
-      //   else
-      //     this.#interpolation = "cubic";
 
       return this;
     }

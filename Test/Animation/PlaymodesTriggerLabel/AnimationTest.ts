@@ -55,9 +55,7 @@ namespace AnimatorControleTest {
     let value0: number = parseInt((<HTMLInputElement>form.querySelector("input[name=value0]")).value);
     let value1: number = parseInt((<HTMLInputElement>form.querySelector("input[name=value1]")).value);
 
-    let animseq: ƒ.AnimationSequence = new ƒ.AnimationSequence();
-    animseq.addKey(new ƒ.AnimationKey(time0, value0));
-    animseq.addKey(new ƒ.AnimationKey(time1, value1));
+    let animseq: ƒ.AnimationSequence<number> = new ƒ.AnimationSequence([new ƒ.AnimationKey(time0, value0), new ƒ.AnimationKey(time1, value1)], Number);
 
     let animStructure: ƒ.AnimationStructure = {
       components: {

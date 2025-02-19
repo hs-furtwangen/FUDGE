@@ -47,19 +47,21 @@ namespace FudgeCore {
       let scale: Vector2 = this.getScale();
       let positions: Vector2[] = this.getPositions();
 
-      let xTranslation: AnimationSequence = new AnimationSequence();
-      let yTranslation: AnimationSequence = new AnimationSequence();
-      let xScale: AnimationSequence = new AnimationSequence();
-      let yScale: AnimationSequence = new AnimationSequence();
-      xScale.addKey(new AnimationKey(0, scale.x));
-      yScale.addKey(new AnimationKey(0, scale.y));
+      // TODO: implement and use AnimationSequence<Vector2>?
+      let xTranslationKeys: AnimationKey<number>[] = new Array(this.frames + 1);
+      let yTranslationKeys: AnimationKey<number>[] = new Array(this.frames + 1);
 
       for (let frame: number = 0; frame <= this.frames; frame++) {
         let time: number = 1000 * frame / this.framesPerSecond;
         let position: Vector2 = positions[Math.min(frame, this.frames - 1)]; //repeat the last key to give the last frame some time
-        xTranslation.addKey(new AnimationKey(time, position.x / this.#texture.texImageSource.width));//, 0, 0, true))
-        yTranslation.addKey(new AnimationKey(time, position.y / this.#texture.texImageSource.height));//, 0, 0, true))
+        xTranslationKeys[frame] = new AnimationKey(time, position.x / this.#texture.texImageSource.width, ANIMATION_INTERPOLATION.CONSTANT);
+        yTranslationKeys[frame] = new AnimationKey(time, position.y / this.#texture.texImageSource.height, ANIMATION_INTERPOLATION.CONSTANT);
       }
+
+      let xTranslation: AnimationSequence<number> = new AnimationSequence(xTranslationKeys, Number);
+      let yTranslation: AnimationSequence<number> = new AnimationSequence(yTranslationKeys, Number);
+      let xScale: AnimationSequence<number> = new AnimationSequence([new AnimationKey(0, scale.x, ANIMATION_INTERPOLATION.CONSTANT)], Number);
+      let yScale: AnimationSequence<number> = new AnimationSequence([new AnimationKey(0, scale.y, ANIMATION_INTERPOLATION.CONSTANT)], Number);
 
       this.animationStructure = {
         "components": {

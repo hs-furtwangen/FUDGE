@@ -21,9 +21,7 @@ namespace AnimatorComponentTest {
     viewport.setBranch(root);
     viewport.draw();
 
-    let animseq: ƒ.AnimationSequence = new ƒ.AnimationSequence();
-    animseq.addKey(new ƒ.AnimationKey(0, 0));
-    animseq.addKey(new ƒ.AnimationKey(5000, 45));
+    let animseq: ƒ.AnimationSequence<number> = new ƒ.AnimationSequence([new ƒ.AnimationKey(0, 0), new ƒ.AnimationKey(5000, 45)], Number);
 
     let animStructure: ƒ.AnimationStructure = {
       components: {
