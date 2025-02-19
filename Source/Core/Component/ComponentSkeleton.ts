@@ -22,9 +22,11 @@ namespace FudgeCore {
       this.bones = _bones;
       this.mtxBindInverses = _mtxBoneInverses;
 
-      for (let i: number = 0; i < this.bones.length; i++)
+      for (let i: number = 0; i < this.bones.length; i++) {
         if (this.mtxBindInverses[i] == null)
           this.mtxBindInverses[i] = this.bones[i].mtxWorldInverse.clone;
+        this.mtxBones.push(Matrix4x4.IDENTITY());
+      }
     }
 
     /**
@@ -52,6 +54,7 @@ namespace FudgeCore {
     public addBone(_bone: Node, _mtxBindInverse: Matrix4x4 = _bone.mtxWorldInverse.clone): void {
       this.bones.push(_bone);
       this.mtxBindInverses.push(_mtxBindInverse);
+      this.mtxBones.push(Matrix4x4.IDENTITY());
     }
 
     /**
@@ -73,16 +76,8 @@ namespace FudgeCore {
      * Updates the bone matrices to be used by the shader
      */
     public update(): void {
-      for (const mtxBone of this.mtxBones)
-        Recycler.store(mtxBone);
-      this.mtxBones.length = 0;
-
-      for (let i: number = 0; i < this.bones.length; i++) {
-        // PerformanceMonitor.startMeasure("ComponentSkeleton.update mtxWorld * mtxBindInverses");
-        let mtxBone: Matrix4x4 = Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i]);
-        // PerformanceMonitor.endMeasure("ComponentSkeleton.update mtxWorld * mtxBindInverses");
-        this.mtxBones.push(mtxBone);
-      }
+      for (let i: number = 0; i < this.bones.length; i++) 
+        Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i], this.mtxBones[i]);
     }
 
     /**

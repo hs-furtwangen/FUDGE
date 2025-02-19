@@ -52,13 +52,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Computes and returns the product of two passed matrices.
+     * Computes and returns the product of two passed matrices. Pass an optional third matrix to write the result into.
      */
-    // @PerformanceMonitor.measure("Matrix4x4.PRODUCT")
-    public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4): Matrix4x4 {
+    public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       let a: Float32Array = _mtxLeft.data;
       let b: Float32Array = _mtxRight.data;
-      const mtxResult: Matrix4x4 = Recycler.reuse(Matrix4x4);
       let a00: number = a[0 * 4 + 0];
       let a01: number = a[0 * 4 + 1];
       let a02: number = a[0 * 4 + 2];
@@ -91,7 +89,7 @@ namespace FudgeCore {
       let b31: number = b[3 * 4 + 1];
       let b32: number = b[3 * 4 + 2];
       let b33: number = b[3 * 4 + 3];
-      mtxResult.set([
+      _mtxOut.set([
         b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30,
         b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31,
         b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32,
@@ -109,7 +107,7 @@ namespace FudgeCore {
         b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32,
         b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33
       ]);
-      return mtxResult;
+      return _mtxOut;
     }
 
     /**
@@ -1090,6 +1088,55 @@ namespace FudgeCore {
       // cache mutator
       this.mutator = mutator;
       return mutator;
+    }
+
+    public mutateSync(_mutator: Mutator): void {
+      const m: Float32Array = this.data;
+
+      if (_mutator.translation) {
+        let translation: Vector3 = this.translation;
+        translation.mutate(_mutator.translation);
+        m[12] = translation.x; m[13] = translation.y; m[14] = translation.z;
+        this.#translationDirty = false;
+      }
+
+      if (_mutator.rotation || _mutator.scaling) {
+        // TODO: make full vector and quaternion mutators mandatory?
+
+        let rotation: Vector3 | Quaternion = _mutator.rotation?.w != undefined ?
+          this.#quaternion : // using this.#quaternion assumes we get a full quaternion mutator with x, y, z and w set so we never need to recalculate the quaternion here. This might cause trouble if we ever want to mutate only a part of a quaternion...
+          isFullVectorMutator(_mutator.rotation) ? this.#rotation : this.rotation; // hack to avoid unnecessary recalculation of rotation and scaling. This recalculation is unnecessary when we get a full mutator i.e. with x, y and z set
+
+        let scaling: Vector3 = isFullVectorMutator(_mutator.scaling) ? this.#scaling : this.scaling;
+        
+        const isQuaternion: boolean = rotation instanceof Quaternion;
+        
+        if (_mutator.rotation) {
+          rotation.mutate(_mutator.rotation);
+          if (isQuaternion)
+            rotation.normalize();
+        }
+
+        if (_mutator.scaling)
+          scaling.mutate(_mutator.scaling);
+        
+        Matrix4x4.setRotation(m, rotation);
+        this.#rotationDirty = isQuaternion;
+        this.#quaternionDirty = !isQuaternion;
+        
+        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
+        m[0] *= sx; m[1] *= sx; m[2] *= sx;
+        m[4] *= sy; m[5] *= sy; m[6] *= sy;
+        m[8] *= sz; m[9] *= sz; m[10] *= sz;
+        this.#scalingDirty = false;
+      }
+
+      this.mutator = null;
+      this.modified = true;
+
+      function isFullVectorMutator(_mutator: Mutator): boolean {
+        return _mutator && _mutator.x != undefined && _mutator.y != undefined && _mutator.z != undefined;
+      }
     }
 
     public async mutate(_mutator: Mutator): Promise<void> {
