@@ -532,13 +532,12 @@ namespace FudgeCore {
      * @returns The reversed Sequence
      */
     private calculateReverseSequence<T extends number | Vector3 | Quaternion>(_sequence: AnimationSequence<T>): AnimationSequence<T> {
-      let seq: AnimationSequence<T> = new AnimationSequence<T>([], _sequence.valueType); // TODO: rewrite this with createing the sequence from the keys via constructor to avoid freqeunt addKey (regenerateFunctions)
+      let keys: AnimationKey<T>[] = new Array(_sequence.length);
       for (let i: number = 0; i < _sequence.length; i++) {
         let oldKey: AnimationKey<T> = _sequence.getKey(i);
-        let key: AnimationKey<T> = new AnimationKey(this.totalTime - oldKey.time, oldKey.value, oldKey.interpolation, oldKey.slopeOut, oldKey.slopeIn);
-        seq.addKey(key);
+        keys[i] = new AnimationKey(this.totalTime - oldKey.time, oldKey.value, oldKey.interpolation, oldKey.slopeOut, oldKey.slopeIn);
       }
-      return seq;
+      return new AnimationSequence<T>(keys, _sequence.valueType);
     }
 
     /**
@@ -547,13 +546,12 @@ namespace FudgeCore {
      * @returns the rastered sequence.
      */
     private calculateRasteredSequence<T extends number | Vector3 | Quaternion>(_sequence: AnimationSequence<T>): AnimationSequence<T> {
-      let seq: AnimationSequence<T> = new AnimationSequence<T>([], _sequence.valueType); // TODO: rewrite this with createing the sequence from the keys via constructor to avoid freqeunt addKey (regenerateFunctions)
+      let keys: AnimationKey<T>[] = [];
       let frameTime: number = 1000 / this.framesPerSecond;
-      for (let i: number = 0; i < this.totalTime; i += frameTime) {
-        let key: AnimationKey<T> = new AnimationKey(i, _sequence.evaluate(i), ANIMATION_INTERPOLATION.CONSTANT);
-        seq.addKey(key);
-      }
-      return seq;
+      for (let i: number = 0; i < this.totalTime; i += frameTime) 
+        keys.push(new AnimationKey(i, _sequence.evaluate(i), ANIMATION_INTERPOLATION.CONSTANT));
+      
+      return new AnimationSequence<T>(keys, _sequence.valueType);
     }
 
     /**

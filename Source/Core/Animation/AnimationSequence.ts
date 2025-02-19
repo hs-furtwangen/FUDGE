@@ -19,6 +19,7 @@ namespace FudgeCore {
     public constructor(_keys: AnimationKey<T>[] = [], _valueType: AnimationValueType<T>) {
       super();
       this.keys = _keys;
+      this.keys.sort(AnimationKey.compare);
       this.valueType = _valueType;
       this.regenerateFunctions();
     }
