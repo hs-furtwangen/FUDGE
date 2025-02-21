@@ -428,7 +428,8 @@ namespace FudgeCore {
       return mutator;
     }
 
-    public async mutate(_mutator: Mutator): Promise<void> {
+    // TODO: optimize composition of matrix like in Matrix4x4
+    public mutate(_mutator: Mutator): void {
       let oldTranslation: Vector2 = this.translation;
       let oldRotation: number = this.rotation;
       let oldScaling: Vector2 = this.scaling;

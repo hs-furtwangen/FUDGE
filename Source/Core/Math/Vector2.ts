@@ -355,6 +355,14 @@ namespace FudgeCore {
       };
       return mutator;
     }
+
+    public override mutate(_mutator: Mutator): void {
+      if (_mutator.x != undefined)
+        this.x = _mutator.x;
+      if (_mutator.y != undefined)
+        this.y = _mutator.y;
+    }
+
     protected reduceMutator(_mutator: Mutator): void {/** */ }
     //#endregion
   }

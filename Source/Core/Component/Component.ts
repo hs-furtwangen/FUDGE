@@ -100,9 +100,16 @@ namespace FudgeCore {
       return this;
     }
 
+    public mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       await super.mutate(_mutator, _selection, _dispatchMutate);
-      if (typeof (_mutator.active) !== "undefined")
+      if (_mutator.active != undefined)
+        this.activate(_mutator.active);
+    }
+
+    protected mutateSync(_mutator: Mutator, _dispatchMutate: boolean = true): void {
+      super.mutateSync(_mutator, _dispatchMutate);
+      if (_mutator.active != undefined)
         this.activate(_mutator.active);
     }
 

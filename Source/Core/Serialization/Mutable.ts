@@ -300,16 +300,37 @@ namespace FudgeCore {
           _mutator[attribute] = value;
       }
     }
+    
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
      * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
      * Uses mutateBase, but can be overwritten in subclasses
      */
+    public mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       await this.mutateBase(_mutator, _selection);
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }
+
+    /**
+     * Synchronous implementation of {@link mutate}.
+     * Override {@link mutate} with a sync implementation and call this method from it to mutate synchronously.
+     */
+    protected mutateSync(_mutator: Mutator, _dispatchMutate: boolean = true): void {
+      let mutator: Mutator = _mutator;
+
+      for (let attribute in mutator) {
+        let mutant: Object = Reflect.get(this, attribute);
+        if (mutant instanceof MutableArray || mutant instanceof Mutable) 
+          mutant.mutate(mutator[attribute], null, false);
+        else
+          Reflect.set(this, attribute, mutator[attribute]);
+      }
+
+      if (_dispatchMutate)
+        this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
+    };
 
     /**
      * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
@@ -335,10 +356,12 @@ namespace FudgeCore {
           Reflect.set(this, attribute, value);
       }
     }
+
     /**
      * Reduces the attributes of the general mutator according to desired options for mutation. To be implemented in subclasses
      * @param _mutator 
      */
     protected abstract reduceMutator(_mutator: Mutator): void;
+
   }
 }

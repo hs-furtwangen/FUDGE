@@ -59,6 +59,7 @@ namespace FudgeCore {
     /**
      * Mutate the elements of this array defined by the _mutator by invoking {@link Mutable.mutate} on it
      */
+    public mutate(_mutator: Mutator): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator): Promise<void> {
       for (let entry in _mutator)
         await this[<General>entry].mutate(_mutator[entry]);

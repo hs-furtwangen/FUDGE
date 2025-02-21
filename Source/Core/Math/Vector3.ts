@@ -553,12 +553,12 @@ namespace FudgeCore {
       return this;
     }
 
-    public async mutate(_mutator: Mutator): Promise<void> {
-      if (_mutator.x !== undefined)
+    public override mutate(_mutator: Mutator): void {
+      if (_mutator.x != undefined)
         this.x = _mutator.x;
-      if (_mutator.y !== undefined)
+      if (_mutator.y != undefined)
         this.y = _mutator.y;
-      if (_mutator.z !== undefined)
+      if (_mutator.z != undefined)
         this.z = _mutator.z;
     }
 

@@ -131,9 +131,9 @@ namespace FudgeCore {
       // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
       const result: Quaternion = Recycler.reuse(Quaternion);
       let cosHalfTheta: number = _from.w * _to.w + _from.x * _to.x + _from.y * _to.y + _from.z * _to.z;
-      if (Math.abs(cosHalfTheta) >= 1) 
+      if (Math.abs(cosHalfTheta) >= 1)
         return result.copy(_from);
-      
+
       let halfTheta: number = Math.acos(cosHalfTheta);
       let sinHalfTheta: number = Math.sqrt(1 - cosHalfTheta * cosHalfTheta);
       if (Math.abs(sinHalfTheta) < 0.001) {
@@ -145,7 +145,7 @@ namespace FudgeCore {
         );
         return result;
       }
-      
+
       let ratioA: number = Math.sin((1 - _factor) * halfTheta) / sinHalfTheta;
       let ratioB: number = Math.sin(_factor * halfTheta) / sinHalfTheta;
       result.set(
@@ -372,11 +372,15 @@ namespace FudgeCore {
       return this.mutator;
     }
 
-    public async mutate(_mutator: Mutator): Promise<void> {
-      this.x = _mutator.x ?? this.x;
-      this.y = _mutator.y ?? this.y;
-      this.z = _mutator.z ?? this.z;
-      this.w = _mutator.w ?? this.w;
+    public override mutate(_mutator: Mutator): void {
+      if (_mutator.x != undefined)
+        this.x = _mutator.x;
+      if (_mutator.y != undefined)
+        this.y = _mutator.y;
+      if (_mutator.z != undefined)
+        this.z = _mutator.z;
+      if (_mutator.w != undefined)
+        this.w = _mutator.w;
       this.resetCache();
     }
 

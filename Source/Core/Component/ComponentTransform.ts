@@ -84,23 +84,23 @@ namespace FudgeCore {
       };
       return serialization;
     }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization[super.constructor.name]);
       await this.mtxLocal.deserialize(_serialization.local);
       return this;
     }
 
-    // public mutate(_mutator: Mutator): void {
-    //     this.local.mutate(_mutator);
-    // }
-    // public getMutator(): Mutator { 
-    //     return this.local.getMutator();
-    // }
-
-    // public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-    //     let types: MutatorAttributeTypes = this.local.getMutatorAttributeTypes(_mutator);
-    //     return types;
-    // }
+    public override mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate: boolean = true): void {
+      super.mutateSync(_mutator, _dispatchMutate);
+      // inline mutation for animation performance
+      // if (_mutator.active != undefined) 
+      //   this.activate(_mutator.active);
+      // if (_mutator.mtxLocal != undefined)
+      //   this.mtxLocal.mutate(_mutator.mtxLocal);
+      // if (_dispatchMutate)
+      //   this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
+    }
 
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.world;
@@ -108,4 +108,8 @@ namespace FudgeCore {
     }
     //#endregion
   }
+
+  // function decorateMutable<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof Coat, M>): M {
+  //   return 
+  // }
 }

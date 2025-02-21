@@ -754,7 +754,10 @@ namespace FudgeCore {
 
       const scaling: Vector3 = this.scaling;
       Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict, this);
-      this.scale(scaling);
+      // TODO: maybe add this to static LOOK_AT
+      this.data[0] *= scaling.x; this.data[1] *= scaling.x; this.data[2] *= scaling.x;
+      this.data[4] *= scaling.y; this.data[5] *= scaling.y; this.data[6] *= scaling.y;
+      this.data[8] *= scaling.z; this.data[9] *= scaling.z; this.data[10] *= scaling.z;
 
       return this;
     }
@@ -1062,9 +1065,9 @@ namespace FudgeCore {
       return mutator;
     }
 
-    public mutateSync(_mutator: Mutator): void {
+    public override mutate(_mutator: Mutator): void {
       const m: Float32Array = this.data;
-
+      
       if (_mutator.translation) {
         let translation: Vector3 = this.translation;
         translation.mutate(_mutator.translation);
@@ -1096,55 +1099,6 @@ namespace FudgeCore {
         this.#rotationDirty = isQuaternion;
         this.#quaternionDirty = !isQuaternion;
 
-        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
-        m[0] *= sx; m[1] *= sx; m[2] *= sx;
-        m[4] *= sy; m[5] *= sy; m[6] *= sy;
-        m[8] *= sz; m[9] *= sz; m[10] *= sz;
-        this.#scalingDirty = false;
-      }
-
-      this.mutator = null;
-      this.modified = true;
-
-      function isFullVectorMutator(_mutator: Mutator): boolean {
-        return _mutator && _mutator.x != undefined && _mutator.y != undefined && _mutator.z != undefined;
-      }
-    }
-
-    public async mutate(_mutator: Mutator): Promise<void> {
-      const m: Float32Array = this.data;
-
-      if (_mutator.translation) {
-        let translation: Vector3 = this.translation;
-        translation.mutate(_mutator.translation);
-        m[12] = translation.x; m[13] = translation.y; m[14] = translation.z;
-        this.#translationDirty = false;
-      }
-
-      if (_mutator.rotation || _mutator.scaling) {
-        // TODO: make full vector and quaternion mutators mandatory?
-
-        let rotation: Vector3 | Quaternion = _mutator.rotation?.w != undefined ?
-          this.#quaternion : // using this.#quaternion assumes we get a full quaternion mutator with x, y, z and w set so we never need to recalculate the quaternion here. This might cause trouble if we ever want to mutate only a part of a quaternion...
-          isFullVectorMutator(_mutator.rotation) ? this.#rotation : this.rotation; // hack to avoid unnecessary recalculation of rotation and scaling. This recalculation is unnecessary when we get a full mutator i.e. with x, y and z set
-
-        let scaling: Vector3 = isFullVectorMutator(_mutator.scaling) ? this.#scaling : this.scaling;
-        
-        const isQuaternion: boolean = rotation instanceof Quaternion;
-        
-        if (_mutator.rotation) {
-          rotation.mutate(_mutator.rotation);
-          if (isQuaternion)
-            rotation.normalize();
-        }
-
-        if (_mutator.scaling)
-          scaling.mutate(_mutator.scaling);
-        
-        Matrix4x4.setRotation(m, rotation);
-        this.#rotationDirty = isQuaternion;
-        this.#quaternionDirty = !isQuaternion;
-        
         const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
         m[0] *= sx; m[1] *= sx; m[2] *= sx;
         m[4] *= sy; m[5] *= sy; m[6] *= sy;
