@@ -18,7 +18,7 @@ namespace FudgeCore {
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
     private static readonly coats: Set<Coat> = new Set(); // TODO: test if sets are an appropriate data structure here
-    private static readonly modificationsProcessed: Set<{ modified: boolean }> = new Set();
+
     private static timestampUpdate: number;
 
     private static readonly prepareEvent: ({ currentTarget: Event["currentTarget"] } & Event) = (() => { // reuse the same event for all dispatches
@@ -44,7 +44,7 @@ namespace FudgeCore {
       Render.componentsPick.reset();
       Render.componentsSkeleton.reset();
       Render.coats.clear();
-      Render.modificationsProcessed.clear();
+
       Render.lights.forEach(_array => _array.reset());
       Node.resetRenderData();
       Coat.resetRenderData();
@@ -57,8 +57,6 @@ namespace FudgeCore {
       PerformanceMonitor.endMeasure("Render.prepare prepareBranch");
 
       PerformanceMonitor.startMeasure("Render.prepare post");
-      for (const processed of Render.modificationsProcessed)
-        processed.modified = false;
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       for (const cmpSkeleton of Render.componentsSkeleton) {
         cmpSkeleton.update();
@@ -130,9 +128,9 @@ namespace FudgeCore {
       if (cmpTransform?.isActive) {
         if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
           // PerformanceMonitor.startMeasure("Render.prepareBranch mtxWorld * mtxLocal");
-          Matrix4x4.PRODUCT(_mtxWorld, _branch.cmpTransform.mtxLocal, _branch.mtxWorld);
+          Matrix4x4.PRODUCT(_mtxWorld, cmpTransform.mtxLocal, _branch.mtxWorld);
           // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxLocal");
-          Render.modificationsProcessed.add(cmpTransform.mtxLocal);
+          cmpTransform.mtxLocal.modified = false;
         }
       } else
         _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
@@ -167,8 +165,8 @@ namespace FudgeCore {
           // PerformanceMonitor.startMeasure("Render.prepareBranch mtxWorld * mtxPivot");
           Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
           // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxPivot");
-          Render.modificationsProcessed.add(cmpMesh.mtxPivot);
-          Render.modificationsProcessed.add(_branch.mtxWorld);
+          cmpMesh.mtxPivot.modified = false;
+          _branch.mtxWorld.modified = false;
         }
 
         let cmpFaceCamera: ComponentFaceCamera = _branch.getComponent(ComponentFaceCamera);
