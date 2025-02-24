@@ -17,8 +17,6 @@ namespace FudgeCore {
     private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
-    private static readonly coats: Set<Coat> = new Set(); // TODO: test if sets are an appropriate data structure here
-
     private static timestampUpdate: number;
 
     private static readonly prepareEvent: ({ currentTarget: Event["currentTarget"] } & Event) = (() => { // reuse the same event for all dispatches
@@ -43,7 +41,6 @@ namespace FudgeCore {
       Render.nodesPhysics.reset();
       Render.componentsPick.reset();
       Render.componentsSkeleton.reset();
-      Render.coats.clear();
 
       Render.lights.forEach(_array => _array.reset());
       Node.resetRenderData();
@@ -62,8 +59,6 @@ namespace FudgeCore {
         cmpSkeleton.update();
         cmpSkeleton.updateRenderBuffer();
       }
-      for (const coat of Render.coats)
-        coat.updateRenderData();
 
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
@@ -180,8 +175,10 @@ namespace FudgeCore {
           Render.nodesSimple.push(_branch); // add this node to render list
 
         let material: Material = cmpMaterial.material;
-        if (material)
-          Render.coats.add(material.coat);
+        if (material?.timestampUpdate < Render.timestampUpdate) {
+          material.timestampUpdate = Render.timestampUpdate;
+          material.coat.updateRenderData();
+        }
       }
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
