@@ -35,12 +35,19 @@ namespace FudgeCore {
         crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, bonesByteSize, WebGL2RenderingContext.DYNAMIC_DRAW);
       }
 
-      const data: Float32Array = new Float32Array(this.mtxBones.length * 16);
-      for (let i: number = 0; i < this.mtxBones.length; i++)
-        data.set(this.mtxBones[i].get(), i * 16);
+      if (!this.mtxBonesData) {
+        this.mtxBones = new Array(this.bones.length);
+        this.mtxBonesData = new Float32Array(this.bones.length * 16);
+
+        for (let i: number = 0; i < this.bones.length; i++)
+          this.mtxBones[i] = new Matrix4x4(this.mtxBonesData.subarray(i * 16, i * 16 + 16));
+      }
+
+      for (let i: number = 0; i < this.bones.length; i++)
+        Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i], this.mtxBones[i]);
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.renderBuffer);
-      crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, data);
+      crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.mtxBonesData);
     }
 
     protected static deleteRenderBuffer(this: ComponentSkeleton): void {

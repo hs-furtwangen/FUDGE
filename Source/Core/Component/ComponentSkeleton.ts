@@ -15,7 +15,8 @@ namespace FudgeCore {
     protected renderBuffer: unknown;
     protected singleton: boolean = false;
     /** Contains the bone transformations applicable to the vertices of a {@link Mesh} */
-    protected readonly mtxBones: Matrix4x4[] = [];
+    protected mtxBones: Matrix4x4[];
+    protected mtxBonesData: Float32Array;
 
     public constructor(_bones: Node[] = [], _mtxBoneInverses: Matrix4x4[] = []) {
       super();
@@ -25,7 +26,6 @@ namespace FudgeCore {
       for (let i: number = 0; i < this.bones.length; i++) {
         if (this.mtxBindInverses[i] == null)
           this.mtxBindInverses[i] = this.bones[i].mtxWorldInverse.clone;
-        this.mtxBones.push(Matrix4x4.IDENTITY());
       }
     }
 
@@ -54,7 +54,8 @@ namespace FudgeCore {
     public addBone(_bone: Node, _mtxBindInverse: Matrix4x4 = _bone.mtxWorldInverse.clone): void {
       this.bones.push(_bone);
       this.mtxBindInverses.push(_mtxBindInverse);
-      this.mtxBones.push(Matrix4x4.IDENTITY());
+
+      this.mtxBonesData = null;
     }
 
     /**
@@ -70,14 +71,6 @@ namespace FudgeCore {
         return this.bones.findIndex((_bone: Node) => _bone.name == _name);
       else
         return this.bones.indexOf(_name);
-    }
-
-    /**
-     * Updates the bone matrices to be used by the shader
-     */
-    public update(): void {
-      for (let i: number = 0; i < this.bones.length; i++) 
-        Matrix4x4.PRODUCT(this.bones[i].mtxWorld, this.mtxBindInverses[i], this.mtxBones[i]);
     }
 
     /**

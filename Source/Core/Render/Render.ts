@@ -55,10 +55,9 @@ namespace FudgeCore {
 
       PerformanceMonitor.startMeasure("Render.prepare post");
       _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
-      for (const cmpSkeleton of Render.componentsSkeleton) {
-        cmpSkeleton.update();
+      for (const cmpSkeleton of Render.componentsSkeleton) 
         cmpSkeleton.updateRenderBuffer();
-      }
+      
 
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();

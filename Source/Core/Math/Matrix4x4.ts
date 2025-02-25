@@ -28,9 +28,15 @@ namespace FudgeCore {
     #rotationDirty: boolean;
     #quaternionDirty: boolean;
 
-    public constructor() {
+    public constructor(_data?: Float32Array) {
       super();
-      this.recycle();
+      if (!_data) {
+        this.recycle();
+        return;
+      }
+
+      this.data = _data;
+      this.resetCache();
     }
 
     //#region STATICS
