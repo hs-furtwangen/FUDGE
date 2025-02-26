@@ -116,7 +116,7 @@ namespace FudgeCore {
      * Shortcut to retrieve this nodes {@link ComponentTransform}
      */
     public get cmpTransform(): ComponentTransform {
-      return <ComponentTransform>this.getComponents(ComponentTransform)?.[0];
+      return <ComponentTransform>this.getComponent(ComponentTransform);
     }
 
     /**
@@ -217,6 +217,17 @@ namespace FudgeCore {
      */
     public getChildren(): Node[] {
       return this.children.slice(0);
+    }
+
+    /**
+     * Returns the first child with the supplied name. 
+     */
+    public getChildByName(_name: string): Node {
+      for (let i: number = 0; i < this.children.length; i++) { // no garbage creation
+        if (this.children[i].name == _name)
+          return this.children[i];
+      }
+      return null;
     }
 
     /**
@@ -344,26 +355,17 @@ namespace FudgeCore {
      * Applies a Mutator from {@link Animation} to all its components and transfers it to its children.
      */
     public applyAnimation(_mutator: Mutator): void {
-      if ("components" in _mutator) {
+      if (_mutator.components)
         for (const componentType in _mutator.components) {
-          let componentsOfType: Component[] = this.components[componentType]; // TODO: add errors if node doesn't contain property
+          let componentsOfType: Component[] = this.components[componentType];
           let mutatorsForType: Mutator[] = _mutator.components[componentType];
-          if (componentsOfType != undefined && mutatorsForType != undefined) {
-            for (const i in mutatorsForType) {
-              // PerformanceMonitor.startMeasure("applyAnimation mutate components");
-              componentsOfType[i].mutate(mutatorsForType[i], null, false);
-              // PerformanceMonitor.endMeasure("applyAnimation mutate components");
-            }
-          }
+          for (let i: number = 0; i < componentsOfType.length; i++)
+            componentsOfType[i].mutate(mutatorsForType[i], null, false);
         }
-      }
-      if ("children" in _mutator) {
-        for (const childName in _mutator.children) {
-          for (const childNode of this.getChildrenByName(childName)) {
-            childNode.applyAnimation(_mutator.children[childName]);
-          }
-        }
-      }
+
+      if (_mutator.children)
+        for (const childName in _mutator.children)
+          this.getChildByName(childName).applyAnimation(_mutator.children[childName]);
     }
     // #endregion
 
@@ -385,6 +387,7 @@ namespace FudgeCore {
     public getComponents<T extends Component>(_class: new () => T): T[] {
       return <T[]>(this.components[_class.name] || []).slice(0);
     }
+
     /**
      * Returns the first compontent found of the given class attached this node or null, if list is empty or doesn't exist
      */
