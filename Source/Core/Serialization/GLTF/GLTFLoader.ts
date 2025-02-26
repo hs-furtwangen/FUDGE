@@ -361,7 +361,7 @@ namespace FudgeCore {
         if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
           node.addComponent(new ComponentTransform());
           if (gltfNode.matrix) {
-            node.mtxLocal.set(gltfNode.matrix);
+            node.mtxLocal.setArray(gltfNode.matrix);
           } else {
             if (gltfNode.translation) {
               const translation: Vector3 = Recycler.get(Vector3);
@@ -905,10 +905,8 @@ namespace FudgeCore {
         // iterate over joints and get corresponding matrix from float array
         for (let iBone: number = 0; iBone < gltfSkin.joints.length; iBone++) {
           let mtxBindInverse: Matrix4x4;
-          if (mtxData) {
-            mtxBindInverse = new Matrix4x4();
-            mtxBindInverse.set(mtxData.subarray(iBone * mtxDataSpan, iBone * mtxDataSpan + mtxDataSpan));
-          }
+          if (mtxData) 
+            mtxBindInverse = new Matrix4x4(mtxData.slice(iBone * mtxDataSpan, (iBone + 1) * mtxDataSpan));
 
           bones.push(await this.getNodeByIndex(gltfSkin.joints[iBone]));
           mtxBindInverses.push(mtxBindInverse);

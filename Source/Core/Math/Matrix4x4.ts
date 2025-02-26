@@ -94,7 +94,7 @@ namespace FudgeCore {
       let b31: number = b[3 * 4 + 1];
       let b32: number = b[3 * 4 + 2];
       let b33: number = b[3 * 4 + 3];
-      _mtxOut.set([
+      _mtxOut.set(
         b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30,
         b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31,
         b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32,
@@ -111,7 +111,7 @@ namespace FudgeCore {
         b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31,
         b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32,
         b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -120,12 +120,12 @@ namespace FudgeCore {
      */
     public static TRANSPOSE(_mtx: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       let m: Float32Array = _mtx.data;
-      _mtxOut.set([
+      _mtxOut.set(
         m[0], m[4], m[8], m[12],
         m[1], m[5], m[9], m[13],
         m[2], m[6], m[10], m[14],
         m[3], m[7], m[11], m[15]
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -187,7 +187,7 @@ namespace FudgeCore {
 
       let d: number = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
 
-      _mtxOut.set([
+      _mtxOut.set(
         d * t0, // [0]
         d * t1, // [1]
         d * t2, // [2]
@@ -204,7 +204,7 @@ namespace FudgeCore {
         d * ((tmp20 * m32 + tmp12 * m02 + tmp19 * m22) - (tmp18 * m22 + tmp21 * m32 + tmp13 * m02)),  // [13]
         d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),  // [14]
         d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))  // [15]
-      ]);
+      );
 
       return _mtxOut;
     }
@@ -223,7 +223,7 @@ namespace FudgeCore {
       let xAxis: Vector3 = Vector3.NORMALIZATION(vctCross);
       let yAxis: Vector3 = _restrict ? _up : Vector3.NORMALIZATION(Vector3.CROSS(zAxis, xAxis));
       zAxis = _restrict ? Vector3.NORMALIZATION(Vector3.CROSS(xAxis, _up)) : zAxis;
-      _mtxOut.set([
+      _mtxOut.set(
         xAxis.x, xAxis.y, xAxis.z, 0,
         yAxis.x, yAxis.y, yAxis.z, 0,
         zAxis.x, zAxis.y, zAxis.z, 0,
@@ -231,7 +231,7 @@ namespace FudgeCore {
         _translation.y,
         _translation.z,
         1
-      ]);
+      );
       Recycler.storeMultiple(zAxis, xAxis, vctCross); // don't store yAxis, it might be _up
       return _mtxOut;
     }
@@ -251,12 +251,12 @@ namespace FudgeCore {
      * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector3}. Pass an optional out matrix to write the result into.
      */
     public static TRANSLATION(_translate: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      _mtxOut.set([
+      _mtxOut.set(
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         _translate.x, _translate.y, _translate.z, 1
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -267,12 +267,12 @@ namespace FudgeCore {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      _mtxOut.set([
+      _mtxOut.set(
         1, 0, 0, 0,
         0, cos, sin, 0,
         0, -sin, cos, 0,
         0, 0, 0, 1
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -283,12 +283,12 @@ namespace FudgeCore {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      _mtxOut.set([
+      _mtxOut.set(
         cos, 0, -sin, 0,
         0, 1, 0, 0,
         sin, 0, cos, 0,
         0, 0, 0, 1
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -299,12 +299,12 @@ namespace FudgeCore {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      _mtxOut.set([
+      _mtxOut.set(
         cos, sin, 0, 0,
         -sin, cos, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -322,12 +322,12 @@ namespace FudgeCore {
      * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector3}. Pass an optional out matrix to write the result into.
      */
     public static SCALING(_scalar: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      _mtxOut.set([
+      _mtxOut.set(
         _scalar.x, 0, 0, 0,
         0, _scalar.y, 0, 0,
         0, 0, _scalar.z, 0,
         0, 0, 0, 1
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -363,12 +363,12 @@ namespace FudgeCore {
       let f: number = Math.tan(0.5 * (Math.PI - fieldOfViewInRadians));
       let rangeInv: number = 1.0 / (_near - _far);
 
-      _mtxOut.set([
+      _mtxOut.set(
         f, 0, 0, 0,
         0, f, 0, 0,
         0, 0, (_near + _far) * rangeInv, -1,
         0, 0, _near * _far * rangeInv * 2, 0
-      ]);
+      );
 
       if (_direction == FIELD_OF_VIEW.DIAGONAL) {
         _aspect = Math.sqrt(_aspect);
@@ -396,7 +396,7 @@ namespace FudgeCore {
      * @param _mtxOut Optional matrix to write the result into.
      */
     public static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near: number = -400, _far: number = 400, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      _mtxOut.set([
+      _mtxOut.set(
         2 / (_right - _left), 0, 0, 0,
         0, -2 / (_top - _bottom), 0, 0,
         0, 0, 2 / (_far - _near), 0,
@@ -404,7 +404,7 @@ namespace FudgeCore {
         (_bottom + _top) / (_bottom - _top),
         (_near + _far) / (_near - _far),
         1
-      ]);
+      );
       return _mtxOut;
     }
 
@@ -617,12 +617,12 @@ namespace FudgeCore {
      * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
      */
     public recycle(): void {
-      this.set([
+      this.set(
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
-      ]);
+      );
     }
 
     /**
@@ -782,12 +782,12 @@ namespace FudgeCore {
       yAxis.scale(this.scaling.y);
       zAxis.scale(this.scaling.z);
 
-      this.set([
+      this.set(
         xAxis.x, xAxis.y, xAxis.z, 0,
         yAxis.x, yAxis.y, yAxis.z, 0,
         zAxis.x, zAxis.y, zAxis.z, 0,
         this.translation.x, this.translation.y, this.translation.z, 1
-      ]);
+      );
 
       Recycler.storeMultiple(xAxis, zAxis);
       return this;
@@ -922,8 +922,23 @@ namespace FudgeCore {
     /**
      * Sets the elements of this matrix to the given array.
      */
-    public set(_array: ArrayLike<number>): Matrix4x4 {
+    public setArray(_array: ArrayLike<number>): Matrix4x4 {
       this.data.set(_array);
+      this.resetCache();
+      return this;
+    }
+
+    /**
+     * Sets the elements of this matrix to the given values.
+     */
+    public set(_m00: number, _m01: number, _m02: number, _m03: number, _m10: number, _m11: number, _m12: number, _m13: number, _m20: number, _m21: number, _m22: number, _m23: number, _m30: number, _m31: number, _m32: number, _m33: number): Matrix4x4 {
+      const m: Float32Array = this.data;
+
+      m[0] = _m00; m[1] = _m01; m[2] = _m02; m[3] = _m03;
+      m[4] = _m10; m[5] = _m11; m[6] = _m12; m[7] = _m13;
+      m[8] = _m20; m[9] = _m21; m[10] = _m22; m[11] = _m23;
+      m[12] = _m30; m[13] = _m31; m[14] = _m32; m[15] = _m33;
+
       this.resetCache();
       return this;
     }
@@ -1073,7 +1088,7 @@ namespace FudgeCore {
 
     public override mutate(_mutator: Mutator): void {
       const m: Float32Array = this.data;
-      
+
       if (_mutator.translation) {
         this.#translation.mutate(_mutator.translation);
         m[12] = this.#translation.x; m[13] = this.#translation.y; m[14] = this.#translation.z;

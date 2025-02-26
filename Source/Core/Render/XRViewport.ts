@@ -104,7 +104,7 @@ namespace FudgeCore {
       if (!pose)
         return;
 
-      this.vrDevice.mtxLocal.set(pose.transform.matrix);
+      this.vrDevice.mtxLocal.setArray(pose.transform.matrix);
       this.vrDevice.mtxLocal.rotateY(180); // rotate back because the XR Rig is looking in the direction of negative z
       super.prepare(_prepareBranch);
 
@@ -120,8 +120,8 @@ namespace FudgeCore {
         if (this.useVRController)
           this.setControllerConfigs(_xrFrame);
         this.camera.resetWorldToView(); // TODO: find a less expensive way to do this, maybe use two cameras
-        this.camera.mtxProjection.set(view.projectionMatrix);
-        this.camera.mtxCameraInverse.set(view.transform.inverse.matrix);
+        this.camera.mtxProjection.setArray(view.projectionMatrix);
+        this.camera.mtxCameraInverse.setArray(view.transform.inverse.matrix);
 
         if (this.physicsDebugMode != PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY) 
           Render.draw(this.camera);
@@ -156,7 +156,7 @@ namespace FudgeCore {
             try {
               switch (_controller.handedness) {
                 case ("right"):
-                  this.vrDevice.rightCntrl.cmpTransform.mtxLocal.set(_xrFrame.getPose(_controller.targetRaySpace, XRViewport.default.referenceSpace).transform.matrix);
+                  this.vrDevice.rightCntrl.cmpTransform.mtxLocal.setArray(_xrFrame.getPose(_controller.targetRaySpace, XRViewport.default.referenceSpace).transform.matrix);
                   if (!this.vrDevice.rightCntrl.gamePad)
                     this.vrDevice.rightCntrl.gamePad = _controller.gamepad;
                   else {
@@ -165,7 +165,7 @@ namespace FudgeCore {
                   }
                   break;
                 case ("left"):
-                  this.vrDevice.leftCntrl.cmpTransform.mtxLocal.set(_xrFrame.getPose(_controller.targetRaySpace, XRViewport.default.referenceSpace).transform.matrix);
+                  this.vrDevice.leftCntrl.cmpTransform.mtxLocal.setArray(_xrFrame.getPose(_controller.targetRaySpace, XRViewport.default.referenceSpace).transform.matrix);
 
                   if (!this.vrDevice.leftCntrl.gamePad)
                     this.vrDevice.leftCntrl.gamePad = _controller.gamepad;

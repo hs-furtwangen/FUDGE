@@ -442,7 +442,7 @@ namespace FudgeCore {
     /**
      * Returns an array of the components of this vector.
      */
-    public get(): Float32Array {
+    public get(): Float32Array { // TODO: eliminate allocation
       return new Float32Array([this.x, this.y, this.z]);
     }
 

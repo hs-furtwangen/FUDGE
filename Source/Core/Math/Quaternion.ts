@@ -67,12 +67,12 @@ namespace FudgeCore {
       } else {
         const right: Vector3 = Vector3.CROSS(_angleOrUp, _vector);
         const matrix: Matrix4x4 = Recycler.reuse(Matrix4x4);
-        matrix.set([
+        matrix.set(
           right.x, right.y, right.z, 0,
           _angleOrUp.x, _angleOrUp.y, _angleOrUp.z, 0,
           _vector.x, _vector.y, _vector.z, 0,
           0, 0, 0, 1
-        ]);
+        );
 
         result.copy(matrix.quaternion);
         Recycler.storeMultiple(right, matrix);
