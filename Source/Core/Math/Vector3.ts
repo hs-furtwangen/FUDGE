@@ -20,6 +20,10 @@ namespace FudgeCore {
     }
 
     //#region Static
+    public static isFullVectorMutator(_mutator: Mutator): boolean {
+      return _mutator && _mutator.x != undefined && _mutator.y != undefined && _mutator.z != undefined;
+    }
+
     /**
      * Creates and returns a vector with the given length pointing in x-direction
      */
