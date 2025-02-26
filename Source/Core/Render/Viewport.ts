@@ -154,9 +154,7 @@ namespace FudgeCore {
 
       // PerformanceMonitor.startMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
       if (this.camera.node) {
-        const mtxWorldCamera: Matrix4x4 = Matrix4x4.PRODUCT(this.camera.node.mtxWorld, this.camera.mtxPivot);
-        this.camera.mtxWorld.copy(mtxWorldCamera);
-        Recycler.store(mtxWorldCamera);
+        Matrix4x4.PRODUCT(this.camera.node.mtxWorld, this.camera.mtxPivot, this.camera.mtxWorld);
       } else {
         this.camera.mtxWorld.copy(this.camera.mtxPivot);
       }
@@ -175,13 +173,14 @@ namespace FudgeCore {
      */
     // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
-      let mtxRoot: Matrix4x4 = Matrix4x4.IDENTITY();
-      if (this.#branch.getParent())
-        mtxRoot = this.#branch.getParent().mtxWorld;
+      let parent: Node = this.#branch.getParent();
+      let mtxRoot: Matrix4x4 = parent?.mtxWorld ?? Matrix4x4.IDENTITY();
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
       Render.prepare(this.#branch, {}, mtxRoot);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
+      if (!parent)
+        Recycler.store(mtxRoot);
     }
 
     /**

@@ -694,12 +694,11 @@ namespace FudgeCore {
           // set mtxShape
           let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
           if (_type == LightDirectional) {
-            let zero: Vector3 = Vector3.ZERO();
-            mtxTotal.translation = zero;
-            Recycler.store(zero);
+            mtxTotal.translation.set(0,0,0);
+            mtxTotal.translation = mtxTotal.translation;
           }
 
-          lightsData.set(mtxTotal.get(), lightDataOffset + 4); // offset + vctColor
+          lightsData.set(mtxTotal.getData(), lightDataOffset + 4); // offset + vctColor
 
           // set mtxShapeInverse
           if (_type != LightDirectional) {
@@ -778,7 +777,7 @@ namespace FudgeCore {
     /**
      * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component
      */
-    @PerformanceMonitor.measure()
+    // @PerformanceMonitor.measure()
     protected static drawAmbientOcclusion(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       ShaderAmbientOcclusion.useProgram();
@@ -807,7 +806,7 @@ namespace FudgeCore {
     /**
      * Draws the bloom-effect over the color-buffer, using the given bloom-component
      */
-    @PerformanceMonitor.measure()
+    // @PerformanceMonitor.measure()
     protected static drawBloom(_cmpBloom: ComponentBloom): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       ShaderBloom.useProgram();

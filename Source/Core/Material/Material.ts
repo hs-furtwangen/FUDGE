@@ -11,6 +11,8 @@ namespace FudgeCore {
     public name: string;
     public idResource: string = undefined;
 
+    public timestampUpdate: number = 0;
+
     private shaderType: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
 
