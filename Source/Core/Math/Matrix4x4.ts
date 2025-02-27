@@ -314,7 +314,20 @@ namespace FudgeCore {
      * Pass an optional out matrix to write the result into.
      */
     public static ROTATION(_rotation: Vector3 | Quaternion, _mtxOut: Matrix4x4 = Recycler.get(Matrix4x4)): Matrix4x4 {
-      Matrix4x4.setRotation(_mtxOut.data, _rotation);
+      // avoid decompostion of rotation and scaling in mutate
+      _mtxOut.#scaling.set(1, 1, 1);
+      _mtxOut.#scalingDirty = false;
+      if (_rotation instanceof Quaternion) {
+        _mtxOut.#quaternion.copy(_rotation);
+        _mtxOut.#quaternionDirty = false;
+        _mtxOut.#rotationDirty = true;
+      } else {
+        _mtxOut.#rotation.copy(_rotation);
+        _mtxOut.#rotationDirty = false;
+        _mtxOut.#quaternionDirty = true;
+      }
+
+      _mtxOut.rotation = _rotation;
       return _mtxOut;
     }
 
@@ -328,6 +341,8 @@ namespace FudgeCore {
         0, 0, _scalar.z, 0,
         0, 0, 0, 1
       );
+      _mtxOut.#scaling.copy(_scalar);
+      _mtxOut.#scalingDirty = false;
       return _mtxOut;
     }
 
@@ -408,41 +423,6 @@ namespace FudgeCore {
       return _mtxOut;
     }
 
-    /**
-     * Set the rotation part of the given matrixes data array to the given rotation.
-     */
-    private static setRotation(_m: Float32Array, _rotation: Vector3 | Quaternion): void {
-      if (_rotation instanceof Vector3) {
-        const anglesRad: Vector3 = Vector3.SCALE(_rotation, Calc.deg2rad);
-        const sinX: number = Math.sin(anglesRad.x);
-        const cosX: number = Math.cos(anglesRad.x);
-        const sinY: number = Math.sin(anglesRad.y);
-        const cosY: number = Math.cos(anglesRad.y);
-        const sinZ: number = Math.sin(anglesRad.z);
-        const cosZ: number = Math.cos(anglesRad.z);
-        Recycler.store(anglesRad);
-
-        _m[0] = cosZ * cosY; /**/                 _m[1] = sinZ * cosY; /**/                 _m[2] = -sinY;
-        _m[4] = cosZ * sinY * sinX - sinZ * cosX; _m[5] = sinZ * sinY * sinX + cosZ * cosX; _m[6] = cosY * sinX;
-        _m[8] = cosZ * sinY * cosX + sinZ * sinX; _m[9] = sinZ * sinY * cosX - cosZ * sinX; _m[10] = cosY * cosX;
-      } else {
-        // const rotationNormalized: Quaternion = Quaternion.NORMALIZATION(_rotation);
-        const x: number = _rotation.x, y: number = _rotation.y, z: number = _rotation.z, w: number = _rotation.w;
-        const xx: number = x * x, xy: number = x * y, xz: number = x * z, xw: number = x * w;
-        const yy: number = y * y, yz: number = y * z, yw: number = y * w;
-        const zz: number = z * z, zw: number = z * w;
-        const ww: number = w * w;
-
-        _m[0] = ww + xx - yy - zz; _m[1] = 2 * (xy + zw);/**/ _m[2] = 2 * (xz - yw);
-        _m[4] = 2 * (xy - zw);/**/ _m[5] = ww - xx + yy - zz; _m[6] = 2 * (yz + xw);
-        _m[8] = 2 * (xz + yw);/**/ _m[9] = 2 * (yz - xw);/**/ _m[10] = ww - xx - yy + zz;
-
-        // _m[0] = 1 - 2 * (yy + zz); _m[1] = 2 * (xy + zw);/**/ _m[2] = 2 * (xz - yw);
-        // _m[4] = 2 * (xy - zw);/**/ _m[5] = 1 - 2 * (xx + zz); _m[6] = 2 * (yz + xw);
-        // _m[8] = 2 * (xz + yw);/**/ _m[9] = 2 * (yz - xw);/**/ _m[10] = 1 - 2 * (xx + yy);
-        // Recycler.store(rotationNormalized);
-      }
-    }
     //#endregion
 
     //#region  Accessors
@@ -512,7 +492,7 @@ namespace FudgeCore {
       return this.#rotation;
     }
     public set rotation(_rotation: Quaternion | Vector3) {
-      this.mutate({ "rotation": _rotation }); // TODO: use synchronous mutatation
+      this.mutate({ "rotation": _rotation });
     }
 
     /** 
@@ -536,7 +516,7 @@ namespace FudgeCore {
       return this.#scaling;
     }
     public set scaling(_scaling: Vector3) {
-      this.mutate({ "scaling": _scaling }); // TODO: use synchronous mutatation
+      this.mutate({ "scaling": _scaling });
     }
 
     /** 
@@ -553,7 +533,7 @@ namespace FudgeCore {
       return this.#quaternion;
     }
     public set quaternion(_quaternion: Quaternion) {
-      this.mutate({ "rotation": _quaternion }); // TODO: use synchronous mutatation
+      this.mutate({ "rotation": _quaternion });
     }
 
     /**
@@ -623,6 +603,15 @@ namespace FudgeCore {
         0, 0, 1, 0,
         0, 0, 0, 1
       );
+      // TODO: think about this: should the cache be initialized as well? This would come in handy for when setting only rotation or scaling...
+      // this.#translation.set(0, 0, 0);
+      // this.#rotation.set(0, 0, 0);
+      // this.#scaling.set(1, 1, 1);
+      // this.#quaternion.set(0, 0, 0, 1);
+      // this.#translationDirty = false;
+      // this.#rotationDirty = false;
+      // this.#scalingDirty = false;
+      // this.#quaternionDirty = false;
     }
 
     /**
@@ -1116,14 +1105,53 @@ namespace FudgeCore {
         if (_mutator.scaling)
           scaling.mutate(_mutator.scaling);
 
-        Matrix4x4.setRotation(m, rotation);
+        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
+        if (isQuaternion) {
+          // fast algorithm from three.js, 18 multiplications, 9 additions, 6 subtractions
+          const x: number = (<Quaternion>rotation).x, y: number = (<Quaternion>rotation).y, z: number = (<Quaternion>rotation).z, w: number = (<Quaternion>rotation).w;
+          const x2: number = x + x, y2: number = y + y, z2: number = z + z;
+          const xx: number = x * x2, xy: number = x * y2, xz: number = x * z2;
+          const yy: number = y * y2, yz: number = y * z2, zz: number = z * z2;
+          const wx: number = w * x2, wy: number = w * y2, wz: number = w * z2;
+
+          m[0] = (1 - (yy + zz)) * sx;
+          m[1] = (xy + wz) * sx;
+          m[2] = (xz - wy) * sx;
+
+          m[4] = (xy - wz) * sy;
+          m[5] = (1 - (xx + zz)) * sy;
+          m[6] = (yz + wx) * sy;
+
+          m[8] = (xz + wy) * sz;
+          m[9] = (yz - wx) * sz;
+          m[10] = (1 - (xx + yy)) * sz;
+        } else {
+          const radX: number = rotation.x * Calc.deg2rad;
+          const radY: number = rotation.y * Calc.deg2rad;
+          const radZ: number = rotation.z * Calc.deg2rad;
+
+          const sinX: number = Math.sin(radX);
+          const cosX: number = Math.cos(radX);
+          const sinY: number = Math.sin(radY);
+          const cosY: number = Math.cos(radY);
+          const sinZ: number = Math.sin(radZ);
+          const cosZ: number = Math.cos(radZ);
+
+          m[0] = (cosZ * cosY) * sx;
+          m[1] = (sinZ * cosY) * sx;
+          m[2] = -sinY * sx;
+
+          m[4] = (cosZ * sinY * sinX - sinZ * cosX) * sy; 
+          m[5] = (sinZ * sinY * sinX + cosZ * cosX) * sy; 
+          m[6] = (cosY * sinX) * sy;
+
+          m[8] = (cosZ * sinY * cosX + sinZ * sinX) * sz; 
+          m[9] = (sinZ * sinY * cosX - cosZ * sinX) * sz; 
+          m[10] = (cosY * cosX) * sz;
+        }
+
         this.#rotationDirty = isQuaternion;
         this.#quaternionDirty = !isQuaternion;
-
-        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
-        m[0] *= sx; m[1] *= sx; m[2] *= sx;
-        m[4] *= sy; m[5] *= sy; m[6] *= sy;
-        m[8] *= sz; m[9] *= sz; m[10] *= sz;
         this.#scalingDirty = false;
       }
 
