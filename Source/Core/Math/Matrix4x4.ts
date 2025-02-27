@@ -1090,22 +1090,22 @@ namespace FudgeCore {
       const m: Float32Array = this.data;
 
       if (_mutator.translation) {
-        this.#translation.mutate(_mutator.translation);
-        m[12] = this.#translation.x; m[13] = this.#translation.y; m[14] = this.#translation.z;
+        let translation: Vector3 = this.translation;
+        translation.mutate(_mutator.translation);
+        m[12] = translation.x; m[13] = translation.y; m[14] = translation.z;
         this.#translationDirty = false;
       }
 
       if (_mutator.rotation || _mutator.scaling) {
         // TODO: make full vector and quaternion mutators mandatory?
         // TODO: test if isFullVectorMutator are really necessary
+        const isQuaternion: boolean = _mutator.rotation?.w != undefined;
 
-        let rotation: Vector3 | Quaternion = _mutator.rotation?.w != undefined ?
-          this.#quaternion : // using this.#quaternion assumes we get a full quaternion mutator with x, y, z and w set so we never need to recalculate the quaternion here. This might cause trouble if we ever want to mutate only a part of a quaternion...
-          Vector3.isFullVectorMutator(_mutator.rotation) ? this.#rotation : this.rotation; // hack to avoid unnecessary recalculation of rotation and scaling. This recalculation is unnecessary when we get a full mutator i.e. with x, y and z set
+        let rotation: Vector3 | Quaternion = isQuaternion ?
+          this.quaternion : // using this.#quaternion assumes we get a full quaternion mutator with x, y, z and w set so we never need to recalculate the quaternion here. This might cause trouble if we ever want to mutate only a part of a quaternion...
+          this.rotation;
 
-        let scaling: Vector3 = Vector3.isFullVectorMutator(_mutator.scaling) ? this.#scaling : this.scaling;
-
-        const isQuaternion: boolean = rotation instanceof Quaternion;
+        let scaling: Vector3 = this.scaling;
 
         if (_mutator.rotation) {
           rotation.mutate(_mutator.rotation);

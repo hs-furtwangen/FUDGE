@@ -20,9 +20,6 @@ namespace FudgeCore {
     }
 
     //#region Static
-    public static isFullVectorMutator(_mutator: Mutator): boolean {
-      return _mutator && _mutator.x != undefined && _mutator.y != undefined && _mutator.z != undefined;
-    }
 
     /**
      * Creates and returns a vector with the given length pointing in x-direction
@@ -329,7 +326,10 @@ namespace FudgeCore {
      * Copies the components of the given vector into this vector.
      */
     public copy(_original: Vector3): Vector3 {
-      return this.set(_original.x, _original.y, _original.z);
+      this.x = _original.x;
+      this.y = _original.y;
+      this.z = _original.z;
+      return this;
     }
 
     public recycle(): void {
