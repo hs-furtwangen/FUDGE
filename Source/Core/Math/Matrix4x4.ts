@@ -52,7 +52,7 @@ namespace FudgeCore {
      * Composes a new matrix according to the given translation, rotation and scaling. Pass an optional out matrix to write the result into.
      */
     public static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3, _mtxOut: Matrix4x4 = Recycler.get(Matrix4x4)): Matrix4x4 {
-      _mtxOut.mutate({ "translation": _translation, "rotation": _rotation, "scaling": _scaling });
+      _mtxOut.compose(_translation, _rotation, _scaling);
       return _mtxOut;
     }
 
@@ -439,7 +439,7 @@ namespace FudgeCore {
       return this.#translation;
     }
     public set translation(_translation: Vector3) {
-      this.mutate({ "translation": _translation }); // TODO: use synchronous mutatation
+      this.compose(_translation);
     }
 
     /** 
@@ -492,7 +492,7 @@ namespace FudgeCore {
       return this.#rotation;
     }
     public set rotation(_rotation: Quaternion | Vector3) {
-      this.mutate({ "rotation": _rotation });
+      this.compose(undefined, _rotation);
     }
 
     /** 
@@ -516,7 +516,7 @@ namespace FudgeCore {
       return this.#scaling;
     }
     public set scaling(_scaling: Vector3) {
-      this.mutate({ "scaling": _scaling });
+      this.compose(undefined, undefined, _scaling);
     }
 
     /** 
@@ -533,7 +533,7 @@ namespace FudgeCore {
       return this.#quaternion;
     }
     public set quaternion(_quaternion: Quaternion) {
-      this.mutate({ "rotation": _quaternion });
+      this.compose(undefined, _quaternion);
     }
 
     /**
@@ -878,35 +878,91 @@ namespace FudgeCore {
     //#endregion
 
     //#region Transfer
-    // public getEulerAnglesNew(): Vector3 {
-    //   let scaling: Vector3 = this.scaling;
+    /**
+     * (Re-)Compose this matrix from the given translation, rotation and scaling. 
+     * Missing values will be decompsed from the current matrix state if necessary.
+     */
+    public compose(_translation?: Partial<Vector3>, _rotation?: Partial<Vector3> | Partial<Quaternion>, _scaling?: Partial<Vector3>): void {
+      const m: Float32Array = this.data;
 
-    //   let thetaX: number, thetaY: number, thetaZ: number;
-    //   let r02: number = this.data[2] / scaling.z;
-    //   let r11: number = this.data[5] / scaling.y;
+      if (_translation) {
+        let translation: Vector3 = this.translation;
+        translation.mutate(_translation);
+        m[12] = translation.x;
+        m[13] = translation.y;
+        m[14] = translation.z;
+        this.#translationDirty = false;
+      }
 
-    //   if (r02 < 1) {
-    //     if (r02 > -1) {
-    //       thetaY = Math.asin(-r02);
-    //       thetaZ = Math.atan2(this.data[1] / scaling.y, this.data[0] / scaling.x);
-    //       thetaX = Math.atan2(this.data[9] / scaling.z, this.data[10] / scaling.z);
-    //     }
-    //     else {
-    //       thetaY = Math.PI / 2;
-    //       thetaZ = -Math.atan2(this.data[6] / scaling.y, r11);
-    //       thetaX = 0;
-    //     }
-    //   }
-    //   else {
-    //     thetaY = -Math.PI / 2;
-    //     thetaZ = Math.atan2(-this.data[6] / scaling.y, r11);
-    //     thetaX = 0;
-    //   }
-    //   this.#eulerAngles.set(-thetaX, thetaY, thetaZ);
-    //   this.#eulerAngles.scale(Mathematic.rad2deg);
+      if (_rotation || _scaling) {
+        const isQuaternion: boolean = (<Quaternion>_rotation)?.w != undefined;
 
-    //   return this.#eulerAngles;
-    // }
+        let rotation: Vector3 | Quaternion = isQuaternion ? this.quaternion : this.rotation;
+
+        let scaling: Vector3 = this.scaling;
+
+        if (_rotation) {
+          rotation.mutate(_rotation);
+          if (isQuaternion)
+            rotation.normalize();
+        }
+
+        if (_scaling)
+          scaling.mutate(_scaling);
+
+        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
+        if (isQuaternion) {
+          // fast algorithm from three.js
+          const x: number = (<Quaternion>rotation).x, y: number = (<Quaternion>rotation).y, z: number = (<Quaternion>rotation).z, w: number = (<Quaternion>rotation).w;
+          const x2: number = x + x, y2: number = y + y, z2: number = z + z;
+          const xx: number = x * x2, xy: number = x * y2, xz: number = x * z2;
+          const yy: number = y * y2, yz: number = y * z2, zz: number = z * z2;
+          const wx: number = w * x2, wy: number = w * y2, wz: number = w * z2;
+
+          m[0] = (1 - (yy + zz)) * sx;
+          m[1] = (xy + wz) * sx;
+          m[2] = (xz - wy) * sx;
+
+          m[4] = (xy - wz) * sy;
+          m[5] = (1 - (xx + zz)) * sy;
+          m[6] = (yz + wx) * sy;
+
+          m[8] = (xz + wy) * sz;
+          m[9] = (yz - wx) * sz;
+          m[10] = (1 - (xx + yy)) * sz;
+        } else {
+          const radX: number = rotation.x * Calc.deg2rad;
+          const radY: number = rotation.y * Calc.deg2rad;
+          const radZ: number = rotation.z * Calc.deg2rad;
+
+          const sinX: number = Math.sin(radX);
+          const cosX: number = Math.cos(radX);
+          const sinY: number = Math.sin(radY);
+          const cosY: number = Math.cos(radY);
+          const sinZ: number = Math.sin(radZ);
+          const cosZ: number = Math.cos(radZ);
+
+          m[0] = (cosZ * cosY) * sx;
+          m[1] = (sinZ * cosY) * sx;
+          m[2] = -sinY * sx;
+
+          m[4] = (cosZ * sinY * sinX - sinZ * cosX) * sy;
+          m[5] = (sinZ * sinY * sinX + cosZ * cosX) * sy;
+          m[6] = (cosY * sinX) * sy;
+
+          m[8] = (cosZ * sinY * cosX + sinZ * sinX) * sz;
+          m[9] = (sinZ * sinY * cosX - cosZ * sinX) * sz;
+          m[10] = (cosY * cosX) * sz;
+        }
+
+        this.#rotationDirty = isQuaternion;
+        this.#quaternionDirty = !isQuaternion;
+        this.#scalingDirty = false;
+      }
+
+      this.mutator = null;
+      this.modified = true;
+    }
 
     /**
      * Sets the elements of this matrix to the given array.
@@ -1076,87 +1132,7 @@ namespace FudgeCore {
     }
 
     public override mutate(_mutator: Mutator): void {
-      const m: Float32Array = this.data;
-
-      if (_mutator.translation) {
-        let translation: Vector3 = this.translation;
-        translation.mutate(_mutator.translation);
-        m[12] = translation.x; m[13] = translation.y; m[14] = translation.z;
-        this.#translationDirty = false;
-      }
-
-      if (_mutator.rotation || _mutator.scaling) {
-        // TODO: make full vector and quaternion mutators mandatory?
-        // TODO: test if isFullVectorMutator are really necessary
-        const isQuaternion: boolean = _mutator.rotation?.w != undefined;
-
-        let rotation: Vector3 | Quaternion = isQuaternion ?
-          this.quaternion : // using this.#quaternion assumes we get a full quaternion mutator with x, y, z and w set so we never need to recalculate the quaternion here. This might cause trouble if we ever want to mutate only a part of a quaternion...
-          this.rotation;
-
-        let scaling: Vector3 = this.scaling;
-
-        if (_mutator.rotation) {
-          rotation.mutate(_mutator.rotation);
-          if (isQuaternion)
-            rotation.normalize();
-        }
-
-        if (_mutator.scaling)
-          scaling.mutate(_mutator.scaling);
-
-        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
-        if (isQuaternion) {
-          // fast algorithm from three.js, 18 multiplications, 9 additions, 6 subtractions
-          const x: number = (<Quaternion>rotation).x, y: number = (<Quaternion>rotation).y, z: number = (<Quaternion>rotation).z, w: number = (<Quaternion>rotation).w;
-          const x2: number = x + x, y2: number = y + y, z2: number = z + z;
-          const xx: number = x * x2, xy: number = x * y2, xz: number = x * z2;
-          const yy: number = y * y2, yz: number = y * z2, zz: number = z * z2;
-          const wx: number = w * x2, wy: number = w * y2, wz: number = w * z2;
-
-          m[0] = (1 - (yy + zz)) * sx;
-          m[1] = (xy + wz) * sx;
-          m[2] = (xz - wy) * sx;
-
-          m[4] = (xy - wz) * sy;
-          m[5] = (1 - (xx + zz)) * sy;
-          m[6] = (yz + wx) * sy;
-
-          m[8] = (xz + wy) * sz;
-          m[9] = (yz - wx) * sz;
-          m[10] = (1 - (xx + yy)) * sz;
-        } else {
-          const radX: number = rotation.x * Calc.deg2rad;
-          const radY: number = rotation.y * Calc.deg2rad;
-          const radZ: number = rotation.z * Calc.deg2rad;
-
-          const sinX: number = Math.sin(radX);
-          const cosX: number = Math.cos(radX);
-          const sinY: number = Math.sin(radY);
-          const cosY: number = Math.cos(radY);
-          const sinZ: number = Math.sin(radZ);
-          const cosZ: number = Math.cos(radZ);
-
-          m[0] = (cosZ * cosY) * sx;
-          m[1] = (sinZ * cosY) * sx;
-          m[2] = -sinY * sx;
-
-          m[4] = (cosZ * sinY * sinX - sinZ * cosX) * sy; 
-          m[5] = (sinZ * sinY * sinX + cosZ * cosX) * sy; 
-          m[6] = (cosY * sinX) * sy;
-
-          m[8] = (cosZ * sinY * cosX + sinZ * sinX) * sz; 
-          m[9] = (sinZ * sinY * cosX - cosZ * sinX) * sz; 
-          m[10] = (cosY * cosX) * sz;
-        }
-
-        this.#rotationDirty = isQuaternion;
-        this.#quaternionDirty = !isQuaternion;
-        this.#scalingDirty = false;
-      }
-
-      this.mutator = null;
-      this.modified = true;
+      this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
     }
 
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
