@@ -60,58 +60,39 @@ namespace FudgeCore {
      * Computes and returns the product of two passed matrices. Pass an optional out matrix to write the result into.
      */
     public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      let a: Float32Array = _mtxLeft.data;
-      let b: Float32Array = _mtxRight.data;
-      let a00: number = a[0 * 4 + 0];
-      let a01: number = a[0 * 4 + 1];
-      let a02: number = a[0 * 4 + 2];
-      let a03: number = a[0 * 4 + 3];
-      let a10: number = a[1 * 4 + 0];
-      let a11: number = a[1 * 4 + 1];
-      let a12: number = a[1 * 4 + 2];
-      let a13: number = a[1 * 4 + 3];
-      let a20: number = a[2 * 4 + 0];
-      let a21: number = a[2 * 4 + 1];
-      let a22: number = a[2 * 4 + 2];
-      let a23: number = a[2 * 4 + 3];
-      let a30: number = a[3 * 4 + 0];
-      let a31: number = a[3 * 4 + 1];
-      let a32: number = a[3 * 4 + 2];
-      let a33: number = a[3 * 4 + 3];
-      let b00: number = b[0 * 4 + 0];
-      let b01: number = b[0 * 4 + 1];
-      let b02: number = b[0 * 4 + 2];
-      let b03: number = b[0 * 4 + 3];
-      let b10: number = b[1 * 4 + 0];
-      let b11: number = b[1 * 4 + 1];
-      let b12: number = b[1 * 4 + 2];
-      let b13: number = b[1 * 4 + 3];
-      let b20: number = b[2 * 4 + 0];
-      let b21: number = b[2 * 4 + 1];
-      let b22: number = b[2 * 4 + 2];
-      let b23: number = b[2 * 4 + 3];
-      let b30: number = b[3 * 4 + 0];
-      let b31: number = b[3 * 4 + 1];
-      let b32: number = b[3 * 4 + 2];
-      let b33: number = b[3 * 4 + 3];
-      _mtxOut.set(
-        b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30,
-        b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31,
-        b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32,
-        b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33,
-        b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30,
-        b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31,
-        b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32,
-        b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33,
-        b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30,
-        b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31,
-        b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32,
-        b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33,
-        b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30,
-        b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31,
-        b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32,
-        b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33
-      );
+      const a: Float32Array = _mtxLeft.data;
+      const b: Float32Array = _mtxRight.data;
+      const out: Float32Array = _mtxOut.data;
+
+      const a00: number = a[0], a01: number = a[1], a02: number = a[2], a03: number = a[3];
+      const a10: number = a[4], a11: number = a[5], a12: number = a[6], a13: number = a[7];
+      const a20: number = a[8], a21: number = a[9], a22: number = a[10], a23: number = a[11];
+      const a30: number = a[12], a31: number = a[13], a32: number = a[14], a33: number = a[15];
+
+      const b00: number = b[0], b01: number = b[1], b02: number = b[2], b03: number = b[3];
+      const b10: number = b[4], b11: number = b[5], b12: number = b[6], b13: number = b[7];
+      const b20: number = b[8], b21: number = b[9], b22: number = b[10], b23: number = b[11];
+      const b30: number = b[12], b31: number = b[13], b32: number = b[14], b33: number = b[15];
+
+      out[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
+      out[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
+      out[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
+      out[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
+      out[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
+      out[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
+      out[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
+      out[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
+      out[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
+      out[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
+      out[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
+      out[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
+      out[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
+      out[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
+      out[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
+      out[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+
+      _mtxOut.resetCache();
+
       return _mtxOut;
     }
 
@@ -1089,30 +1070,36 @@ namespace FudgeCore {
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
      */
     public swapXY(): void {
-      let temp: number[] = [this.data[0], this.data[1], this.data[2]]; // store x-axis
-      this.data.set([this.data[4], this.data[5], this.data[6]], 0); // overwrite x-axis with y-axis
-      this.data.set(temp, 4); // overwrite Y with temp
-      this.data.set([-this.data[8], -this.data[9], -this.data[10]], 8); // reverse z-axis
+      const m: Float32Array = this.data;
+      const xAxis: Vector3 = this.getX(); // store x-axis
+      m[4] = xAxis.x; m[5] = xAxis.y; m[6] = xAxis.z; // overwrite y-axis with x-axis
+      m[0] = m[4]; m[1] = m[5]; m[2] = m[6]; // overwrite x-axis with y-axis
+      m[8] = -m[8]; m[9] = -m[9]; m[10] = -m[10]; // reverse z-axis
+      Recycler.store(xAxis);
       this.resetCache();
     }
     /**
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
      */
     public swapXZ(): void {
-      let temp: number[] = [this.data[0], this.data[1], this.data[2]]; // store x-axis
-      this.data.set([this.data[8], this.data[9], this.data[10]], 0); // overwrite x-axis with z-axis
-      this.data.set(temp, 8); // overwrite Z with temp
-      this.data.set([-this.data[4], -this.data[5], -this.data[6]], 4); // reverse y-axis
+      const m: Float32Array = this.data;
+      const xAxis: Vector3 = this.getX(); // store x-axis
+      m[4] = -m[4]; m[5] = -m[5]; m[6] = -m[6]; // reverse y-axis
+      m[0] = m[8]; m[1] = m[9]; m[2] = m[10]; // overwrite x-axis with z-axis
+      m[8] = xAxis.x; m[9] = xAxis.y; m[10] = xAxis.z; // overwrite z-axis with x-axis
+      Recycler.store(xAxis);
       this.resetCache();
     }
     /**
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
      */
     public swapYZ(): void {
-      let temp: number[] = [this.data[4], this.data[5], this.data[6]]; // store y-axis
-      this.data.set([this.data[8], this.data[9], this.data[10]], 4); // overwrite y-axis with z-axis
-      this.data.set(temp, 8); // overwrite Z with temp
-      this.data.set([-this.data[0], -this.data[1], -this.data[2]], 0); // reverse x-axis
+      const m: Float32Array = this.data;
+      const yAxis: Vector3 = this.getY(); // store y-axis
+      m[0] = -m[0]; m[1] = -m[1]; m[2] = -m[2]; // reverse x-axis
+      m[4] = m[8]; m[5] = m[9]; m[6] = m[10]; // overwrite y-axis with z-axis
+      m[8] = yAxis.x; m[9] = yAxis.y; m[10] = yAxis.z; // overwrite z-axis with y-axis
+      Recycler.store(yAxis);
       this.resetCache();
     }
 
