@@ -109,18 +109,13 @@ namespace FudgeCore {
      * Creates and returns a vector which is a copy of the given vector scaled to the given length
      */
     public static NORMALIZATION(_vector: Vector3, _length: number = 1): Vector3 {
-      let magnitudeSquared: number = _vector.magnitudeSquared;
-      if (magnitudeSquared == 0)
-        throw (new RangeError("Impossible normalization"));
-      let vector: Vector3 = _vector.clone;
-      vector.scale(_length / Math.sqrt(magnitudeSquared));
-      return vector;
+      return _vector.clone.normalize(_length);
     }
 
     /**
      * Returns the resulting vector attained by addition of all given vectors.
      */
-    public static SUM(..._vectors: Vector3[]): Vector3 {
+    public static SUM(..._vectors: Vector3[]): Vector3 { // TODO: rest parameter bloats memory...
       let result: Vector3 = Recycler.get(Vector3);
       for (let vector of _vectors)
         result.set(result.x + vector.x, result.y + vector.y, result.z + vector.z);
@@ -128,40 +123,37 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the result of the subtraction of two vectors.
+     * Returns the result of the subtraction of two vectors. Pass an optional out vector to store the result in.
      */
-    public static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3): Vector3 {
-      let vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y, _minuend.z - _subtrahend.z);
-      return vector;
+    public static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      _out.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y, _minuend.z - _subtrahend.z);
+      return _out;
     }
 
     /**
      * Returns a new vector representing the given vector scaled by the given scaling factor
      */
-    public static SCALE(_vector: Vector3, _scaling: number): Vector3 {
-      let scaled: Vector3 = Recycler.reuse(Vector3);
-      scaled.set(_vector.x * _scaling, _vector.y * _scaling, _vector.z * _scaling);
-      return scaled;
+    public static SCALE(_vector: Vector3, _scaling: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      _out.set(_vector.x * _scaling, _vector.y * _scaling, _vector.z * _scaling);
+      return _out;
     }
 
     /**
-     * Computes the crossproduct of 2 vectors.
+     * Computes the crossproduct of 2 vectors. Pass an optional out vector to store the result in.
      */
-    public static CROSS(_a: Vector3, _b: Vector3): Vector3 {
-      let vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(
+    public static CROSS(_a: Vector3, _b: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      _out.set(
         _a.y * _b.z - _a.z * _b.y,
         _a.z * _b.x - _a.x * _b.z,
         _a.x * _b.y - _a.y * _b.x
       );
-      return vector;
+      return _out;
     }
     /**
      * Computes the dotproduct of 2 vectors.
      */
     public static DOT(_a: Vector3, _b: Vector3): number {
-      return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z;;
+      return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z;
     }
 
     /**
@@ -405,7 +397,12 @@ namespace FudgeCore {
      * Normalizes this to the given length, 1 by default
      */
     public normalize(_length: number = 1): Vector3 {
-      return this.copy(Vector3.NORMALIZATION(this, _length));
+      let magnitudeSquared: number = this.magnitudeSquared;
+      if (magnitudeSquared == 0)
+        throw (new RangeError("Impossible normalization"));
+
+      this.scale(_length / Math.sqrt(magnitudeSquared));
+      return this;
     }
 
     /**

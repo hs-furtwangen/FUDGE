@@ -212,39 +212,81 @@ namespace FudgeCore {
     /**
      * Computes and returns a matrix with the given translation, its z-axis pointing directly at the given target,
      * and a minimal angle between its y-axis and the given up-{@link Vector3}, respetively calculating yaw and pitch.
-     * The pitch may be restricted to the up-vector to only calculate yaw. Pass an optional out matrix to write the result into.
+     * The pitch may be restricted to the up-vector to only calculate yaw. Optionally pass a desired scaling. Pass an optional out matrix to write the result into.
+     * @param _up A unit vector indicating the up-direction.
      */
-    public static LOOK_AT(_translation: Vector3, _target: Vector3, _up: Vector3 = Vector3.Y(), _restrict: boolean = false, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      let zAxis: Vector3 = Vector3.DIFFERENCE(_target, _translation);
-      zAxis.normalize();
-      let vctCross: Vector3 = Vector3.CROSS(_up, zAxis);
-      if (vctCross.magnitudeSquared == 0) // experimental workaround: if z and up is parallel, there is no up to remain...
-        vctCross.x = 0.001; // so tilt a little
-      let xAxis: Vector3 = Vector3.NORMALIZATION(vctCross);
-      let yAxis: Vector3 = _restrict ? _up : Vector3.NORMALIZATION(Vector3.CROSS(zAxis, xAxis));
-      zAxis = _restrict ? Vector3.NORMALIZATION(Vector3.CROSS(xAxis, _up)) : zAxis;
-      _mtxOut.set(
-        xAxis.x, xAxis.y, xAxis.z, 0,
-        yAxis.x, yAxis.y, yAxis.z, 0,
-        zAxis.x, zAxis.y, zAxis.z, 0,
-        _translation.x,
-        _translation.y,
-        _translation.z,
-        1
-      );
-      Recycler.storeMultiple(zAxis, xAxis, vctCross); // don't store yAxis, it might be _up
+    public static LOOK_AT(_translation: Vector3, _target: Vector3, _up?: Vector3, _restrict: boolean = false, _scaling?: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
+      const forward: Vector3 = Vector3.DIFFERENCE(_target, _translation);
+      forward.normalize();
+
+      Matrix4x4.LOOK_IN(forward, _up, _restrict, _translation, _scaling, _mtxOut);
+
+      Recycler.store(forward);
+
       return _mtxOut;
     }
 
     /**
-     * Computes and returns a matrix with the given translation, its z-axis pointing directly in the given direction,
-     * and a minimal angle between its y-axis and the given up-{@link Vector3}. Ideally up should be perpendicular to the given direction.
-     * Pass an optional out matrix to write the result into.
+     * Computes and returns a matrix with its z-axis pointing directly in the given forward direction,
+     * and a minimal angle between its y-axis and the given up direction. The pitch may be restricted to the up-vector to only calculate yaw.
+     * Optionally pass a desired translation and/or scaling. Pass an optional out matrix to write the result into.
+     * @param _forward A unit vector indicating the desired forward-direction.
+     * @param _up A unit vector indicating the up-direction.
      */
-    public static LOOK_IN(_translation: Vector3, _direction: Vector3, _up: Vector3 = Vector3.Y(), _restrict: boolean = false, _mtxOut: Matrix4x4 = Recycler.get(Matrix4x4)): Matrix4x4 {
-      const mtxResult: Matrix4x4 = Matrix4x4.COMPOSITION(_translation, undefined, undefined, _mtxOut);
-      mtxResult.lookIn(_direction, _up, _restrict);
-      return mtxResult;
+    public static LOOK_IN(_forward: Vector3, _up?: Vector3, _restrict: boolean = false, _translation?: Vector3, _scaling?: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
+      const zAxis: Vector3 = _forward.clone;
+      const yAxis: Vector3 = _up ? _up.clone : Vector3.Y();
+      const xAxis: Vector3 = Vector3.CROSS(yAxis, zAxis);
+
+      // if z and up is parallel, there is no up to remain...
+      if (xAxis.magnitudeSquared == 0) { // from three.js 
+        if (Math.abs(yAxis.z) === 1)
+          zAxis.x += 0.0001;
+        else
+          zAxis.z += 0.0001;
+
+        zAxis.normalize();
+        Vector3.CROSS(yAxis, zAxis, xAxis);
+      }
+
+      xAxis.normalize();
+
+      if (_restrict)
+        Vector3.CROSS(xAxis, yAxis, zAxis);
+      else
+        Vector3.CROSS(zAxis, xAxis, yAxis);
+
+      const scaling: Vector3 = _mtxOut.#scaling;
+      if (_scaling) {
+        scaling.copy(_scaling);
+        xAxis.scale(scaling.x);
+        yAxis.scale(scaling.y);
+        zAxis.scale(scaling.z);
+      } else {
+        scaling.set(1, 1, 1);
+      }
+
+      const translation: Vector3 = _mtxOut.#translation;
+      if (_translation)
+        translation.copy(_translation);
+      else
+        translation.set(0, 0, 0);
+
+      _mtxOut.set(
+        xAxis.x, xAxis.y, xAxis.z, 0,
+        yAxis.x, yAxis.y, yAxis.z, 0,
+        zAxis.x, zAxis.y, zAxis.z, 0,
+        translation.x, translation.y, translation.z, 1
+      );
+
+      Recycler.store(xAxis);
+      Recycler.store(yAxis);
+      Recycler.store(zAxis);
+
+      _mtxOut.#translationDirty = false;
+      _mtxOut.#scalingDirty = false;
+
+      return _mtxOut;
     }
 
     /**
@@ -743,42 +785,28 @@ namespace FudgeCore {
      * Adjusts the rotation of this matrix to point the z-axis directly at the given target and tilts it to accord with the given up-{@link Vector3},
      * respectively calculating yaw and pitch. If no up-{@link Vector3} is given, the previous up-{@link Vector3} is used. 
      * The pitch may be restricted to the up-vector to only calculate yaw.
-     */
+     * @param _up A unit vector indicating the up-direction.
+     */ // TODO: maybe passing up should be mandatory, default up (local up) and default restrict (false) form a feedback loop, as the local up gets modified each call...
     public lookAt(_target: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
-      _up = _up ? Vector3.NORMALIZATION(_up) : this.up;
-
-      const scaling: Vector3 = this.scaling;
-      Matrix4x4.LOOK_AT(this.translation, _target, _up, _restrict, this);
-      // TODO: maybe add this to static LOOK_AT
-      this.data[0] *= scaling.x; this.data[1] *= scaling.x; this.data[2] *= scaling.x;
-      this.data[4] *= scaling.y; this.data[5] *= scaling.y; this.data[6] *= scaling.y;
-      this.data[8] *= scaling.z; this.data[9] *= scaling.z; this.data[10] *= scaling.z;
-
+      const up: Vector3 = _up ? _up : this.up;
+      Matrix4x4.LOOK_AT(this.translation, _target, up, _restrict, this.scaling, this);
+      if (!_up)
+        Recycler.store(up);
       return this;
     }
 
     /**
-     * Adjusts the rotation of this matrix to align the z-axis with the given direction and tilts it to accord with the given up-{@link Vector3}.
-     * Up should be perpendicular to the given direction. If no up-vector is provided, {@link up} is used.
-     */
-    public lookIn(_direction: Vector3, _up: Vector3 = this.up, _restrict: boolean = false): Matrix4x4 {
-      let zAxis: Vector3 = Vector3.NORMALIZATION(_direction);
-      let xAxis: Vector3 = Vector3.NORMALIZATION(Vector3.CROSS(_up, zAxis));
-      let yAxis: Vector3 = _restrict ? _up : Vector3.NORMALIZATION(Vector3.CROSS(zAxis, xAxis));
-      zAxis = _restrict ? Vector3.NORMALIZATION(Vector3.CROSS(xAxis, _up)) : zAxis;
-
-      xAxis.scale(this.scaling.x);
-      yAxis.scale(this.scaling.y);
-      zAxis.scale(this.scaling.z);
-
-      this.set(
-        xAxis.x, xAxis.y, xAxis.z, 0,
-        yAxis.x, yAxis.y, yAxis.z, 0,
-        zAxis.x, zAxis.y, zAxis.z, 0,
-        this.translation.x, this.translation.y, this.translation.z, 1
-      );
-
-      Recycler.storeMultiple(xAxis, zAxis);
+     * Adjusts the rotation of this matrix to align the z-axis with the given forward-direction and tilts it to accord with the given up-{@link Vector3}.
+     * If no up-vector is provided, the local {@link Matrix4x4.up} is used.
+     * The pitch may be restricted to the up-vector to only calculate yaw.
+     * @param _forward A unit vector indicating the desired forward-direction.
+     * @param _up A unit vector indicating the up-direction.
+     */ // TODO: maybe passing up should be mandatory, default up (local up) and default restrict (false) form a feedback loop, as the local up gets modified each call...
+    public lookIn(_forward: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
+      const up: Vector3 = _up ? _up : this.up;
+      Matrix4x4.LOOK_IN(_forward, up, _restrict, this.translation, this.scaling, this);
+      if (!_up)
+        Recycler.store(up);
       return this;
     }
 
@@ -1036,7 +1064,7 @@ namespace FudgeCore {
      * Return cardinal x-axis
      */
     public getX(): Vector3 {
-      let result: Vector3 = Recycler.get(Vector3);
+      let result: Vector3 = Recycler.reuse(Vector3);
       result.set(this.data[0], this.data[1], this.data[2]);
       return result;
     }
@@ -1044,7 +1072,7 @@ namespace FudgeCore {
      * Return cardinal y-axis
      */
     public getY(): Vector3 {
-      let result: Vector3 = Recycler.get(Vector3);
+      let result: Vector3 = Recycler.reuse(Vector3);
       result.set(this.data[4], this.data[5], this.data[6]);
       return result;
     }
@@ -1052,7 +1080,7 @@ namespace FudgeCore {
      * Return cardinal z-axis
      */
     public getZ(): Vector3 {
-      let result: Vector3 = Recycler.get(Vector3);
+      let result: Vector3 = Recycler.reuse(Vector3);
       result.set(this.data[8], this.data[9], this.data[10]);
       return result;
     }

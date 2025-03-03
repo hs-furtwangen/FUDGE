@@ -121,6 +121,7 @@ namespace FudgeCore {
         let tmpMtx: Matrix4x4 = connection.end.mtxWorld.clone;
         let directionVector: Vector3 = Vector3.DIFFERENCE(mtx.translation, tmpMtx.translation);
         if (directionVector.magnitudeSquared === 0) continue;
+        directionVector.normalize();
 
         // if one of the waypoints is inactive, don't draw gizmos
         if (!connection.end.isActive || !connection.start.isActive) continue;
@@ -130,7 +131,7 @@ namespace FudgeCore {
         lines.push(tmpMtx.translation);
 
         // arrow heads
-        let directionMtx: Matrix4x4 = Matrix4x4.LOOK_IN(tmpMtx.translation, directionVector);
+        let directionMtx: Matrix4x4 = Matrix4x4.LOOK_IN(directionVector, undefined, false, tmpMtx.translation);
         directionMtx.scale(scaleVector);
         Gizmos.drawWireCone(directionMtx, Color.CSS("orange"));
       }
