@@ -1,22 +1,19 @@
 namespace FudgeCore {
-
-  /**
-   * Represents the matrix as translation, rotation and scaling {@link Vector2}, being calculated from the matrix
-   */
-  interface VectorRepresentation {
-    translation: Vector2;
-    rotation: number;
-    scaling: Vector2;
-  }
-
   /**
    * Simple class for 3x3 matrix operations
-   * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
+   * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020 | Jonas Plotzky, HFU, 2025
    */
   export class Matrix3x3 extends Mutable implements Serializable, Recycable {
     private data: Float32Array = new Float32Array(9); // The data of the matrix.
     private mutator: Mutator = null; // prepared for optimization, keep mutator to reduce redundant calculation and for comparison. Set to null when data changes!
-    private vectors: VectorRepresentation; // vector representation of this matrix
+
+    readonly #translation: Vector2 = Vector2.ZERO();
+    readonly #scaling: Vector2 = Vector2.ONE();
+    #rotation: number = 0;
+
+    #translationDirty: boolean = false;
+    #rotationDirty: boolean = false;
+    #scalingDirty: boolean = false;
 
     public constructor() {
       super();
@@ -68,7 +65,7 @@ namespace FudgeCore {
         cos, sin, 0,
         -sin, cos, 0,
         0, 0, 1
-      );;
+      );
     }
 
     /**
@@ -143,19 +140,18 @@ namespace FudgeCore {
 
     /** 
      * - get: return a vector representation of the translation {@link Vector2}.  
-     * **Caution!** Use immediately, since the vector is going to be reused by Recycler. Create a clone to keep longer and manipulate. 
+     * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: effect the matrix ignoring its rotation and scaling
      */
     public get translation(): Vector2 {
-      if (!this.vectors.translation)
-        this.vectors.translation = new Vector2(this.data[6], this.data[7]);
-      return this.vectors.translation;
+      if (this.#translationDirty) {
+        this.#translationDirty = false;
+        this.#translation.set(this.data[6], this.data[7]);
+      }
+      return this.#translation;
     }
     public set translation(_translation: Vector2) {
-      this.data.set(_translation.get(), 6);
-      // no full cache reset required
-      this.vectors.translation = _translation;
-      this.mutator = null;
+      this.compose(_translation, undefined, undefined);
     }
 
     /** 
@@ -163,13 +159,34 @@ namespace FudgeCore {
      * - set: effect the matrix
      */
     public get rotation(): number {
-      if (!this.vectors.rotation)
-        this.vectors.rotation = this.getEulerAngle();
-      return this.vectors.rotation;
+      if (this.#rotationDirty) {
+        let scaling: Vector2 = this.scaling;
+
+        let s0: number = this.data[0] / scaling.x;
+        let s1: number = this.data[1] / scaling.x;
+        let s3: number = this.data[3] / scaling.y;
+        let s4: number = this.data[4] / scaling.y;
+
+        let xSkew: number = Math.atan2(-s3, s4);
+        let ySkew: number = Math.atan2(s0, s1);
+
+        let sy: number = Math.hypot(s0, s1); // probably 2. param should be this.data[4] / scaling.y
+        let rotation: number;
+
+        if (!(sy > 1e-6))
+          rotation = ySkew;
+        else
+          rotation = xSkew;
+
+        rotation *= Calc.rad2deg;
+
+        this.#rotation = rotation;
+        this.#rotationDirty = false;
+      }
+      return this.#rotation;
     }
     public set rotation(_rotation: number) {
-      this.mutate({ "rotation": _rotation });
-      this.resetCache();
+      this.compose(undefined, _rotation, undefined);
     }
 
     /** 
@@ -178,16 +195,17 @@ namespace FudgeCore {
      * - set: effect the matrix
      */
     public get scaling(): Vector2 {
-      if (!this.vectors.scaling)
-        this.vectors.scaling = new Vector2(
+      if (this.#scalingDirty) {
+        this.#scaling.set(
           Math.hypot(this.data[0], this.data[1]) * (this.data[0] < 0 ? -1 : 1),
           Math.hypot(this.data[3], this.data[4]) * (this.data[4] < 0 ? -1 : 1)
         );
-      return this.vectors.scaling; // .clone;
+        this.#scalingDirty = false;
+      }
+      return this.#scaling;
     }
     public set scaling(_scaling: Vector2) {
-      this.mutate({ "scaling": _scaling });
-      this.resetCache();
+      this.compose(undefined, undefined, _scaling);
     }
 
     /**
@@ -221,7 +239,6 @@ namespace FudgeCore {
      */
     public translate(_by: Vector2): Matrix3x3 {
       const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.TRANSLATION(_by));
-      // TODO: possible optimization, translation may alter mutator instead of deleting it.
       this.setArray(mtxResult.data);
       Recycler.store(mtxResult);
       return this;
@@ -233,7 +250,7 @@ namespace FudgeCore {
     public translateX(_x: number): Matrix3x3 {
       this.data[6] += _x;
       this.mutator = null;
-      this.vectors.translation = null;
+      this.#translationDirty = true;
       return this;
     }
 
@@ -243,7 +260,7 @@ namespace FudgeCore {
     public translateY(_y: number): Matrix3x3 {
       this.data[7] += _y;
       this.mutator = null;
-      this.vectors.translation = null;
+      this.#translationDirty = true;
       return this;
     }
     //#endregion
@@ -308,33 +325,6 @@ namespace FudgeCore {
     //#endregion
 
     //#region Transfer
-    /**
-     * Calculates and returns the euler-angles representing the current rotation of this matrix
-     */
-    public getEulerAngle(): number {
-      let scaling: Vector2 = this.scaling;
-
-      let s0: number = this.data[0] / scaling.x;
-      let s1: number = this.data[1] / scaling.x;
-      let s3: number = this.data[3] / scaling.y;
-      let s4: number = this.data[4] / scaling.y;
-
-      let xSkew: number = Math.atan2(-s3, s4);
-      let ySkew: number = Math.atan2(s0, s1);
-
-      let sy: number = Math.hypot(s0, s1); // probably 2. param should be this.data[4] / scaling.y
-      let rotation: number;
-
-      if (!(sy > 1e-6))
-        rotation = ySkew;
-      else
-        rotation = xSkew;
-
-      rotation *= Calc.rad2deg;
-
-      return rotation;
-    }
-
     /**
      * Sets the elements of this matrix to the given array.
      */
@@ -422,43 +412,50 @@ namespace FudgeCore {
       return mutator;
     }
 
-    // TODO: optimize composition of matrix like in Matrix4x4
+    /**
+    * (Re-)Compose this matrix from the given translation, rotation and scaling. 
+    * Missing values will be decompsed from the current matrix state if necessary.
+    */
+    public compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): void {
+      const m: Float32Array = this.data;
+
+      if (_translation) {
+        const translation: Vector2 = this.translation;
+        translation.mutate(_translation);
+        m[6] = translation.x;
+        m[7] = translation.y;
+        this.#translationDirty = false;
+      }
+
+      if (_rotation || _scaling) {
+        const rotation: number = _rotation ?? this.rotation;
+        if (_rotation != undefined)
+          this.#rotation = rotation;
+        
+        const scaling: Vector2 = this.scaling;
+        if (_scaling)
+          scaling.mutate(_scaling);
+
+        const angleInRadians: number = rotation * Calc.deg2rad;
+        const sin: number = Math.sin(angleInRadians);
+        const cos: number = Math.cos(angleInRadians);
+
+        m[0] = cos * scaling.x; 
+        m[1] = sin * scaling.x;
+
+        m[3] = -sin * scaling.y; 
+        m[4] = cos * scaling.y;
+
+        this.#rotationDirty = false;
+        this.#scalingDirty = false;
+      }
+
+      this.mutator = null;
+    }
+
+    // Optimized mutate method to directly update matrix values
     public mutate(_mutator: Mutator): void {
-      let oldTranslation: Vector2 = this.translation;
-      let oldRotation: number = this.rotation;
-      let oldScaling: Vector2 = this.scaling;
-      let newTranslation: Vector2 = <Vector2>_mutator["translation"];
-      let newRotation: number = <number>_mutator["rotation"];
-      let newScaling: Vector2 = <Vector2>_mutator["scaling"];
-      let vectors: VectorRepresentation = { translation: oldTranslation, rotation: oldRotation, scaling: oldScaling };
-      if (newTranslation) {
-        vectors.translation = new Vector2(
-          newTranslation.x != undefined ? newTranslation.x : oldTranslation.x,
-          newTranslation.y != undefined ? newTranslation.y : oldTranslation.y
-        );
-      }
-
-      vectors.rotation = (newRotation == undefined) ? oldRotation : newRotation;
-
-      if (newScaling) {
-        vectors.scaling = new Vector2(
-          newScaling.x != undefined ? newScaling.x : oldScaling.x,
-          newScaling.y != undefined ? newScaling.y : oldScaling.y
-        );
-      }
-
-      // TODO: possible performance optimization when only one or two components change, then use old matrix instead of IDENTITY and transform by differences/quotients
-      let mtxResult: Matrix3x3 = Matrix3x3.IDENTITY();
-      if (vectors.translation)
-        mtxResult.translate(vectors.translation);
-      if (vectors.rotation) {
-        mtxResult.rotate(vectors.rotation);
-      }
-      if (vectors.scaling)
-        mtxResult.scale(vectors.scaling);
-      this.setArray(mtxResult.data);
-
-      this.vectors = vectors;
+      this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
     }
 
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
@@ -471,10 +468,11 @@ namespace FudgeCore {
     protected reduceMutator(_mutator: Mutator): void {/** */ }
 
     private resetCache(): void {
-      this.vectors = { translation: null, rotation: null, scaling: null };
+      this.#translationDirty = true;
+      this.#rotationDirty = true;
+      this.#scalingDirty = true;
       this.mutator = null;
     }
   }
   //#endregion
-
 }
