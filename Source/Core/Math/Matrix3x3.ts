@@ -49,11 +49,11 @@ namespace FudgeCore {
      */
     public static TRANSLATION(_translate: Vector2): Matrix3x3 {
       const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set([
+      mtxResult.set(
         1, 0, 0,
         0, 1, 0,
         _translate.x, _translate.y, 1
-      ]);
+      );
       return mtxResult;
     }
 
@@ -66,11 +66,11 @@ namespace FudgeCore {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      mtxResult.set([
+      mtxResult.set(
         cos, sin, 0,
         -sin, cos, 0,
         0, 0, 1
-      ]);
+      );
       return mtxResult;
     }
 
@@ -79,11 +79,11 @@ namespace FudgeCore {
      */
     public static SCALING(_scalar: Vector2): Matrix3x3 {
       const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set([
+      mtxResult.set(
         _scalar.x, 0, 0,
         0, _scalar.y, 0,
         0, 0, 1
-      ]);
+      );
       return mtxResult;
     }
     //#endregion
@@ -111,7 +111,7 @@ namespace FudgeCore {
       let b21: number = _mtxRight.data[2 * 3 + 1];
       let b22: number = _mtxRight.data[2 * 3 + 2];
       let mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set([
+      mtxResult.set(
         b00 * a00 + b01 * a10 + b02 * a20,
         b00 * a01 + b01 * a11 + b02 * a21,
         b00 * a02 + b01 * a12 + b02 * a22,
@@ -121,7 +121,7 @@ namespace FudgeCore {
         b20 * a00 + b21 * a10 + b22 * a20,
         b20 * a01 + b21 * a11 + b22 * a21,
         b20 * a02 + b21 * a12 + b22 * a22
-      ]);
+      );
       return mtxResult;
     }
 
@@ -147,7 +147,7 @@ namespace FudgeCore {
           m02 * (m10 * m21 - m11 * m20));
 
       const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set([
+      mtxResult.set(
         d * (m11 * m22 - m21 * m12), // [0]
         d * (m02 * m21 - m01 * m22), // [1]
         d * (m01 * m12 - m02 * m11), // [2]
@@ -157,7 +157,7 @@ namespace FudgeCore {
         d * (m10 * m21 - m20 * m11), // [6]
         d * (m20 * m01 - m00 * m21), // [7]
         d * (m00 * m11 - m10 * m01) // [8]
-      ]);
+      );
       return mtxResult;
     }
 
@@ -221,11 +221,11 @@ namespace FudgeCore {
      * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
      */
     public recycle(): void {
-      this.set([
+      this.set(
         1, 0, 0,
         0, 1, 0,
         0, 0, 1
-      ]);
+      );
     }
 
     /**
@@ -242,7 +242,7 @@ namespace FudgeCore {
     public translate(_by: Vector2): Matrix3x3 {
       const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.TRANSLATION(_by));
       // TODO: possible optimization, translation may alter mutator instead of deleting it.
-      this.set(mtxResult.data);
+      this.setArray(mtxResult.data);
       Recycler.store(mtxResult);
       return this;
     }
@@ -274,7 +274,7 @@ namespace FudgeCore {
      */
     public rotate(_angleInDegrees: number): Matrix3x3 {
       const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.ROTATION(_angleInDegrees));
-      this.set(mtxResult.data);
+      this.setArray(mtxResult.data);
       Recycler.store(mtxResult);
       return this;
     }
@@ -286,7 +286,7 @@ namespace FudgeCore {
      */
     public scale(_by: Vector2): Matrix3x3 {
       const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.SCALING(_by));
-      this.set(mtxResult.data);
+      this.setArray(mtxResult.data);
       Recycler.store(mtxResult);
       return this;
     }
@@ -320,7 +320,7 @@ namespace FudgeCore {
      */
     public multiply(_mtxRight: Matrix3x3): Matrix3x3 {
       let mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, _mtxRight);
-      this.set(mtxResult.data);
+      this.setArray(mtxResult.data);
       Recycler.store(mtxResult);
       this.mutator = null;
       return this;
@@ -358,8 +358,22 @@ namespace FudgeCore {
     /**
      * Sets the elements of this matrix to the given array.
      */
-    public set(_array: ArrayLike<number>): Matrix3x3 {
+    public setArray(_array: ArrayLike<number>): Matrix3x3 {
       this.data.set(_array);
+      this.resetCache();
+      return this;
+    }
+
+    /**
+     * Sets the elements of this matrix to the given values.
+     */
+    public set(_m00: number, _m01: number, _m02: number, _m10: number, _m11: number, _m12: number, _m20: number, _m21: number, _m22: number): Matrix3x3 {
+      const m: Float32Array = this.data;
+
+      m[0] = _m00; m[1] = _m01; m[2] = _m02;
+      m[3] = _m10; m[4] = _m11; m[5] = _m12;
+      m[6] = _m20; m[7] = _m21; m[8] = _m22;
+      
       this.resetCache();
       return this;
     }
@@ -462,7 +476,7 @@ namespace FudgeCore {
       }
       if (vectors.scaling)
         mtxResult.scale(vectors.scaling);
-      this.set(mtxResult.data);
+      this.setArray(mtxResult.data);
 
       this.vectors = vectors;
     }
