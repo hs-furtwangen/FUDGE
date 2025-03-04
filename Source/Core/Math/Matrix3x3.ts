@@ -106,7 +106,7 @@ namespace FudgeCore {
         b20 * a00 + b21 * a10 + b22 * a20,
         b20 * a01 + b21 * a11 + b22 * a21,
         b20 * a02 + b21 * a12 + b22 * a22
-      );;
+      );
     }
 
     /**
@@ -238,9 +238,9 @@ namespace FudgeCore {
      * Adds a translation by the given {@link Vector2} to this matrix.
      */
     public translate(_by: Vector2): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.TRANSLATION(_by));
-      this.setArray(mtxResult.data);
-      Recycler.store(mtxResult);
+      const mtxTranslation: Matrix3x3 = Matrix3x3.TRANSLATION(_by);
+      Matrix3x3.PRODUCT(this, mtxTranslation, this);
+      Recycler.store(mtxTranslation);
       return this;
     }
 
@@ -270,9 +270,9 @@ namespace FudgeCore {
      * Adds a rotation around the z-Axis to this matrix
      */
     public rotate(_angleInDegrees: number): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.ROTATION(_angleInDegrees));
-      this.setArray(mtxResult.data);
-      Recycler.store(mtxResult);
+      const mtxRotation: Matrix3x3 = Matrix3x3.ROTATION(_angleInDegrees);
+      Matrix3x3.PRODUCT(this, mtxRotation, this);
+      Recycler.store(mtxRotation);
       return this;
     }
     //#endregion
@@ -282,9 +282,9 @@ namespace FudgeCore {
      * Adds a scaling by the given {@link Vector2} to this matrix.
      */
     public scale(_by: Vector2): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, Matrix3x3.SCALING(_by));
-      this.setArray(mtxResult.data);
-      Recycler.store(mtxResult);
+      const mtxScaling: Matrix3x3 = Matrix3x3.SCALING(_by);
+      Matrix3x3.PRODUCT(this, mtxScaling, this);
+      Recycler.store(mtxScaling);
       return this;
     }
 
@@ -292,10 +292,9 @@ namespace FudgeCore {
      * Adds a scaling along the x-Axis to this matrix.
      */
     public scaleX(_by: number): Matrix3x3 {
-      let vector: Vector2 = Recycler.get(Vector2);
-      vector.set(_by, 1);
-      this.scale(vector);
-      Recycler.store(vector);
+      const scaling: Vector2 = Recycler.reuse(Vector2).set(_by, 1);
+      this.scale(scaling);
+      Recycler.store(scaling);
       return this;
     }
 
@@ -303,28 +302,71 @@ namespace FudgeCore {
      * Adds a scaling along the y-Axis to this matrix.
      */
     public scaleY(_by: number): Matrix3x3 {
-      let vector: Vector2 = Recycler.get(Vector2);
-      vector.set(1, _by);
-      this.scale(vector);
-      Recycler.store(vector);
+      const scaling: Vector2 = Recycler.reuse(Vector2).set(1, _by);
+      this.scale(scaling);
+      Recycler.store(scaling);
       return this;
     }
     //#endregion
 
     //#region Transformation
     /**
-     * Multiply this matrix with the given matrix
+     * Multiply this matrix with the given matrix.
      */
     public multiply(_mtxRight: Matrix3x3): Matrix3x3 {
-      let mtxResult: Matrix3x3 = Matrix3x3.PRODUCT(this, _mtxRight);
-      this.setArray(mtxResult.data);
-      Recycler.store(mtxResult);
-      this.mutator = null;
-      return this;
+      return Matrix3x3.PRODUCT(this, _mtxRight, this);
+    }
+
+    /**
+     * Premultiply this matrix with the given matrix.
+     */
+    public premultiply(_mtxLeft: Matrix3x3): Matrix3x3 {
+      return Matrix3x3.PRODUCT(_mtxLeft, this, this);
     }
     //#endregion
 
     //#region Transfer
+    /**
+     * (Re-)Compose this matrix from the given translation, rotation and scaling. 
+     * Missing values will be decompsed from the current matrix state if necessary.
+     */
+    public compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): void {
+      const m: Float32Array = this.data;
+
+      if (_translation) {
+        const translation: Vector2 = this.translation;
+        translation.mutate(_translation);
+        m[6] = translation.x;
+        m[7] = translation.y;
+        this.#translationDirty = false;
+      }
+
+      if (_rotation || _scaling) {
+        const rotation: number = _rotation ?? this.rotation;
+        if (_rotation != undefined)
+          this.#rotation = rotation;
+        
+        const scaling: Vector2 = this.scaling;
+        if (_scaling)
+          scaling.mutate(_scaling);
+
+        const angleInRadians: number = rotation * Calc.deg2rad;
+        const sin: number = Math.sin(angleInRadians);
+        const cos: number = Math.cos(angleInRadians);
+
+        m[0] = cos * scaling.x; 
+        m[1] = sin * scaling.x;
+
+        m[3] = -sin * scaling.y; 
+        m[4] = cos * scaling.y;
+
+        this.#rotationDirty = false;
+        this.#scalingDirty = false;
+      }
+
+      this.mutator = null;
+    }
+
     /**
      * Sets the elements of this matrix to the given array.
      */
@@ -353,7 +395,16 @@ namespace FudgeCore {
      */
     public copy(_original: Matrix3x3): Matrix3x3 {
       this.data.set(_original.data);
-      this.resetCache(); // TODO: for now reset the cache, as i have no idea how the caching works for matrix3x3.
+      this.mutator = null;
+      this.#translationDirty = _original.#translationDirty;
+      this.#rotationDirty = _original.#rotationDirty;
+      this.#scalingDirty = _original.#scalingDirty;
+      if (!this.#translationDirty)
+        this.#translation.copy(_original.#translation);
+      if (!this.#rotationDirty)
+        this.#rotation = _original.#rotation;
+      if (!this.#scalingDirty)
+        this.#scaling.copy(_original.#scaling);
       return this;
     }
 
@@ -410,47 +461,6 @@ namespace FudgeCore {
       // cache mutator
       this.mutator = mutator;
       return mutator;
-    }
-
-    /**
-    * (Re-)Compose this matrix from the given translation, rotation and scaling. 
-    * Missing values will be decompsed from the current matrix state if necessary.
-    */
-    public compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): void {
-      const m: Float32Array = this.data;
-
-      if (_translation) {
-        const translation: Vector2 = this.translation;
-        translation.mutate(_translation);
-        m[6] = translation.x;
-        m[7] = translation.y;
-        this.#translationDirty = false;
-      }
-
-      if (_rotation || _scaling) {
-        const rotation: number = _rotation ?? this.rotation;
-        if (_rotation != undefined)
-          this.#rotation = rotation;
-        
-        const scaling: Vector2 = this.scaling;
-        if (_scaling)
-          scaling.mutate(_scaling);
-
-        const angleInRadians: number = rotation * Calc.deg2rad;
-        const sin: number = Math.sin(angleInRadians);
-        const cos: number = Math.cos(angleInRadians);
-
-        m[0] = cos * scaling.x; 
-        m[1] = sin * scaling.x;
-
-        m[3] = -sin * scaling.y; 
-        m[4] = cos * scaling.y;
-
-        this.#rotationDirty = false;
-        this.#scalingDirty = false;
-      }
-
-      this.mutator = null;
     }
 
     // Optimized mutate method to directly update matrix values
