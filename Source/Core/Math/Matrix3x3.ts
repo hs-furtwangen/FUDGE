@@ -40,78 +40,66 @@ namespace FudgeCore {
      * Retrieve a new identity matrix.
      */
     public static IDENTITY(): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.get(Matrix3x3);
-      return mtxResult;
+      return Recycler.get(Matrix3x3);
     }
 
     /**
      * Returns a matrix that translates coordinates along the x- and y-axis according to the given {@link Vector2}.
+     * @param _mtxOut Optional matrix to store the result in.
      */
-    public static TRANSLATION(_translate: Vector2): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set(
+    public static TRANSLATION(_translate: Vector2, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
+      return _mtxOut.set(
         1, 0, 0,
         0, 1, 0,
         _translate.x, _translate.y, 1
-      );
-      return mtxResult;
+      );;
     }
 
     /**
      * Returns a matrix that rotates coordinates on the z-axis when multiplied by.
      * @param _angleInDegrees The value of the rotation.
+     * @param _mtxOut Optional matrix to store the result in.
      */
-    public static ROTATION(_angleInDegrees: number): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
+    public static ROTATION(_angleInDegrees: number, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      mtxResult.set(
+      return _mtxOut.set(
         cos, sin, 0,
         -sin, cos, 0,
         0, 0, 1
-      );
-      return mtxResult;
+      );;
     }
 
     /**
-     * Returns a matrix that scales coordinates along the x- and y-axis according to the given {@link Vector2}
+     * Returns a matrix that scales coordinates along the x- and y-axis according to the given {@link Vector2}.
+     * @param _mtxOut Optional matrix to store the result in.
      */
-    public static SCALING(_scalar: Vector2): Matrix3x3 {
-      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set(
+    public static SCALING(_scalar: Vector2, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
+      return _mtxOut.set(
         _scalar.x, 0, 0,
         0, _scalar.y, 0,
         0, 0, 1
       );
-      return mtxResult;
     }
     //#endregion
 
     /**
      * Computes and returns the product of two passed matrices.
+     * @param _mtxOut Optional matrix to store the result in.
      */
-    public static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3): Matrix3x3 {
-      let a00: number = _mtxLeft.data[0 * 3 + 0];
-      let a01: number = _mtxLeft.data[0 * 3 + 1];
-      let a02: number = _mtxLeft.data[0 * 3 + 2];
-      let a10: number = _mtxLeft.data[1 * 3 + 0];
-      let a11: number = _mtxLeft.data[1 * 3 + 1];
-      let a12: number = _mtxLeft.data[1 * 3 + 2];
-      let a20: number = _mtxLeft.data[2 * 3 + 0];
-      let a21: number = _mtxLeft.data[2 * 3 + 1];
-      let a22: number = _mtxLeft.data[2 * 3 + 2];
-      let b00: number = _mtxRight.data[0 * 3 + 0];
-      let b01: number = _mtxRight.data[0 * 3 + 1];
-      let b02: number = _mtxRight.data[0 * 3 + 2];
-      let b10: number = _mtxRight.data[1 * 3 + 0];
-      let b11: number = _mtxRight.data[1 * 3 + 1];
-      let b12: number = _mtxRight.data[1 * 3 + 2];
-      let b20: number = _mtxRight.data[2 * 3 + 0];
-      let b21: number = _mtxRight.data[2 * 3 + 1];
-      let b22: number = _mtxRight.data[2 * 3 + 2];
-      let mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set(
+    public static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
+      const left: Float32Array = _mtxLeft.data;
+      const right: Float32Array = _mtxRight.data;
+
+      const a00: number = left[0], a01: number = left[1], a02: number = left[2];
+      const a10: number = left[3], a11: number = left[4], a12: number = left[5];
+      const a20: number = left[6], a21: number = left[7], a22: number = left[8];
+      const b00: number = right[0], b01: number = right[1], b02: number = right[2];
+      const b10: number = right[3], b11: number = right[4], b12: number = right[5];
+      const b20: number = right[6], b21: number = right[7], b22: number = right[8];
+
+      return _mtxOut.set(
         b00 * a00 + b01 * a10 + b02 * a20,
         b00 * a01 + b01 * a11 + b02 * a21,
         b00 * a02 + b01 * a12 + b02 * a22,
@@ -121,44 +109,36 @@ namespace FudgeCore {
         b20 * a00 + b21 * a10 + b22 * a20,
         b20 * a01 + b21 * a11 + b22 * a21,
         b20 * a02 + b21 * a12 + b22 * a22
-      );
-      return mtxResult;
+      );;
     }
 
     /**
      * Computes and returns the inverse of a passed matrix.
      * @param _mtx The matrix to compute the inverse of.
+     * @param _mtxOut Optional matrix to store the result in.
      */
-    public static INVERSE(_mtx: Matrix3x3): Matrix3x3 {
-      let m: Float32Array = _mtx.data;
-      let m00: number = m[0 * 3 + 0];
-      let m01: number = m[0 * 3 + 1];
-      let m02: number = m[0 * 3 + 2];
-      let m10: number = m[1 * 3 + 0];
-      let m11: number = m[1 * 3 + 1];
-      let m12: number = m[1 * 3 + 2];
-      let m20: number = m[2 * 3 + 0];
-      let m21: number = m[2 * 3 + 1];
-      let m22: number = m[2 * 3 + 2];
+    public static INVERSE(_mtx: Matrix3x3, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
+      const m: Float32Array = _mtx.data;
+      const m00: number = m[0], m01: number = m[1], m02: number = m[2];
+      const m10: number = m[3], m11: number = m[4], m12: number = m[5];
+      const m20: number = m[6], m21: number = m[7], m22: number = m[8];
 
       let d: number = 1 /
         (m00 * (m11 * m22 - m21 * m12) -
           m01 * (m10 * m22 - m12 * m20) +
           m02 * (m10 * m21 - m11 * m20));
 
-      const mtxResult: Matrix3x3 = Recycler.reuse(Matrix3x3);
-      mtxResult.set(
-        d * (m11 * m22 - m21 * m12), // [0]
-        d * (m02 * m21 - m01 * m22), // [1]
-        d * (m01 * m12 - m02 * m11), // [2]
-        d * (m12 * m20 - m10 * m22), // [3]
-        d * (m00 * m22 - m02 * m20), // [4]
-        d * (m10 * m02 - m00 * m12), // [5]
-        d * (m10 * m21 - m20 * m11), // [6]
-        d * (m20 * m01 - m00 * m21), // [7]
-        d * (m00 * m11 - m10 * m01) // [8]
+      return _mtxOut.set(
+        d * (m11 * m22 - m21 * m12),
+        d * (m02 * m21 - m01 * m22),
+        d * (m01 * m12 - m02 * m11),
+        d * (m12 * m20 - m10 * m22),
+        d * (m00 * m22 - m02 * m20),
+        d * (m10 * m02 - m00 * m12),
+        d * (m10 * m21 - m20 * m11),
+        d * (m20 * m01 - m00 * m21),
+        d * (m00 * m11 - m10 * m01)
       );
-      return mtxResult;
     }
 
     /** 
@@ -169,7 +149,7 @@ namespace FudgeCore {
     public get translation(): Vector2 {
       if (!this.vectors.translation)
         this.vectors.translation = new Vector2(this.data[6], this.data[7]);
-      return this.vectors.translation; // .clone;
+      return this.vectors.translation;
     }
     public set translation(_translation: Vector2) {
       this.data.set(_translation.get(), 6);
@@ -373,7 +353,7 @@ namespace FudgeCore {
       m[0] = _m00; m[1] = _m01; m[2] = _m02;
       m[3] = _m10; m[4] = _m11; m[5] = _m12;
       m[6] = _m20; m[7] = _m21; m[8] = _m22;
-      
+
       this.resetCache();
       return this;
     }
