@@ -22,9 +22,7 @@ namespace FudgeCore {
      * @returns A new vector with the values (0, 0)
      */
     public static ZERO(): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      vector.set(0, 0);
-      return vector;
+      return Recycler.reuse(Vector2).set(0, 0);
     }
 
     /** 
@@ -32,9 +30,7 @@ namespace FudgeCore {
      * @param _scale the scale of the vector. Default: 1
      */
     public static ONE(_scale: number = 1): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      vector.set(_scale, _scale);
-      return vector;
+      return Recycler.reuse(Vector2).set(_scale, _scale);
     }
 
     /** 
@@ -43,9 +39,7 @@ namespace FudgeCore {
      * @returns A new vector with the values (_scale, 0)
      */
     public static X(_scale: number = 1): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      vector.set(_scale, 0);
-      return vector;
+      return Recycler.reuse(Vector2).set(_scale, 0);
     }
 
     /** 
@@ -54,66 +48,49 @@ namespace FudgeCore {
      * @returns A new vector with the values (0, _scale)
      */
     public static Y(_scale: number = 1): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      vector.set(0, _scale);
-      return vector;
+      return Recycler.reuse(Vector2).set(0, _scale);
     }
 
     /**
      * Creates and returns a vector through transformation of the given vector by the given matrix
      */
-    public static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation: boolean = true): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      let m: Float32Array = _mtxTransform.get();
-      vector.set(
-        m[0] * _vector.x + m[3] * _vector.y,
-        m[1] * _vector.x + m[4] * _vector.y
-      );
+    public static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation: boolean = true, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      let m: Float32Array = _mtxTransform.getData();
+      _out.x = m[0] * _vector.x + m[3] * _vector.y;
+      _out.y = m[1] * _vector.x + m[4] * _vector.y;
 
       if (_includeTranslation)
-        vector.add(_mtxTransform.translation);
+        _out.add(_mtxTransform.translation);
 
-      return vector;
+      return _out;
     }
 
     /**
      * Creates and returns a vector which is a copy of the given vector scaled to the given length.
      */
-    public static NORMALIZATION(_vector: Vector2, _length: number = 1): Vector2 {
-      let magnitudeSquared: number = _vector.magnitudeSquared;
-      if (magnitudeSquared == 0)
-        throw (new RangeError("Impossible normalization"));
-      let vector: Vector2 = _vector.clone;
-      vector.scale(_length / Math.sqrt(magnitudeSquared));
-      return vector;
+    public static NORMALIZATION(_vector: Vector2, _length: number = 1, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.copy(_vector).normalize(_length);
     }
 
     /**
      * Returns a new vector representing the given vector scaled by the given scaling factor
      */
-    public static SCALE(_vector: Vector2, _scale: number): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      vector.set(_vector.x * _scale, _vector.y * _scale);
-      return vector;
+    public static SCALE(_vector: Vector2, _scale: number, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(_vector.x * _scale, _vector.y * _scale);
     }
 
     /**
-     * Returns the resulting vector attained by addition of all given vectors.
+     * Returns the resulting vector attained by addition of the given vectors.
      */
-    public static SUM(..._vectors: Vector2[]): Vector2 {
-      const result: Vector2 = Recycler.get(Vector2);
-      for (let vector of _vectors)
-        result.set(result.x + vector.x, result.y + vector.y);
-      return result;
+    public static SUM(_a: Vector2, _b: Vector2, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(_a.x + _b.x, _a.y + _b.y);
     }
 
     /**
      * Returns the result of the subtraction of two vectors.
      */
-    public static DIFFERENCE(_minuend: Vector2, _subtrahend: Vector2): Vector2 {
-      const vector: Vector2 = Recycler.reuse(Vector2);
-      vector.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y);
-      return vector;
+    public static DIFFERENCE(_minuend: Vector2, _subtrahend: Vector2, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y);
     }
 
     /**
@@ -140,25 +117,22 @@ namespace FudgeCore {
      * @param _clockwise Should the rotation be clockwise instead of the default counterclockwise? default: false
      * @returns A Vector that is orthogonal to and has the same magnitude as the given Vector.  
      */
-    public static ORTHOGONAL(_vector: Vector2, _clockwise: boolean = false): Vector2 {
-      let result: Vector2 = Recycler.reuse(Vector2);
+    public static ORTHOGONAL(_vector: Vector2, _clockwise: boolean = false, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       if (_clockwise)
-        result.set(_vector.y, -_vector.x);
+        _out.set(_vector.y, -_vector.x);
       else
-        result.set(-_vector.y, _vector.x);
-      return result;
+        _out.set(-_vector.y, _vector.x);
+      return _out;
     }
 
     /**
      * Creates a cartesian vector from polar coordinates
      */
-    public static GEO(_angle: number = 0, _magnitude: number = 1): Vector2 {
-      let vector: Vector2 = Recycler.reuse(Vector2);
-      let geo: Geo2 = Recycler.reuse(Geo2);
-      geo.set(_angle, _magnitude);
-      vector.geo = geo;
+    public static GEO(_angle: number = 0, _magnitude: number = 1, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      const geo: Geo2 = Recycler.reuse(Geo2).set(_angle, _magnitude);
+      _out.geo = geo;
       Recycler.store(geo);
-      return vector;
+      return _out;
     }
     //#endregion
 
@@ -167,14 +141,14 @@ namespace FudgeCore {
      * Returns the length of the vector
      */
     public get magnitude(): number {
-      return Math.hypot(this.x, this.y);
+      return Math.sqrt(this.x * this.x + this.y * this.y); // formerly: Math.hypot(this.x, this.y) but hypot uses rest parameter which creates an array on each call
     }
 
     /**
      * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
      */
     public get magnitudeSquared(): number {
-      return Vector2.DOT(this, this);
+      return this.x * this.x + this.y * this.y;
     }
 
     /**
@@ -196,7 +170,9 @@ namespace FudgeCore {
      */
     public set geo(_geo: Geo2) {
       this.set(_geo.magnitude, 0);
-      this.transform(Matrix3x3.ROTATION(_geo.angle));
+      const rotation: Matrix3x3 = Matrix3x3.ROTATION(_geo.angle);
+      this.transform(rotation);
+      Recycler.store(rotation);
     }
 
     /**
@@ -211,7 +187,9 @@ namespace FudgeCore {
      * Copies the components of the given vector into this vector.
      */
     public copy(_original: Vector2): Vector2 {
-      return this.set(_original.x, _original.y);
+      this.x = _original.x;
+      this.y = _original.y;
+      return this;
     }
 
     public recycle(): void {
@@ -259,9 +237,15 @@ namespace FudgeCore {
 
     /**
      * Normalizes this to the given length, 1 by default
+     * @return this vector.
      */
     public normalize(_length: number = 1): Vector2 {
-      return this.copy(Vector2.NORMALIZATION(this, _length));
+      let magnitudeSquared: number = this.magnitudeSquared;
+      if (magnitudeSquared == 0)
+        throw (new RangeError("Impossible normalization"));
+
+      this.scale(_length / Math.sqrt(magnitudeSquared));
+      return this;
     }
 
     /**
@@ -276,7 +260,7 @@ namespace FudgeCore {
     /**
      * Returns an array of the components of this vector.
      */
-    public get(): Float32Array {
+    public get(): Float32Array { // TODO: eliminate allocation
       return new Float32Array([this.x, this.y]);
     }
 
@@ -285,10 +269,7 @@ namespace FudgeCore {
      * Including is the default, excluding will only rotate and scale this vector.
      */
     public transform(_mtxTransform: Matrix3x3, _includeTranslation: boolean = true): Vector2 {
-      let transformed: Vector2 = Vector2.TRANSFORMATION(this, _mtxTransform, _includeTranslation);
-      this.copy(transformed);
-      Recycler.store(transformed);
-      return this;
+      return Vector2.TRANSFORMATION(this, _mtxTransform, _includeTranslation, this);
     }
 
     /**
@@ -312,7 +293,7 @@ namespace FudgeCore {
      * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3
      */
     public toVector3(_z: number = 0): Vector3 {
-      return new Vector3(this.x, this.y, _z);
+      return Recycler.reuse(Vector3).set(this.x, this.y, _z);
     }
 
     /**
@@ -324,13 +305,13 @@ namespace FudgeCore {
     }
 
     /**
-     * Uses the standard array.map functionality to perform the given function on all components of this vector
-     * and return a new vector with the results
+     * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
      */
-    public map(_function: (value: number, index: number, array: ArrayLike<number>) => number): Vector2 {
-      let copy: Vector2 = Recycler.get(Vector2);
-      copy.set(...[this.x, this.y].map(_function));
-      return copy;
+    public map(_function: (_value: number, _component: "x" | "y", _vector: Vector2) => number): Vector2 {
+      const out: Vector2 = this.clone;
+      out.x = _function(out.x, "x", out);
+      out.y = _function(out.y, "y", out);
+      return out;
     }
 
     //#region Transfer
