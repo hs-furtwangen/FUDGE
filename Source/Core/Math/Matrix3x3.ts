@@ -23,14 +23,12 @@ namespace FudgeCore {
 
     //TODO: figure out what this is used for
     /** TODO: describe! */
-    public static PROJECTION(_width: number, _height: number): Matrix3x3 {
-      let mtxResult: Matrix3x3 = new Matrix3x3;
-      mtxResult.data.set([
+    public static PROJECTION(_width: number, _height: number, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
+      return _mtxOut.set(
         2 / _width, 0, 0,
         0, -2 / _height, 0,
         -1, 1, 1
-      ]);
-      return mtxResult;
+      );
     }
 
     /**
@@ -38,6 +36,14 @@ namespace FudgeCore {
      */
     public static IDENTITY(): Matrix3x3 {
       return Recycler.get(Matrix3x3);
+    }
+
+    /**
+     * Composes a new matrix according to the given translation, rotation and scaling.
+     * @param _mtxOut Optional matrix to store the result in.
+     */
+    public static COMPOSITION(_translation?: Vector2, _rotation?: number, _scaling?: Vector2, _mtxOut: Matrix3x3 = Recycler.get(Matrix3x3)): Matrix3x3 {
+      return _mtxOut.compose(_translation, _rotation, _scaling);
     }
 
     /**
@@ -49,7 +55,7 @@ namespace FudgeCore {
         1, 0, 0,
         0, 1, 0,
         _translate.x, _translate.y, 1
-      );;
+      );
     }
 
     /**
@@ -92,6 +98,7 @@ namespace FudgeCore {
       const a00: number = left[0], a01: number = left[1], a02: number = left[2];
       const a10: number = left[3], a11: number = left[4], a12: number = left[5];
       const a20: number = left[6], a21: number = left[7], a22: number = left[8];
+
       const b00: number = right[0], b01: number = right[1], b02: number = right[2];
       const b10: number = right[3], b11: number = right[4], b12: number = right[5];
       const b20: number = right[6], b21: number = right[7], b22: number = right[8];
@@ -236,6 +243,7 @@ namespace FudgeCore {
     //#region Translation
     /**
      * Adds a translation by the given {@link Vector2} to this matrix.
+     * @returns A reference to this matrix.
      */
     public translate(_by: Vector2): Matrix3x3 {
       const mtxTranslation: Matrix3x3 = Matrix3x3.TRANSLATION(_by);
@@ -246,21 +254,23 @@ namespace FudgeCore {
 
     /**
      * Adds a translation along the x-axis to this matrix.
+     * @returns A reference to this matrix.
      */
-    public translateX(_x: number): Matrix3x3 {
-      this.data[6] += _x;
-      this.mutator = null;
-      this.#translationDirty = true;
+    public translateX(_by: number): Matrix3x3 {
+      const translation: Vector2 = Recycler.reuse(Vector2).set(_by, 0);
+      this.translate(translation);
+      Recycler.store(translation);
       return this;
     }
 
     /**
      * Adds a translation along the y-axis to this matrix.
+     * @returns A reference to this matrix.
      */
-    public translateY(_y: number): Matrix3x3 {
-      this.data[7] += _y;
-      this.mutator = null;
-      this.#translationDirty = true;
+    public translateY(_by: number): Matrix3x3 {
+      const translation: Vector2 = Recycler.reuse(Vector2).set(0, _by);
+      this.translate(translation);
+      Recycler.store(translation);
       return this;
     }
     //#endregion
@@ -268,6 +278,7 @@ namespace FudgeCore {
     //#region Rotation
     /**
      * Adds a rotation around the z-Axis to this matrix
+     * @returns A reference to this matrix.
      */
     public rotate(_angleInDegrees: number): Matrix3x3 {
       const mtxRotation: Matrix3x3 = Matrix3x3.ROTATION(_angleInDegrees);
@@ -280,6 +291,7 @@ namespace FudgeCore {
     //#region Scaling
     /**
      * Adds a scaling by the given {@link Vector2} to this matrix.
+     * @returns A reference to this matrix.
      */
     public scale(_by: Vector2): Matrix3x3 {
       const mtxScaling: Matrix3x3 = Matrix3x3.SCALING(_by);
@@ -290,6 +302,7 @@ namespace FudgeCore {
 
     /**
      * Adds a scaling along the x-Axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public scaleX(_by: number): Matrix3x3 {
       const scaling: Vector2 = Recycler.reuse(Vector2).set(_by, 1);
@@ -300,6 +313,7 @@ namespace FudgeCore {
 
     /**
      * Adds a scaling along the y-Axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public scaleY(_by: number): Matrix3x3 {
       const scaling: Vector2 = Recycler.reuse(Vector2).set(1, _by);
@@ -312,6 +326,7 @@ namespace FudgeCore {
     //#region Transformation
     /**
      * Multiply this matrix with the given matrix.
+     * @returns A reference to this matrix.
      */
     public multiply(_mtxRight: Matrix3x3): Matrix3x3 {
       return Matrix3x3.PRODUCT(this, _mtxRight, this);
@@ -319,6 +334,7 @@ namespace FudgeCore {
 
     /**
      * Premultiply this matrix with the given matrix.
+     * @returns A reference to this matrix.
      */
     public premultiply(_mtxLeft: Matrix3x3): Matrix3x3 {
       return Matrix3x3.PRODUCT(_mtxLeft, this, this);
@@ -329,8 +345,9 @@ namespace FudgeCore {
     /**
      * (Re-)Compose this matrix from the given translation, rotation and scaling. 
      * Missing values will be decompsed from the current matrix state if necessary.
+     * @returns A reference to this matrix.
      */
-    public compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): void {
+    public compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): Matrix3x3 {
       const m: Float32Array = this.data;
 
       if (_translation) {
@@ -345,7 +362,7 @@ namespace FudgeCore {
         const rotation: number = _rotation ?? this.rotation;
         if (_rotation != undefined)
           this.#rotation = rotation;
-        
+
         const scaling: Vector2 = this.scaling;
         if (_scaling)
           scaling.mutate(_scaling);
@@ -354,10 +371,10 @@ namespace FudgeCore {
         const sin: number = Math.sin(angleInRadians);
         const cos: number = Math.cos(angleInRadians);
 
-        m[0] = cos * scaling.x; 
+        m[0] = cos * scaling.x;
         m[1] = sin * scaling.x;
 
-        m[3] = -sin * scaling.y; 
+        m[3] = -sin * scaling.y;
         m[4] = cos * scaling.y;
 
         this.#rotationDirty = false;
@@ -365,10 +382,13 @@ namespace FudgeCore {
       }
 
       this.mutator = null;
+
+      return this;
     }
 
     /**
      * Sets the elements of this matrix to the given array.
+     * @returns A reference to this matrix.
      */
     public setArray(_array: ArrayLike<number>): Matrix3x3 {
       this.data.set(_array);
@@ -378,6 +398,7 @@ namespace FudgeCore {
 
     /**
      * Sets the elements of this matrix to the given values.
+     * @returns A reference to this matrix.
      */
     public set(_m00: number, _m01: number, _m02: number, _m10: number, _m11: number, _m12: number, _m20: number, _m21: number, _m22: number): Matrix3x3 {
       const m: Float32Array = this.data;
@@ -392,6 +413,7 @@ namespace FudgeCore {
 
     /**
      * Copies the elements of the given matrix into this matrix.
+     * @returns A reference to this matrix.
      */
     public copy(_original: Matrix3x3): Matrix3x3 {
       this.data.set(_original.data);
