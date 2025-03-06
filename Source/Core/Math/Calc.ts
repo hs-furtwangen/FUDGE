@@ -11,7 +11,7 @@ namespace FudgeCore {
     /**
      * Returns one of the values passed in, either _value if within _min and _max or the boundary being exceeded by _value
      */
-    public static clamp<T>(_value: T, _min: T, _max: T, _isSmaller: (_value1: T, _value2: T) => boolean = (_value1: T, _value2: T) => { return _value1 < _value2; }): T {
+    public static clamp<T>(_value: T, _min: T, _max: T, _isSmaller: (_value1: T, _value2: T) => boolean = Calc.isSmaller<T>): T {
       if (_isSmaller(_value, _min)) return _min;
       if (_isSmaller(_max, _value)) return _max;
       return _value;
@@ -30,6 +30,10 @@ namespace FudgeCore {
      */
     public static snap(_value: number, _increment: number, _round: (_value: number) => number = Math.round): number {
       return _round(_value / _increment) * _increment;
+    }
+
+    private static isSmaller<T>(_value1: T, _value2: T): boolean {
+      return _value1 < _value2;
     }
   }
 }
