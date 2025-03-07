@@ -387,11 +387,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the elements of this matrix to the given array.
+     * Sets the elements of this matrix to the given array starting at the given offset.
      * @returns A reference to this matrix.
      */
-    public setArray(_array: ArrayLike<number>): Matrix3x3 {
-      this.data.set(_array);
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Matrix3x3 {
+      this.data.set(_array, _offset);
       this.resetCache();
       return this;
     }

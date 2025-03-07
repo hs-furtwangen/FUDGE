@@ -1,5 +1,4 @@
 namespace FudgeCore {
-
   /**
    * Stores a 4x4 transformation matrix and provides operations for it.
    * ```text
@@ -9,7 +8,7 @@ namespace FudgeCore {
    * [12,13,14,15 ] ← translation
    *            ↑  homogeneous column
    * ```
-   * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2023
+   * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2023-2025
    */
   export class Matrix4x4 extends Mutable implements Serializable, Recycable {
     /** @internal Indicates whether this matrix was modified since the last call to {@link Render.prepare}. */
@@ -44,35 +43,35 @@ namespace FudgeCore {
      * Retrieve a new identity matrix
      */
     public static IDENTITY(): Matrix4x4 {
-      const mtxResult: Matrix4x4 = Recycler.get(Matrix4x4);
-      return mtxResult;
+      return Recycler.get(Matrix4x4);
     }
 
     /**
-     * Composes a new matrix according to the given translation, rotation and scaling. Pass an optional out matrix to write the result into.
+     * Composes a new matrix according to the given translation, rotation and scaling.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3, _mtxOut: Matrix4x4 = Recycler.get(Matrix4x4)): Matrix4x4 {
-      _mtxOut.compose(_translation, _rotation, _scaling);
-      return _mtxOut;
+      return _mtxOut.compose(_translation, _rotation, _scaling);
     }
 
     /**
-     * Computes and returns the product of two passed matrices. Pass an optional out matrix to write the result into.
+     * Computes and returns the product of two passed matrices.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      const a: Float32Array = _mtxLeft.data;
-      const b: Float32Array = _mtxRight.data;
+      const left: Float32Array = _mtxLeft.data;
+      const right: Float32Array = _mtxRight.data;
       const out: Float32Array = _mtxOut.data;
 
-      const a00: number = a[0], a01: number = a[1], a02: number = a[2], a03: number = a[3];
-      const a10: number = a[4], a11: number = a[5], a12: number = a[6], a13: number = a[7];
-      const a20: number = a[8], a21: number = a[9], a22: number = a[10], a23: number = a[11];
-      const a30: number = a[12], a31: number = a[13], a32: number = a[14], a33: number = a[15];
+      const a00: number = left[0], a01: number = left[1], a02: number = left[2], a03: number = left[3];
+      const a10: number = left[4], a11: number = left[5], a12: number = left[6], a13: number = left[7];
+      const a20: number = left[8], a21: number = left[9], a22: number = left[10], a23: number = left[11];
+      const a30: number = left[12], a31: number = left[13], a32: number = left[14], a33: number = left[15];
 
-      const b00: number = b[0], b01: number = b[1], b02: number = b[2], b03: number = b[3];
-      const b10: number = b[4], b11: number = b[5], b12: number = b[6], b13: number = b[7];
-      const b20: number = b[8], b21: number = b[9], b22: number = b[10], b23: number = b[11];
-      const b30: number = b[12], b31: number = b[13], b32: number = b[14], b33: number = b[15];
+      const b00: number = right[0], b01: number = right[1], b02: number = right[2], b03: number = right[3];
+      const b10: number = right[4], b11: number = right[5], b12: number = right[6], b13: number = right[7];
+      const b20: number = right[8], b21: number = right[9], b22: number = right[10], b23: number = right[11];
+      const b30: number = right[12], b31: number = right[13], b32: number = right[14], b33: number = right[15];
 
       out[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
       out[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
@@ -97,104 +96,92 @@ namespace FudgeCore {
     }
 
     /**
-     * Computes and returns the transpose of a passed matrix. Pass an optional out matrix to write the result into.
+     * Computes and returns the transpose of a passed matrix.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static TRANSPOSE(_mtx: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      let m: Float32Array = _mtx.data;
-      _mtxOut.set(
+      const m: Float32Array = _mtx.data;
+      return _mtxOut.set(
         m[0], m[4], m[8], m[12],
         m[1], m[5], m[9], m[13],
         m[2], m[6], m[10], m[14],
         m[3], m[7], m[11], m[15]
-      );
-      return _mtxOut;
+      );;
     }
 
     /**
-     * Computes and returns the inverse of a passed matrix. Pass an optional out matrix to write the result into.
+     * Computes and returns the inverse of a passed matrix.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static INVERSE(_mtx: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      let m: Float32Array = _mtx.data;
-      let m00: number = m[0 * 4 + 0];
-      let m01: number = m[0 * 4 + 1];
-      let m02: number = m[0 * 4 + 2];
-      let m03: number = m[0 * 4 + 3];
-      let m10: number = m[1 * 4 + 0];
-      let m11: number = m[1 * 4 + 1];
-      let m12: number = m[1 * 4 + 2];
-      let m13: number = m[1 * 4 + 3];
-      let m20: number = m[2 * 4 + 0];
-      let m21: number = m[2 * 4 + 1];
-      let m22: number = m[2 * 4 + 2];
-      let m23: number = m[2 * 4 + 3];
-      let m30: number = m[3 * 4 + 0];
-      let m31: number = m[3 * 4 + 1];
-      let m32: number = m[3 * 4 + 2];
-      let m33: number = m[3 * 4 + 3];
-      let tmp0: number = m22 * m33;
-      let tmp1: number = m32 * m23;
-      let tmp2: number = m12 * m33;
-      let tmp3: number = m32 * m13;
-      let tmp4: number = m12 * m23;
-      let tmp5: number = m22 * m13;
-      let tmp6: number = m02 * m33;
-      let tmp7: number = m32 * m03;
-      let tmp8: number = m02 * m23;
-      let tmp9: number = m22 * m03;
-      let tmp10: number = m02 * m13;
-      let tmp11: number = m12 * m03;
-      let tmp12: number = m20 * m31;
-      let tmp13: number = m30 * m21;
-      let tmp14: number = m10 * m31;
-      let tmp15: number = m30 * m11;
-      let tmp16: number = m10 * m21;
-      let tmp17: number = m20 * m11;
-      let tmp18: number = m00 * m31;
-      let tmp19: number = m30 * m01;
-      let tmp20: number = m00 * m21;
-      let tmp21: number = m20 * m01;
-      let tmp22: number = m00 * m11;
-      let tmp23: number = m10 * m01;
+      const m: Float32Array = _mtx.data;
+      const m00: number = m[0], m01: number = m[1], m02: number = m[2], m03: number = m[3];
+      const m10: number = m[4], m11: number = m[5], m12: number = m[6], m13: number = m[7];
+      const m20: number = m[8], m21: number = m[9], m22: number = m[10], m23: number = m[11];
+      const m30: number = m[12], m31: number = m[13], m32: number = m[14], m33: number = m[15];
+      const tmp0: number = m22 * m33;
+      const tmp1: number = m32 * m23;
+      const tmp2: number = m12 * m33;
+      const tmp3: number = m32 * m13;
+      const tmp4: number = m12 * m23;
+      const tmp5: number = m22 * m13;
+      const tmp6: number = m02 * m33;
+      const tmp7: number = m32 * m03;
+      const tmp8: number = m02 * m23;
+      const tmp9: number = m22 * m03;
+      const tmp10: number = m02 * m13;
+      const tmp11: number = m12 * m03;
+      const tmp12: number = m20 * m31;
+      const tmp13: number = m30 * m21;
+      const tmp14: number = m10 * m31;
+      const tmp15: number = m30 * m11;
+      const tmp16: number = m10 * m21;
+      const tmp17: number = m20 * m11;
+      const tmp18: number = m00 * m31;
+      const tmp19: number = m30 * m01;
+      const tmp20: number = m00 * m21;
+      const tmp21: number = m20 * m01;
+      const tmp22: number = m00 * m11;
+      const tmp23: number = m10 * m01;
 
-      let t0: number = (tmp0 * m11 + tmp3 * m21 + tmp4 * m31) -
+      const t0: number = (tmp0 * m11 + tmp3 * m21 + tmp4 * m31) -
         (tmp1 * m11 + tmp2 * m21 + tmp5 * m31);
 
-      let t1: number = (tmp1 * m01 + tmp6 * m21 + tmp9 * m31) -
+      const t1: number = (tmp1 * m01 + tmp6 * m21 + tmp9 * m31) -
         (tmp0 * m01 + tmp7 * m21 + tmp8 * m31);
-      let t2: number = (tmp2 * m01 + tmp7 * m11 + tmp10 * m31) -
+      const t2: number = (tmp2 * m01 + tmp7 * m11 + tmp10 * m31) -
         (tmp3 * m01 + tmp6 * m11 + tmp11 * m31);
-      let t3: number = (tmp5 * m01 + tmp8 * m11 + tmp11 * m21) -
+      const t3: number = (tmp5 * m01 + tmp8 * m11 + tmp11 * m21) -
         (tmp4 * m01 + tmp9 * m11 + tmp10 * m21);
 
-      let d: number = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
+      const d: number = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
 
-      _mtxOut.set(
-        d * t0, // [0]
-        d * t1, // [1]
-        d * t2, // [2]
-        d * t3, // [3]
-        d * ((tmp1 * m10 + tmp2 * m20 + tmp5 * m30) - (tmp0 * m10 + tmp3 * m20 + tmp4 * m30)),        // [4]
-        d * ((tmp0 * m00 + tmp7 * m20 + tmp8 * m30) - (tmp1 * m00 + tmp6 * m20 + tmp9 * m30)),        // [5]
-        d * ((tmp3 * m00 + tmp6 * m10 + tmp11 * m30) - (tmp2 * m00 + tmp7 * m10 + tmp10 * m30)),      // [6]
-        d * ((tmp4 * m00 + tmp9 * m10 + tmp10 * m20) - (tmp5 * m00 + tmp8 * m10 + tmp11 * m20)),      // [7]
-        d * ((tmp12 * m13 + tmp15 * m23 + tmp16 * m33) - (tmp13 * m13 + tmp14 * m23 + tmp17 * m33)),  // [8]
-        d * ((tmp13 * m03 + tmp18 * m23 + tmp21 * m33) - (tmp12 * m03 + tmp19 * m23 + tmp20 * m33)),  // [9]
-        d * ((tmp14 * m03 + tmp19 * m13 + tmp22 * m33) - (tmp15 * m03 + tmp18 * m13 + tmp23 * m33)),  // [10]
-        d * ((tmp17 * m03 + tmp20 * m13 + tmp23 * m23) - (tmp16 * m03 + tmp21 * m13 + tmp22 * m23)),  // [11]
-        d * ((tmp14 * m22 + tmp17 * m32 + tmp13 * m12) - (tmp16 * m32 + tmp12 * m12 + tmp15 * m22)),  // [12]
-        d * ((tmp20 * m32 + tmp12 * m02 + tmp19 * m22) - (tmp18 * m22 + tmp21 * m32 + tmp13 * m02)),  // [13]
-        d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),  // [14]
-        d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))  // [15]
+      return _mtxOut.set(
+        d * t0,
+        d * t1,
+        d * t2,
+        d * t3,
+        d * ((tmp1 * m10 + tmp2 * m20 + tmp5 * m30) - (tmp0 * m10 + tmp3 * m20 + tmp4 * m30)),
+        d * ((tmp0 * m00 + tmp7 * m20 + tmp8 * m30) - (tmp1 * m00 + tmp6 * m20 + tmp9 * m30)),
+        d * ((tmp3 * m00 + tmp6 * m10 + tmp11 * m30) - (tmp2 * m00 + tmp7 * m10 + tmp10 * m30)),
+        d * ((tmp4 * m00 + tmp9 * m10 + tmp10 * m20) - (tmp5 * m00 + tmp8 * m10 + tmp11 * m20)),
+        d * ((tmp12 * m13 + tmp15 * m23 + tmp16 * m33) - (tmp13 * m13 + tmp14 * m23 + tmp17 * m33)),
+        d * ((tmp13 * m03 + tmp18 * m23 + tmp21 * m33) - (tmp12 * m03 + tmp19 * m23 + tmp20 * m33)),
+        d * ((tmp14 * m03 + tmp19 * m13 + tmp22 * m33) - (tmp15 * m03 + tmp18 * m13 + tmp23 * m33)),
+        d * ((tmp17 * m03 + tmp20 * m13 + tmp23 * m23) - (tmp16 * m03 + tmp21 * m13 + tmp22 * m23)),
+        d * ((tmp14 * m22 + tmp17 * m32 + tmp13 * m12) - (tmp16 * m32 + tmp12 * m12 + tmp15 * m22)),
+        d * ((tmp20 * m32 + tmp12 * m02 + tmp19 * m22) - (tmp18 * m22 + tmp21 * m32 + tmp13 * m02)),
+        d * ((tmp18 * m12 + tmp23 * m32 + tmp15 * m02) - (tmp22 * m32 + tmp14 * m02 + tmp19 * m12)),
+        d * ((tmp22 * m22 + tmp16 * m02 + tmp21 * m12) - (tmp20 * m12 + tmp23 * m22 + tmp17 * m02))
       );
-
-      return _mtxOut;
     }
 
     /**
      * Computes and returns a matrix with the given translation, its z-axis pointing directly at the given target,
      * and a minimal angle between its y-axis and the given up-{@link Vector3}, respetively calculating yaw and pitch.
-     * The pitch may be restricted to the up-vector to only calculate yaw. Optionally pass a desired scaling. Pass an optional out matrix to write the result into.
+     * The pitch may be restricted to the up-vector to only calculate yaw. Optionally pass a desired scaling.
      * @param _up A unit vector indicating the up-direction.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static LOOK_AT(_translation: Vector3, _target: Vector3, _up?: Vector3, _restrict: boolean = false, _scaling?: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       const forward: Vector3 = Vector3.DIFFERENCE(_target, _translation);
@@ -210,9 +197,10 @@ namespace FudgeCore {
     /**
      * Computes and returns a matrix with its z-axis pointing directly in the given forward direction,
      * and a minimal angle between its y-axis and the given up direction. The pitch may be restricted to the up-vector to only calculate yaw.
-     * Optionally pass a desired translation and/or scaling. Pass an optional out matrix to write the result into.
+     * Optionally pass a desired translation and/or scaling.
      * @param _forward A unit vector indicating the desired forward-direction.
      * @param _up A unit vector indicating the up-direction.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static LOOK_IN(_forward: Vector3, _up?: Vector3, _restrict: boolean = false, _translation?: Vector3, _scaling?: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       const zAxis: Vector3 = _forward.clone;
@@ -271,73 +259,73 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector3}. Pass an optional out matrix to write the result into.
+     * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static TRANSLATION(_translate: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      _mtxOut.set(
+      return _mtxOut.set(
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         _translate.x, _translate.y, _translate.z, 1
       );
-      return _mtxOut;
     }
 
     /**
-     * Returns a matrix that rotates coordinates on the x-axis when multiplied by. Pass an optional out matrix to write the result into.
+     * Returns a matrix that rotates coordinates on the x-axis when multiplied by.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static ROTATION_X(_angleInDegrees: number, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      _mtxOut.set(
+      return _mtxOut.set(
         1, 0, 0, 0,
         0, cos, sin, 0,
         0, -sin, cos, 0,
         0, 0, 0, 1
       );
-      return _mtxOut;
     }
 
     /**
-     * Returns a matrix that rotates coordinates on the y-axis when multiplied by. Pass an optional out matrix to write the result into.
+     * Returns a matrix that rotates coordinates on the y-axis when multiplied by.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static ROTATION_Y(_angleInDegrees: number, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      _mtxOut.set(
+      return _mtxOut.set(
         cos, 0, -sin, 0,
         0, 1, 0, 0,
         sin, 0, cos, 0,
         0, 0, 0, 1
       );
-      return _mtxOut;
     }
 
     /**
-     * Returns a matrix that rotates coordinates on the z-axis when multiplied by. Pass an optional out matrix to write the result into.
+     * Returns a matrix that rotates coordinates on the z-axis when multiplied by.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static ROTATION_Z(_angleInDegrees: number, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       let angleInRadians: number = _angleInDegrees * Calc.deg2rad;
       let sin: number = Math.sin(angleInRadians);
       let cos: number = Math.cos(angleInRadians);
-      _mtxOut.set(
+      return _mtxOut.set(
         cos, sin, 0, 0,
         -sin, cos, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
       );
-      return _mtxOut;
     }
 
     /**
      * Returns a matrix that rotates coordinates when multiplied by, using the rotation euler angles or unit quaternion given.
      * Rotation occurs around the axis in the order Z-Y-X. 
-     * Pass an optional out matrix to write the result into.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static ROTATION(_rotation: Vector3 | Quaternion, _mtxOut: Matrix4x4 = Recycler.get(Matrix4x4)): Matrix4x4 {
-      // avoid decompostion of rotation and scaling in mutate
+      // avoid decompostion of rotation and scaling in compose...
       _mtxOut.#scaling.set(1, 1, 1);
       _mtxOut.#scalingDirty = false;
       if (_rotation instanceof Quaternion) {
@@ -355,24 +343,22 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector3}. Pass an optional out matrix to write the result into.
+     * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static SCALING(_scalar: Vector3, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      _mtxOut.set(
+      return _mtxOut.set(
         _scalar.x, 0, 0, 0,
         0, _scalar.y, 0, 0,
         0, 0, _scalar.z, 0,
         0, 0, 0, 1
       );
-      _mtxOut.#scaling.copy(_scalar);
-      _mtxOut.#scalingDirty = false;
-      return _mtxOut;
     }
 
     /**
      * Returns a representation of the given matrix relative to the given base.
      * If known, pass the inverse of the base to avoid unneccesary calculation.
-     * Pass an optional out matrix to write the result into.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static RELATIVE(_mtx: Matrix4x4, _mtxBase: Matrix4x4, _mtxInverse?: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       if (_mtxInverse)
@@ -393,7 +379,7 @@ namespace FudgeCore {
      * @param _near The near clipspace border on the z-axis.
      * @param _far The far clipspace border on the z-axis.
      * @param _direction The plane on which the fieldOfView-Angle is given 
-     * @param _mtxOut Optional matrix to write the result into.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static PROJECTION_CENTRAL(_aspect: number, _fieldOfViewInDegrees: number, _near: number, _far: number, _direction: FIELD_OF_VIEW, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       //TODO: camera looks down negative z-direction, should be positive
@@ -431,7 +417,7 @@ namespace FudgeCore {
      * @param _top The positionvalue of the projectionspace's top border.
      * @param _near The positionvalue of the projectionspace's near border.
      * @param _far The positionvalue of the projectionspace's far border
-     * @param _mtxOut Optional matrix to write the result into.
+     * @param _mtxOut Optional matrix to store the result in.
      */
     public static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near: number = -400, _far: number = 400, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       _mtxOut.set(
@@ -639,20 +625,24 @@ namespace FudgeCore {
 
     /**
      * Resets the matrix to the identity-matrix and clears cache.
+     * @returns A reference to this matrix.
      */
-    public reset(): void {
+    public reset(): Matrix4x4 {
       this.recycle();
+      return this;
     }
 
     /**
-     * Transpose this matrix
+     * Transpose this matrix.
+     * @returns A reference to this matrix.
      */
     public transpose(): Matrix4x4 {
       return Matrix4x4.TRANSPOSE(this, this);
     }
 
     /**
-     * Invert this matrix
+     * Invert this matrix.
+     * @returns A reference to this matrix.
      */
     public invert(): Matrix4x4 {
       return Matrix4x4.INVERSE(this, this);
@@ -663,15 +653,12 @@ namespace FudgeCore {
      * Adds a translation by the given {@link Vector3} to this matrix.
      * If _local is true, the translation occurs according to the current rotation and scaling of this matrix,
      * otherwise, it occurs according to the parent.
+     * @returns A reference to this matrix.
      */
     public translate(_by: Vector3, _local: boolean = true): Matrix4x4 {
       if (_local) {
         let mtxTranslation: Matrix4x4 = Matrix4x4.TRANSLATION(_by);
-        let rotationDirty: boolean = this.#rotationDirty; // preserve dirty flags for rotation and scaling as they are not affected by translation
-        let scalingDirty: boolean = this.#scalingDirty;
         this.multiply(mtxTranslation);
-        this.#rotationDirty = rotationDirty;
-        this.#scalingDirty = scalingDirty;
         Recycler.store(mtxTranslation);
       } else {
         this.data[12] += _by.x;
@@ -691,6 +678,7 @@ namespace FudgeCore {
 
     /**
      * Adds a translation along the x-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public translateX(_x: number, _local: boolean = true): Matrix4x4 {
       let translation: Vector3 = Vector3.X(_x);
@@ -701,6 +689,7 @@ namespace FudgeCore {
 
     /**
      * Adds a translation along the y-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public translateY(_y: number, _local: boolean = true): Matrix4x4 {
       let translation: Vector3 = Vector3.Y(_y);
@@ -711,6 +700,7 @@ namespace FudgeCore {
 
     /**
      * Adds a translation along the z-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public translateZ(_z: number, _local: boolean = true): Matrix4x4 {
       let translation: Vector3 = Vector3.Z(_z);
@@ -724,6 +714,7 @@ namespace FudgeCore {
     /**
      * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
      * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
+     * @returns A reference to this matrix.
      */
     public rotate(_by: Vector3 | Quaternion, _fromLeft: boolean = false): Matrix4x4 {
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION(_by);
@@ -734,6 +725,7 @@ namespace FudgeCore {
 
     /**
      * Adds a rotation around the x-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public rotateX(_angleInDegrees: number, _fromLeft: boolean = false): Matrix4x4 {
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION_X(_angleInDegrees);
@@ -744,6 +736,7 @@ namespace FudgeCore {
 
     /**
      * Adds a rotation around the y-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public rotateY(_angleInDegrees: number, _fromLeft: boolean = false): Matrix4x4 {
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION_Y(_angleInDegrees);
@@ -754,6 +747,7 @@ namespace FudgeCore {
 
     /**
      * Adds a rotation around the z-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public rotateZ(_angleInDegrees: number, _fromLeft: boolean = false): Matrix4x4 {
       let mtxRotation: Matrix4x4 = Matrix4x4.ROTATION_Z(_angleInDegrees);
@@ -767,6 +761,7 @@ namespace FudgeCore {
      * respectively calculating yaw and pitch. If no up-{@link Vector3} is given, the previous up-{@link Vector3} is used. 
      * The pitch may be restricted to the up-vector to only calculate yaw.
      * @param _up A unit vector indicating the up-direction.
+     * @returns A reference to this matrix.
      */ // TODO: maybe passing up should be mandatory, default up (local up) and default restrict (false) form a feedback loop, as the local up gets modified each call...
     public lookAt(_target: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
       const up: Vector3 = _up ? _up : this.up;
@@ -782,6 +777,7 @@ namespace FudgeCore {
      * The pitch may be restricted to the up-vector to only calculate yaw.
      * @param _forward A unit vector indicating the desired forward-direction.
      * @param _up A unit vector indicating the up-direction.
+     * @returns A reference to this matrix.
      */ // TODO: maybe passing up should be mandatory, default up (local up) and default restrict (false) form a feedback loop, as the local up gets modified each call...
     public lookIn(_forward: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
       const up: Vector3 = _up ? _up : this.up;
@@ -832,6 +828,7 @@ namespace FudgeCore {
     //#region Scaling
     /**
      * Adds a scaling by the given {@link Vector3} to this matrix.
+     * @returns A reference to this matrix.
      */
     public scale(_by: Vector3, _fromLeft: boolean = false): Matrix4x4 {
       const mtxScaling: Matrix4x4 = Matrix4x4.SCALING(_by);
@@ -842,6 +839,7 @@ namespace FudgeCore {
 
     /**
      * Adds a scaling along the x-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public scaleX(_by: number): Matrix4x4 {
       let vector: Vector3 = Recycler.reuse(Vector3);
@@ -853,6 +851,7 @@ namespace FudgeCore {
 
     /**
      * Adds a scaling along the y-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public scaleY(_by: number): Matrix4x4 {
       let vector: Vector3 = Recycler.reuse(Vector3);
@@ -864,6 +863,7 @@ namespace FudgeCore {
 
     /**
      * Adds a scaling along the z-axis to this matrix.
+     * @returns A reference to this matrix.
      */
     public scaleZ(_by: number): Matrix4x4 {
       let vector: Vector3 = Recycler.reuse(Vector3);
@@ -877,8 +877,9 @@ namespace FudgeCore {
     //#region Transformation
     /**
      * Multiply this matrix by the given matrix.
+     * @returns A reference to this matrix.
      */
-    public multiply(_matrix: Matrix4x4, _fromLeft: boolean = false): Matrix4x4 {
+    public multiply(_matrix: Matrix4x4, _fromLeft: boolean = false): Matrix4x4 { // TODO: maybe implement a premultiply method to do multiplication from left
       if (_fromLeft)
         return Matrix4x4.PRODUCT(_matrix, this, this);
       else
@@ -890,12 +891,13 @@ namespace FudgeCore {
     /**
      * (Re-)Compose this matrix from the given translation, rotation and scaling. 
      * Missing values will be decompsed from the current matrix state if necessary.
+     * @returns A reference to this matrix.
      */
-    public compose(_translation?: Partial<Vector3>, _rotation?: Partial<Vector3> | Partial<Quaternion>, _scaling?: Partial<Vector3>): void {
+    public compose(_translation?: Partial<Vector3>, _rotation?: Partial<Vector3> | Partial<Quaternion>, _scaling?: Partial<Vector3>): Matrix4x4 {
       const m: Float32Array = this.data;
 
       if (_translation) {
-        let translation: Vector3 = this.translation;
+        const translation: Vector3 = this.translation;
         translation.mutate(_translation);
         m[12] = translation.x;
         m[13] = translation.y;
@@ -906,16 +908,14 @@ namespace FudgeCore {
       if (_rotation || _scaling) {
         const isQuaternion: boolean = (<Quaternion>_rotation)?.w != undefined;
 
-        let rotation: Vector3 | Quaternion = isQuaternion ? this.quaternion : this.rotation;
-
-        let scaling: Vector3 = this.scaling;
-
+        const rotation: Vector3 | Quaternion = isQuaternion ? this.quaternion : this.rotation;
         if (_rotation) {
           rotation.mutate(_rotation);
           if (isQuaternion)
             rotation.normalize();
         }
 
+        const scaling: Vector3 = this.scaling;
         if (_scaling)
           scaling.mutate(_scaling);
 
@@ -971,19 +971,23 @@ namespace FudgeCore {
 
       this.mutator = null;
       this.modified = true;
+
+      return this;
     }
 
     /**
-     * Sets the elements of this matrix to the given array.
+     * Sets the elements of this matrix to the given array starting at the given offset.
+     * @returns A reference to this matrix.
      */
-    public setArray(_array: ArrayLike<number>): Matrix4x4 {
-      this.data.set(_array);
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Matrix4x4 {
+      this.data.set(_array, _offset);
       this.resetCache();
       return this;
     }
 
     /**
      * Sets the elements of this matrix to the given values.
+     * @returns A reference to this matrix.
      */
     public set(_m00: number, _m01: number, _m02: number, _m03: number, _m10: number, _m11: number, _m12: number, _m13: number, _m20: number, _m21: number, _m22: number, _m23: number, _m30: number, _m31: number, _m32: number, _m33: number): Matrix4x4 {
       const m: Float32Array = this.data;
@@ -999,6 +1003,7 @@ namespace FudgeCore {
 
     /**
      * Copies the state of the given matrix into this matrix.
+     * @returns A reference to this matrix.
      */
     public copy(_original: Matrix4x4): Matrix4x4 {
       this.data.set(_original.data);
@@ -1029,7 +1034,7 @@ namespace FudgeCore {
     /**
      * Returns an array of the elements of this matrix.
      */
-    public get(): Float32Array {
+    public get(): Float32Array { // TODO: remove this method
       // TODO: optimization, it shouldn't always return a copy, since this bloats memory
       return new Float32Array(this.data);
     }
@@ -1037,33 +1042,30 @@ namespace FudgeCore {
     /**
      * Returns the original array of the elements of this matrix.
      */
-    public getData(): Float32Array {
+    public getData(): Readonly<Float32Array> {
       return this.data;
     }
 
     /**
-     * Return cardinal x-axis
+     * Return cardinal x-axis.
+     * @param _vctOut Optional vector to store the result in.
      */
-    public getX(): Vector3 {
-      let result: Vector3 = Recycler.reuse(Vector3);
-      result.set(this.data[0], this.data[1], this.data[2]);
-      return result;
+    public getX(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _vctOut.set(this.data[0], this.data[1], this.data[2]);;
     }
     /**
-     * Return cardinal y-axis
+     * Return cardinal y-axis.
+     * @param _vctOut Optional vector to store the result in.
      */
-    public getY(): Vector3 {
-      let result: Vector3 = Recycler.reuse(Vector3);
-      result.set(this.data[4], this.data[5], this.data[6]);
-      return result;
+    public getY(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _vctOut.set(this.data[4], this.data[5], this.data[6]);
     }
     /**
-     * Return cardinal z-axis
+     * Return cardinal z-axis.
+     * @param _vctOut Optional vector to store the result in.
      */
-    public getZ(): Vector3 {
-      let result: Vector3 = Recycler.reuse(Vector3);
-      result.set(this.data[8], this.data[9], this.data[10]);
-      return result;
+    public getZ(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _vctOut.set(this.data[8], this.data[9], this.data[10]);
     }
 
     /**
@@ -1078,6 +1080,7 @@ namespace FudgeCore {
       Recycler.store(xAxis);
       this.resetCache();
     }
+
     /**
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
      */
@@ -1090,6 +1093,7 @@ namespace FudgeCore {
       Recycler.store(xAxis);
       this.resetCache();
     }
+
     /**
      * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
      */
@@ -1104,12 +1108,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the tranlation from this matrix to the target matrix
+     * Returns the tranlation from this matrix to the target matrix.
+     * @param _vctOut Optional vector to store the result in.
      */
-    public getTranslationTo(_mtxTarget: Matrix4x4): Vector3 {
-      let difference: Vector3 = Recycler.get(Vector3);
-      difference.set(_mtxTarget.data[12] - this.data[12], _mtxTarget.data[13] - this.data[13], _mtxTarget.data[14] - this.data[14]);
-      return difference;
+    public getTranslationTo(_mtxTarget: Matrix4x4, _vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {    
+      return _vctOut.set(_mtxTarget.data[12] - this.data[12], _mtxTarget.data[13] - this.data[13], _mtxTarget.data[14] - this.data[14]);;
     }
 
     public serialize(): Serialization {
