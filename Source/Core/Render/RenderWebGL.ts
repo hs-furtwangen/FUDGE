@@ -117,6 +117,12 @@ namespace FudgeCore {
     private static uboLightsOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
     private static uboFog: WebGLBuffer;
 
+    private static dataFog: Float32Array;
+    private static dataCamera: Float32Array;
+
+    private static readonly attachmentsColorPositionNormal = [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] as const; // eslint-disable-line
+    private static readonly attachmentsColor = [WebGL2RenderingContext.COLOR_ATTACHMENT0] as const; // eslint-disable-line
+
     /**
      * Initializes offscreen-canvas, renderingcontext and hardware viewport. Call once before creating any resources like meshes or shaders
      */
@@ -443,7 +449,7 @@ namespace FudgeCore {
       const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
       const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
 
-      const data: Float32Array = new Float32Array(16 + 16 + 16 + 3);
+      const data: Float32Array = RenderWebGL.dataCamera ??= new Float32Array(16 + 16 + 16 + 3);
       data.set(mtxView.get(), 0);
       data.set(mtxProjection.get(), 16);
       data.set(mtxViewProjection.get(), 32);
@@ -597,7 +603,7 @@ namespace FudgeCore {
     protected static bufferFog(_cmpFog: ComponentFog): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      const data: Float32Array = new Float32Array(8);
+      const data: Float32Array = RenderWebGL.dataFog ??= new Float32Array(8);
 
       data[0] = _cmpFog?.isActive ? 1 : 0;
       if (_cmpFog) {
@@ -680,7 +686,7 @@ namespace FudgeCore {
           return;
 
         const lightDataSize: number = 4 + 16 + 16; // vctColor + mtxShape + mtxShapeInverse, as float32s
-        const lightsData: Float32Array = new Float32Array(cmpLights.length * lightDataSize);
+        const lightsData: Float32Array = new Float32Array(cmpLights.length * lightDataSize); // TODO: don't allocate at runtime
 
         let iLight: number = 0;
         for (let cmpLight of cmpLights) {
@@ -694,7 +700,7 @@ namespace FudgeCore {
           // set mtxShape
           let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
           if (_type == LightDirectional) {
-            mtxTotal.translation.set(0,0,0);
+            mtxTotal.translation.set(0, 0, 0);
             mtxTotal.translation = mtxTotal.translation;
           }
 
@@ -738,10 +744,7 @@ namespace FudgeCore {
       // TODO: think about disabling blending for all opaque objects, this might improve performance 
       // as otherwise the 3 color attachments (color, position and normals) all need to be blended
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
-      crc3.drawBuffers(cmpAmbientOcclusion?.isActive ? // only use position and normal textures if ambient occlusion is active
-        [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] :
-        [WebGL2RenderingContext.COLOR_ATTACHMENT0]
-      );
+      crc3.drawBuffers(cmpAmbientOcclusion?.isActive ? RenderWebGL.attachmentsColorPositionNormal : RenderWebGL.attachmentsColor);
 
       crc3.disable(WebGL2RenderingContext.BLEND);
       for (let node of _nodesOpaque)
@@ -754,7 +757,7 @@ namespace FudgeCore {
 
       // transparent pass TODO: think about disabling depth write for all transparent objects -> this might make depth mask option in component particle system obsolete
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
-      crc3.drawBuffers([WebGL2RenderingContext.COLOR_ATTACHMENT0]);
+      crc3.drawBuffers(RenderWebGL.attachmentsColor);
 
       // crc3.depthMask(false);
       for (let node of _nodesAlpha)
@@ -956,9 +959,9 @@ namespace FudgeCore {
       // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
       if (drawParticles)
         RenderWebGL.drawParticles(cmpParticleSystem, renderBuffers.nIndices);
-      else 
+      else
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
-      
+
       // PerformanceMonitor.endMeasure("Render.drawNode drawElements");
     }
 
