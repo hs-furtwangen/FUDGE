@@ -192,10 +192,21 @@ namespace FudgeCore {
 
     /**
      * Copies the components of the given vector into this vector.
+     * @returns A reference to this vector.
      */
     public copy(_original: Vector2): Vector2 {
       this.x = _original.x;
       this.y = _original.y;
+      return this;
+    }
+
+    /**
+     * Sets the components of this vector.
+     * @returns A reference to this vector.
+     */
+    public set(_x: number = 0, _y: number = 0): Vector2 {
+      this.x = _x;
+      this.y = _y;
       return this;
     }
 
@@ -214,8 +225,17 @@ namespace FudgeCore {
     }
 
     /**
-     * Adds the given vector to the executing vector, changing the executor.
-     * @param _addend The vector to add.
+     * Returns the distance bewtween this vector and the given vector.
+     */
+    public getDistance(_to: Vector2): number {
+      let difference: Vector2 = Vector2.DIFFERENCE(this, _to);
+      Recycler.store(difference);
+      return difference.magnitude;
+    }
+
+    /**
+     * Adds the given vector to this vector.
+     * @returns A reference to this vector.
      */
     public add(_addend: Vector2): Vector2 {
       this.x += _addend.x;
@@ -224,8 +244,8 @@ namespace FudgeCore {
     }
 
     /**
-     * Subtracts the given vector from the executing vector, changing the executor.
-     * @param _subtrahend The vector to subtract.
+     * Subtracts the given vector from this vector.
+     * @returns A reference to this vector.
      */
     public subtract(_subtrahend: Vector2): Vector2 {
       this.x -= _subtrahend.x;
@@ -235,6 +255,7 @@ namespace FudgeCore {
 
     /**
      * Scales the Vector by the given _scalar.
+     * @returns A reference to this vector.
      */
     public scale(_scalar: number): Vector2 {
       this.x *= _scalar;
@@ -243,8 +264,18 @@ namespace FudgeCore {
     }
 
     /**
+     * Negates this vector by flipping the signs of its components
+     * @returns A reference to this vector.
+     */
+    public negate(): Vector2 {
+      this.x = -this.x;
+      this.y = -this.y;
+      return this;
+    }
+
+    /**
      * Normalizes this to the given length, 1 by default
-     * @return this vector.
+     * @returns A reference to this vector.
      */
     public normalize(_length: number = 1): Vector2 {
       let magnitudeSquared: number = this.magnitudeSquared;
@@ -256,39 +287,27 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the components of this vector.
-     */
-    public set(_x: number = 0, _y: number = 0): Vector2 {
-      this.x = _x;
-      this.y = _y;
-      return this;
-    }
-
-    /**
-     * Returns an array of the components of this vector.
-     */
-    public get(): Float32Array { // TODO: eliminate allocation
-      return new Float32Array([this.x, this.y]);
-    }
-
-    /**
      * Transforms this vector by the given matrix, including or exluding the translation.
      * Including is the default, excluding will only rotate and scale this vector.
+     * @returns A reference to this vector.
      */
     public transform(_mtxTransform: Matrix3x3, _includeTranslation: boolean = true): Vector2 {
       return Vector2.TRANSFORMATION(this, _mtxTransform, _includeTranslation, this);
     }
 
     /**
-     * For each dimension, moves the component to the minimum of this and the given vector
+     * For each dimension, moves the component to the minimum of this and the given vector.
+     * @returns A reference to this vector.
      */
     public min(_compare: Vector2): Vector2 {
       this.x = Math.min(this.x, _compare.x);
       this.y = Math.min(this.y, _compare.y);
       return this;
     }
+
     /**
-     * For each dimension, moves the component to the maximum of this and the given vector
+     * For each dimension, moves the component to the maximum of this and the given vector.
+     * @returns A reference to this vector.
      */
     public max(_compare: Vector2): Vector2 {
       this.x = Math.max(this.x, _compare.x);
@@ -297,37 +316,46 @@ namespace FudgeCore {
     }
 
     /**
-     * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3
-     */
-    public toVector3(_z: number = 0): Vector3 {
-      return Recycler.reuse(Vector3).set(this.x, this.y, _z);
-    }
-
-    /**
-     * Returns a formatted string representation of this vector
-     */
-    public toString(): string {
-      let result: string = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)})`;
-      return result;
-    }
-
-    /**
      * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
+     * @param _out Optional vector to store the result in.
      */
-    public map(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2 {
-      const out: Vector2 = this.clone;
-      out.x = _function(out.x, 0, "x", out);
-      out.y = _function(out.y, 1, "y", out);
-      return out;
+    public map(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      _out.x = _function(this.x, 0, "x", this);
+      _out.y = _function(this.y, 1, "y", this);
+      return _out;
     }
 
     /**
-     * Applies the given function to all components of this vector. 
+     * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector2.map} but mutates this vector instead of creating a new one.
+     * @returns A reference to this vector.
      */
     public apply(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2 {
       this.x = _function(this.x, 0, "x", this);
       this.y = _function(this.y, 1, "y", this);
       return this;
+    }
+
+    /**
+     * Returns an array of the components of this vector.
+     */
+    public get(): Float32Array { // TODO: rename to getArray, allow passing of an array into this method to avoid allocation
+      return new Float32Array([this.x, this.y]);
+    }
+
+    /**
+     * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3.
+     * @param _out Optional vector to store the result in.
+     */
+    public toVector3(_z: number = 0, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _out.set(this.x, this.y, _z);
+    }
+
+    /**
+     * Returns a formatted string representation of this vector.
+     */
+    public toString(): string {
+      let result: string = `(${this.x.toPrecision(5)}, ${this.y.toPrecision(5)})`;
+      return result;
     }
 
     //#region Transfer

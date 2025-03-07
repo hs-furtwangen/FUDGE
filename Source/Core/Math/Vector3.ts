@@ -232,14 +232,14 @@ namespace FudgeCore {
       const omega: number = 2 / _smoothTime;
       const x: number = omega * _timeFrame;
       const exp: number = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x); // approximation of e ^ -omega * timeFrame
-      
+
       let changeX: number = _current.x - _target.x;
       let changeY: number = _current.y - _target.y;
       let changeZ: number = _current.z - _target.z;
 
       const maxChange: number = _maxSpeed * _smoothTime;
       const magnitudeSquared: number = changeX * changeX + changeY * changeY + changeZ * changeZ;
-      
+
       let targetX: number;
       let targetY: number;
       let targetZ: number;
@@ -326,11 +326,23 @@ namespace FudgeCore {
 
     /**
      * Copies the components of the given vector into this vector.
+     * @returns A reference to this vector.
      */
     public copy(_original: Vector3): Vector3 {
       this.x = _original.x;
       this.y = _original.y;
       this.z = _original.z;
+      return this;
+    }
+
+    /**
+     * Sets the components of this vector and returns it.
+     * @returns A reference to this vector.
+     */
+    public set(_x: number = 0, _y: number = 0, _z: number = 0): Vector3 {
+      this.x = _x;
+      this.y = _y;
+      this.z = _z;
       return this;
     }
 
@@ -350,7 +362,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns true if the position described by this is within a cube with the opposite corners 1 and 2
+     * Returns true if the position described by this is within a cube with the opposite corners 1 and 2.
      */
     public isInsideCube(_corner1: Vector3, _corner2: Vector3): boolean {
       const diagonal: Vector3 = Vector3.DIFFERENCE(_corner2, _corner1);
@@ -369,7 +381,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns true if the position described by this is within a sphere with the given center and radius
+     * Returns true if the position described by this is within a sphere with the given center and radius.
      */
     public isInsideSphere(_center: Vector3, _radius: number): boolean {
       const difference: Vector3 = Vector3.DIFFERENCE(this, _center);
@@ -378,7 +390,17 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns the distance bewtween this vector and the given vector.
+     */
+    public getDistance(_to: Vector3): number {
+      let difference: Vector3 = Vector3.DIFFERENCE(this, _to);
+      Recycler.store(difference);
+      return difference.magnitude;
+    }
+
+    /**
      * Adds the given vector to this vector.
+     * @returns A reference to this vector.
      */
     public add(_addend: Vector3): Vector3 {
       this.x += _addend.x;
@@ -389,6 +411,7 @@ namespace FudgeCore {
 
     /**
      * Subtracts the given vector from this vector.
+     * @returns A reference to this vector.
      */
     public subtract(_subtrahend: Vector3): Vector3 {
       this.x -= _subtrahend.x;
@@ -399,6 +422,7 @@ namespace FudgeCore {
 
     /**
      * Scales this vector by the given scalar.
+     * @returns A reference to this vector.
      */
     public scale(_scalar: number): Vector3 {
       this.x *= _scalar;
@@ -408,7 +432,19 @@ namespace FudgeCore {
     }
 
     /**
+     * Negates this vector by flipping the signs of its components
+     * @returns A reference to this vector.
+     */
+    public negate(): Vector3 {
+      this.x = -this.x;
+      this.y = -this.y;
+      this.z = -this.z;
+      return this;
+    }
+
+    /**
      * Normalizes this to the given length, 1 by default
+     * @returns A reference to this vector.
      */
     public normalize(_length: number = 1): Vector3 {
       let magnitudeSquared: number = this.magnitudeSquared;
@@ -420,17 +456,8 @@ namespace FudgeCore {
     }
 
     /**
-     * Negates this vector by flipping the signs of its components
-     */
-    public negate(): Vector3 {
-      this.x = -this.x;
-      this.y = -this.y;
-      this.z = -this.z;
-      return this;
-    }
-
-    /**
-     * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}
+     * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}.
+     * @returns A reference to this vector.
      */
     public reflect(_normal: Vector3): Vector3 {
       return Vector3.REFLECTION(this, _normal, this);
@@ -438,6 +465,7 @@ namespace FudgeCore {
 
     /**
      * Projects this vector onto the given vector.
+     * @returns A reference to this vector.
      */
     public project(_on: Vector3): Vector3 {
       let scalar: number = Vector3.DOT(this, _on) / _on.magnitudeSquared;
@@ -448,40 +476,18 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the components of this vector and returns it.
-     */
-    public set(_x: number = 0, _y: number = 0, _z: number = 0): Vector3 {
-      this.x = _x;
-      this.y = _y;
-      this.z = _z;
-      return this;
-    }
-
-    /**
-     * Returns an array of the components of this vector.
-     */
-    public get(): Float32Array { // TODO: eliminate allocation
-      return new Float32Array([this.x, this.y, this.z]);
-    }
-
-    /**
      * Transforms this vector by the given matrix or rotation quaternion. 
      * Including or exluding the translation if a matrix is passed.
      * Including is the default, excluding will only rotate and scale this vector.
+     * @returns A reference to this vector.
      */
     public transform(_transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true): Vector3 {
       return Vector3.TRANSFORMATION(this, _transform, _includeTranslation, this);
     }
 
     /**
-     * Drops the z-component and returns a Vector2 consisting of the x- and y-components
-     */
-    public toVector2(): Vector2 {
-      return Recycler.reuse(Vector2).set(this.x, this.y);
-    }
-
-    /**
      * Shuffles the components of this vector.
+     * @returns A reference to this vector.
      */
     public shuffle(): Vector3 {
       // Durstenfeld shuffle
@@ -496,16 +502,8 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the distance bewtween this vector and the given vector
-     */
-    public getDistance(_to: Vector3): number {
-      let difference: Vector3 = Vector3.DIFFERENCE(this, _to);
-      Recycler.store(difference);
-      return difference.magnitude;
-    }
-
-    /**
-     * For each dimension, moves the component to the minimum of this and the given vector
+     * For each dimension, moves the component to the minimum of this and the given vector.
+     * @returns A reference to this vector.
      */
     public min(_compare: Vector3): Vector3 {
       this.x = Math.min(this.x, _compare.x);
@@ -515,7 +513,8 @@ namespace FudgeCore {
     }
 
     /**
-     * For each dimension, moves the component to the maximum of this and the given vector
+     * For each dimension, moves the component to the maximum of this and the given vector.
+     * @returns A reference to this vector.
      */
     public max(_compare: Vector3): Vector3 {
       this.x = Math.max(this.x, _compare.x);
@@ -526,23 +525,39 @@ namespace FudgeCore {
 
     /**
      * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
+     * @param _out Optional vector to store the result in.
      */
-    public map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3 {
-      const out: Vector3 = this.clone;
-      out.x = _function(out.x, 0, "x", out);
-      out.y = _function(out.y, 1, "y", out);
-      out.z = _function(out.z, 2, "z", out);
-      return out;
+    public map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      _out.x = _function(this.x, 0, "x", this);
+      _out.y = _function(this.y, 1, "y", this);
+      _out.z = _function(this.z, 2, "z", this);
+      return _out;
     }
 
     /**
-     * Applies the given function to all components of this vector. 
+     * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector3.map} but mutates this vector instead of creating a new one.
+     * @returns A reference to this vector.
      */
     public apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3 {
       this.x = _function(this.x, 0, "x", this);
       this.y = _function(this.y, 1, "y", this);
       this.z = _function(this.z, 2, "z", this);
       return this;
+    }
+
+    /**
+     * Returns an array of the components of this vector.
+     */
+    public get(): Float32Array { // TODO: rename to getArray, allow passing of an array into this method to avoid allocation
+      return new Float32Array([this.x, this.y, this.z]);
+    }
+
+    /**
+     * Drops the z-component and returns a Vector2 consisting of the x- and y-components.
+     * @param _out Optional vector to store the result in.
+     */
+    public toVector2(_out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(this.x, this.y);
     }
 
     /**
@@ -582,6 +597,7 @@ namespace FudgeCore {
       let mutator: Mutator = { x: this.x, y: this.y, z: this.z };
       return mutator;
     }
+
     protected reduceMutator(_mutator: Mutator): void {/** */ }
     //#endregion Transfer
   }
