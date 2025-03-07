@@ -5,7 +5,7 @@ namespace FudgeCore {
    *            +y
    *             |__ +x
    * ```
-   * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019
+   * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   export class Vector2 extends Mutable implements Serializable, Recycable {
     public x: number;
@@ -22,7 +22,7 @@ namespace FudgeCore {
      * @returns A new vector with the values (0, 0)
      */
     public static ZERO(): Vector2 {
-      return Recycler.reuse(Vector2).set(0, 0);
+      return Recycler.get(Vector2);
     }
 
     /** 
@@ -53,11 +53,15 @@ namespace FudgeCore {
 
     /**
      * Creates and returns a vector through transformation of the given vector by the given matrix
+     * @param _out Optional vector to store the result in.
      */
     public static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation: boolean = true, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       let m: Float32Array = _mtxTransform.getData();
-      _out.x = m[0] * _vector.x + m[3] * _vector.y;
-      _out.y = m[1] * _vector.x + m[4] * _vector.y;
+
+      _out.set(
+        m[0] * _vector.x + m[3] * _vector.y,
+        m[1] * _vector.x + m[4] * _vector.y
+      );
 
       if (_includeTranslation)
         _out.add(_mtxTransform.translation);
@@ -67,6 +71,7 @@ namespace FudgeCore {
 
     /**
      * Creates and returns a vector which is a copy of the given vector scaled to the given length.
+     * @param _out Optional vector to store the result in.
      */
     public static NORMALIZATION(_vector: Vector2, _length: number = 1, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       return _out.copy(_vector).normalize(_length);
@@ -74,13 +79,15 @@ namespace FudgeCore {
 
     /**
      * Returns a new vector representing the given vector scaled by the given scaling factor
+     * @param _out Optional vector to store the result in.
      */
     public static SCALE(_vector: Vector2, _scale: number, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       return _out.set(_vector.x * _scale, _vector.y * _scale);
     }
 
     /**
-     * Returns the resulting vector attained by addition of the given vectors.
+     * Returns the result of the addition of two vectors.
+     * @param _out Optional vector to store the result in.
      */
     public static SUM(_a: Vector2, _b: Vector2, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       return _out.set(_a.x + _b.x, _a.y + _b.y);
@@ -88,6 +95,7 @@ namespace FudgeCore {
 
     /**
      * Returns the result of the subtraction of two vectors.
+     * @param _out Optional vector to store the result in.
      */
     public static DIFFERENCE(_minuend: Vector2, _subtrahend: Vector2, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       return _out.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y);
@@ -115,18 +123,19 @@ namespace FudgeCore {
      * ```
      * @param _vector Vector to get the orthogonal equivalent of
      * @param _clockwise Should the rotation be clockwise instead of the default counterclockwise? default: false
+     * @param _out Optional vector to store the result in.
      * @returns A Vector that is orthogonal to and has the same magnitude as the given Vector.  
      */
     public static ORTHOGONAL(_vector: Vector2, _clockwise: boolean = false, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       if (_clockwise)
-        _out.set(_vector.y, -_vector.x);
+        return _out.set(_vector.y, -_vector.x);
       else
-        _out.set(-_vector.y, _vector.x);
-      return _out;
+        return _out.set(-_vector.y, _vector.x);
     }
 
     /**
-     * Creates a cartesian vector from polar coordinates
+     * Creates a cartesian vector from polar coordinates.
+     * @param _out Optional vector to store the result in.
      */
     public static GEO(_angle: number = 0, _magnitude: number = 1, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
       const geo: Geo2 = Recycler.reuse(Geo2).set(_angle, _magnitude);
@@ -152,7 +161,8 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a polar representation of this vector
+     * - get: Returns a polar representation of this vector
+     * - set: Adjusts the cartesian values of this vector to represent the given as polar coordinates
      */
     public get geo(): Geo2 {
       let geo: Geo2 = Recycler.get(Geo2);
@@ -165,9 +175,6 @@ namespace FudgeCore {
       return geo;
     }
 
-    /**
-     * Adjust the cartesian values of this vector to represent the given as polar coordinates
-     */
     public set geo(_geo: Geo2) {
       this.set(_geo.magnitude, 0);
       const rotation: Matrix3x3 = Matrix3x3.ROTATION(_geo.angle);
@@ -307,11 +314,20 @@ namespace FudgeCore {
     /**
      * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
      */
-    public map(_function: (_value: number, _component: "x" | "y", _vector: Vector2) => number): Vector2 {
+    public map(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2 {
       const out: Vector2 = this.clone;
-      out.x = _function(out.x, "x", out);
-      out.y = _function(out.y, "y", out);
+      out.x = _function(out.x, 0, "x", out);
+      out.y = _function(out.y, 1, "y", out);
       return out;
+    }
+
+    /**
+     * Applies the given function to all components of this vector. 
+     */
+    public apply(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2 {
+      this.x = _function(this.x, 0, "x", this);
+      this.y = _function(this.y, 1, "y", this);
+      return this;
     }
 
     //#region Transfer

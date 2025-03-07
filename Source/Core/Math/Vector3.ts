@@ -10,6 +10,11 @@ namespace FudgeCore {
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
    */
   export class Vector3 extends Mutable implements Serializable, Recycable {
+    /** 
+     * Array of the keys of a vector. Allows to translate an index (0, 1, 2) to a key ("x", "y", "z") or to iterate over a vector.
+     */
+    public static readonly keys: readonly ["x", "y", "z"] = ["x", "y", "z"];
+
     public x: number;
     public y: number;
     public z: number;
@@ -25,130 +30,126 @@ namespace FudgeCore {
      * Creates and returns a vector with the given length pointing in x-direction
      */
     public static X(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(_scale, 0, 0);
-      return vector;
+      return Recycler.reuse(Vector3).set(_scale, 0, 0);
     }
 
     /**
      * Creates and returns a vector with the given length pointing in y-direction
      */
     public static Y(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(0, _scale, 0);
-      return vector;
+      return Recycler.reuse(Vector3).set(0, _scale, 0);
     }
 
     /**
      * Creates and returns a vector with the given length pointing in z-direction
      */
     public static Z(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(0, 0, _scale);
-      return vector;
+      return Recycler.reuse(Vector3).set(0, 0, _scale);
     }
 
     /**
      * Creates and returns a vector with the value 0 on each axis
      */
     public static ZERO(): Vector3 {
-      const vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(0, 0, 0); // should be set to 0 by recycler already?
-      return vector;
+      return Recycler.get(Vector3);
     }
 
     /**
      * Creates and returns a vector of the given size on each of the three axis
      */
     public static ONE(_scale: number = 1): Vector3 {
-      const vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(_scale, _scale, _scale);
-      return vector;
+      return Recycler.reuse(Vector3).set(_scale, _scale, _scale);
     }
 
     /**
      * Creates and returns a vector through transformation of the given vector by the given matrix or rotation quaternion.
+     * @param _out Optional vector to store the result in.
      */
-    public static TRANSFORMATION(_vector: Vector3, _transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true): Vector3 {
-      const result: Vector3 = Recycler.reuse(Vector3);
-
+    public static TRANSFORMATION(_vector: Vector3, _transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       if (_transform instanceof Matrix4x4) {
-        let m: Float32Array = _transform.get();
+        const m: Float32Array = _transform.getData();
 
-        result.set(
+        _out.set(
           m[0] * _vector.x + m[4] * _vector.y + m[8] * _vector.z,
           m[1] * _vector.x + m[5] * _vector.y + m[9] * _vector.z,
           m[2] * _vector.x + m[6] * _vector.y + m[10] * _vector.z
         );
 
         if (_includeTranslation)
-          result.add(_transform.translation);
+          _out.add(_transform.translation);
 
-      } else {
-        // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/transforms/index.htm
-        // result = q * quaternion(vector.x, vector.y, vector.z, 0) * conj(q)
-
-        // q * quaternion(vector.x, vector.y, vector.z, 0) ...
-        const qx: number = _transform.w * _vector.x + _transform.y * _vector.z - _transform.z * _vector.y;
-        const qy: number = _transform.w * _vector.y + _transform.z * _vector.x - _transform.x * _vector.z;
-        const qz: number = _transform.w * _vector.z + _transform.x * _vector.y - _transform.y * _vector.x;
-        const qw: number = -_transform.x * _vector.x - _transform.y * _vector.y - _transform.z * _vector.z;
-
-        // ... * conj(q)
-        result.set(
-          qx * _transform.w + qw * - _transform.x + qy * - _transform.z - qz * - _transform.y,
-          qy * _transform.w + qw * - _transform.y + qz * - _transform.x - qx * - _transform.z,
-          qz * _transform.w + qw * - _transform.z + qx * - _transform.y - qy * - _transform.x
-        );
+        return _out;
       }
 
-      return result;
+      // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/transforms/index.htm
+      // out = q * quaternion(vector.x, vector.y, vector.z, 0) * conj(q)
+
+      // q * quaternion(vector.x, vector.y, vector.z, 0) ...
+      const qx: number = _transform.w * _vector.x + _transform.y * _vector.z - _transform.z * _vector.y;
+      const qy: number = _transform.w * _vector.y + _transform.z * _vector.x - _transform.x * _vector.z;
+      const qz: number = _transform.w * _vector.z + _transform.x * _vector.y - _transform.y * _vector.x;
+      const qw: number = -_transform.x * _vector.x - _transform.y * _vector.y - _transform.z * _vector.z;
+
+      // ... * conj(q)
+      return _out.set(
+        qx * _transform.w + qw * - _transform.x + qy * - _transform.z - qz * - _transform.y,
+        qy * _transform.w + qw * - _transform.y + qz * - _transform.x - qx * - _transform.z,
+        qz * _transform.w + qw * - _transform.z + qx * - _transform.y - qy * - _transform.x
+      );
     }
 
     /**
-     * Creates and returns a vector which is a copy of the given vector scaled to the given length
+     * Creates and returns a vector which is a copy of the given vector scaled to the given length.
+     * @param _out Optional vector to store the result in.
      */
-    public static NORMALIZATION(_vector: Vector3, _length: number = 1): Vector3 {
-      return _vector.clone.normalize(_length);
+    public static NORMALIZATION(_vector: Vector3, _length: number = 1, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _out.copy(_vector).normalize(_length);
     }
 
     /**
-     * Returns the resulting vector attained by addition of all given vectors.
+     * Returns the result of the addition of two vectors.
+     * @param _out Optional vector to store the result in.
      */
-    public static SUM(..._vectors: Vector3[]): Vector3 { // TODO: rest parameter bloats memory...
-      let result: Vector3 = Recycler.get(Vector3);
-      for (let vector of _vectors)
-        result.set(result.x + vector.x, result.y + vector.y, result.z + vector.z);
-      return result;
+    public static SUM(_a: Vector3, _b: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _out.set(_a.x + _b.x, _a.y + _b.y, _a.z + _b.z);
     }
 
     /**
-     * Returns the result of the subtraction of two vectors. Pass an optional out vector to store the result in.
+     * Returns the result of the subtraction of two vectors.
+     * @param _out Optional vector to store the result in.
      */
     public static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      _out.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y, _minuend.z - _subtrahend.z);
-      return _out;
+      return _out.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y, _minuend.z - _subtrahend.z);
     }
 
     /**
-     * Returns a new vector representing the given vector scaled by the given scaling factor
+     * Returns a new vector representing the given vector scaled by the given scaling factor.
+     * @param _out Optional vector to store the result in.
      */
     public static SCALE(_vector: Vector3, _scaling: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      _out.set(_vector.x * _scaling, _vector.y * _scaling, _vector.z * _scaling);
-      return _out;
+      return _out.set(_vector.x * _scaling, _vector.y * _scaling, _vector.z * _scaling);
     }
 
     /**
-     * Computes the crossproduct of 2 vectors. Pass an optional out vector to store the result in.
+     * Divides the dividend by the divisor component by component and returns the result.
+     * @param _out Optional vector to store the result in.
+     */
+    public static RATIO(_dividend: Vector3, _divisor: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _out.set(_dividend.x / _divisor.x, _dividend.y / _divisor.y, _dividend.z / _divisor.z);
+    }
+
+    /**
+     * Computes the crossproduct of 2 vectors. 
+     * @param _out Optional vector to store the result in.
      */
     public static CROSS(_a: Vector3, _b: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      _out.set(
+      return _out.set(
         _a.y * _b.z - _a.z * _b.y,
         _a.z * _b.x - _a.x * _b.z,
         _a.x * _b.y - _a.y * _b.x
       );
-      return _out;
     }
+
     /**
      * Computes the dotproduct of 2 vectors.
      */
@@ -158,42 +159,35 @@ namespace FudgeCore {
 
     /**
      * Calculates and returns the reflection of the incoming vector at the given normal vector. The length of normal should be 1.
-     *     __________________
+     * ```text
+     * _________________________
      *           /|\
      * incoming / | \ reflection
      *         /  |  \   
      *          normal
-     * 
+     * ```
+     * @param _out Optional vector to store the result in.
      */
-    public static REFLECTION(_incoming: Vector3, _normal: Vector3): Vector3 {
-      let dot: number = -Vector3.DOT(_incoming, _normal);
-      let reflection: Vector3 = Vector3.SUM(_incoming, Vector3.SCALE(_normal, 2 * dot));
-      return reflection;
+    public static REFLECTION(_incoming: Vector3, _normal: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      if (_out == _incoming) // clone _incoming to allow reading from it
+        Recycler.store(_incoming = _incoming.clone); // dangerous, this only works because sup-method calls don't fetch from recycler
+
+      return Vector3.SUM(_incoming, Vector3.SCALE(_normal, 2 * -Vector3.DOT(_incoming, _normal), _out), _out);
     }
 
     /**
-     * Divides the dividend by the divisor component by component and returns the result
+     * Creates a cartesian vector from geographic coordinates.
+     * @param _out Optional vector to store the result in.
      */
-    public static RATIO(_dividend: Vector3, _divisor: Vector3): Vector3 {
-      let vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(_dividend.x / _divisor.x, _dividend.y / _divisor.y, _dividend.z / _divisor.z);
-      return vector;
-    }
-
-    /**
-     * Creates a cartesian vector from geographic coordinates
-     */
-    public static GEO(_longitude: number = 0, _latitude: number = 0, _magnitude: number = 1): Vector3 {
-      let vector: Vector3 = Recycler.reuse(Vector3);
-      let geo: Geo3 = Recycler.reuse(Geo3);
-      geo.set(_longitude, _latitude, _magnitude);
-      vector.geo = geo;
+    public static GEO(_longitude: number = 0, _latitude: number = 0, _magnitude: number = 1, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      const geo: Geo3 = Recycler.reuse(Geo3).set(_longitude, _latitude, _magnitude);
+      _out.geo = geo;
       Recycler.store(geo);
-      return vector;
+      return _out;
     }
 
     /**
-     * Return the angle in degrees between the two given vectors
+     * Return the angle in degrees between the two given vectors.
      */
     public static ANGLE(_from: Vector3, _to: Vector3): number {
       let angle: number = Math.acos(Calc.clamp(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude), -1, 1)); // clamp because of floating point errors when from == to
@@ -201,24 +195,24 @@ namespace FudgeCore {
     }
 
     /**
-     * Return the projection of a onto b
+     * Return the projection of a onto b.
+     * @param _out Optional vector to store the result in.
      */
-    public static PROJECTION(_a: Vector3, _b: Vector3): Vector3 {
-      return _a.clone.project(_b);
+    public static PROJECTION(_a: Vector3, _b: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _out.copy(_a).project(_b);
     }
 
     /**
      * Returns the linear interpolation of two vectors. Clamps the factor between 0 and 1.
+     * @param _out Optional vector to store the result in.
      */
-    public static LERP(_a: Vector3, _b: Vector3, _factor: number): Vector3 {
+    public static LERP(_a: Vector3, _b: Vector3, _factor: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       _factor = Calc.clamp(_factor, 0, 1);
-      let vector: Vector3 = Recycler.reuse(Vector3);
-      vector.set(
+      return _out.set(
         _a.x + (_b.x - _a.x) * _factor,
         _a.y + (_b.y - _a.y) * _factor,
         _a.z + (_b.z - _a.z) * _factor
       );
-      return vector;
     }
 
     /**
@@ -231,42 +225,53 @@ namespace FudgeCore {
      * @param _smoothTime - The time it would take for the value to reach the target if it were moving at maximum velocity for the entire duration. When following a moving target the smooth time equals the lag time allowing to calculate the `lag distance = target velocity * smooth time`.
      * @param _timeFrame - The elapsed time since the last call to the function.
      * @param _maxSpeed - An optional maximum speed that limits the velocity of the value. Defaults to Infinity.
+     * @param _out Optional vector to store the result in.
      * @source from Andrew Kirmse, Game Programming Gems 4, Chapter 1.10
      */
-    public static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed: number = Infinity): Vector3 {
+    public static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed: number = Infinity, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       const omega: number = 2 / _smoothTime;
       const x: number = omega * _timeFrame;
       const exp: number = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x); // approximation of e ^ -omega * timeFrame
-      const change: Vector3 = Vector3.DIFFERENCE(_current, _target); // c = from - to  | to = from - c
       
+      let changeX: number = _current.x - _target.x;
+      let changeY: number = _current.y - _target.y;
+      let changeZ: number = _current.z - _target.z;
+
       const maxChange: number = _maxSpeed * _smoothTime;
-      const magnitudeSquared: number = change.magnitudeSquared;
+      const magnitudeSquared: number = changeX * changeX + changeY * changeY + changeZ * changeZ;
+      
+      let targetX: number;
+      let targetY: number;
+      let targetZ: number;
       if (magnitudeSquared > maxChange * maxChange) {
-        change.scale(maxChange / Math.sqrt(magnitudeSquared));
-        _target = Vector3.DIFFERENCE(_current, change);
+        let scalar: number = maxChange / Math.sqrt(magnitudeSquared); // normalize to maxChange
+        changeX *= scalar;
+        changeY *= scalar;
+        changeZ *= scalar;
+
+        // change = current - target  ==  target = current - change
+        targetX = _current.x - changeX;
+        targetY = _current.y - changeY;
+        targetZ = _current.z - changeZ;
+      } else {
+        targetX = _target.x;
+        targetY = _target.y;
+        targetZ = _target.z;
       }
-      
-      // TODO: maybe optimize this...
-      const scaleChange: Vector3 = Vector3.SCALE(change, omega);
-      const sumVelocityScaleChange: Vector3 = Vector3.SUM(_velocity, scaleChange);
-      const temp: Vector3 = Vector3.SCALE(sumVelocityScaleChange, _timeFrame);
 
-      const scaleTemp: Vector3 = Vector3.SCALE(temp, omega);
-      const differenceVelocityScaleTemp: Vector3 = Vector3.DIFFERENCE(_velocity, scaleTemp);
-      const scaleDifferenceVelocityScaleTemp: Vector3 = Vector3.SCALE(differenceVelocityScaleTemp, exp);
-      _velocity.copy(scaleDifferenceVelocityScaleTemp);
+      let tempX: number = (_velocity.x + omega * changeX) * _timeFrame;
+      let tempY: number = (_velocity.y + omega * changeY) * _timeFrame;
+      let tempZ: number = (_velocity.z + omega * changeZ) * _timeFrame;
 
-      const sumChangeTemp: Vector3 = Vector3.SUM(change, temp);
-      const scaleSumChangeTempExp: Vector3 = Vector3.SCALE(sumChangeTemp, exp);
-      const result: Vector3 = Vector3.SUM(_target, scaleSumChangeTempExp);
+      _velocity.x = (_velocity.x - omega * tempX) * exp;
+      _velocity.y = (_velocity.y - omega * tempY) * exp;
+      _velocity.z = (_velocity.z - omega * tempZ) * exp;
 
-      // without recycling...
-      // const temp: Vector3 = Vector3.SCALE(Vector3.SUM(_velocity, Vector3.SCALE(change, omega)), _timeFrame);
-      // _velocity.copy(Vector3.SCALE(Vector3.DIFFERENCE(_velocity, Vector3.SCALE(temp, omega)), exp));
-      // const result: Vector3 = Vector3.SUM(_target, Vector3.SCALE(Vector3.SUM(change, temp), exp));
-      
-      Recycler.storeMultiple(scaleChange, sumVelocityScaleChange, temp, scaleTemp, differenceVelocityScaleTemp, scaleDifferenceVelocityScaleTemp, sumChangeTemp, scaleSumChangeTempExp);
-      return result;
+      _out.x = targetX + (changeX + tempX) * exp;
+      _out.y = targetY + (changeY + tempY) * exp;
+      _out.z = targetZ + (changeZ + tempZ) * exp;
+
+      return _out;
     }
     //#endregion
 
@@ -275,25 +280,20 @@ namespace FudgeCore {
      * Returns the length of the vector
      */
     public get magnitude(): number {
-      return Math.hypot(this.x, this.y, this.z);
+      return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);  // Math.hypot(this.x, this.y, this.z); <- rest parameter creates array on each call, bloats memory
     }
 
     /**
      * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
      */
     public get magnitudeSquared(): number {
-      return Vector3.DOT(this, this);
+      return this.x * this.x + this.y * this.y + this.z * this.z;
     }
 
     /**
-     * - get: returns a geographic representation of this vector  
-     * - set: adjust the cartesian values of this vector to represent the given as geographic coordinates
+     * - get: Returns a geographic representation of this vector  
+     * - set: Adjusts the cartesian values of this vector to represent the given as geographic coordinates
      */
-    public set geo(_geo: Geo3) {
-      this.set(0, 0, _geo.magnitude);
-      this.transform(Matrix4x4.ROTATION_X(-_geo.latitude));
-      this.transform(Matrix4x4.ROTATION_Y(_geo.longitude));
-    }
     public get geo(): Geo3 {
       let geo: Geo3 = Recycler.get(Geo3);
       geo.magnitude = this.magnitude;
@@ -304,6 +304,16 @@ namespace FudgeCore {
       geo.longitude = 180 * Math.atan2(this.x / geo.magnitude, this.z / geo.magnitude) / Math.PI;
       geo.latitude = 180 * Math.asin(this.y / geo.magnitude) / Math.PI;
       return geo;
+    }
+
+    public set geo(_geo: Geo3) {
+      this.set(0, 0, _geo.magnitude);
+      const mtxRotationX: Matrix4x4 = Matrix4x4.ROTATION_X(_geo.latitude);
+      const mtxRotationY: Matrix4x4 = Matrix4x4.ROTATION_Y(_geo.longitude);
+      this.transform(mtxRotationX);
+      this.transform(mtxRotationY);
+      Recycler.store(mtxRotationX);
+      Recycler.store(mtxRotationY);
     }
 
     /**
@@ -343,9 +353,12 @@ namespace FudgeCore {
      * Returns true if the position described by this is within a cube with the opposite corners 1 and 2
      */
     public isInsideCube(_corner1: Vector3, _corner2: Vector3): boolean {
-      let diagonal: Vector3 = Vector3.DIFFERENCE(_corner2, _corner1);
-      let relative: Vector3 = Vector3.DIFFERENCE(this, _corner1);
-      let ratio: Vector3 = Vector3.RATIO(relative, diagonal);
+      const diagonal: Vector3 = Vector3.DIFFERENCE(_corner2, _corner1);
+      const relative: Vector3 = Vector3.DIFFERENCE(this, _corner1);
+      const ratio: Vector3 = Vector3.RATIO(relative, diagonal);
+      Recycler.store(diagonal);
+      Recycler.store(relative);
+      Recycler.store(ratio);
       if (ratio.x > 1 || ratio.x < 0)
         return false;
       if (ratio.y > 1 || ratio.y < 0)
@@ -359,7 +372,8 @@ namespace FudgeCore {
      * Returns true if the position described by this is within a sphere with the given center and radius
      */
     public isInsideSphere(_center: Vector3, _radius: number): boolean {
-      let difference: Vector3 = Vector3.DIFFERENCE(this, _center);
+      const difference: Vector3 = Vector3.DIFFERENCE(this, _center);
+      Recycler.store(difference);
       return difference.magnitudeSquared < (_radius * _radius);
     }
 
@@ -416,7 +430,14 @@ namespace FudgeCore {
     }
 
     /**
-     * Projects this vector onto the given vector
+     * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}
+     */
+    public reflect(_normal: Vector3): Vector3 {
+      return Vector3.REFLECTION(this, _normal, this);
+    }
+
+    /**
+     * Projects this vector onto the given vector.
      */
     public project(_on: Vector3): Vector3 {
       let scalar: number = Vector3.DOT(this, _on) / _on.magnitudeSquared;
@@ -449,35 +470,28 @@ namespace FudgeCore {
      * Including is the default, excluding will only rotate and scale this vector.
      */
     public transform(_transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true): Vector3 {
-      let transformed: Vector3 = Vector3.TRANSFORMATION(this, _transform, _includeTranslation);
-      this.copy(transformed);
-      Recycler.store(transformed);
-      return this;
+      return Vector3.TRANSFORMATION(this, _transform, _includeTranslation, this);
     }
 
     /**
      * Drops the z-component and returns a Vector2 consisting of the x- and y-components
      */
     public toVector2(): Vector2 {
-      return new Vector2(this.x, this.y);
+      return Recycler.reuse(Vector2).set(this.x, this.y);
     }
 
     /**
-     * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}
-     */
-    public reflect(_normal: Vector3): Vector3 {
-      const reflected: Vector3 = Vector3.REFLECTION(this, _normal);
-      this.set(reflected.x, reflected.y, reflected.z);
-      Recycler.store(reflected);
-      return this;
-    }
-
-    /**
-     * Shuffles the components of this vector
+     * Shuffles the components of this vector.
      */
     public shuffle(): Vector3 {
-      let a: number[] = [this.x, this.y, this.z];
-      this.set(Random.default.splice(a), Random.default.splice(a), a[0]);
+      // Durstenfeld shuffle
+      for (let i: number = Vector3.keys.length - 1, j: number; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1)); // Random.default.getRangeFloored(0, i + 1);
+        const temp: number = this[Vector3.keys[i]];
+        this[Vector3.keys[i]] = this[Vector3.keys[j]];
+        this[Vector3.keys[j]] = temp;
+      }
+
       return this;
     }
 
@@ -511,22 +525,23 @@ namespace FudgeCore {
     }
 
     /**
-     * Uses the standard array.map functionality to perform the given function on all components of this vector
-     * and return a new vector with the results
+     * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
      */
-    public map(_function: (_value: number, _index: number, _array: ArrayLike<number>) => number): Vector3 {
-      let copy: Vector3 = Recycler.get(Vector3);
-      copy.set(...[this.x, this.y, this.z].map(_function));
-      return copy;
+    public map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3 {
+      const out: Vector3 = this.clone;
+      out.x = _function(out.x, 0, "x", out);
+      out.y = _function(out.y, 1, "y", out);
+      out.z = _function(out.z, 2, "z", out);
+      return out;
     }
 
     /**
-     * Applies the given function to all components of this vector (modifying it) and returns it.
+     * Applies the given function to all components of this vector. 
      */
-    public apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z") => number): Vector3 {
-      this.x = _function(this.x, 0, "x");
-      this.y = _function(this.y, 1, "y");
-      this.z = _function(this.z, 2, "z");
+    public apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3 {
+      this.x = _function(this.x, 0, "x", this);
+      this.y = _function(this.y, 1, "y", this);
+      this.z = _function(this.z, 2, "z", this);
       return this;
     }
 
