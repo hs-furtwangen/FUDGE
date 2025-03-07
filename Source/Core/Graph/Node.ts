@@ -382,10 +382,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a clone of the list of components of the given class attached to this node. 
+     * Returns the list of components of the given class attached to this node. If no components of this type are attached, an empty array is returned.
+     * @returns A **readonly** array of components.
      */
-    public getComponents<T extends Component>(_class: new () => T): T[] {
-      return <T[]>(this.components[_class.name] || []).slice(0);
+    public getComponents<T extends Component>(_class: new () => T): readonly T[] {
+      return <T[]>(this.components[_class.name] ??= []);
     }
 
     /**
@@ -432,7 +433,8 @@ namespace FudgeCore {
      * Removes all components of the given class attached to this node.
      */
     public removeComponents(_class: new () => Component): void {
-      this.getComponents(_class).forEach(_component => this.removeComponent(_component));
+      for (const component of this.getComponents(_class)) 
+        this.removeComponent(component);
     }
 
     /** 

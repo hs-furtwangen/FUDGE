@@ -32,9 +32,7 @@ namespace FudgeCore {
      * render passes.
      * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
      */
-    @PerformanceMonitor.measure("Render.prepare")
     public static prepare(_branch: Node, _options: RenderPrepareOptions = {}, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _recalculate: boolean = false): void {
-      PerformanceMonitor.startMeasure("Render.prepare pre");
       Render.timestampUpdate = performance.now();
       Render.nodesSimple.reset();
       Render.nodesAlpha.reset();
@@ -46,15 +44,12 @@ namespace FudgeCore {
       Node.resetRenderData();
       Coat.resetRenderData();
 
-      _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      PerformanceMonitor.endMeasure("Render.prepare pre");
+      _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START)); // TODO: cache this event and reuse it for all dispatches
 
-      PerformanceMonitor.startMeasure("Render.prepare prepareBranch");
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
-      PerformanceMonitor.endMeasure("Render.prepare prepareBranch");
 
-      PerformanceMonitor.startMeasure("Render.prepare post");
-      _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
+
+      _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END)); // TODO: cache this event and reuse it for all dispatches
       for (const cmpSkeleton of Render.componentsSkeleton) 
         cmpSkeleton.updateRenderBuffer();
       
@@ -62,11 +57,10 @@ namespace FudgeCore {
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
 
-      Render.bufferLights(Render.lights);
-      PerformanceMonitor.endMeasure("Render.prepare post");
+      Render.bufferLights(Render.lights); // TODO: buffer lights directly instead of collectiung them?
     }
 
-    public static addLights(_cmpLights: ComponentLight[]): void {
+    public static addLights(_cmpLights: readonly ComponentLight[]): void {
       for (let cmpLight of _cmpLights) {
         if (!cmpLight.isActive)
           continue;
@@ -92,8 +86,8 @@ namespace FudgeCore {
     /**
      * Draws the scene from the point of view of the given camera
      */
-    @PerformanceMonitor.measure("Render.draw")
     public static draw(_cmpCamera: ComponentCamera): void {
+      // TODO: sort nodes alpha in place, don't create new arrays
       for (let node of Render.nodesAlpha)
         Reflect.set(node, "zCamera", _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z);
 
@@ -147,7 +141,7 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpPick");
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch cmpLight");
-      const cmpLights: ComponentLight[] = _branch.getComponents(ComponentLight);
+      const cmpLights: readonly ComponentLight[] = _branch.getComponents(ComponentLight);
       Render.addLights(cmpLights);
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpLight");
 
@@ -182,7 +176,7 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch cmpSkeleton");
-      const cmpSkeletons: ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
+      const cmpSkeletons: readonly ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
       for (let cmpSkeleton of cmpSkeletons)
         if (cmpSkeleton?.isActive)
           Render.componentsSkeleton.push(cmpSkeleton);
