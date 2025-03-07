@@ -98,6 +98,7 @@ namespace FudgeCore {
     }
 
     protected reduceMutator(_mutator: Mutator): void {
+      delete _mutator.timestampUpdate;
       // delete _mutator.idResource;
     }
     //#endregion
