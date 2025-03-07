@@ -17,9 +17,10 @@ namespace FudgeCore {
     /**
      * Set the properties of this instance at once
      */
-    public set(_angle: number = 0, _magnitude: number = 1): void {
+    public set(_angle: number = 0, _magnitude: number = 1): Geo2 {
       this.magnitude = _magnitude;
       this.angle = _angle;
+      return this;
     }
 
     public recycle(): void {

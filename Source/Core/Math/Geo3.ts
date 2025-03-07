@@ -19,10 +19,11 @@ namespace FudgeCore {
     /**
      * Set the properties of this instance at once
      */
-    public set(_longitude: number = 0, _latitude: number = 0, _magnitude: number = 1): void {
+    public set(_longitude: number = 0, _latitude: number = 0, _magnitude: number = 1): Geo3 {
       this.magnitude = _magnitude;
       this.latitude = _latitude;
       this.longitude = _longitude;
+      return this;
     }
 
     public recycle(): void {
