@@ -466,7 +466,7 @@ namespace FudgeCore {
         let s6: number = this.data[6] / scaling.y;
         let s10: number = this.data[10] / scaling.z;
 
-        let sy: number = Math.hypot(s0, s1); // probably 2. param should be this.data[4] / scaling.y
+        let sy: number = Math.sqrt(s0 * s0 + s1 * s1); // probably 2. param should be this.data[4] / scaling.y
 
         let singular: boolean = sy < 1e-6; // If
 
@@ -512,9 +512,9 @@ namespace FudgeCore {
     public get scaling(): Vector3 {
       if (this.#scalingDirty) {
         this.#scaling.set(
-          Math.hypot(this.data[0], this.data[1], this.data[2]), //* (this.data[0] < 0 ? -1 : 1),
-          Math.hypot(this.data[4], this.data[5], this.data[6]), //* (this.data[5] < 0 ? -1 : 1),
-          Math.hypot(this.data[8], this.data[9], this.data[10]) // * (this.data[10] < 0 ? -1 : 1)
+          Math.sqrt(this.data[0] * this.data[0] + this.data[1] * this.data[1] + this.data[2] * this.data[2]), //* (this.data[0] < 0 ? -1 : 1),
+          Math.sqrt(this.data[4] * this.data[4] + this.data[5] * this.data[5] + this.data[6] * this.data[6]), //* (this.data[5] < 0 ? -1 : 1),
+          Math.sqrt(this.data[8] * this.data[8] + this.data[9] * this.data[9] + this.data[10] * this.data[10]) // * (this.data[10] < 0 ? -1 : 1)
         );
 
         // if (this.determinant < 0) // ⚠️EXPERMINETAL from three js: if determinant is negative, invert one scale

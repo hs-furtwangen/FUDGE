@@ -150,7 +150,7 @@ namespace FudgeCore {
      * Returns the length of the vector
      */
     public get magnitude(): number {
-      return Math.sqrt(this.x * this.x + this.y * this.y); // formerly: Math.hypot(this.x, this.y) but hypot uses rest parameter which creates an array on each call
+      return Math.sqrt(this.x * this.x + this.y * this.y);
     }
 
     /**

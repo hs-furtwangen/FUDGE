@@ -177,7 +177,7 @@ namespace FudgeCore {
         let xSkew: number = Math.atan2(-s3, s4);
         let ySkew: number = Math.atan2(s0, s1);
 
-        let sy: number = Math.hypot(s0, s1); // probably 2. param should be this.data[4] / scaling.y
+        let sy: number = Math.sqrt(s0 * s0 + s1 * s1); // probably 2. param should be this.data[4] / scaling.y
         let rotation: number;
 
         if (!(sy > 1e-6))
@@ -204,8 +204,8 @@ namespace FudgeCore {
     public get scaling(): Vector2 {
       if (this.#scalingDirty) {
         this.#scaling.set(
-          Math.hypot(this.data[0], this.data[1]) * (this.data[0] < 0 ? -1 : 1),
-          Math.hypot(this.data[3], this.data[4]) * (this.data[4] < 0 ? -1 : 1)
+          Math.sqrt(this.data[0] * this.data[0] + this.data[1] * this.data[1]) * (this.data[0] < 0 ? -1 : 1),
+          Math.sqrt(this.data[3] * this.data[3] + this.data[4] * this.data[4]) * (this.data[4] < 0 ? -1 : 1)
         );
         this.#scalingDirty = false;
       }

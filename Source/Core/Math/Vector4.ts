@@ -18,7 +18,7 @@ namespace FudgeCore {
      * The magnitude (length) of the vector.
      */
     public get magnitude(): number {
-      return Math.hypot(this.x, this.y, this.z, this.w);
+      return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
     }
 
     /**
