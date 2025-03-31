@@ -1035,7 +1035,7 @@ namespace FudgeCore {
      * Copys the elements of this matrix into the given array starting at the given offset.
      * @returns A reference to the given array.
      */
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T {
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
       for (let i: number = 0; i < 16; i++)
         _out[_offset + i] = this.data[i];
 
