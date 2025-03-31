@@ -63,7 +63,9 @@ namespace FudgeCore {
       let mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(translation, undefined, scaling);
       Gizmos.drawSphere(mtxWorld, color);
 
-      Recycler.storeMultiple(mtxWorld, scaling, color);
+      Recycler.store(mtxWorld);
+      Recycler.store(scaling);
+      Recycler.store(color);
     }
   }
 }

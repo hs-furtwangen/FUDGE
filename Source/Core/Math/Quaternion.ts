@@ -75,7 +75,8 @@ namespace FudgeCore {
         );
 
         result.copy(matrix.quaternion);
-        Recycler.storeMultiple(right, matrix);
+        Recycler.store(right);
+        Recycler.store(matrix);
       }
 
       return result;

@@ -214,7 +214,7 @@ namespace FudgeCore {
         frustum[0], frustum[4], frustum[1], frustum[5], frustum[2], frustum[6], frustum[3], frustum[7]  // sides
       ], _mtxWorld, _color, _alphaOccluded);
 
-      Recycler.storeMultiple(...frustum);
+      Recycler.storeMultiple(frustum);
     }
 
     /**
@@ -345,7 +345,8 @@ namespace FudgeCore {
 
       Gizmos.drawMesh(Gizmos.getMesh(_head), mtxWorld, _color, _alphaOccluded);
 
-      Recycler.storeMultiple(mtxWorld, scaling);
+      Recycler.store(mtxWorld);
+      Recycler.store(scaling);
     }
 
     /**
@@ -433,7 +434,10 @@ namespace FudgeCore {
       const renderBuffers: RenderBuffers = Gizmos.getMesh(MeshQuad).useRenderBuffers();
       Gizmos.drawGizmos(shader, Gizmos.drawElementsTrianlges, renderBuffers.nIndices, color, _alphaOccluded);
 
-      Recycler.storeMultiple(mtxWorld, color, back, up);
+      Recycler.store(mtxWorld);
+      Recycler.store(back);
+      Recycler.store(up);
+      Recycler.store(color);
     }
 
     private static bufferColor(_shader: ShaderInterface, _color: Color): void {

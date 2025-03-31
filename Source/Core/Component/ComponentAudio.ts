@@ -203,7 +203,8 @@ namespace FudgeCore {
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);
       let color: Color = Color.CSS("cornflowerblue");
       Gizmos.drawIcon(TextureDefault.iconAudio, mtxShape, color);
-      Recycler.storeMultiple(mtxShape, color);
+      Recycler.store(mtxShape);
+      Recycler.store(color);
     };
 
     //#region Transfer

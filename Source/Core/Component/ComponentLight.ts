@@ -103,7 +103,7 @@ namespace FudgeCore {
           lines[4].set(radius, 0, 0); lines[5].set(radius, 0, 1);
           lines[8].set(-radius, 0, 0); lines[9].set(-radius, 0, 1);
           Gizmos.drawLines(lines, mtxShape, color);
-          Recycler.storeMultiple(...lines);
+          Recycler.storeMultiple(lines);
           break;
         case LightPoint:
           mtxShape.scale(new Vector3(2, 2, 2));
@@ -114,7 +114,8 @@ namespace FudgeCore {
           break;
       }
 
-      Recycler.storeMultiple(mtxShape, color);
+      Recycler.store(mtxShape);
+      Recycler.store(color);
     }
   }
 }

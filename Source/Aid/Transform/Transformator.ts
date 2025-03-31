@@ -213,7 +213,8 @@ namespace FudgeAid {
           for (const axis of ["x", "y", "z"] as const)
             this.drawCircle(torus, clrAxes[axis], axes[axis], normals[axis], world2Pixel, 0);
 
-          ƒ.Recycler.storeMultiple(mtxQuad, direction);
+          ƒ.Recycler.store(mtxQuad);
+          ƒ.Recycler.store(direction);
           break;
         case "scale":
           for (const axis of ["x", "y", "z"] as const) {
@@ -334,7 +335,10 @@ namespace FudgeAid {
 
           this.#mtxLocal.translate(translation);
 
-          ƒ.Recycler.storeMultiple(mtxWorldInverse, translation, translationOffset);
+          ƒ.Recycler.store(mtxWorldInverse);
+          ƒ.Recycler.store(translation);
+          ƒ.Recycler.store(translationOffset);
+
           break;
         case "rotate":
           let angle: number = ƒ.Vector3.ANGLE(this.#offset, this.#direction);
@@ -418,7 +422,7 @@ namespace FudgeAid {
 
           this.#mtxLocal.scaling = mtxScaling.scaling;
 
-          ƒ.Recycler.storeMultiple(mtxScaling);
+          ƒ.Recycler.store(mtxScaling);
           break;
       }
 
@@ -452,7 +456,7 @@ namespace FudgeAid {
       mtxWorld.lookIn(_direction, _up); // lookIn orientates the z-axis but the toruse lays on the xz-plane (facing in y-direction),
       mtxWorld.rotateX(90);             // thus we rotate the torus so the circle faces in _direction
       ƒ.Gizmos.drawMesh(_torus, mtxWorld, _color, _alphaOccluded);
-      ƒ.Recycler.storeMultiple(mtxWorld);
+      ƒ.Recycler.store(mtxWorld);
     }
 
     private getPoint3D(_event: PointerEvent): ƒ.Vector3 {

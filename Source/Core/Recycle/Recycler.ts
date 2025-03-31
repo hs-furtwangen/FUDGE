@@ -25,9 +25,8 @@ namespace FudgeCore {
      * @param _t The class identifier of the desired object
      */
     public static get<T extends Recycable | RecycableArray<T> | Object>(_t: new () => T): T {
-      let key: string = _t.name;
-      let instances: RecycableArray<Object> = Recycler.depot[key];
-      if (instances && instances.length > 0) {
+      let instances: RecycableArray<Object> = Recycler.depot[_t.name];
+      if (instances?.length > 0) {
         let instance: T = <T>instances.pop();
         (<Recycable>instance).recycle?.();
         return instance;
@@ -48,20 +47,13 @@ namespace FudgeCore {
      * @param _instance
      */
     public static store(_instance: Object): void {
-      // let key: string = _instance.constructor.name;
-      // //Debug.log(key);
-      // let instances: RecycableArray<Object> = RecyclerNew.depot[key] || new RecycableArray<Object>();
-      // instances.push(_instance);
-      // RecyclerNew.depot[key] = instances;
-      // Debug.log(`ObjectManager.depot[${key}]: ${ObjectManager.depot[key].length}`);
-      //Debug.log(this.depot);
       (Recycler.depot[_instance.constructor.name] ??= new RecycableArray<Object>()).push(_instance);
     }
 
     /**
-     * Stores the provided objects using the {@link Recycler.store} method
+     * Stores the provided objects using the {@link Recycler.store} method.
      */
-    public static storeMultiple(..._instances: Object[]): void { // TODO: maybe make this the default store method
+    public static storeMultiple(_instances: Object[]): void {
       for (const instance of _instances)
         Recycler.store(instance);
     }

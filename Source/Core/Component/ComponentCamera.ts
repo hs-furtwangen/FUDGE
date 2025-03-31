@@ -296,7 +296,8 @@ namespace FudgeCore {
       mtxWorld.scaling = new Vector3(0.5, 0.5, 0.5);
       let color: Color = Color.CSS("lightgrey");
       Gizmos.drawIcon(TextureDefault.iconCamera, mtxWorld, color);
-      Recycler.storeMultiple(mtxWorld, color);
+      Recycler.store(mtxWorld);
+      Recycler.store(color);
     }
 
     public drawGizmosSelected(): void {
