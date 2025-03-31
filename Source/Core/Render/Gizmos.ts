@@ -441,7 +441,7 @@ namespace FudgeCore {
     }
 
     private static bufferMatrix(_shader: ShaderInterface, _mtxWorld: Matrix4x4): void {
-      RenderWebGL.getRenderingContext().uniformMatrix4fv(_shader.uniforms["u_mtxMeshToWorld"], false, _mtxWorld.get());
+      RenderWebGL.getRenderingContext().uniformMatrix4fv(_shader.uniforms["u_mtxMeshToWorld"], false, _mtxWorld.getArray());
     }
 
     private static drawGizmos(_shader: ShaderInterface, _draw: Function, _count: number, _color: Color, _alphaOccluded: number = Gizmos.alphaOccluded): void {

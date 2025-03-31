@@ -1032,17 +1032,21 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns an array of the elements of this matrix.
+     * Copys the elements of this matrix into the given array starting at the given offset.
+     * @returns A reference to the given array.
      */
-    public get(): Float32Array { // TODO: remove this method
-      // TODO: optimization, it shouldn't always return a copy, since this bloats memory
-      return new Float32Array(this.data);
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T {
+      for (let i: number = 0; i < 16; i++)
+        _out[_offset + i] = this.data[i];
+
+      return _out;
     }
 
     /**
-     * Returns the original array of the elements of this matrix.
+     * Returns the array of the elements of this matrix.
+     * @returns A readonly view of the internal array.
      */
-    public getData(): Readonly<Float32Array> {
+    public getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView {
       return this.data;
     }
 
@@ -1111,7 +1115,7 @@ namespace FudgeCore {
      * Returns the tranlation from this matrix to the target matrix.
      * @param _vctOut Optional vector to store the result in.
      */
-    public getTranslationTo(_mtxTarget: Matrix4x4, _vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {    
+    public getTranslationTo(_mtxTarget: Matrix4x4, _vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       return _vctOut.set(_mtxTarget.data[12] - this.data[12], _mtxTarget.data[13] - this.data[13], _mtxTarget.data[14] - this.data[14]);;
     }
 

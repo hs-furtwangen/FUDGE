@@ -282,7 +282,7 @@ namespace FudgeCore {
     /** After OimoPhysics.world filled the debug. Rendering calls. Setting this program to be used by the FUDGE rendering context. And draw each updated buffer and resetting them. */
     public drawBuffers(): void {
       this.shader.use();
-      this.gl.uniformMatrix4fv(this.shader.getUniformLocation("u_mtxWorldToView"), false, Physics.mainCam.mtxWorldToView.get());
+      this.gl.uniformMatrix4fv(this.shader.getUniformLocation("u_mtxWorldToView"), false, Physics.mainCam.mtxWorldToView.getArray());
 
       this.gl.bindVertexArray(null);
       if (this.numPointData > 0) {

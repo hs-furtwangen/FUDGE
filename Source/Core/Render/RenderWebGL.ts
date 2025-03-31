@@ -450,9 +450,9 @@ namespace FudgeCore {
       const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
 
       const data: Float32Array = RenderWebGL.dataCamera ??= new Float32Array(16 + 16 + 16 + 3);
-      data.set(mtxView.get(), 0);
-      data.set(mtxProjection.get(), 16);
-      data.set(mtxViewProjection.get(), 32);
+      data.set(mtxView.getArray(), 0);
+      data.set(mtxProjection.getArray(), 16);
+      data.set(mtxViewProjection.getArray(), 32);
       data.set(vctPosition.get(), 48);
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboCamera);
@@ -464,7 +464,7 @@ namespace FudgeCore {
 
       let uniform: WebGLUniformLocation = _shader.uniforms["u_mtxMeshToWorld"];
       if (uniform && _mtxWorld)
-        crc3.uniformMatrix4fv(uniform, false, _mtxWorld.getData());
+        crc3.uniformMatrix4fv(uniform, false, _mtxWorld.getArray());
 
       uniform = _shader.uniforms["u_mtxPivot"];
       if (uniform && _mtxPivot)
@@ -704,12 +704,12 @@ namespace FudgeCore {
             mtxTotal.translation = mtxTotal.translation;
           }
 
-          lightsData.set(mtxTotal.getData(), lightDataOffset + 4); // offset + vctColor
+          lightsData.set(mtxTotal.getArray(), lightDataOffset + 4); // offset + vctColor
 
           // set mtxShapeInverse
           if (_type != LightDirectional) {
             let mtxInverse: Matrix4x4 = Matrix4x4.INVERSE(mtxTotal);
-            lightsData.set(mtxInverse.get(), lightDataOffset + 4 + 16); // offset + vctColor + mtxShape
+            lightsData.set(mtxInverse.getArray(), lightDataOffset + 4 + 16); // offset + vctColor + mtxShape
             Recycler.store(mtxInverse);
           }
 

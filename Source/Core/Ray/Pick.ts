@@ -25,7 +25,7 @@ namespace FudgeCore {
       if (this.#posWorld)
         return this.#posWorld;
       let pointInClipSpace: Vector3 = Vector3.Z(this.zBuffer);
-      let m: Float32Array = this.#mtxViewToWorld.get();
+      let m: ArrayLike<number> = this.#mtxViewToWorld.getArray();
       let result: Vector3 = Vector3.TRANSFORMATION(pointInClipSpace, this.#mtxViewToWorld, true);
       let w: number = m[3] * pointInClipSpace.x + m[7] * pointInClipSpace.y + m[11] * pointInClipSpace.z + m[15];
       result.scale(1 / w);

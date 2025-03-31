@@ -24,7 +24,7 @@ namespace FudgeCore {
 
       const data: Float32Array = this.data;
       // mtx world
-      data.set(_cmpMesh.mtxWorld.getData(), offset);
+      data.set(_cmpMesh.mtxWorld.getArray(), offset);
 
       // mtx pivot
       let dataPivot: Float32Array = _cmpMaterial.mtxPivot.get();
@@ -65,7 +65,7 @@ namespace FudgeCore {
       crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, offset, this.blockSize);
 
       if (_mtxWorldOverride) // this is relatively slow, but since prepare has no camera information, we may need to override the world matrix here
-        crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.get());
+        crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, offset, _mtxWorldOverride.getArray());
     }
   }
 }

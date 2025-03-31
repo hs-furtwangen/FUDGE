@@ -67,7 +67,7 @@ namespace FudgeCore {
      */
     public static TRANSFORMATION(_vector: Vector3, _transform: Matrix4x4 | Quaternion, _includeTranslation: boolean = true, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       if (_transform instanceof Matrix4x4) {
-        const m: Float32Array = _transform.getData();
+        const m: ArrayLike<number> = _transform.getArray();
 
         _out.set(
           m[0] * _vector.x + m[4] * _vector.y + m[8] * _vector.z,
@@ -548,7 +548,7 @@ namespace FudgeCore {
     /**
      * Returns an array of the components of this vector.
      */
-    public get(): Float32Array { // TODO: rename to getArray, allow passing of an array into this method to avoid allocation
+    public get(): Float32Array { // TODO: rename to toArray, allow passing of an array into this method to avoid allocation
       return new Float32Array([this.x, this.y, this.z]);
     }
 
