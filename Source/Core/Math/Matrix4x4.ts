@@ -343,6 +343,31 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns a matrix that rotates coordinates around an arbitrary axis when multiplied by.
+     * @param _axis The axis to rotate around as a unit vector.
+     * @param _angle The angle in degrees.
+     * @param _mtxOut Optional matrix to store the result in.
+     */
+    public static ROTATION_AXIS_ANGLE(_axis: Vector3, _angle: number, _mtxOut: Matrix4x4 = Recycler.get(Matrix4x4)): Matrix4x4 {
+      // from three.js, adjusted for FUDGE row vector * row-major matrix transformation convention
+      _angle *= Calc.deg2rad;
+      const c: number = Math.cos(_angle);
+      const s: number = Math.sin(_angle);
+      const t: number = 1 - c;
+      const x: number = _axis.x, y: number = _axis.y, z: number = _axis.z;
+      const tx: number = t * x, ty: number = t * y;
+
+      _mtxOut.set(
+        tx * x + c, tx * y + s * z, tx * z - s * y, 0,
+        tx * y - s * z, ty * y + c, ty * z + s * x, 0,
+        tx * z + s * y, ty * z - s * x, t * z * z + c, 0,
+        0, 0, 0, 1
+      );
+
+      return _mtxOut;
+    }
+
+    /**
      * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
      * @param _mtxOut Optional matrix to store the result in.
      */
@@ -537,6 +562,62 @@ namespace FudgeCore {
       if (this.#quaternionDirty) {
         this.#quaternion.eulerAngles = this.rotation;
         this.#quaternionDirty = false;
+
+        // alternative quaternion calculation, faster than euler angles, but produces different results for matrices with determinant < 0 than euler angles...
+        // from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm, adjusted for FUDGE row vector * row-major matrix transformation convention
+        // requires a pure (unscaled) rotation matrix
+        // const scaling: Vector3 = this.scaling;
+        // const invScalingX: number =  (this.determinant < 0 ? -1 : 1) / scaling.x;
+        // const invScalingY: number = 1 / scaling.y;
+        // const invScalingZ: number = 1 / scaling.z;
+
+        // const m00: number = this.data[0] * invScalingX;
+        // const m01: number = this.data[1] * invScalingX;
+        // const m02: number = this.data[2] * invScalingX;
+        
+        // const m10: number = this.data[4] * invScalingY;
+        // const m11: number = this.data[5] * invScalingY;
+        // const m12: number = this.data[6] * invScalingY;
+        
+        // const m20: number = this.data[8] * invScalingZ;
+        // const m21: number = this.data[9] * invScalingZ;
+        // const m22: number = this.data[10] * invScalingZ;
+
+        // const trace: number = m00 + m11 + m22;
+
+        // if (trace > 0) {
+        //   const s: number = 0.5 / Math.sqrt(trace + 1);
+        //   this.#quaternion.set(
+        //     (m12 - m21) * s, 
+        //     (m20 - m02) * s, 
+        //     (m01 - m10) * s, 
+        //     0.25 / s);
+        // } else if (m00 > m11 && m00 > m22) {
+        //   const s: number = 2 * Math.sqrt(1 + m00 - m11 - m22);
+        //   this.#quaternion.set(
+        //     0.25 * s,
+        //     (m10 + m01) / s,
+        //     (m20 + m02) / s,
+        //     (m12 - m21) / s
+        //   );
+        // } else if (m11 > m22) {
+        //   const s: number = 2 * Math.sqrt(1 + m11 - m00 - m22);
+        //   this.#quaternion.set(
+        //     (m10 + m01) / s,
+        //     0.25 * s,
+        //     (m21 + m12) / s,
+        //     (m20 - m02) / s
+        //   );
+        // } else {
+        //   const s: number = 2 * Math.sqrt(1 + m22 - m00 - m11);
+        //   this.#quaternion.set(
+        //     (m20 + m02) / s,
+        //     (m21 + m12) / s,
+        //     0.25 * s,
+        //     (m01 - m10) / s
+        //   );
+        // }
+        // this.#quaternionDirty = false;
       }
 
       return this.#quaternion;

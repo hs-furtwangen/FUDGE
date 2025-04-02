@@ -203,15 +203,15 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the linear interpolation of two vectors. Clamps the factor between 0 and 1.
+     * Returns the linear interpolation between two vectors. When t is 0 the result is a, when t is 1 the result is b. Clamps t between 0 and 1.
      * @param _out Optional vector to store the result in.
      */
-    public static LERP(_a: Vector3, _b: Vector3, _factor: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      _factor = Calc.clamp(_factor, 0, 1);
+    public static LERP(_a: Vector3, _b: Vector3, _t: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      _t = Calc.clamp(_t, 0, 1);
       return _out.set(
-        _a.x + (_b.x - _a.x) * _factor,
-        _a.y + (_b.y - _a.y) * _factor,
-        _a.z + (_b.z - _a.z) * _factor
+        _a.x + _t * (_b.x - _a.x),
+        _a.y + _t * (_b.y - _a.y),
+        _a.z + _t * (_b.z - _a.z)
       );
     }
 
