@@ -567,18 +567,18 @@ namespace FudgeCore {
         // from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm, adjusted for FUDGE row vector * row-major matrix transformation convention
         // requires a pure (unscaled) rotation matrix
         // const scaling: Vector3 = this.scaling;
-        // const invScalingX: number =  (this.determinant < 0 ? -1 : 1) / scaling.x;
+        // const invScalingX: number =  (this.getDeterminant() < 0 ? -1 : 1) / scaling.x;
         // const invScalingY: number = 1 / scaling.y;
         // const invScalingZ: number = 1 / scaling.z;
 
         // const m00: number = this.data[0] * invScalingX;
         // const m01: number = this.data[1] * invScalingX;
         // const m02: number = this.data[2] * invScalingX;
-        
+
         // const m10: number = this.data[4] * invScalingY;
         // const m11: number = this.data[5] * invScalingY;
         // const m12: number = this.data[6] * invScalingY;
-        
+
         // const m20: number = this.data[8] * invScalingZ;
         // const m21: number = this.data[9] * invScalingZ;
         // const m22: number = this.data[10] * invScalingZ;
@@ -628,6 +628,7 @@ namespace FudgeCore {
 
     /**
      * Returns the determinant of this matrix. Computational heavy operation, not cached so use with care.
+     * @deprecated Use {@link Matrix4x4.getDeterminant} instead.
      */
     public get determinant(): number {
       const m: Float32Array = this.data;
@@ -650,6 +651,7 @@ namespace FudgeCore {
 
     /**
      * Returns the normalized cardinal x-axis.
+     * @deprecated use {@link getRight} instead.
      */
     public get right(): Vector3 {
       let right: Vector3 = this.getX();
@@ -659,6 +661,7 @@ namespace FudgeCore {
 
     /**
      * Returns the normalized cardinal y-axis.
+     * @deprecated use {@link getUp} instead.
      */
     public get up(): Vector3 {
       let up: Vector3 = this.getY();
@@ -668,6 +671,7 @@ namespace FudgeCore {
 
     /**
      * Returns the normalized cardinal z-axis.
+     * @deprecated use {@link getForward} instead.
      */
     public get forward(): Vector3 {
       let forward: Vector3 = this.getZ();
@@ -845,7 +849,7 @@ namespace FudgeCore {
      * @returns A reference to this matrix.
      */ // TODO: maybe passing up should be mandatory, default up (local up) and default restrict (false) form a feedback loop, as the local up gets modified each call...
     public lookAt(_target: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
-      const up: Vector3 = _up ? _up : this.up;
+      const up: Vector3 = _up ? _up : this.getUp();
       Matrix4x4.LOOK_AT(this.translation, _target, up, _restrict, this.scaling, this);
       if (!_up)
         Recycler.store(up);
@@ -854,14 +858,14 @@ namespace FudgeCore {
 
     /**
      * Adjusts the rotation of this matrix to align the z-axis with the given forward-direction and tilts it to accord with the given up-{@link Vector3}.
-     * If no up-vector is provided, the local {@link Matrix4x4.up} is used.
+     * If no up-vector is provided, the local {@link Matrix4x4.getUp} is used.
      * The pitch may be restricted to the up-vector to only calculate yaw.
      * @param _forward A unit vector indicating the desired forward-direction.
      * @param _up A unit vector indicating the up-direction.
      * @returns A reference to this matrix.
      */ // TODO: maybe passing up should be mandatory, default up (local up) and default restrict (false) form a feedback loop, as the local up gets modified each call...
     public lookIn(_forward: Vector3, _up?: Vector3, _restrict: boolean = false): Matrix4x4 {
-      const up: Vector3 = _up ? _up : this.up;
+      const up: Vector3 = _up ? _up : this.getUp();
       Matrix4x4.LOOK_IN(_forward, up, _restrict, this.translation, this.scaling, this);
       if (!_up)
         Recycler.store(up);
@@ -960,11 +964,19 @@ namespace FudgeCore {
      * Multiply this matrix by the given matrix.
      * @returns A reference to this matrix.
      */
-    public multiply(_matrix: Matrix4x4, _fromLeft: boolean = false): Matrix4x4 { // TODO: maybe implement a premultiply method to do multiplication from left
+    public multiply(_matrix: Matrix4x4, _fromLeft: boolean = false): Matrix4x4 {
       if (_fromLeft)
         return Matrix4x4.PRODUCT(_matrix, this, this);
       else
         return Matrix4x4.PRODUCT(this, _matrix, this);
+    }
+
+    /**
+     * Premultiply this matrix with the given matrix.
+     * @returns A reference to this matrix.
+     */
+    public premultiply(_mtxLeft: Matrix4x4): Matrix4x4 {
+      return Matrix4x4.PRODUCT(_mtxLeft, this, this);
     }
     //#endregion
 
@@ -1132,6 +1144,28 @@ namespace FudgeCore {
     }
 
     /**
+      * Returns the determinant of this matrix.
+      */
+    public getDeterminant(): number {
+      const m: Float32Array = this.data;
+
+      const det00: number = m[10] * m[15] - m[11] * m[14];
+      const det01: number = m[9] * m[15] - m[11] * m[13];
+      const det02: number = m[9] * m[14] - m[10] * m[13];
+      const det03: number = m[8] * m[15] - m[11] * m[12];
+      const det04: number = m[8] * m[14] - m[10] * m[12];
+      const det05: number = m[8] * m[13] - m[9] * m[12];
+
+      const det: number =
+        m[0] * (m[5] * det00 - m[6] * det01 + m[7] * det02) -
+        m[1] * (m[4] * det00 - m[6] * det03 + m[7] * det04) +
+        m[2] * (m[4] * det01 - m[5] * det03 + m[7] * det05) -
+        m[3] * (m[4] * det02 - m[5] * det04 + m[6] * det05);
+
+      return det;
+    }
+
+    /**
      * Return cardinal x-axis.
      * @param _vctOut Optional vector to store the result in.
      */
@@ -1151,6 +1185,30 @@ namespace FudgeCore {
      */
     public getZ(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       return _vctOut.set(this.data[8], this.data[9], this.data[10]);
+    }
+
+    /**
+     * Returns the normalized cardinal x-axis.
+     * @param _vctOut Optional vector to store the result in.
+     */
+    public getRight(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _vctOut.set(this.data[0], this.data[1], this.data[2]).normalize();
+    }
+
+    /**
+     * Returns the normalized cardinal y-axis.
+     * @param _vctOut Optional vector to store the result in.
+     */
+    public getUp(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _vctOut.set(this.data[4], this.data[5], this.data[6]).normalize();
+    }
+
+    /**
+     * Returns the normalized cardinal z-axis.
+     * @param _vctOut Optional vector to store the result in.
+     */
+    public getForward(_vctOut: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _vctOut.set(this.data[8], this.data[9], this.data[10]).normalize();
     }
 
     /**
