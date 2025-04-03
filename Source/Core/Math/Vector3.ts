@@ -131,6 +131,14 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns a new vector representing the given vector scaled by the given scaling factor.
+     * @param _out Optional vector to store the result in.
+     */
+    public static NEGATION(_vector: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      return _out.set(-_vector.x, -_vector.y, -_vector.z);
+    }
+
+    /**
      * Divides the dividend by the divisor component by component and returns the result.
      * @param _out Optional vector to store the result in.
      */
@@ -550,6 +558,18 @@ namespace FudgeCore {
      */
     public get(): Float32Array { // TODO: rename to toArray, allow passing of an array into this method to avoid allocation
       return new Float32Array([this.x, this.y, this.z]);
+    }
+
+    /**
+     * Copys the elements of this vector into the given array starting at the given offset.
+     * @returns A reference to the given array.
+     */
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
+      _out[_offset] = this.x;
+      _out[_offset + 1] = this.y;
+      _out[_offset + 2] = this.z;
+
+      return _out;
     }
 
     /**

@@ -102,6 +102,14 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns a new vector representing the given vector scaled by the given scaling factor.
+     * @param _out Optional vector to store the result in.
+     */
+    public static NEGATION(_vector: Vector2, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(-_vector.x, -_vector.y);
+    }
+
+    /**
      * Calculates the cross product of two Vectors. Due to them being only 2 Dimensional, the result is a single number,
      * which implicitly is on the Z axis. It is also the signed magnitude of the result.
      */
@@ -340,6 +348,17 @@ namespace FudgeCore {
      */
     public get(): Float32Array { // TODO: rename to getArray, allow passing of an array into this method to avoid allocation
       return new Float32Array([this.x, this.y]);
+    }
+
+    /**
+     * Copys the elements of this vector into the given array starting at the given offset.
+     * @returns A reference to the given array.
+     */
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
+      _out[_offset] = this.x;
+      _out[_offset + 1] = this.y;
+
+      return _out;
     }
 
     /**
