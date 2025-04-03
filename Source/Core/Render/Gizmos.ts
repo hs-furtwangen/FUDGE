@@ -322,14 +322,16 @@ namespace FudgeCore {
     }
 
     /**
-     * Draws an arrow at the given world position, facing in the given direction with the given length and width. 
+     * Draws an arrow at the given world position, facing in the given forward-direction with the given length and width. 
      * Size refers to the size of the arrow head: the height of the pyramid; the size of the cube; the diameter of the sphere.
+     * @param _forward A unit vector indicating the desired forward-direction.
+     * @param _up A unit vector indicating the up-direction.
      */
-    public static drawArrow(_position: Vector3, _color: Color, _direction: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null = MeshPyramid, _alphaOccluded: number = Gizmos.alphaOccluded): void {
+    public static drawArrow(_position: Vector3, _color: Color, _forward: Vector3, _up: Vector3, _length: number, _width: number, _size: number, _head: typeof MeshCube | typeof MeshPyramid | typeof MeshSphere | null = MeshPyramid, _alphaOccluded: number = Gizmos.alphaOccluded): void {
       const scaling: Vector3 = Recycler.reuse(Vector3).set(_width, _width, _length - _size);
       const mtxWorld: Matrix4x4 = Matrix4x4.COMPOSITION(_position);
       mtxWorld.scaling = scaling;
-      mtxWorld.lookIn(_direction, _up);
+      mtxWorld.lookIn(_forward, _up);
       mtxWorld.translateZ(0.5);
       Gizmos.drawCube(mtxWorld, _color, _alphaOccluded);
       mtxWorld.translateZ(0.5);
@@ -414,8 +416,8 @@ namespace FudgeCore {
       let mtxWorld: Matrix4x4 = _mtxWorld.clone;
       let color: Color = _color.clone;
 
-      let back: Vector3 = Gizmos.#camera.mtxWorld.forward.negate();
-      let up: Vector3 = Gizmos.#camera.mtxWorld.up;
+      let back: Vector3 = Gizmos.#camera.mtxWorld.getForward().negate();
+      let up: Vector3 = Gizmos.#camera.mtxWorld.getUp();
       mtxWorld.lookIn(back, up);
 
       let distance: number = Vector3.DIFFERENCE(Gizmos.#camera.mtxWorld.translation, mtxWorld.translation).magnitude;

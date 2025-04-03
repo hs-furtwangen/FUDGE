@@ -9,7 +9,7 @@ namespace FudgeAid {
    * Installs pointer event listeners on the given {@link ƒ.Viewport}s canvas on construction. 
    * Use {@link addListeners}/{@link removeListeners} to handle the installation manually.
    */
-  export class Transformator { 
+  export class Transformator {
     public readonly viewport: ƒ.Viewport;
 
     public mode: "none" | "translate" | "rotate" | "scale" = "translate";
@@ -55,10 +55,13 @@ namespace FudgeAid {
 
     #mtxLocalBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // local matrix in a state before a transformation starts
     #mtxWorldBase: ƒ.Matrix4x4 = ƒ.Matrix4x4.IDENTITY(); // world matrix in a state before a transformation starts
-
-    #normal: ƒ.Vector3 = ƒ.Vector3.ZERO(); // the normal of the plane with which the mouse ray collides
-    #offset: ƒ.Vector3 = ƒ.Vector3.ZERO(); // offest vector pointing from the world position of the object to where the mouse ray collided with the plane on pointer down
-    #direction: ƒ.Vector3 = ƒ.Vector3.ZERO(); // direction vector pointing from the world position of the object to where the mouse ray collides with the plane on pointer move
+    
+    /** The normal vector of the plane with which the mouse ray collides */
+    #normalCollisionPlane: ƒ.Vector3 = ƒ.Vector3.ZERO();
+    /** The vector pointing from the world position to the pointer hit on pointer down. Not normalized - magnitude represents distance. */
+    #vctPointerDown: ƒ.Vector3 = ƒ.Vector3.ZERO();
+    /** The vector pointing from the world position to the pointer hit on pointer move. Not normalized - magnitude represents distance. */
+    #vctPointerMove: ƒ.Vector3 = ƒ.Vector3.ZERO();
 
     #isTransforming: boolean = false;
     #startTransform: boolean = false;
@@ -146,19 +149,21 @@ namespace FudgeAid {
       };
 
       const axes: Record<"x" | "y" | "z", ƒ.Vector3> = {
-        x: this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorld.right,
-        y: this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorld.up,
-        z: this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorld.forward
+        x: this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorld.getRight(),
+        y: this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorld.getUp(),
+        z: this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorld.getForward()
       };
 
       const normals: Record<"x" | "y" | "z", ƒ.Vector3> = {
-        x: this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorld.forward,
-        y: this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorld.right,
-        z: this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorld.up
+        x: this.space == "world" ? ƒ.Vector3.Z() : this.#mtxWorld.getForward(),
+        y: this.space == "world" ? ƒ.Vector3.X() : this.#mtxWorld.getRight(),
+        z: this.space == "world" ? ƒ.Vector3.Y() : this.#mtxWorld.getUp()
       };
 
       const mtxWorldNormalized: ƒ.Matrix4x4 = this.space == "world" ? ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation) : this.#mtxWorld.clone;
       mtxWorldNormalized.scale(mtxWorldNormalized.scaling.map(_value => 1 / _value));
+
+
 
       switch (this.mode) {
         case "translate":
@@ -192,15 +197,19 @@ namespace FudgeAid {
           break;
         case "rotate":
           if (this.#isTransforming && (this.selected == "x" || this.selected == "y" || this.selected == "z")) {
+            const directionPointerMove: ƒ.Vector3 = ƒ.Vector3.NORMALIZATION(this.#vctPointerMove);
+            const directionPointerDown: ƒ.Vector3 = ƒ.Vector3.NORMALIZATION(this.#vctPointerDown);
             this.drawCircle(this.#torus, this.colors.base[this.selected], axes[this.selected], normals[this.selected], world2Pixel, 0);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.colors.base[this.selected], this.#direction, axes[this.selected], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
-            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.colors.transparent[this.selected], this.#offset, axes[this.selected], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.colors.base[this.selected], directionPointerMove, axes[this.selected], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
+            ƒ.Gizmos.drawArrow(this.#mtxWorld.translation, this.colors.transparent[this.selected], directionPointerDown, axes[this.selected], translateArrowLength, translateArrowWidth, translateArrowSize, ƒ.MeshPyramid, 0);
+            ƒ.Recycler.store(directionPointerMove);
+            ƒ.Recycler.store(directionPointerDown);
             break;
           }
 
           // draw an invisible quad to occlude the tori
           const mtxQuad: ƒ.Matrix4x4 = ƒ.Matrix4x4.COMPOSITION(this.#mtxWorld.translation);
-          const direction: ƒ.Vector3 = _cmpCamera.mtxWorld.forward.negate();
+          const direction: ƒ.Vector3 = _cmpCamera.mtxWorld.getForward().negate();
           mtxQuad.scaling = ƒ.Vector3.ONE(translateArrowLength * 2);
           mtxQuad.lookIn(direction);
           ƒ.Render.setColorWriteMask(false, false, false, false);
@@ -245,21 +254,22 @@ namespace FudgeAid {
 
       if (this.selected == "x" || this.selected == "y" || this.selected == "z") {
         if (this.mode == "rotate") {
-          this.#normal.copy(this.getAxis(this.selected));
+          this.#normalCollisionPlane.copy(this.getAxis(this.selected));
         } else {
           const mtxNormal: ƒ.Matrix4x4 = ƒ.Matrix4x4.LOOK_AT(this.#mtxWorld.translation, this.camera.mtxWorld.translation, this.getAxis(this.selected), true);
-          this.#normal.copy(mtxNormal.forward); // normal of the plane the mouse ray will collide with
+          this.#normalCollisionPlane.copy(mtxNormal.getForward()); // normal of the plane the mouse ray will collide with
           ƒ.Recycler.store(mtxNormal);
         }
       } else if (this.selected == "xyz") {
-        this.#normal.copy(this.camera.mtxWorld.forward.negate());
+        this.#normalCollisionPlane.copy(this.camera.mtxWorld.getForward().negate());
       } else {
         const axis: string = "xyz".replace(this.selected[0], "").replace(this.selected[1], "");
-        this.#normal.copy(this.getAxis(<"x" | "y" | "z">axis));
+        this.#normalCollisionPlane.copy(this.getAxis(<"x" | "y" | "z">axis));
       }
 
       const point: ƒ.Vector3 = this.getPoint3D(_event);
-      this.#offset.copy(point.subtract(this.#mtxWorld.translation));
+      ƒ.Vector3.DIFFERENCE(point, this.#mtxWorld.translation, this.#vctPointerDown);
+      this.#vctPointerMove.copy(this.#vctPointerDown);
 
       ƒ.Recycler.store(point);
 
@@ -312,21 +322,20 @@ namespace FudgeAid {
         this.viewport.canvas.dispatchEvent(new Event("startTransform", { bubbles: true }));
       }
 
-      this.#direction.copy(this.getPoint3D(_event).subtract(this.#mtxWorldBase.translation));
+      ƒ.Vector3.DIFFERENCE(this.getPoint3D(_event), this.#mtxWorldBase.translation, this.#vctPointerMove);
       this.#mtxLocal.copy(this.#mtxLocalBase); // reset
 
       let axis: ƒ.Vector3;
       if (this.selected == "x" || this.selected == "y" || this.selected == "z")
         axis = this.getAxis(this.selected);
 
+      const mtxWorldInverse: ƒ.Matrix4x4 = this.#mtxWorldBase.clone.invert();
       switch (this.mode) {
         case "translate":
-          const mtxWorldInverse: ƒ.Matrix4x4 = this.#mtxWorldBase.clone.invert();
+          const translation: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#vctPointerMove, axis) : this.#vctPointerMove.clone;
+          const translationPointerDown: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#vctPointerDown, axis) : this.#vctPointerDown.clone;
 
-          const translation: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#direction, axis) : this.#direction.clone;
-          const translationOffset: ƒ.Vector3 = this.selected.length == 1 ? ƒ.Vector3.PROJECTION(this.#offset, axis) : this.#offset.clone;
-
-          translation.subtract(translationOffset);
+          translation.subtract(translationPointerDown);
 
           if (isSnapping)
             translation.apply((_value: number) => ƒ.Calc.snap(_value, this.snapDistance));
@@ -334,40 +343,59 @@ namespace FudgeAid {
           translation.transform(mtxWorldInverse, false);
 
           this.#mtxLocal.translate(translation);
-
+          // restore scaling directions
+          this.#mtxLocal.scaling = this.#mtxLocal.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocalBase.scaling[_component]));
+          
           ƒ.Recycler.store(mtxWorldInverse);
           ƒ.Recycler.store(translation);
-          ƒ.Recycler.store(translationOffset);
+          ƒ.Recycler.store(translationPointerDown);
 
           break;
         case "rotate":
-          let angle: number = ƒ.Vector3.ANGLE(this.#offset, this.#direction);
+          let angle: number = ƒ.Vector3.ANGLE(this.#vctPointerDown, this.#vctPointerMove);
 
           if (isSnapping)
             angle = ƒ.Calc.snap(angle, this.snapAngle);
 
-          const cross: ƒ.Vector3 = ƒ.Vector3.CROSS(this.#offset, this.#direction);
+          const cross: ƒ.Vector3 = ƒ.Vector3.CROSS(this.#vctPointerDown, this.#vctPointerMove);
           if (ƒ.Vector3.DOT(axis, cross) < 0)
             angle = -angle;
 
-          const qRotation: ƒ.Quaternion = ƒ.Quaternion.ROTATION(axis, angle);
+          // const qRotation: ƒ.Quaternion = ƒ.Quaternion.ROTATION_AXIS_ANGLE(axis, angle);
+          const mtxRotation: ƒ.Matrix4x4 = ƒ.Matrix4x4.ROTATION_AXIS_ANGLE(axis, angle);
 
-          if (isSnapping) { // rotate offset into snapped direction
-            this.#direction.copy(this.#offset);
-            this.#direction.transform(qRotation);
+          if (isSnapping) { // rotate directionPointerDown into snapped direction
+            this.#vctPointerMove.copy(this.#vctPointerDown);
+            this.#vctPointerMove.transform(mtxRotation);
           }
 
           const mtxLocalInverse: ƒ.Matrix4x4 = ƒ.Matrix4x4.INVERSE(this.#mtxLocalBase);
           const mtxParentWorld: ƒ.Matrix4x4 = ƒ.Matrix4x4.PRODUCT(this.#mtxWorldBase, mtxLocalInverse);
+          const mtxParentWorldInverse: ƒ.Matrix4x4 = mtxParentWorld.clone.invert();
 
-          const qParentWorld: ƒ.Quaternion = mtxParentWorld.quaternion;
-          const qParentWorldInverse: ƒ.Quaternion = ƒ.Quaternion.INVERSE(mtxParentWorld.quaternion);
+          // mtxLocal = mtxParentWorldInverse * mtxRotation * mtxParentWorld * mtxLocal
+          mtxRotation.premultiply(mtxParentWorldInverse);
+          mtxRotation.multiply(mtxParentWorld);
+          mtxRotation.multiply(this.#mtxLocalBase);
+          // restore scaling directions
+          mtxRotation.scaling = mtxRotation.scaling.apply((_value, _index, _component) => _value * Math.sign(this.#mtxLocalBase.scaling[_component]));
 
-          qRotation.multiply(qParentWorldInverse, true);
-          qRotation.multiply(qParentWorld);
-          qRotation.multiply(this.#mtxLocalBase.quaternion);
+          this.#mtxLocal.compose(this.#mtxLocal.translation, mtxRotation.rotation, mtxRotation.scaling);
 
-          this.#mtxLocal.quaternion = qRotation;
+          ƒ.Recycler.store(cross);
+          ƒ.Recycler.store(mtxRotation);
+          ƒ.Recycler.store(mtxLocalInverse);
+          ƒ.Recycler.store(mtxParentWorld);
+          ƒ.Recycler.store(mtxParentWorldInverse);
+
+          // const qParentWorld: ƒ.Quaternion = mtxParentWorld.quaternion;
+          // const qParentWorldInverse: ƒ.Quaternion = ƒ.Quaternion.INVERSE(mtxParentWorld.quaternion);
+
+          // qRotation.multiply(qParentWorldInverse, true);
+          // qRotation.multiply(qParentWorld);
+          // qRotation.multiply(this.#mtxLocalBase.quaternion);
+
+          // this.#mtxLocal.quaternion = qRotation;
 
           // const mtxLocal: ƒ.Matrix4x4 = this.#mtxLocalBase.clone;
           // const mtxRotation: ƒ.Matrix4x4 = ƒ.Matrix4x4.ROTATION(qRotation);
@@ -386,10 +414,10 @@ namespace FudgeAid {
           let scale: number = this.camera.getWorldToPixelScale(this.#mtxWorld.translation);
           let lengthArrow: number = scale * 80; // TODO: save this somewhere
           if (this.selected == "xyz")
-            axis = this.camera.mtxWorld.right.negate();
+            axis = this.camera.mtxWorld.getRight().negate();
 
-          let offset: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#offset, axis);
-          let direction: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#direction, axis);
+          let offset: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#vctPointerDown, axis);
+          let direction: ƒ.Vector3 = ƒ.Vector3.PROJECTION(this.#vctPointerMove, axis);
           let signOffset: number = Math.sign(ƒ.Vector3.DOT(axis, offset));
           let signDirection: number = Math.sign(ƒ.Vector3.DOT(axis, direction));
 
@@ -464,7 +492,7 @@ namespace FudgeAid {
       const ray: ƒ.Ray = this.viewport.getRayFromClient(point2D);
       ƒ.Recycler.store(point2D);
 
-      return ray.intersectPlane(this.#mtxWorldBase.translation, this.#normal);
+      return ray.intersectPlane(this.#mtxWorldBase.translation, this.#normalCollisionPlane);
     }
 
     private getAxis(_axis: "x" | "y" | "z"): ƒ.Vector3 {
@@ -476,9 +504,9 @@ namespace FudgeAid {
         }
       } else {
         switch (_axis) {
-          case "x": return this.#mtxWorldBase.right;
-          case "y": return this.#mtxWorldBase.up;
-          case "z": return this.#mtxWorldBase.forward;
+          case "x": return this.#mtxWorldBase.getRight();
+          case "y": return this.#mtxWorldBase.getUp();
+          case "z": return this.#mtxWorldBase.getForward();
         }
       }
     }
