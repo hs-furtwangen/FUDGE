@@ -468,7 +468,7 @@ namespace FudgeCore {
 
       uniform = _shader.uniforms["u_mtxPivot"];
       if (uniform && _mtxPivot)
-        crc3.uniformMatrix3fv(_shader.uniforms["u_mtxPivot"], false, _mtxPivot.getData());
+        crc3.uniformMatrix3fv(_shader.uniforms["u_mtxPivot"], false, _mtxPivot.getArray());
 
       uniform = _shader.uniforms["u_vctColorPrimary"];
       if (uniform && _color)

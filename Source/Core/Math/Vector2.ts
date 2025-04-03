@@ -56,7 +56,7 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation: boolean = true, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
-      let m: Float32Array = _mtxTransform.getData();
+      let m: ArrayLike<number> = _mtxTransform.getArray();
 
       _out.set(
         m[0] * _vector.x + m[3] * _vector.y,

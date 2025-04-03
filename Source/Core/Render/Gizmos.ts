@@ -145,7 +145,7 @@ namespace FudgeCore {
 
       function pick(_gizmos: Gizmo[], _cmpCamera: ComponentCamera): Pick[] {
         const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-        crc3.uniformMatrix3fv(ShaderPickTextured.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().get()); // only needed for textured pick shader, but gizmos have no pivot
+        crc3.uniformMatrix3fv(ShaderPickTextured.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().getArray()); // only needed for textured pick shader, but gizmos have no pivot
 
         Gizmos.#camera = _cmpCamera;
         Gizmos.posIcons.clear();

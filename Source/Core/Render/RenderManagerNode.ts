@@ -27,7 +27,7 @@ namespace FudgeCore {
       data.set(_cmpMesh.mtxWorld.getArray(), offset);
 
       // mtx pivot
-      let dataPivot: Float32Array = _cmpMaterial.mtxPivot.get();
+      let dataPivot: ArrayLike<number> = _cmpMaterial.mtxPivot.getArray();
       data[offset + 16] = dataPivot[0];
       data[offset + 17] = dataPivot[1];
       data[offset + 18] = dataPivot[2];

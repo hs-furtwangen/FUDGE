@@ -105,7 +105,7 @@ namespace Fudge {
     };
 
     private setTransform(_div: HTMLDivElement): void {
-      let transform: Float32Array = this.mtxImage.get();
+      let transform: number[] = this.mtxImage.toArray(new Array(9));
       transform = transform.copyWithin(5, 6);
       transform = transform.copyWithin(2, 3);
       _div.style.transform = `matrix(${transform.slice(0, 6).join()})`;
