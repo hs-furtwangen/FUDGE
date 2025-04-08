@@ -655,7 +655,7 @@ namespace FudgeCore {
       if (cmpLights) {
         let clrSum: Color = new Color(0, 0, 0, 0);
         for (let cmpLight of cmpLights) {
-          let clrLight: Color = Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+          let clrLight: Color = Color.SCALE(cmpLight.light.color, cmpLight.light.intensity);
           clrSum.add(clrLight);
           Recycler.store(clrLight);
         }
@@ -693,7 +693,7 @@ namespace FudgeCore {
           const lightDataOffset: number = iLight * lightDataSize;
 
           // set vctColor
-          let clrLight: Color = Color.PRODUCT(cmpLight.light.color, cmpLight.light.intensity);
+          let clrLight: Color = Color.SCALE(cmpLight.light.color, cmpLight.light.intensity);
           lightsData.set(clrLight.get(), lightDataOffset + 0);
           Recycler.store(clrLight);
 

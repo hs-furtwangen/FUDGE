@@ -23,8 +23,13 @@ namespace FudgeCore {
 
       const data: Float32Array = this.data;
 
-      if (_coat instanceof CoatColored)
-        data.set(_coat.color.get(), offset);
+      if (_coat instanceof CoatColored) {
+        const color: Color = _coat.color;
+        data[offset] = color.r;
+        data[offset + 1] = color.g;
+        data[offset + 2] = color.b;
+        data[offset + 3] = color.a;
+      }
 
       if (_coat instanceof CoatRemissive || _coat instanceof CoatRemissiveTextured) {
         data[offset + 4] = _coat.diffuse;
