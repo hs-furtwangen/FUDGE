@@ -32,8 +32,9 @@ namespace FudgeCore {
     /**
      * Takes a rectangle as the frame and creates a new rectangle according to the framing
      * @param _rectFrame
+     * @param _rectOut Optional rectangle to store the result in.
      */
-    public abstract getRect(_rectFrame: Rectangle): Rectangle;
+    public abstract getRect(_rectFrame: Rectangle, _rectOut?: Rectangle): Rectangle;
   }
 
   /**
@@ -73,8 +74,8 @@ namespace FudgeCore {
       return result;
     }
 
-    public getRect(_rectFrame: Rectangle): Rectangle {
-      return Rectangle.GET(0, 0, this.width, this.height);
+    public getRect(_rectFrame: Rectangle, _rectOut: Rectangle = Recycler.reuse(Rectangle)): Rectangle {
+      return Rectangle.GET(0, 0, this.width, this.height, undefined, _rectOut);
     }
   }
   /**
@@ -109,8 +110,8 @@ namespace FudgeCore {
       return result;
     }
 
-    public getRect(_rectFrame: Rectangle): Rectangle {
-      return Rectangle.GET(0, 0, this.normWidth * _rectFrame.width, this.normHeight * _rectFrame.height);
+    public getRect(_rectFrame: Rectangle, _rectOut: Rectangle = Recycler.reuse(Rectangle)): Rectangle {
+      return Rectangle.GET(0, 0, this.normWidth * _rectFrame.width, this.normHeight * _rectFrame.height, undefined, _rectOut);
     }
   }
 
@@ -137,7 +138,7 @@ namespace FudgeCore {
       return result;
     }
 
-    public getRect(_rectFrame: Rectangle): Rectangle {
+    public getRect(_rectFrame: Rectangle, _rectOut: Rectangle = Recycler.reuse(Rectangle)): Rectangle {
       if (!_rectFrame)
         return null;
 
@@ -146,7 +147,7 @@ namespace FudgeCore {
       let maxX: number = _rectFrame.x + (1 - this.margin.right) * _rectFrame.width - this.padding.right;
       let maxY: number = _rectFrame.y + (1 - this.margin.bottom) * _rectFrame.height - this.padding.bottom;
 
-      return Rectangle.GET(minX, minY, maxX - minX, maxY - minY);
+      return Rectangle.GET(minX, minY, maxX - minX, maxY - minY, undefined, _rectOut);
     }
 
     public getMutator(): Mutator {

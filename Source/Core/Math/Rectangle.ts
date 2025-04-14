@@ -133,6 +133,16 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns true if this rectangle is equal to the given rectagnle within the given tolerance.
+     */
+    public equals(_compare: Rectangle, _tolerance: number = Number.EPSILON): boolean {
+      return Math.abs(this.x - _compare.x) <= _tolerance &&
+        Math.abs(this.y - _compare.y) <= _tolerance &&
+        Math.abs(this.width - _compare.width) <= _tolerance &&
+        Math.abs(this.height - _compare.height) <= _tolerance;
+    }
+
+    /**
      * Set this rectangle to the values given by the rectangle provided.
      * @returns A reference to this rectangle.
      */

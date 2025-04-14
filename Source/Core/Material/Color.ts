@@ -28,7 +28,7 @@ namespace FudgeCore {
      * @param _hue Hue as an angle in degrees in range [0, 360].
      * @param _saturation Saturation in range [0, 1]
      * @param _lightness Lightness in range [0, 1]
-     * @param _out Object to store the result in.
+     * @param _out Optional color to store the result in.
      * @returns The RGB values in range [0, 1].
      * @source https://www.w3.org/TR/css-color-4/#hsl-to-rgb
      */
@@ -49,7 +49,7 @@ namespace FudgeCore {
      * @param _red Red value  [0, 1]
      * @param _green Green component [0, 1]
      * @param _blue Blue component [0, 1]
-     * @param _out Object to store the result in.
+     * @param _out Optional color to store the result in.
      * @returns The HSL values. Hue as an angle in degrees in range [0, 360]. Saturation and lightness in range [0, 1].
      * @source https://www.w3.org/TR/css-color-4/#rgb-to-hsl
      */
@@ -99,10 +99,12 @@ namespace FudgeCore {
      * - hex colors (e.g. "#f00" "#ff0000", "#ff0000ff")
      * - srgb colors (e.g. "rgb(255 0 0 / 1)", "rgb(255, 0, 0)", "rgba(0, 0, 255, 1))
      * - hsl colors (e.g. "hsl(90deg 100% 50% / 1)", "hsl(90, 100%, 50%)", hsla(90, 100%, 50%, 1))
+     * 
+     * **Note:** If possibile try to avoid invoking this method frequently, as it might cause major garbage collection depending on the keyword and browser.
      * @param _out Optional color to store the result in.
      */
     public static CSS(_keyword: string, _alpha?: number, _out: Color = Recycler.reuse(Color)): Color {
-      Color.crc2.fillStyle = _keyword; // THIS still causes major garbage collection (tested in Chrome)
+      Color.crc2.fillStyle = _keyword; // THIS still causes major garbage collection depending on the keyword (tested in Chrome)
       const value: string = <string>Color.crc2.fillStyle;
 
       if (value.startsWith("#")) { // value = "#rrggbb"

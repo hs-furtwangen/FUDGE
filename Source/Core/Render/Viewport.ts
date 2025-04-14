@@ -15,6 +15,7 @@ namespace FudgeCore {
     public rectSource: Rectangle;
     public rectDestination: Rectangle;
 
+
     // TODO: verify if client to canvas should be in Viewport or somewhere else (Window, Container?)
     // Multiple viewports using the same canvas shouldn't differ here...
     // different framing methods can be used, this is the default
@@ -23,13 +24,13 @@ namespace FudgeCore {
     public frameDestinationToSource: FramingScaled = new FramingScaled();
     public frameSourceToRender: FramingScaled = new FramingScaled();
 
-    public adjustingFrames: boolean = true; // TODO: maybe only adjust frames when anything changes instead of every drawn frame?
+    public adjustingFrames: boolean = true;
     public adjustingCamera: boolean = true;
     public physicsDebugMode: PHYSICS_DEBUGMODE = PHYSICS_DEBUGMODE.NONE;
 
     public gizmosEnabled: boolean = false;
     public gizmosSelected: Node[];
-    public gizmosFilter: { [_gizmo: string]: boolean } = Object.fromEntries(Component.subclasses // TODO: maybe make this lazy TODO: change to js object
+    public gizmosFilter: { [_gizmo: string]: boolean } = Object.fromEntries(Component.subclasses // TODO: maybe make this lazy
       .filter((_class: typeof Component) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
       .map((_class: typeof Component) => [_class.name, true])
     );
@@ -39,6 +40,18 @@ namespace FudgeCore {
     #branch: Node = null; // The to render with all its descendants.
     #crc2: CanvasRenderingContext2D = null;
     #canvas: HTMLCanvasElement = null;
+
+    readonly #rectCanvas: Rectangle = Recycler.get(Rectangle);
+    readonly #rectClient: Rectangle = Recycler.get(Rectangle);
+    readonly #canvasResizeObserver: ResizeObserver = new ResizeObserver(() => {
+      this.#rectClient.width = this.#canvas.clientWidth;
+      this.#rectClient.height = this.#canvas.clientHeight;
+    });
+    // readonly #canvasMutationObserver: MutationObserver = new MutationObserver(() => { // TODO: think about using a mutation observer to keep track of the canvas size.
+    //   this.#rectCanvas.width = this.#canvas.width;
+    //   this.#rectCanvas.height = this.#canvas.height;
+    // });
+
     //#endregion
 
     // #region Events (passing from canvas to viewport and from there into branch)
@@ -55,11 +68,31 @@ namespace FudgeCore {
     public get canvas(): HTMLCanvasElement {
       return this.#canvas;
     }
+
     /**
      * Retrieve the 2D-context attached to the destination canvas
      */
     public get context(): CanvasRenderingContext2D {
       return this.#crc2;
+    }
+
+    /**
+     * The rectangle of the canvas area in CSS pixels. Use this to access the canvas width and height, but without incuring browser internal major and cpp garbage collection.
+     * 
+     * Adjusted internally by {@link adjustFrames}, do not modify.
+     */
+    public get rectCanvas(): Rectangle {
+      return this.#rectCanvas;
+    }
+
+    /** 
+     * The rectangle of the canvas area as displayed (considering css). Use this to access canvas {@link HTMLCanvasElement.clientWidth clientWidth} and {@link HTMLCanvasElement.clientHeight clientHeight}, 
+     * but without incuring browser internal major and cpp garbage collection. 
+     *  
+     * Adjusted automatically, do not modify.
+     */
+    public get rectClient(): Rectangle {
+      return this.#rectClient;
     }
 
     /**
@@ -72,19 +105,37 @@ namespace FudgeCore {
       this.#crc2 = _canvas.getContext("2d");
       this.#canvas.tabIndex = 0; // can get focus and receive keyboard events
 
-      this.rectSource = Render.getCanvasRect();
-      this.rectDestination = this.getClientRectangle();
+      this.rectSource = Render.getCanvasRectangle().clone;
+      this.rectDestination = Rectangle.GET(0, 0, this.#canvas.clientWidth, this.#canvas.clientHeight);
+
+      // this.#canvasMutationObserver.disconnect();
+      // this.#canvasMutationObserver.observe(this.#canvas, { attributes: true, attributeFilter: ["width", "height"] });
+
+      this.#canvasResizeObserver.disconnect();
+      this.#canvasResizeObserver.observe(this.#canvas); // TODO: if viewport is garbage collected, this observer should be disconnected as well...
 
       this.setBranch(_branch);
     }
+
     /**
-     * Retrieve the size of the destination canvas as a rectangle, x and y are always 0 
+     * Disconnect the resize observer from the canvas to allow garbage collection of the viewport.
+     */
+    public disconnect(): void {
+      // this.#canvasMutationObserver.disconnect();
+      this.#canvasResizeObserver.disconnect();
+    }
+
+    /**
+     * Retrieve the size of the destination canvas as a rectangle, x and y are always 0.
+     * @deprecated Use {@link rectCanvas} instead.
      */
     public getCanvasRectangle(): Rectangle {
       return Rectangle.GET(0, 0, this.#canvas.width, this.#canvas.height);
     }
+
     /**
-     * Retrieve the client rectangle the canvas is displayed and fit in, x and y are always 0 
+     * Retrieve the client rectangle the canvas is displayed and fit in, x and y are always 0.
+     * @deprecated Use {@link rectClient} instead.
      */
     public getClientRectangle(): Rectangle {
       // FUDGE doesn't care about where the client rect is, only about the size matters.
@@ -134,6 +185,7 @@ namespace FudgeCore {
 
       this.dispatchEvent(new Event(EVENT.RENDER_END));
 
+      this.#crc2.clearRect(0, 0, this.#rectCanvas.width, this.#rectCanvas.height);
       this.#crc2.imageSmoothingEnabled = false;
       this.#crc2.drawImage(
         Render.getCanvas(),
@@ -217,59 +269,53 @@ namespace FudgeCore {
     }
 
     /**
-     * Adjust all frames involved in the rendering process from the display area in the client up to the renderer canvas
+     * Adjust all frames involved in the rendering process from the display area in the client up to the renderer canvas.
      */
-    // @PerformanceMonitor.measure("Viewport.adjustFrames")
     public adjustFrames(): void {
-      // get the rectangle of the canvas area as displayed (consider css)
-      let rectClient: Rectangle = this.getClientRectangle();
       // adjust the canvas size according to the given framing applied to client
-      let rectCanvas: Rectangle = this.frameClientToCanvas.getRect(rectClient);
-      this.#canvas.width = rectCanvas.width;
-      this.#canvas.height = rectCanvas.height;
+      const rectCanvas: Rectangle = this.frameClientToCanvas.getRect(this.#rectClient);
+      if (this.#rectClient.width != this.#rectCanvas.width) {
+        this.#rectCanvas.width = rectCanvas.width;
+        this.#canvas.width = rectCanvas.width; // setting width or height of canvas causes side effects, so only do it if neccessary, see https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/width
+      }
+      if (this.#rectClient.height != this.#rectCanvas.height) {
+        this.#rectCanvas.height = rectCanvas.height;
+        this.#canvas.height = rectCanvas.height;
+      }
 
-      let rectTemp: Rectangle;
       // adjust the destination area on the target-canvas to render to by applying the framing to canvas
-      rectTemp = this.frameCanvasToDestination.getRect(rectCanvas);
-      this.rectDestination.copy(rectTemp);
-      Recycler.store(rectTemp);
-      // adjust the area on the source-canvas to render from by applying the framing to destination area
-      rectTemp = this.frameDestinationToSource.getRect(this.rectDestination);
+      this.frameCanvasToDestination.getRect(rectCanvas, this.rectDestination);
 
-      this.rectSource.copy(rectTemp);
-      Recycler.store(rectTemp);
+      // adjust the area on the source-canvas to render from by applying the framing to destination area
+      this.frameDestinationToSource.getRect(this.rectDestination, this.rectSource);
 
       // having an offset source does make sense only when multiple viewports display parts of the same rendering. For now: shift it to 0,0
       this.rectSource.x = this.rectSource.y = 0;
+
       // still, a partial image of the rendering may be retrieved by moving and resizing the render viewport. For now, it's always adjusted to the current viewport
-      let rectRender: Rectangle = this.frameSourceToRender.getRect(this.rectSource);
+      const rectRender: Rectangle = this.frameSourceToRender.getRect(this.rectSource);
       Render.setRenderRectangle(rectRender);
-
-      let rectOffscreenCanvas: Rectangle = Render.getCanvasRect(); // there are far to many rectangles involved here...
-
       // no more transformation after this for now, offscreen canvas and render-viewport have the same size
       Render.setCanvasSize(rectRender.width, rectRender.height);
 
-      if (rectRender.width != rectOffscreenCanvas.width || rectRender.height != rectOffscreenCanvas.height)
-        Render.adjustAttachments();
-
-      Recycler.store(rectClient);
       Recycler.store(rectCanvas);
       Recycler.store(rectRender);
-      Recycler.store(rectOffscreenCanvas);
     }
 
     /**
      * Adjust the camera parameters to fit the rendering into the render viewport
      */
     public adjustCamera(): void {
-      let rect: Rectangle = Render.getRenderRectangle();
-      // if (this.camera.getProjection() == PROJECTION.ORTHOGRAPHIC)
-      //   this.camera.projectOrthographic(-rect.width / 20, rect.width / 20, rect.height / 20, -rect.height / 20);
-      // else
-      this.camera.projectCentral(
-        rect.width / rect.height, this.camera.getFieldOfView(), this.camera.getDirection(), this.camera.getNear(), this.camera.getFar()
-      );
+      const rect: Rectangle = Render.getRenderRectangle();
+      const projection: PROJECTION = this.camera.getProjection()
+      switch (projection) {
+        case PROJECTION.CENTRAL:
+          this.camera.projectCentral(rect.width / rect.height, this.camera.getFieldOfView(), this.camera.getDirection(), this.camera.getNear(), this.camera.getFar());
+          break;
+        // case PROJECTION.ORTHOGRAPHIC:
+        //   this.camera.projectOrthographic(-rect.width / 20, rect.width / 20, rect.height / 20, -rect.height / 20);
+        //   break;
+      }
 
       this.camera.resetWorldToView();
     }
@@ -305,8 +351,8 @@ namespace FudgeCore {
      * Returns a point on the source-rectangle matching the given point on the client rectangle
      */
     public pointClientToSource(_client: Vector2): Vector2 {
-      let result: Vector2 = this.frameClientToCanvas.getPoint(_client, this.getClientRectangle());
-      result = this.frameCanvasToDestination.getPoint(result, this.getCanvasRectangle());
+      let result: Vector2 = this.frameClientToCanvas.getPoint(_client, this.#rectClient);
+      result = this.frameCanvasToDestination.getPoint(result, this.#rectCanvas);
       result = this.frameDestinationToSource.getPoint(result, this.rectSource);
       //TODO: when Source, Render and RenderViewport deviate, continue transformation 
       return result;
@@ -373,7 +419,7 @@ namespace FudgeCore {
      * which stretches from -1 to 1 in both dimensions, y pointing up
      */
     public pointClipToCanvas(_normed: Vector2): Vector2 {
-      let pointCanvas: Vector2 = Render.rectClip.pointToRect(_normed, this.getCanvasRectangle());
+      let pointCanvas: Vector2 = Render.rectClip.pointToRect(_normed, this.#rectCanvas);
       return pointCanvas;
     }
 

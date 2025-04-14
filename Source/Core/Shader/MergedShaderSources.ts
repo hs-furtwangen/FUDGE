@@ -1135,8 +1135,6 @@ out vec4 v_vctColor;
 
 #endif
 
-
-
 #if defined(PARTICLE)
 
   uniform sampler2D u_particleSystemRandomNumbers;

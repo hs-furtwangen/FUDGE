@@ -173,10 +173,11 @@ namespace ScreenToRay {
     cameraRay.projectCentral(1, 5);
     viewportRay.draw();
 
-    let crcRay: CanvasRenderingContext2D = canvasRay.getContext("2d");
+    let crcRay: CanvasRenderingContext2D = viewportRay.context;
     crcRay.translate(crcRay.canvas.width / 2, crcRay.canvas.height / 2);
     crcRay.strokeStyle = "white";
     crcRay.strokeRect(-10, -10, 20, 20);
+    crcRay.resetTransform();
   }
 
   function computeRay(): ƒ.Ray {
@@ -186,11 +187,11 @@ namespace ScreenToRay {
     let posRender: ƒ.Vector2 = viewport.pointClientToRender(posMouse);
     setUiPoint("Render", posRender);
 
-    let rect: ƒ.Rectangle = viewport.getClientRectangle();
+    let rect: ƒ.Rectangle = viewport.rectClient;
     let result: ƒ.Vector2;
     result = viewport.frameClientToCanvas.getPoint(posMouse, rect);
     setUiPoint("Canvas", result);
-    rect = viewport.getCanvasRectangle();
+    rect = viewport.rectCanvas;
     result = viewport.frameCanvasToDestination.getPoint(result, rect);
     setUiPoint("Destination", result);
     result = viewport.frameDestinationToSource.getPoint(result, viewport.rectSource);
@@ -309,7 +310,7 @@ namespace ScreenToRay {
         case "ClientToCanvas": {
           let uiMap: { ui: UI.FieldSet, framing: ƒ.FramingScaled } = <{ ui: UI.FramingScaled, framing: ƒ.FramingScaled }>uiMaps[name];
           uiMap.ui.set(uiMap.framing);
-          uiMap.ui.set({ Result: viewport.getCanvasRectangle() });
+          uiMap.ui.set({ Result: viewport.rectCanvas });
           break;
         }
         case "CanvasToDestination": {

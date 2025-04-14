@@ -154,7 +154,15 @@ namespace FudgeCore {
      * @param _bottom The positionvalue of the projectionspace's bottom border.
      * @param _top The positionvalue of the projectionspace's top border.      
      */
-    public projectOrthographic(_left: number = -Render.getCanvas().clientWidth / 2, _right: number = Render.getCanvas().clientWidth / 2, _bottom: number = Render.getCanvas().clientHeight / 2, _top: number = -Render.getCanvas().clientHeight / 2): void {
+    public projectOrthographic(_left?: number, _right?: number, _bottom?: number, _top?: number): void {
+      const rectCanvas: Rectangle = Render.getCanvasRectangle();
+      const width: number = rectCanvas.width;
+      const height: number = rectCanvas.height;
+      _left = -width / 2;
+      _right = width / 2;
+      _bottom = height / 2;
+      _top = -height / 2;
+
       this.projection = PROJECTION.ORTHOGRAPHIC;
       this.#mtxProjection = Matrix4x4.PROJECTION_ORTHOGRAPHIC(_left, _right, _bottom, _top, 400, -400); // TODO: examine magic numbers!
     }
@@ -292,9 +300,9 @@ namespace FudgeCore {
     }
 
     public drawGizmos(): void {
-      let mtxWorld: Matrix4x4 = this.mtxWorld.clone;
-      mtxWorld.scaling = new Vector3(0.5, 0.5, 0.5);
-      let color: Color = Color.CSS("lightgrey");
+      const mtxWorld: Matrix4x4 = this.mtxWorld.clone;
+      mtxWorld.scaling = mtxWorld.scaling.set(0.5, 0.5, 0.5);
+      const color: Color = Color.CSS("lightgrey");
       Gizmos.drawIcon(TextureDefault.iconCamera, mtxWorld, color);
       Recycler.store(mtxWorld);
       Recycler.store(color);

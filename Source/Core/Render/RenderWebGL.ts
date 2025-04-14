@@ -93,8 +93,12 @@ namespace FudgeCore {
   export abstract class RenderWebGL extends EventTargetStatic {
     protected static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
 
-    private static rectRender: Rectangle = RenderWebGL.getCanvasRect();
+    /** The area of the offscreen-canvas in CSS pixels. */
+    private static rectCanvas: Rectangle;
+    /** The area on the offscreen-canvas to render to. */
+    private static rectRender: Rectangle;
 
+    // TODO: render attachments can't be static as different viewport might have different resilutions each viewport needs its own attachments
     private static fboMain: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
     private static fboPost: WebGLFramebuffer; // used for post-processing effects, attachments get swapped for different effects
     private static fboTarget: WebGLFramebuffer; // used to render the final image to, usually "null" to render to the canvas default framebuffer. Used by XR to render to the XRWebGLLayer framebuffer.
@@ -138,6 +142,7 @@ namespace FudgeCore {
         stencil: true
       };
       Debug.fudge("Initialize RenderWebGL", contextAttributes);
+      // let canvas: OffscreenCanvas = new OffscreenCanvas(1, 1); // TODO: inspect using a real OffscreenCanvas
       let canvas: HTMLCanvasElement = document.createElement("canvas");
       let crc3: WebGL2RenderingContext;
       crc3 = RenderWebGL.assert<WebGL2RenderingContext>(
@@ -150,7 +155,8 @@ namespace FudgeCore {
       crc3.enable(WebGL2RenderingContext.DEPTH_TEST);
       crc3.enable(WebGL2RenderingContext.BLEND);
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
-      RenderWebGL.rectRender = RenderWebGL.getCanvasRect();
+      RenderWebGL.rectCanvas = Rectangle.GET(0, 0, RenderWebGL.crc3.canvas.width, RenderWebGL.crc3.canvas.height);
+      RenderWebGL.rectRender = RenderWebGL.getCanvasRectangle().clone;
 
       RenderWebGL.initializeAttachments();
       RenderWebGL.adjustAttachments();
@@ -174,7 +180,11 @@ namespace FudgeCore {
     }
 
     /**
-     * Return a reference to the offscreen-canvas
+     * Return a reference to the offscreen-canvas.
+     * 
+     * - Do not read or modify the canvas dimensions directly.
+     * - Use {@link getCanvasRectangle} to retrieve the size of the offscreen-canvas.
+     * - Use {@link setCanvasSize} to set the size of the offscreen-canvas.
      */
     public static getCanvas(): HTMLCanvasElement {
       return <HTMLCanvasElement>RenderWebGL.crc3.canvas; // TODO: enable OffscreenCanvas
@@ -188,27 +198,55 @@ namespace FudgeCore {
     }
 
     /**
-     * Return a rectangle describing the size of the offscreen-canvas. x,y are 0 at all times.
+     * Returns a reference to the rectangle describing the size of the offscreen-canvas. x,y are 0 at all times.
+     * 
+     * Do not modify the rectangle directly, use {@link setCanvasSize} instead.
      */
-    public static getCanvasRect(): Rectangle {
-      let canvas: HTMLCanvasElement = <HTMLCanvasElement>RenderWebGL.crc3.canvas;
-      return Rectangle.GET(0, 0, canvas.width, canvas.height);
+    public static getCanvasRectangle(): Rectangle {
+      return RenderWebGL.rectCanvas;
     }
 
     /**
      * Set the size of the offscreen-canvas.
+     * 
+     * ⚠️ CAUTION: If size changes invokes {@link adjustAttachments} which is an expensive operation.
      */
     public static setCanvasSize(_width: number, _height: number): void {
-      RenderWebGL.crc3.canvas.width = _width;
-      RenderWebGL.crc3.canvas.height = _height;
+      let sizeChanged: boolean = false;
+
+      if (RenderWebGL.rectCanvas.width != _width) {
+        RenderWebGL.rectCanvas.width = _width;
+        RenderWebGL.crc3.canvas.width = _width;
+        sizeChanged = true;
+      }
+
+      if (RenderWebGL.rectCanvas.height != _height) {
+        RenderWebGL.rectCanvas.height = _height;
+        RenderWebGL.crc3.canvas.height = _height;
+        sizeChanged = true;
+      }
+
+      if (sizeChanged)
+        RenderWebGL.adjustAttachments();
+    }
+
+    /**
+     * Retrieve the area on the offscreen-canvas the camera image gets rendered to.
+     * 
+     * Do not modify the rectangle directly, use {@link setRenderRectangle} instead.
+     */
+    public static getRenderRectangle(): Rectangle {
+      return RenderWebGL.rectRender;
     }
 
     /**
      * Set the area on the offscreen-canvas to render the camera image to.
-     * @param _rect
      */
     public static setRenderRectangle(_rect: Rectangle): void {
-      RenderWebGL.rectRender.setPositionAndSize(_rect.x, _rect.y, _rect.width, _rect.height);
+      if (RenderWebGL.rectRender.equals(_rect))
+        return;
+
+      RenderWebGL.rectRender.copy(_rect);
       RenderWebGL.crc3.viewport(_rect.x, _rect.y, _rect.width, _rect.height);
     }
 
@@ -240,13 +278,6 @@ namespace FudgeCore {
      */
     public static resetFramebuffer(): void {
       RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
-    }
-
-    /**
-     * Retrieve the area on the offscreen-canvas the camera image gets rendered to.
-     */
-    public static getRenderRectangle(): Rectangle {
-      return RenderWebGL.rectRender;
     }
 
     /**
@@ -391,40 +422,41 @@ namespace FudgeCore {
     }
 
     /**
-     * Adjusts the size of the different texture attachments (render targets) to the canvas size
-     * ⚠️ CAUTION: Expensive operation, use only when canvas size changed
+     * Adjusts the size of the different texture attachments (render targets) to the canvas size.
+     * 
+     * ⚠️ CAUTION: Expensive operation, use only when canvas size changed.
      */
     public static adjustAttachments(): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const width: number = crc3.canvas.width || 1;
-      const height: number = crc3.canvas.height || 1;
+      const canvasWidth: number = RenderWebGL.rectCanvas.width || 1;
+      const canvasHeight: number = RenderWebGL.rectCanvas.height || 1;
 
       crc3.activeTexture(crc3.TEXTURE0);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition);
       // In view space 16F would be precise enough... but we want to use world space for calculations
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32F, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
 
       for (let i: number = 0, divisor: number = 1; i < RenderWebGL.texBloomSamples.length; i++, divisor *= 2) {
-        let width: number = Math.max(Math.round(crc3.canvas.width / divisor), 1);
-        let height: number = Math.max(Math.round(crc3.canvas.height / divisor), 1);
+        let width: number = Math.max(Math.round(canvasWidth / divisor), 1);
+        let height: number = Math.max(Math.round(canvasHeight / divisor), 1);
         crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texBloomSamples[i]);
         crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
       }
 
-      const nValues: number = width * height * 4;
+      const nValues: number = canvasWidth * canvasHeight * 4;
       const noiseData: Uint8Array = new Uint8Array(nValues);
 
       for (let i: number = 0; i < nValues; i += 4) {
@@ -435,7 +467,7 @@ namespace FudgeCore {
       }
 
       crc3.bindTexture(crc3.TEXTURE_2D, RenderWebGL.texNoise);
-      crc3.texImage2D(crc3.TEXTURE_2D, 0, crc3.RGBA, width, height, 0, crc3.RGBA, crc3.UNSIGNED_BYTE, noiseData);
+      crc3.texImage2D(crc3.TEXTURE_2D, 0, crc3.RGBA, canvasWidth, canvasHeight, 0, crc3.RGBA, crc3.UNSIGNED_BYTE, noiseData);
       crc3.bindTexture(crc3.TEXTURE_2D, null);
     }
 
@@ -470,7 +502,7 @@ namespace FudgeCore {
       if (uniform && _mtxPivot)
         crc3.uniformMatrix3fv(_shader.uniforms["u_mtxPivot"], false, _mtxPivot.getArray());
 
-      uniform = _shader.uniforms["u_vctColorPrimary"];
+      uniform = _shader.uniforms["u_vctColor"];
       if (uniform && _color)
         crc3.uniform4fv(uniform, _color.get());
 
@@ -774,7 +806,7 @@ namespace FudgeCore {
       // copy framebuffer to canvas
       crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
       crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboTarget);
-      crc3.blitFramebuffer(0, 0, crc3.canvas.width, crc3.canvas.height, 0, 0, crc3.canvas.width, crc3.canvas.height, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
+      crc3.blitFramebuffer(0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, 0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
     }
 
     /**
@@ -796,7 +828,7 @@ namespace FudgeCore {
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationConstant"], _cmpAmbientOcclusion.attenuationConstant);
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationLinear"], _cmpAmbientOcclusion.attenuationLinear);
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationQuadratic"], _cmpAmbientOcclusion.attenuationQuadratic);
-      crc3.uniform2f(ShaderAmbientOcclusion.uniforms["u_vctResolution"], RenderWebGL.getCanvas().width, RenderWebGL.getCanvas().height);
+      crc3.uniform2f(ShaderAmbientOcclusion.uniforms["u_vctResolution"], RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height);
       crc3.uniform3fv(ShaderAmbientOcclusion.uniforms["u_vctCamera"], _cmpCamera.mtxWorld.translation.get());
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);
@@ -824,11 +856,14 @@ namespace FudgeCore {
       crc3.uniform1i(ShaderBloom.uniforms["u_iMode"], 0);
       crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
 
+      const canvasWidth: number = RenderWebGL.rectCanvas.width;
+      const canvasHeight: number = RenderWebGL.rectCanvas.height;
+
       // downsample
       const iterations: number = RenderWebGL.texBloomSamples.length;
       for (let i: number = 1, divisor: number = 2; i < iterations; i++, divisor *= 2) {
-        let width: number = Math.max(Math.round(crc3.canvas.width / divisor), 1);
-        let height: number = Math.max(Math.round(crc3.canvas.height / divisor), 1);
+        let width: number = Math.max(Math.round(canvasWidth / divisor), 1);
+        let height: number = Math.max(Math.round(canvasHeight / divisor), 1);
 
         crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texBloomSamples[i], 0);
         crc3.viewport(0, 0, width, height);
@@ -847,8 +882,8 @@ namespace FudgeCore {
 
       // upsample
       for (let i: number = iterations - 1, divisor: number = 2 ** (iterations - 2); i > 0; i--, divisor /= 2) {
-        let width: number = Math.max(Math.round(crc3.canvas.width / divisor), 1);
-        let height: number = Math.max(Math.round(crc3.canvas.height / divisor), 1);
+        let width: number = Math.max(Math.round(canvasWidth / divisor), 1);
+        let height: number = Math.max(Math.round(canvasHeight / divisor), 1);
 
         crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texBloomSamples[i - 1], 0);
         crc3.viewport(0, 0, Math.round(width), Math.round(height));
@@ -861,7 +896,7 @@ namespace FudgeCore {
         crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
       }
 
-      crc3.viewport(0, 0, crc3.canvas.width, crc3.canvas.height);
+      crc3.viewport(0, 0, canvasWidth, canvasHeight);
 
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
       RenderWebGL.bindTexture(ShaderBloom, RenderWebGL.texBloomSamples[0], WebGL2RenderingContext.TEXTURE0, "u_texSource");
@@ -904,7 +939,7 @@ namespace FudgeCore {
       crc3.uniform4fv(ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.get());
       crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
 
-      crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(crc3.canvas.width), 1 / Math.round(crc3.canvas.height)); // half texel size
+      crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(RenderWebGL.rectCanvas.width), 1 / Math.round(RenderWebGL.rectCanvas.height)); // half texel size
 
       crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
     }

@@ -41,7 +41,7 @@ namespace AudioGraph {
       let out: string = `node: ${node.name}`;
       if (node.getParent())
         out += ` [child of ${node.getParent().name}]`;
-      let cmpAudioList: ƒ.ComponentAudio[] = node.getComponents(ƒ.ComponentAudio);
+      let cmpAudioList: readonly ƒ.ComponentAudio[] = node.getComponents(ƒ.ComponentAudio);
       for (let cmpAudio of cmpAudioList)
         out += ` | ComponentAudio is active: ${cmpAudio.isActive}, listened: ${cmpAudio.isListened}, attached: ${cmpAudio.isAttached}`;
 
