@@ -20,6 +20,10 @@ namespace FudgeCore {
       this.#makeWritable("type");
     }
 
+    public static [Symbol.hasInstance](_instance: unknown): boolean { // much faster than default instanceof
+      return (<RecyclableEvent>_instance).isRecyclableEvent;
+    }
+
     /**
      * Returns a event of the specified type with the specified options from the {@link Recycler}. See {@link Event} constructor for details on the parameters.
      */

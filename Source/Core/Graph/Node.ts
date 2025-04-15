@@ -433,7 +433,7 @@ namespace FudgeCore {
      * Removes all components of the given class attached to this node.
      */
     public removeComponents(_class: new () => Component): void {
-      for (const component of this.getComponents(_class)) 
+      for (const component of this.getComponents(_class))
         this.removeComponent(component);
     }
 
@@ -558,6 +558,7 @@ namespace FudgeCore {
         listListeners[_type] = [];
       listListeners[_type].push(_handler);
     }
+
     /**
      * Removes an event listener from the node. The signature must match the one used with addEventListener
      */
@@ -568,6 +569,7 @@ namespace FudgeCore {
           if (listenersForType[i] == _handler)
             listenersForType.splice(i, 1);
     }
+
     /**
      * Dispatches a synthetic event to target. This implementation always returns true (standard: return true only if either event's cancelable attribute value is false or its preventDefault() method was not invoked)
      * The event travels into the hierarchy to this node dispatching the event, invoking matching handlers of the nodes ancestors listening to the capture phase, 
@@ -609,29 +611,23 @@ namespace FudgeCore {
       }
       return true; //TODO: return a meaningful value, see documentation of dispatch event
     }
+
     /**
      * Dispatches a synthetic event to target without travelling through the graph hierarchy neither during capture nor bubbling phase
      */
     public dispatchEventToTargetOnly(_event: Event): boolean {
-      Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
-      Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
+      if (_event instanceof RecyclableEvent) {
+        _event.setCurrentTarget(this);
+        _event.setEventPhase(Event.AT_TARGET);
+      } else {
+        Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
+        Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
+      }
+
       this.callListeners(this.listeners[_event.type], _event); // TODO: examine if this should go to the captures instead of the listeners
       return true;
     }
-    /**
-     * @internal Dispatches a synthetic event directly to the target only. Event phase and current target are not set automatically.
-     */
-    public dispatchPreparedEventToTargetOnly(_event: Event): boolean {
-      this.callListeners(this.listeners[_event.type], _event);
-      return true;
-    }
-    // /**
-    //  * Dispatches a synthetic event to target without travelling through the graph hierarchy neither during capture nor bubbling phase
-    //  */
-    // public dispatchEventToTargetOnly(_event: Event): boolean {
-    //   this.callListeners(this.listeners[_event.type], _event); // TODO: examine if this should go to the captures instead of the listeners
-    //   return true;
-    // }
+
     /**
      * Broadcasts a synthetic event to this node and from there to all nodes deeper in the hierarchy,
      * invoking matching handlers of the nodes listening to the capture phase. Watch performance when there are many nodes involved

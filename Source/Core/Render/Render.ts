@@ -19,12 +19,10 @@ namespace FudgeCore {
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
     private static timestampUpdate: number;
 
-    private static readonly prepareEvent: ({ currentTarget: Event["currentTarget"] } & Event) = (() => { // reuse the same event for all dispatches
-      let event: Event = new Event(EVENT.RENDER_PREPARE);
-      Object.defineProperty(event, "eventPhase", { writable: true, value: Event.AT_TARGET });
-      Object.defineProperty(event, "currentTarget", { writable: true });
-      return event;
-    })();
+    // cache events to avoid frequent recycling
+    static readonly #eventPrepare: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE);
+    static readonly #eventPrepareStart: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_START);
+    static readonly #eventPrepareEnd: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_END);
 
     /**
      * Recursively iterates over the branch starting with the node given, recalculates all world transforms, 
@@ -44,16 +42,13 @@ namespace FudgeCore {
       Node.resetRenderData();
       Coat.resetRenderData();
 
-      _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START)); // TODO: cache this event and reuse it for all dispatches
+      _branch.dispatchEvent(Render.#eventPrepareStart);
 
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
 
-
-      _branch.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END)); // TODO: cache this event and reuse it for all dispatches
+      _branch.dispatchEvent(Render.#eventPrepareEnd);
       for (const cmpSkeleton of Render.componentsSkeleton) 
         cmpSkeleton.updateRenderBuffer();
-      
-
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
 
@@ -104,9 +99,7 @@ namespace FudgeCore {
       _branch.radius = 0;
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch dispatch prepare");
-      // Reflect.set(Render.prepareEvent, "currentTarget", _branch);
-      Render.prepareEvent.currentTarget = _branch;
-      _branch.dispatchPreparedEventToTargetOnly(Render.prepareEvent);
+      _branch.dispatchEventToTargetOnly(Render.#eventPrepare);
       // PerformanceMonitor.endMeasure("Render.prepareBranch dispatch prepare");
 
       _branch.timestampUpdate = Render.timestampUpdate;
