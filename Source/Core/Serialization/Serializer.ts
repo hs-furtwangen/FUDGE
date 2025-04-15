@@ -145,9 +145,11 @@ namespace FudgeCore {
       const prototype: Serializable = (<Function>_constructor).prototype;
 
       // make getters enumerable
-      if (meta.enumerateKeys)
+      if (meta.enumerateKeys) {
+        const descriptor: PropertyDescriptor = { enumerable: true };
         for (const key of meta.enumerateKeys)
-          Object.defineProperty(prototype, key, { enumerable: true });
+          Object.defineProperty(prototype, key, descriptor);
+      }
 
       // override serialize and deserialize methods
       const originalSerialize: Serializable["serialize"] = prototype.serialize;
@@ -257,7 +259,7 @@ namespace FudgeCore {
         return;
 
       // mark getter to be made enumerable
-      if (!Object.hasOwn(meta, "enumerableKeys"))
+      if (!Object.hasOwn(meta, "enumerateKeys"))
         meta.enumerateKeys = [];
 
       meta.enumerateKeys.push(_context.name.toString());

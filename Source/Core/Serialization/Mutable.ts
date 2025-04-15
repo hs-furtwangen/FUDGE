@@ -128,7 +128,7 @@ namespace FudgeCore {
       if (typeof _context.name != "string")
         return;
 
-      if (!Object.hasOwn(metadata, "enumerableKeys"))
+      if (!Object.hasOwn(metadata, "enumerateKeys"))
         metadata.enumerateKeys = [];
 
       metadata.enumerateKeys.push(_context.name.toString());
@@ -136,9 +136,11 @@ namespace FudgeCore {
     }
 
     if (_context.kind == "class") {
-      if (metadata.enumerateKeys)
+      if (metadata.enumerateKeys) {
+        const descriptor: PropertyDescriptor = { enumerable: true };
         for (const key of metadata.enumerateKeys)
-          Object.defineProperty((<Function>_value).prototype, key, { enumerable: true });
+          Object.defineProperty((<Function>_value).prototype, key, descriptor);
+      }
       return;
     }
   }
@@ -300,7 +302,7 @@ namespace FudgeCore {
           _mutator[attribute] = value;
       }
     }
-    
+
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
      * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
@@ -322,7 +324,7 @@ namespace FudgeCore {
 
       for (let attribute in mutator) {
         let mutant: Object = Reflect.get(this, attribute);
-        if (mutant instanceof MutableArray || mutant instanceof Mutable) 
+        if (mutant instanceof MutableArray || mutant instanceof Mutable)
           mutant.mutate(mutator[attribute], null, false);
         else
           Reflect.set(this, attribute, mutator[attribute]);
