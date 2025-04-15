@@ -205,11 +205,8 @@ namespace FudgeCore {
         return;
 
       // PerformanceMonitor.startMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
-      if (this.camera.node) {
-        Matrix4x4.PRODUCT(this.camera.node.mtxWorld, this.camera.mtxPivot, this.camera.mtxWorld);
-      } else {
+      if (!this.camera.node) //TODO: find an elegant way to handle cameras that are either attached to a node or not...
         this.camera.mtxWorld.copy(this.camera.mtxPivot);
-      }
       // PerformanceMonitor.endMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
 
       if (this.adjustingFrames)
@@ -303,21 +300,22 @@ namespace FudgeCore {
     }
 
     /**
-     * Adjust the camera parameters to fit the rendering into the render viewport
+     * Adjust the camera parameters to fit the rendering into the render viewport.
      */
     public adjustCamera(): void {
-      const rect: Rectangle = Render.getRenderRectangle();
-      const projection: PROJECTION = this.camera.getProjection()
-      switch (projection) {
-        case PROJECTION.CENTRAL:
-          this.camera.projectCentral(rect.width / rect.height, this.camera.getFieldOfView(), this.camera.getDirection(), this.camera.getNear(), this.camera.getFar());
-          break;
-        // case PROJECTION.ORTHOGRAPHIC:
-        //   this.camera.projectOrthographic(-rect.width / 20, rect.width / 20, rect.height / 20, -rect.height / 20);
-        //   break;
-      }
+      const rectRender: Rectangle = Render.getRenderRectangle();
+      this.camera.projectCentral(rectRender.width / rectRender.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
 
-      this.camera.resetWorldToView();
+      // const projection: PROJECTION = this.camera.projection;
+      // switch (projection) {
+      // case PROJECTION.CENTRAL:
+      // this.camera.projectCentral(rectRender.width / rectRender.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
+      // break;
+      // case PROJECTION.ORTHOGRAPHIC:
+      //   this.camera.projectOrthographic();
+      //   // this.camera.projectOrthographic(-rectRender.width / 20, rectRender.width / 20, rectRender.height / 20, -rectRender.height / 20);
+      //   break;
+      // }
     }
     // #endregion
 

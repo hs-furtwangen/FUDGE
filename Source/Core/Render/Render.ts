@@ -113,7 +113,7 @@ namespace FudgeCore {
           // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxLocal");
           cmpTransform.mtxLocal.modified = false;
         }
-      } else
+      } else 
         _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpTransform");
 
@@ -147,7 +147,6 @@ namespace FudgeCore {
           Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
           // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxPivot");
           cmpMesh.mtxPivot.modified = false;
-          _branch.mtxWorld.modified = false;
         }
 
         let cmpFaceCamera: ComponentFaceCamera = _branch.getComponent(ComponentFaceCamera);
@@ -168,12 +167,22 @@ namespace FudgeCore {
       }
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
+      const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera);
+      if (cmpCamera?.isActive) {
+        if (cmpCamera.mtxPivot.modified || _branch.mtxWorld.modified) {
+          Matrix4x4.PRODUCT(_branch.mtxWorld, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
+          cmpCamera.mtxPivot.modified = false;
+        }
+      }
+
       // PerformanceMonitor.startMeasure("Render.prepareBranch cmpSkeleton");
       const cmpSkeletons: readonly ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
       for (let cmpSkeleton of cmpSkeletons)
         if (cmpSkeleton?.isActive)
           Render.componentsSkeleton.push(cmpSkeleton);
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpSkeleton");
+
+      _branch.mtxWorld.modified = false;
 
       for (let child of _branch.getChildren()) {
         Render.prepareBranch(child, _options, _branch.mtxWorld, _recalculate);

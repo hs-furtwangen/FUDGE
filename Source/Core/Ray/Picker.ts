@@ -18,7 +18,6 @@ namespace FudgeCore {
       cmpCameraPick.mtxWorld.translation = _ray.origin;
       cmpCameraPick.mtxWorld.lookAt(Vector3.SUM(_ray.origin, _ray.direction));
       cmpCameraPick.projectCentral(1, 0.001, FIELD_OF_VIEW.DIAGONAL, _min, _max);
-      cmpCameraPick.resetWorldToView();
 
       let picks: Pick[];
       if (_from[0] instanceof Node)
@@ -47,7 +46,7 @@ namespace FudgeCore {
       } else
         ray.transform(_cmpCamera.mtxPivot);
 
-      let picks: Pick[] = Picker.pickRay(<General>_from, ray, length * _cmpCamera.getNear(), length * _cmpCamera.getFar());
+      let picks: Pick[] = Picker.pickRay(<General>_from, ray, length * _cmpCamera.near, length * _cmpCamera.far);
       return picks;
     }
 

@@ -119,7 +119,7 @@ namespace FudgeCore {
 
         if (this.useVRController)
           this.setControllerConfigs(_xrFrame);
-        this.camera.resetWorldToView(); // TODO: find a less expensive way to do this, maybe use two cameras
+
         this.camera.mtxProjection.setArray(view.projectionMatrix);
         this.camera.mtxCameraInverse.setArray(view.transform.inverse.matrix);
 
