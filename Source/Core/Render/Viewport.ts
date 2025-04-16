@@ -41,8 +41,8 @@ namespace FudgeCore {
     #crc2: CanvasRenderingContext2D = null;
     #canvas: HTMLCanvasElement = null;
 
-    readonly #rectCanvas: Rectangle = Recycler.get(Rectangle);
-    readonly #rectClient: Rectangle = Recycler.get(Rectangle);
+    readonly #rectCanvas: Rectangle = Rectangle.GET(0, 0, 300, 150);
+    readonly #rectClient: Rectangle = Rectangle.GET(0, 0, 0, 0);
     readonly #canvasResizeObserver: ResizeObserver = new ResizeObserver(() => {
       this.#rectClient.width = this.#canvas.clientWidth;
       this.#rectClient.height = this.#canvas.clientHeight;
@@ -223,7 +223,7 @@ namespace FudgeCore {
     // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      Render.prepare(this.#branch, undefined, this.#branch.getParent()?.mtxWorld);
+      Render.prepare(this.#branch, undefined, this.#branch.getParent() ?? undefined);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
     }

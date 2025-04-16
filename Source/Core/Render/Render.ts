@@ -24,7 +24,7 @@ namespace FudgeCore {
     static readonly #eventPrepareStart: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_START);
     static readonly #eventPrepareEnd: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_END);
 
-    static readonly #mtxRoot: Matrix4x4 = Matrix4x4.IDENTITY();
+    static readonly #defaultRootNode: Node = new Node("Root");
     static readonly #defaultOptions: RenderPrepareOptions = {};
 
     static readonly #mapNodeToParent: WeakMap<Node, Node> = new WeakMap<Node, Node>();
@@ -35,7 +35,7 @@ namespace FudgeCore {
      * render passes.
      * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
      */
-    public static prepare(_branch: Node, _options: RenderPrepareOptions = Render.#defaultOptions, _mtxWorld: Matrix4x4 = Render.#mtxRoot, _recalculate: boolean = false): void {
+    public static prepare(_branch: Node, _options: RenderPrepareOptions = Render.#defaultOptions, _parent: Node = Render.#defaultRootNode, _recalculate: boolean = false): void {
       Render.timestampUpdate = performance.now();
       Render.nodesSimple.reset();
       Render.nodesAlpha.reset();
@@ -48,7 +48,7 @@ namespace FudgeCore {
       Coat.resetRenderData();
 
       _branch.dispatchEvent(Render.#eventPrepareStart);
-      this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
+      this.prepareBranch(_branch, _options, _parent, _recalculate);
       _branch.dispatchEvent(Render.#eventPrepareEnd);
 
       for (const cmpSkeleton of Render.componentsSkeleton)
@@ -96,7 +96,7 @@ namespace FudgeCore {
     }
 
     // TODO: replace _mtxWorld with _parent? That way we can detect recalculation of sub-branches that changed their parent, also no need for getParent calls.
-    private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _mtxWorld: Matrix4x4, _recalculate: boolean): void {
+    private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _parent: Node, _recalculate: boolean): void {
       if (!_branch.isActive)
         return; // don't add branch to render list if not active
 
@@ -109,10 +109,12 @@ namespace FudgeCore {
 
       _branch.timestampUpdate = Render.timestampUpdate;
 
-      let parent: Node = _branch.getParent();
+      const mtxWorldParent: Matrix4x4 = _parent.mtxWorld;
+      const mtxWorldBranch: Matrix4x4 = _branch.mtxWorld;
+
       let previousParent: Node = Render.#mapNodeToParent.get(_branch);
-      if (parent != previousParent) {
-        Render.#mapNodeToParent.set(_branch, parent);
+      if (_parent != previousParent) {
+        Render.#mapNodeToParent.set(_branch, _parent);
         _recalculate = true;
       }
 
@@ -120,11 +122,11 @@ namespace FudgeCore {
       const cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
       if (cmpTransform?.isActive) {
         if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
-          Matrix4x4.PRODUCT(_mtxWorld, cmpTransform.mtxLocal, _branch.mtxWorld);
+          Matrix4x4.PRODUCT(mtxWorldParent, cmpTransform.mtxLocal, mtxWorldBranch);
           cmpTransform.mtxLocal.modified = false;
         }
       } else
-        _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
+        mtxWorldBranch.copy(mtxWorldParent); // overwrite readonly mtxWorld of the current node
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpTransform");
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch cmpRigidbody");
@@ -153,7 +155,7 @@ namespace FudgeCore {
       const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
       if (cmpMesh?.isActive && cmpMaterial?.isActive) {
         if (cmpMesh.mtxPivot.modified || _recalculate) {
-          Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
+          Matrix4x4.PRODUCT(mtxWorldBranch, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
           cmpMesh.mtxPivot.modified = false;
         }
 
@@ -177,7 +179,7 @@ namespace FudgeCore {
 
       const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera);
       if (cmpCamera && cmpCamera.isActive && (cmpCamera.mtxPivot.modified || _recalculate)) {
-        Matrix4x4.PRODUCT(_branch.mtxWorld, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
+        Matrix4x4.PRODUCT(mtxWorldBranch, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
         cmpCamera.mtxPivot.modified = false;
       }
 
@@ -189,24 +191,24 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpSkeleton");
 
       for (let child of _branch.getChildren()) {
-        Render.prepareBranch(child, _options, _branch.mtxWorld, _recalculate);
+        Render.prepareBranch(child, _options, _branch, _recalculate);
         _branch.nNodesInBranch += child.nNodesInBranch;
 
         // PerformanceMonitor.startMeasure("Render.prepareBranch touch children");
         // let cmpMeshChild: ComponentMesh = child.getComponent(ComponentMesh);
         // let position: Vector3 = cmpMeshChild ? cmpMeshChild.mtxWorld.translation : child.mtxWorld.translation;
         // // position = position.clone;
-        // _branch.radius = Math.max(_branch.radius, position.getDistance(_branch.mtxWorld.translation) + child.radius);
+        // _branch.radius = Math.max(_branch.radius, position.getDistance(mtxWorld.translation) + child.radius);
         // // Recycler.store(position);
         // PerformanceMonitor.endMeasure("Render.prepareBranch touch children");
       }
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch touch parent");
-      if (parent) {
-        // parent.nNodesInBranch += _branch.nNodesInBranch;
-        let position: Vector3 = cmpMesh?.mtxWorld.translation ?? _branch.mtxWorld.translation;
-        parent.radius = Math.max(parent.radius, position.getDistance(parent.mtxWorld.translation) + _branch.radius);
-      }
+
+      // parent.nNodesInBranch += _branch.nNodesInBranch;
+      let position: Vector3 = cmpMesh?.mtxWorld.translation ?? mtxWorldBranch.translation;
+      _parent.radius = Math.max(_parent.radius, position.getDistance(_parent.mtxWorld.translation) + _branch.radius);
+
       // PerformanceMonitor.endMeasure("Render.prepareBranch touch parent");
     }
 

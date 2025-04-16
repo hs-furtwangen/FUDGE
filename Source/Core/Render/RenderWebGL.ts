@@ -800,7 +800,7 @@ namespace FudgeCore {
       if (cmpBloom?.isActive)
         RenderWebGL.drawBloom(cmpBloom);
 
-      if (cmpOutline?.isActive)
+      if (cmpOutline?.isActive && cmpOutline.selection)
         RenderWebGL.drawOutline(cmpOutline.selection, _cmpCamera, cmpOutline);
 
       // copy framebuffer to canvas
