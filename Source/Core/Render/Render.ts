@@ -31,11 +31,11 @@ namespace FudgeCore {
 
     /**
      * Recursively iterates over the branch starting with the node given, recalculates all world transforms, 
-     * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
+     * collects all lights and feeds the renderbuffers with the neccessary node and component data to draw a frame. Sorts nodes for different
      * render passes.
      * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
      */
-    public static prepare(_branch: Node, _options: RenderPrepareOptions = Render.#defaultOptions, _parent: Node = Render.#defaultRootNode, _recalculate: boolean = false): void {
+    public static prepare(_branch: Node, _options: RenderPrepareOptions = Render.#defaultOptions, _recalculate: boolean = false): void {
       Render.timestampUpdate = performance.now();
       Render.nodesSimple.reset();
       Render.nodesAlpha.reset();
@@ -48,7 +48,7 @@ namespace FudgeCore {
       Coat.resetRenderData();
 
       _branch.dispatchEvent(Render.#eventPrepareStart);
-      this.prepareBranch(_branch, _options, _parent, _recalculate);
+      this.prepareBranch(_branch, _options, _branch.getParent() ?? Render.#defaultRootNode, _recalculate);
       _branch.dispatchEvent(Render.#eventPrepareEnd);
 
       for (const cmpSkeleton of Render.componentsSkeleton)
@@ -95,7 +95,6 @@ namespace FudgeCore {
       Render.drawNodes(Render.nodesSimple, sorted, _cmpCamera);
     }
 
-    // TODO: replace _mtxWorld with _parent? That way we can detect recalculation of sub-branches that changed their parent, also no need for getParent calls.
     private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _parent: Node, _recalculate: boolean): void {
       if (!_branch.isActive)
         return; // don't add branch to render list if not active

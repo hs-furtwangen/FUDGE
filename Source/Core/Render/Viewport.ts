@@ -223,7 +223,7 @@ namespace FudgeCore {
     // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      Render.prepare(this.#branch, undefined, this.#branch.getParent() ?? undefined);
+      Render.prepare(this.#branch);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
     }
