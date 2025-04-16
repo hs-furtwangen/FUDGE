@@ -16,9 +16,11 @@ namespace Fudge {
     private node: ƒ.Node;
     private nodeLight: ƒ.Node = new ƒ.Node("Illumination"); // keeps light components for dark graphs
     private redrawId: number;
-
     private transformator: ƒAid.Transformator;
 
+    readonly #selection: ƒ.Node[] = [];
+
+    #canvasResizeObserver: ResizeObserver;
     #pointerMoved: boolean = false;
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
@@ -36,7 +38,6 @@ namespace Fudge {
       this.dom.title = title;
       this.dom.tabIndex = 0;
 
-      _container.on("resize", this.redraw);
       this.dom.addEventListener(EVENT_EDITOR.SELECT, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.MODIFY, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
@@ -52,7 +53,6 @@ namespace Fudge {
       this.dom.addEventListener("mousedown", () => this.#pointerMoved = false); // reset pointer move
       this.dom.addEventListener("startTransform", this.hndEvent); // hack to evaluate common undo system
       this.dom.addEventListener("endTransform", this.hndEvent); // hack to mutate transform component to sync graph instances
-
 
       if (_state["gizmosFilter"]) {
         let gizmosFilter: ƒ.Viewport["gizmosFilter"] = _state["gizmosFilter"];
@@ -200,12 +200,17 @@ namespace Fudge {
 
       let cmpCamera: ƒ.ComponentCamera = new ƒ.ComponentCamera();
       this.canvas = ƒAid.Canvas.create(true, ƒAid.IMAGE_RENDERING.PIXELATED);
+
       let container: HTMLDivElement = document.createElement("div");
       container.style.borderWidth = "0px";
       document.body.appendChild(this.canvas);
 
       this.viewport = new ƒ.Viewport();
       this.viewport.gizmosEnabled = true;
+      this.viewport.gizmosSelected = this.#selection;
+
+      this.#canvasResizeObserver = new ResizeObserver(this.redraw);
+      this.#canvasResizeObserver.observe(this.canvas);
       // add default values for view render gizmos
       this.viewport.initialize("ViewNode_Viewport", null, cmpCamera, this.canvas);
       const redraw = (): void => { if (this.redrawId == undefined && this.graph) this.redraw(); };
@@ -216,6 +221,7 @@ namespace Fudge {
       this.viewport.addEventListener(ƒ.EVENT.RENDER_PREPARE_START, this.hndPrepare);
 
       this.cmpOutline = new ƒ.ComponentOutline([], ƒ.Color.CSS("DeepPink"), ƒ.Color.CSS("DeepPink", 0.3));
+      this.cmpOutline.selection = this.#selection;
       cmpCamera.node.addComponent(this.cmpOutline);
 
       this.setGraph(null);
@@ -295,17 +301,10 @@ namespace Fudge {
           this.node.cmpTransform.mutate(this.node.cmpTransform.getMutator());
           break;
         case EVENT_EDITOR.SELECT:
+          this.node = detail.node;
           if (detail.graph) {
             this.setGraph(detail.graph);
             this.dispatch(EVENT_EDITOR.FOCUS, { bubbles: false, detail: { node: detail.node || this.graph } });
-          }
-          if (detail.node) {
-            this.node = detail.node;
-            this.cmpOutline.selection = [this.node];
-            this.transformator.mtxLocal = this.node.mtxLocal;
-            this.transformator.mtxWorld = this.node.mtxWorld;
-
-            this.viewport.gizmosSelected = [this.node];
           }
           break;
         case EVENT_EDITOR.FOCUS:
@@ -315,12 +314,22 @@ namespace Fudge {
         case EVENT_EDITOR.CLOSE:
           this.setRenderContinously(false);
           this.viewport.gizmosSelected = null;
-          return;
+          break;
         case EVENT_EDITOR.UPDATE:
           if (!this.viewport.camera.isActive)
             this.viewport.camera = this.cmrOrbit.cmpCamera;
           break;
+        case EVENT_EDITOR.MODIFY:
+          if (!this.node.getParent() && !(this.node instanceof ƒ.Graph))
+            this.node = null;
+          break;
       }
+
+      this.#selection.length = 0;
+      if (this.node)
+        this.#selection[0] = this.node;
+      this.transformator.mtxLocal = this.node?.mtxLocal;
+      this.transformator.mtxWorld = this.node?.mtxWorld;
       this.redraw();
     };
 
@@ -400,7 +409,7 @@ namespace Fudge {
     };
 
     private redraw = (): void => {
-      if (this.viewport.canvas.clientHeight == 0 || this.viewport.canvas.clientHeight == 0 || !this.graph) 
+      if (this.viewport.rectClient.width == 0 || this.viewport.rectClient.height == 0 || !this.graph)
         return;
 
       try {

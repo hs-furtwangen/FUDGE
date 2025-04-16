@@ -85,6 +85,8 @@ namespace Fudge {
     protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void {
       ƒ.Debug.fudge(`MenuSelect: Item-id=${CONTEXTMENU[_item.id]}`);
       let focus: ƒ.Node = this.tree.getFocussed();
+      if (!focus)
+        return;
 
       switch (Number(_item.id)) {
         case CONTEXTMENU.ADD_NODE:
@@ -105,8 +107,6 @@ namespace Fudge {
           break;
         case CONTEXTMENU.DELETE_NODE:
           // focus.addChild(child);
-          if (!focus)
-            return;
           this.tree.controller.delete([focus]).then(_deleted => {
             if (_deleted.length == 0)
               return;

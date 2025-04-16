@@ -171,7 +171,7 @@ namespace Fudge {
 
     private addComponentsFromResources(_resources: ƒ.SerializableResource[]): void {
       if (this.protectGraphInstance())
-        return; 
+        return;
       for (let source of _resources as ƒ.SerializableResource[]) {
         this.addComponentFromResources(source);
         this.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
@@ -266,6 +266,9 @@ namespace Fudge {
         case EVENT_EDITOR.SELECT:
           this.node = _event.detail.node || _event.detail.graph;
         case EVENT_EDITOR.MODIFY:
+          if (!this.node.getParent() && !(this.node instanceof ƒ.Graph)) 
+            this.node = null;
+          
           // console.log(_event);
           this.fillContent();
           break;
