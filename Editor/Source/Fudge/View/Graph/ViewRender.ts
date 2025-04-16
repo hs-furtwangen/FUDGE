@@ -315,10 +315,11 @@ namespace Fudge {
         case EVENT_EDITOR.CLOSE:
           this.setRenderContinously(false);
           this.viewport.gizmosSelected = null;
-          break;
+          return;
         case EVENT_EDITOR.UPDATE:
           if (!this.viewport.camera.isActive)
             this.viewport.camera = this.cmrOrbit.cmpCamera;
+          break;
       }
       this.redraw();
     };
@@ -399,8 +400,9 @@ namespace Fudge {
     };
 
     private redraw = (): void => {
-      if (this.viewport.canvas.clientHeight == 0 || this.viewport.canvas.clientHeight == 0)
+      if (this.viewport.canvas.clientHeight == 0 || this.viewport.canvas.clientHeight == 0 || !this.graph) 
         return;
+
       try {
         ƒ.Physics.activeInstance = Page.getPhysics(this.graph);
         ƒ.Physics.connectJoints();

@@ -60,6 +60,9 @@ namespace Fudge {
         if (_state["graph"]) {
           ƒ.Project.getResource(_state["graph"]).then((_graph: ƒ.Graph) => {
             const node: ƒ.Node = _state["node"] && ƒ.Node.FIND(_graph, _state["node"]);
+            if (!node && !_graph)
+              return;
+            
             this.dispatch(EVENT_EDITOR.SELECT, { detail: { graph: _graph, node: node } });
           });
         }
@@ -133,7 +136,7 @@ namespace Fudge {
       sessionStorage.setItem(this.id, _graph.idResource);
     }
 
-    private async restoreGraph(): Promise<ƒ.Graph> {
+    private async restoreGraph(): Promise<ƒ.Graph | null> {
       let id: string = sessionStorage.getItem(this.id);
       return id && <Promise<ƒ.Graph>>ƒ.Project.getResource(id);
     }
