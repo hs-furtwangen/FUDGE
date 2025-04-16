@@ -222,14 +222,10 @@ namespace FudgeCore {
      */
     // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
-      let parent: Node = this.#branch.getParent();
-      let mtxRoot: Matrix4x4 = parent?.mtxWorld ?? Matrix4x4.IDENTITY();
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
-      Render.prepare(this.#branch, {}, mtxRoot);
+      Render.prepare(this.#branch, undefined, this.#branch.getParent()?.mtxWorld);
       this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
       this.componentsPick = Render.componentsPick;
-      if (!parent)
-        Recycler.store(mtxRoot);
     }
 
     /**

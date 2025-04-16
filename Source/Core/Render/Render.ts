@@ -24,13 +24,18 @@ namespace FudgeCore {
     static readonly #eventPrepareStart: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_START);
     static readonly #eventPrepareEnd: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_END);
 
+    static readonly #mtxRoot: Matrix4x4 = Matrix4x4.IDENTITY();
+    static readonly #defaultOptions: RenderPrepareOptions = {};
+
+    static readonly #mapNodeToParent: WeakMap<Node, Node> = new WeakMap<Node, Node>();
+
     /**
      * Recursively iterates over the branch starting with the node given, recalculates all world transforms, 
      * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
      * render passes.
      * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
      */
-    public static prepare(_branch: Node, _options: RenderPrepareOptions = {}, _mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY(), _recalculate: boolean = false): void {
+    public static prepare(_branch: Node, _options: RenderPrepareOptions = Render.#defaultOptions, _mtxWorld: Matrix4x4 = Render.#mtxRoot, _recalculate: boolean = false): void {
       Render.timestampUpdate = performance.now();
       Render.nodesSimple.reset();
       Render.nodesAlpha.reset();
@@ -43,11 +48,10 @@ namespace FudgeCore {
       Coat.resetRenderData();
 
       _branch.dispatchEvent(Render.#eventPrepareStart);
-
       this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
-
       _branch.dispatchEvent(Render.#eventPrepareEnd);
-      for (const cmpSkeleton of Render.componentsSkeleton) 
+
+      for (const cmpSkeleton of Render.componentsSkeleton)
         cmpSkeleton.updateRenderBuffer();
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
@@ -91,6 +95,7 @@ namespace FudgeCore {
       Render.drawNodes(Render.nodesSimple, sorted, _cmpCamera);
     }
 
+    // TODO: replace _mtxWorld with _parent? That way we can detect recalculation of sub-branches that changed their parent, also no need for getParent calls.
     private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _mtxWorld: Matrix4x4, _recalculate: boolean): void {
       if (!_branch.isActive)
         return; // don't add branch to render list if not active
@@ -104,16 +109,21 @@ namespace FudgeCore {
 
       _branch.timestampUpdate = Render.timestampUpdate;
 
+      let parent: Node = _branch.getParent();
+      let previousParent: Node = Render.#mapNodeToParent.get(_branch);
+      if (parent != previousParent) {
+        Render.#mapNodeToParent.set(_branch, parent);
+        _recalculate = true;
+      }
+
       // PerformanceMonitor.startMeasure("Render.prepareBranch cmpTransform");
       const cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
       if (cmpTransform?.isActive) {
         if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
-          // PerformanceMonitor.startMeasure("Render.prepareBranch mtxWorld * mtxLocal");
           Matrix4x4.PRODUCT(_mtxWorld, cmpTransform.mtxLocal, _branch.mtxWorld);
-          // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxLocal");
           cmpTransform.mtxLocal.modified = false;
         }
-      } else 
+      } else
         _branch.mtxWorld.copy(_mtxWorld); // overwrite readonly mtxWorld of the current node
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpTransform");
 
@@ -142,10 +152,8 @@ namespace FudgeCore {
       const cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
       const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
       if (cmpMesh?.isActive && cmpMaterial?.isActive) {
-        if (cmpMesh.mtxPivot.modified || _branch.mtxWorld.modified) {
-          // PerformanceMonitor.startMeasure("Render.prepareBranch mtxWorld * mtxPivot");
+        if (cmpMesh.mtxPivot.modified || _recalculate) {
           Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
-          // PerformanceMonitor.endMeasure("Render.prepareBranch mtxWorld * mtxPivot");
           cmpMesh.mtxPivot.modified = false;
         }
 
@@ -168,11 +176,9 @@ namespace FudgeCore {
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
       const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera);
-      if (cmpCamera?.isActive) {
-        if (cmpCamera.mtxPivot.modified || _branch.mtxWorld.modified) {
-          Matrix4x4.PRODUCT(_branch.mtxWorld, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
-          cmpCamera.mtxPivot.modified = false;
-        }
+      if (cmpCamera && cmpCamera.isActive && (cmpCamera.mtxPivot.modified || _recalculate)) {
+        Matrix4x4.PRODUCT(_branch.mtxWorld, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
+        cmpCamera.mtxPivot.modified = false;
       }
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch cmpSkeleton");
@@ -181,8 +187,6 @@ namespace FudgeCore {
         if (cmpSkeleton?.isActive)
           Render.componentsSkeleton.push(cmpSkeleton);
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpSkeleton");
-
-      _branch.mtxWorld.modified = false;
 
       for (let child of _branch.getChildren()) {
         Render.prepareBranch(child, _options, _branch.mtxWorld, _recalculate);
@@ -198,7 +202,6 @@ namespace FudgeCore {
       }
 
       // PerformanceMonitor.startMeasure("Render.prepareBranch touch parent");
-      let parent: Node = _branch.getParent();
       if (parent) {
         // parent.nNodesInBranch += _branch.nNodesInBranch;
         let position: Vector3 = cmpMesh?.mtxWorld.translation ?? _branch.mtxWorld.translation;
