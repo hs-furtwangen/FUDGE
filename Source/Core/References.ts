@@ -3,6 +3,7 @@
 /// <reference path="Debug/Debug.ts"/>
 // / <reference path="Time/Time.ts"/>
 /// <reference path="Event/Event.ts"/>
+/// <reference path="Recycle/RecyclableEvent.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
 /// <reference path="Serialization/Serializer.ts"/> 
 /// <reference path="Render/RenderWebGL.ts"/>

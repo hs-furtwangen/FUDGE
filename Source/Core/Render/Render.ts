@@ -20,9 +20,9 @@ namespace FudgeCore {
     private static timestampUpdate: number;
 
     // cache events to avoid frequent recycling
-    static readonly #eventPrepare: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE);
-    static readonly #eventPrepareStart: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_START);
-    static readonly #eventPrepareEnd: RecyclableEvent = RecyclableEvent.GET(EVENT.RENDER_PREPARE_END);
+    static readonly #eventPrepare: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_PREPARE);
+    static readonly #eventPrepareStart: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_PREPARE_START);
+    static readonly #eventPrepareEnd: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_PREPARE_END);
 
     static readonly #defaultRootNode: Node = new Node("Root");
     static readonly #defaultOptions: RenderPrepareOptions = {};
