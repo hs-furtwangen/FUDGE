@@ -10,7 +10,7 @@ namespace RaySceneVR {
         private xrViewport: f.XRViewport = null;
         private controller: f.VRController;
         private maxLength: number;
-        private pickableObjects: f.Node[];
+        private pickableObjects: readonly f.Node[];
         private cubeContainer: f.Node;
         private pick: f.Node = null;
         private ray: f.Ray = null;

@@ -43,7 +43,7 @@ namespace Fudge {
       return _node.getChildren().length > 0;
     }
 
-    public getChildren(_node: ƒ.Node): ƒ.Node[] {
+    public getChildren(_node: ƒ.Node): readonly ƒ.Node[] {
       return _node.getChildren();
     }
 

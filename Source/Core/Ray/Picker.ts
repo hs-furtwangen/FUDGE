@@ -8,9 +8,9 @@ namespace FudgeCore {
      * Takes a ray plus min and max values for the near and far planes to construct the picker-camera,
      * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
      */
-    public static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number): Pick[];
-    public static pickRay(_gizmos: Gizmo[], _ray: Ray, _min: number, _max: number): Pick[];
-    public static pickRay(_from: Node[] | Gizmo[], _ray: Ray, _min: number, _max: number): Pick[] {
+    public static pickRay(_nodes: readonly Node[], _ray: Ray, _min: number, _max: number): Pick[];
+    public static pickRay(_gizmos: readonly Gizmo[], _ray: Ray, _min: number, _max: number): Pick[];
+    public static pickRay(_from: readonly Node[] | readonly Gizmo[], _ray: Ray, _min: number, _max: number): Pick[] {
       if (_from.length == 0)
         return [];
 
@@ -21,9 +21,9 @@ namespace FudgeCore {
 
       let picks: Pick[];
       if (_from[0] instanceof Node)
-        picks = Render.pick(<Node[]>_from, cmpCameraPick);
+        picks = Render.pick(<readonly Node[]>_from, cmpCameraPick);
       else
-        picks = Gizmos.pick(<Gizmo[]>_from, cmpCameraPick);
+        picks = Gizmos.pick(<readonly Gizmo[]>_from, cmpCameraPick);
 
       Recycler.store(cmpCameraPick);
       return picks;
@@ -33,9 +33,9 @@ namespace FudgeCore {
      * Takes a camera and a point on its virtual normed projection plane (distance 1) to construct the picker-camera,
      * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
      */
-    public static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
-    public static pickCamera(_nodes: Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
-    public static pickCamera(_from: Node[] | Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[] {
+    public static pickCamera(_nodes: readonly Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
+    public static pickCamera(_nodes: readonly Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
+    public static pickCamera(_from: readonly Node[] | readonly Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[] {
       let ray: Ray = new Ray(new Vector3(-_posProjection.x, _posProjection.y, 1));
       let length: number = ray.direction.magnitude;
 

@@ -519,7 +519,7 @@ namespace FudgeCore {
      * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object. 
      * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
      */
-    public static pickFrom<T>(_from: T[], _cmpCamera: ComponentCamera, _pick: (_from: T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
+    public static pickFrom<T>(_from: readonly T[], _cmpCamera: ComponentCamera, _pick: (_from: readonly T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
       const size: number = Math.ceil(Math.sqrt(_from.length));
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
@@ -591,7 +591,7 @@ namespace FudgeCore {
      * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,  
      * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
      */
-    protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[] {
+    protected static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[] {
       let picks: Pick[] = [];
 
       for (const node of _nodes) {

@@ -476,7 +476,7 @@ declare namespace Fudge {
         getAttributes(_node: ƒ.Node): string;
         setValue(_node: ƒ.Node, _element: HTMLInputElement | HTMLSelectElement): Promise<boolean>;
         hasChildren(_node: ƒ.Node): boolean;
-        getChildren(_node: ƒ.Node): ƒ.Node[];
+        getChildren(_node: ƒ.Node): readonly ƒ.Node[];
         paste(): Promise<ƒ.Node[]>;
         dragOver(_event: DragEvent): ƒui.DROPEFFECT;
         drop(_event: DragEvent): Promise<ƒ.Node[]>;

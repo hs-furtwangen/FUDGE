@@ -704,7 +704,7 @@ declare namespace FudgeUserInterface {
         /** Return true if the object has children that must be shown when unfolding the tree item */
         abstract hasChildren(_object: T): boolean;
         /** Return the object's children to show when unfolding the tree item */
-        abstract getChildren(_object: T): T[];
+        abstract getChildren(_object: T): readonly T[];
         /**
          * Process the list of source objects to be addedAsChildren when dropping or pasting onto the target item/object,
          * return the list of objects that should visibly become the children of the target item/object

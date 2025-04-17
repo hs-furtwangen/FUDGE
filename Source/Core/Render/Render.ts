@@ -78,7 +78,7 @@ namespace FudgeCore {
      * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
      * for each node in the line of sight and return that as an unsorted {@link Pick}-array
      */
-    public static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
+    public static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
       return Render.pickFrom(_nodes, _cmpCamera, super.pick);
     }
 

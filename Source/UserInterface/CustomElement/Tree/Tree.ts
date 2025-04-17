@@ -114,7 +114,7 @@ namespace FudgeUserInterface {
 
     private hndExpand(_event: Event): void {
       let item: TreeItem<T> = <TreeItem<T>>_event.target;
-      let children: T[] = this.controller.getChildren(item.data);
+      let children: readonly T[] = this.controller.getChildren(item.data);
       if (!children || children.length == 0)
         return;
 
@@ -123,7 +123,7 @@ namespace FudgeUserInterface {
       this.displaySelection(this.controller.selection);
     }
 
-    private createBranch(_data: T[]): TreeList<T> {
+    private createBranch(_data: readonly T[]): TreeList<T> {
       let branch: TreeList<T> = new TreeList<T>(this.controller, []);
       for (let child of _data) {
         branch.addItems([new TreeItem(this.controller, child)]);

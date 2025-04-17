@@ -46,7 +46,7 @@ namespace FudgeUserInterface {
     public abstract hasChildren(_object: T): boolean;
 
     /** Return the object's children to show when unfolding the tree item */
-    public abstract getChildren(_object: T): T[];
+    public abstract getChildren(_object: T): readonly T[];
 
     /** 
      * Process the list of source objects to be addedAsChildren when dropping or pasting onto the target item/object, 

@@ -1258,13 +1258,13 @@ declare namespace FudgeCore {
          * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object.
          * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
          */
-        static pickFrom<T>(_from: T[], _cmpCamera: ComponentCamera, _pick: (_from: T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[];
+        static pickFrom<T>(_from: readonly T[], _cmpCamera: ComponentCamera, _pick: (_from: readonly T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[];
         /**
          * The render function for picking nodes.
          * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
-        protected static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
+        protected static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
         protected static initializeCamera(): void;
         protected static initializeFog(): void;
         /**
@@ -1385,9 +1385,9 @@ declare namespace FudgeCore {
          */
         getChild(_index: number): Node;
         /**
-         * Returns a clone of the list of children
+         * Returns the readonly list of children. Create a copy to modify it.
          */
-        getChildren(): Node[];
+        getChildren(): readonly Node[];
         /**
          * Returns the first child with the supplied name.
          */
@@ -3257,7 +3257,7 @@ declare namespace FudgeCore {
     }
     /**
      * The camera component holds the projection-matrix and other data needed to render a scene from the perspective of the node it is attached to.
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
     class ComponentCamera extends Component {
         #private;
@@ -3265,13 +3265,6 @@ declare namespace FudgeCore {
         mtxPivot: Matrix4x4;
         readonly mtxWorld: Matrix4x4;
         clrBackground: Color;
-        private projection;
-        private fieldOfView;
-        private aspectRatio;
-        private direction;
-        private near;
-        private far;
-        private backgroundEnabled;
         /**
          * Returns {@link mtxProjection} * {@link mtxCameraInverse}
          * yielding the worldspace to viewspace matrix
@@ -3282,39 +3275,70 @@ declare namespace FudgeCore {
          */
         get mtxCameraInverse(): Matrix4x4;
         /**
-         * Returns the projectionmatrix of this camera
+         * Returns the projectionmatrix of this camera.
          */
         get mtxProjection(): Matrix4x4;
         /**
-         * Resets this cameras {@link mtxWorldToView} and {@link mtxCameraInverse} matrices
+         * Returns true if the background of the camera should be rendered, false if not.
          */
-        resetWorldToView(): void;
+        get backgroundEnabled(): boolean;
         /**
-         * Returns the cameras {@link PROJECTION} mode
+         * Returns the cameras {@link PROJECTION} mode.
+         */
+        get projection(): PROJECTION;
+        /**
+         * Returns the cameras aspect ratio.
+         */
+        get aspectRatio(): number;
+        /**
+         * Returns the cameras field of view in degrees.
+         */
+        get fieldOfView(): number;
+        /**
+         * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
+         */
+        get direction(): FIELD_OF_VIEW;
+        /**
+         * Returns the cameras near value i.e. the minimum distance to render objects at.
+         */
+        get near(): number;
+        /**
+         * Returns the cameras far value i.e. the maximum distance to render objects at.
+         */
+        get far(): number;
+        /**
+         * Returns the cameras {@link PROJECTION} mode.
+         * @deprecated Use {@link projection} instead.
          */
         getProjection(): PROJECTION;
         /**
-         * Returns true if the background of the camera should be rendered, false if not
+         * Returns true if the background of the camera should be rendered, false if not.
+         * @deprecated Use {@link backgroundEnabled} instead.
          */
         getBackgroundEnabled(): boolean;
         /**
-         * Returns the cameras aspect ratio
+         * Returns the cameras aspect ratio.
+         * @deprecated Use {@link aspectRatio} instead.
          */
         getAspect(): number;
         /**
-         * Returns the cameras field of view in degrees
+         * Returns the cameras field of view in degrees.
+         * @deprecated Use {@link fieldOfView} instead.
          */
         getFieldOfView(): number;
         /**
-         * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given
+         * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
+         * @deprecated Use {@link direction} instead.
          */
         getDirection(): FIELD_OF_VIEW;
         /**
-         * Returns the cameras near value i.e. the minimum distance to render objects at
+         * Returns the cameras near value i.e. the minimum distance to render objects at.
+         * @deprecated Use {@link near} instead.
          */
         getNear(): number;
         /**
-         * Returns the cameras far value i.e. the maximum distance to render objects at
+         * Returns the cameras far value i.e. the maximum distance to render objects at.
+         * @deprecated Use {@link far} instead.
          */
         getFar(): number;
         /**
@@ -7543,14 +7567,14 @@ declare namespace FudgeCore {
          * Takes a ray plus min and max values for the near and far planes to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickRay(_nodes: Node[], _ray: Ray, _min: number, _max: number): Pick[];
-        static pickRay(_gizmos: Gizmo[], _ray: Ray, _min: number, _max: number): Pick[];
+        static pickRay(_nodes: readonly Node[], _ray: Ray, _min: number, _max: number): Pick[];
+        static pickRay(_gizmos: readonly Gizmo[], _ray: Ray, _min: number, _max: number): Pick[];
         /**
          * Takes a camera and a point on its virtual normed projection plane (distance 1) to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
          */
-        static pickCamera(_nodes: Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
-        static pickCamera(_nodes: Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
+        static pickCamera(_nodes: readonly Node[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
+        static pickCamera(_nodes: readonly Gizmo[], _cmpCamera: ComponentCamera, _posProjection: Vector2): Pick[];
         /**
          * Takes the camera of the given viewport and a point the client surface to construct the picker-camera,
          * then renders the pick-texture and returns an unsorted {@link Pick}-array with information about the hits of the ray.
@@ -7596,6 +7620,51 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    type Writable<T, K extends keyof T> = Omit<T, K> & {
+        -readonly [P in K]: T[P];
+    };
+    type WritableEvent = Writable<Event, "type" | "target" | "currentTarget" | "eventPhase" | "bubbles" | "cancelable">;
+    /**
+     * A subclass of {@link Event} that can be reused via the {@link Recycler} to reduce the number of event objects created.
+     * Exposes readonly properties of the event class as writable properties.
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    export class RecyclableEvent extends Event implements Recycable {
+        constructor(_type?: string, _init?: EventInit);
+        static [Symbol.hasInstance](_instance: unknown): boolean;
+        /**
+         * Returns a event of the specified type with the specified options from the {@link Recycler}. See {@link Event} constructor for details on the parameters.
+         */
+        static GET(_type: string, _bubbles?: boolean, _cancelable?: boolean): RecyclableEvent;
+        /**
+         * Flag for fast type checking.
+         */
+        get isRecyclableEvent(): boolean;
+        recycle(this: WritableEvent): void;
+        /**
+         * Set the type and options of the event. See {@link Event} constructor for details.
+         * @returns A reference to this event.
+         */
+        set(this: WritableEvent, _type: string, _bubbles?: boolean, _cancelable?: boolean): RecyclableEvent;
+        /**
+         * Set the target of the event. Used by the event system.
+         * @returns A reference to this event.
+         */
+        setTarget(this: WritableEvent, _target: EventTarget): RecyclableEvent;
+        /**
+         * Set the current target of the event. Used by the event system.
+         * @returns A reference to this event.
+         */
+        setCurrentTarget(this: WritableEvent, _currentTarget: EventTarget): RecyclableEvent;
+        /**
+         * Set the event phase of the event. Used by the event system.
+         * @returns A reference to this event.
+         */
+        setEventPhase(this: WritableEvent, _eventPhase: Event["NONE"] | Event["CAPTURING_PHASE"] | Event["AT_TARGET"] | Event["BUBBLING_PHASE"]): RecyclableEvent;
+    }
+    export {};
+}
+declare namespace FudgeCore {
     /**
      * The interface to render visual aids in the editor. Implemented by {@link Component}s. Can be used on its own to draw and pick visual aids independent of a scene graph.
      */
@@ -7634,7 +7703,7 @@ declare namespace FudgeCore {
         /**
          * Picks all gizmos in the line of sight and returns an unsorted array of {@link Pick}s each associated with the gizmo the pick ray hit.
          */
-        static pick(_gizmos: Gizmos[], _cmpCamera: ComponentCamera): Pick[];
+        static pick(_gizmos: readonly Gizmos[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws a camera frustum for the given parameters. The frustum is oriented along the z-axis, with the tip of the truncated pyramid at the origin.
          */
@@ -7717,6 +7786,7 @@ declare namespace FudgeCore {
      * The main interface to the render engine, here WebGL (see superclass {@link RenderWebGL} and the RenderInjectors
      */
     abstract class Render extends RenderWebGL {
+        #private;
         static rectClip: Rectangle;
         static pickBuffer: Int32Array;
         static readonly nodesPhysics: RecycableArray<Node>;
@@ -7726,20 +7796,19 @@ declare namespace FudgeCore {
         private static readonly nodesAlpha;
         private static readonly componentsSkeleton;
         private static timestampUpdate;
-        private static readonly prepareEvent;
         /**
          * Recursively iterates over the branch starting with the node given, recalculates all world transforms,
-         * collects all lights and feeds all shaders used in the graph with these lights. Sorts nodes for different
+         * collects all lights and feeds the renderbuffers with the neccessary node and component data to draw a frame. Sorts nodes for different
          * render passes.
          * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
          */
-        static prepare(_branch: Node, _options?: RenderPrepareOptions, _mtxWorld?: Matrix4x4, _recalculate?: boolean): void;
+        static prepare(_branch: Node, _options?: RenderPrepareOptions, _recalculate?: boolean): void;
         static addLights(_cmpLights: readonly ComponentLight[]): void;
         /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
          * for each node in the line of sight and return that as an unsorted {@link Pick}-array
          */
-        static pick(_nodes: Node[], _cmpCamera: ComponentCamera): Pick[];
+        static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws the scene from the point of view of the given camera
          */
@@ -7833,16 +7902,17 @@ declare namespace FudgeCore {
          */
         get context(): CanvasRenderingContext2D;
         /**
-         * The rectangle of the canvas area in CSS pixels. Use this to access the canvas width and height, but without incuring browser internal major and cpp garbage collection.
+         * The rectangle of the canvas area in CSS pixels. Use this to access the canvas width and height,
+         * but without incuring browser internal garbage collection.
          *
          * Adjusted internally by {@link adjustFrames}, do not modify.
          */
         get rectCanvas(): Rectangle;
         /**
-         * The rectangle of the canvas area as displayed (considering css). Use this to access canvas {@link HTMLCanvasElement.clientWidth clientWidth} and {@link HTMLCanvasElement.clientHeight clientHeight},
-         * but without incuring browser internal major and cpp garbage collection.
+         * The rectangle of the canvas area as displayed (considering css). Use this to access canvas clientWidth and clientHeight,
+         * but without incuring browser internal garbage collection.
          *
-         * Adjusted automatically, do not modify.
+         * Adjusted automatically on canvas resize, do not modify.
          */
         get rectClient(): Rectangle;
         /**
@@ -7897,7 +7967,7 @@ declare namespace FudgeCore {
          */
         adjustFrames(): void;
         /**
-         * Adjust the camera parameters to fit the rendering into the render viewport
+         * Adjust the camera parameters to fit the rendering into the render viewport.
          */
         adjustCamera(): void;
         /**
