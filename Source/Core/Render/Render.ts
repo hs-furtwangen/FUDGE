@@ -191,24 +191,13 @@ namespace FudgeCore {
 
       for (let child of _branch.getChildren()) {
         Render.prepareBranch(child, _options, _branch, _recalculate);
+
         _branch.nNodesInBranch += child.nNodesInBranch;
-
-        // PerformanceMonitor.startMeasure("Render.prepareBranch touch children");
-        // let cmpMeshChild: ComponentMesh = child.getComponent(ComponentMesh);
-        // let position: Vector3 = cmpMeshChild ? cmpMeshChild.mtxWorld.translation : child.mtxWorld.translation;
-        // // position = position.clone;
-        // _branch.radius = Math.max(_branch.radius, position.getDistance(mtxWorld.translation) + child.radius);
-        // // Recycler.store(position);
-        // PerformanceMonitor.endMeasure("Render.prepareBranch touch children");
+        _branch.radius = Math.max(
+          _branch.radius, 
+          (child.getComponent(ComponentMesh)?.mtxWorld.translation ?? child.mtxWorld.translation).getDistance(mtxWorldBranch.translation) + child.radius
+        );
       }
-
-      // PerformanceMonitor.startMeasure("Render.prepareBranch touch parent");
-
-      // parent.nNodesInBranch += _branch.nNodesInBranch;
-      let position: Vector3 = cmpMesh?.mtxWorld.translation ?? mtxWorldBranch.translation;
-      _parent.radius = Math.max(_parent.radius, position.getDistance(_parent.mtxWorld.translation) + _branch.radius);
-
-      // PerformanceMonitor.endMeasure("Render.prepareBranch touch parent");
     }
 
     private static transformByPhysics(_node: Node, _cmpRigidbody: ComponentRigidbody): void {

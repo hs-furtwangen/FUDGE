@@ -213,10 +213,10 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a clone of the list of children
+     * Returns the readonly list of children. Create a copy to modify it.
      */
-    public getChildren(): Node[] {
-      return this.children.slice(0);
+    public getChildren(): readonly Node[] {
+      return this.children;
     }
 
     /**

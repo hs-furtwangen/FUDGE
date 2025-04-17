@@ -15,7 +15,6 @@ namespace FudgeCore {
     public rectSource: Rectangle;
     public rectDestination: Rectangle;
 
-
     // TODO: verify if client to canvas should be in Viewport or somewhere else (Window, Container?)
     // Multiple viewports using the same canvas shouldn't differ here...
     // different framing methods can be used, this is the default
@@ -41,7 +40,7 @@ namespace FudgeCore {
     #crc2: CanvasRenderingContext2D = null;
     #canvas: HTMLCanvasElement = null;
 
-    readonly #rectCanvas: Rectangle = Rectangle.GET(0, 0, 300, 150);
+    readonly #rectCanvas: Rectangle = Rectangle.GET(0, 0, 0, 0);
     readonly #rectClient: Rectangle = Rectangle.GET(0, 0, 0, 0);
     readonly #canvasResizeObserver: ResizeObserver = new ResizeObserver(() => {
       this.#rectClient.width = this.#canvas.clientWidth;
@@ -77,7 +76,8 @@ namespace FudgeCore {
     }
 
     /**
-     * The rectangle of the canvas area in CSS pixels. Use this to access the canvas width and height, but without incuring browser internal major and cpp garbage collection.
+     * The rectangle of the canvas area in CSS pixels. Use this to access the canvas width and height, 
+     * but without incuring browser internal garbage collection.
      * 
      * Adjusted internally by {@link adjustFrames}, do not modify.
      */
@@ -86,10 +86,10 @@ namespace FudgeCore {
     }
 
     /** 
-     * The rectangle of the canvas area as displayed (considering css). Use this to access canvas {@link HTMLCanvasElement.clientWidth clientWidth} and {@link HTMLCanvasElement.clientHeight clientHeight}, 
-     * but without incuring browser internal major and cpp garbage collection. 
+     * The rectangle of the canvas area as displayed (considering css). Use this to access canvas clientWidth and clientHeight, 
+     * but without incuring browser internal garbage collection. 
      *  
-     * Adjusted automatically, do not modify.
+     * Adjusted automatically on canvas resize, do not modify.
      */
     public get rectClient(): Rectangle {
       return this.#rectClient;
@@ -105,6 +105,10 @@ namespace FudgeCore {
       this.#crc2 = _canvas.getContext("2d");
       this.#canvas.tabIndex = 0; // can get focus and receive keyboard events
 
+      this.#rectCanvas.width = _canvas.width;
+      this.#rectCanvas.height = _canvas.height;
+      this.#rectClient.width = _canvas.clientWidth;
+      this.#rectClient.height = _canvas.clientHeight;
       this.rectSource = Render.getCanvasRectangle().clone;
       this.rectDestination = Rectangle.GET(0, 0, this.#canvas.clientWidth, this.#canvas.clientHeight);
 
