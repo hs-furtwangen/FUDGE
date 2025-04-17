@@ -18,6 +18,8 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2025
    */
   export class RecyclableEvent extends Event implements Recycable {
+    public readonly path: EventTarget[] = []; // for now use array, if constant resizing becomes a mermory problem find a better solution
+
     public constructor(_type?: string, _init?: EventInit) {
       super(_type, _init);
       makePropertyWritable(this, "bubbles");
@@ -52,6 +54,7 @@ namespace FudgeCore {
       this.currentTarget = null;
       this.bubbles = false;
       this.eventPhase = 0;
+      (<this>this).path.length = 0;
     }
 
     /**

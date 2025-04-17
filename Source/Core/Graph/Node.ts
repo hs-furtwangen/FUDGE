@@ -185,7 +185,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Traces back the ancestors of this node and returns the first
+     * Traces back the ancestors of this node and returns the first.
      */
     public getAncestor(): Node | null {
       let ancestor: Node = this;
@@ -195,14 +195,14 @@ namespace FudgeCore {
     }
 
     /**
-     * Traces the hierarchy upwards to the first ancestor and returns the path through the graph to this node
+     * Traces the hierarchy upwards to the root and returns the path from the root to this node.
      */
-    public getPath(): Node[] {
+    public getPath(_out: Node[] = [], _offset: number = 0): Node[] {
       let ancestor: Node = this;
-      let path: Node[] = [this];
-      while (ancestor.getParent())
-        path.unshift(ancestor = ancestor.getParent());
-      return path;
+      _out[_offset] = ancestor;
+      while ((ancestor = ancestor.getParent()))
+        _out[++_offset] = ancestor;
+      return _out.reverse();
     }
 
     /**
@@ -576,39 +576,74 @@ namespace FudgeCore {
      * than the matching handler of the target node in the target phase, and back out of the hierarchy in the bubbling phase, invoking appropriate handlers of the anvestors
      */
     public dispatchEvent(_event: Event): boolean {
-      let ancestors: Node[] = [];
-      let upcoming: Node = this;
-      // overwrite event target
-      Object.defineProperty(_event, "target", { writable: true, value: this });
-      // TODO: consider using Reflect instead of Object throughout. See also Render and Mutable...
-      while (upcoming.parent)
-        ancestors.push(upcoming = upcoming.parent);
-      Object.defineProperty(_event, "path", { writable: true, value: new Array<Node>(this, ...ancestors) });
+      if (_event instanceof RecyclableEvent) {
+        _event.setTarget(this);
+        
+        // update path
+        const path: Node[] = <Node[]>_event.path;
+        path.length = 0;
+        this.getPath(path).reverse();
 
-      // capture phase
-      Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.CAPTURING_PHASE });
-      for (let i: number = ancestors.length - 1; i >= 0; i--) {
-        let ancestor: Node = ancestors[i];
-        Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
-        this.callListeners(ancestor.captures[_event.type], _event);
+        // capture phase
+        _event.setEventPhase(Event.CAPTURING_PHASE);
+        for (let i: number = path.length - 1; i >= 1; i--) {
+          let ancestor: Node = path[i];
+          _event.setCurrentTarget(ancestor);
+          this.callListeners(ancestor.captures[_event.type], _event);
+        }
+
+        // target phase
+        _event.setEventPhase(Event.AT_TARGET);
+        _event.setCurrentTarget(this);
+        this.callListeners(this.captures[_event.type], _event);
+        this.callListeners(this.listeners[_event.type], _event);
+
+        // bubble phase
+        if (!_event.bubbles)
+          return true;
+
+        _event.setEventPhase(Event.BUBBLING_PHASE);
+        for (let i: number = 1; i < path.length; i++) {
+          let ancestor: Node = path[i];
+          _event.setCurrentTarget(ancestor);
+          this.callListeners(ancestor.listeners[_event.type], _event);
+        }
+      } else {
+        let ancestors: Node[] = [];
+        let upcoming: Node = this;
+        // overwrite event target
+        Object.defineProperty(_event, "target", { writable: true, value: this });
+        // TODO: consider using Reflect instead of Object throughout. See also Render and Mutable...
+        while (upcoming.parent)
+          ancestors.push(upcoming = upcoming.parent);
+        Object.defineProperty(_event, "path", { writable: true, value: new Array<Node>(this, ...ancestors) });
+
+        // capture phase
+        Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.CAPTURING_PHASE });
+        for (let i: number = ancestors.length - 1; i >= 0; i--) {
+          let ancestor: Node = ancestors[i];
+          Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
+          this.callListeners(ancestor.captures[_event.type], _event);
+        }
+
+        // target phase
+        Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
+        Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
+        this.callListeners(this.captures[_event.type], _event);
+        this.callListeners(this.listeners[_event.type], _event);
+
+        if (!_event.bubbles)
+          return true;
+
+        // bubble phase
+        Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.BUBBLING_PHASE });
+        for (let i: number = 0; i < ancestors.length; i++) {
+          let ancestor: Node = ancestors[i];
+          Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
+          this.callListeners(ancestor.listeners[_event.type], _event);
+        }
       }
 
-      // target phase
-      Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
-      Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
-      this.callListeners(this.captures[_event.type], _event);
-      this.callListeners(this.listeners[_event.type], _event);
-
-      if (!_event.bubbles)
-        return true;
-
-      // bubble phase
-      Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.BUBBLING_PHASE });
-      for (let i: number = 0; i < ancestors.length; i++) {
-        let ancestor: Node = ancestors[i];
-        Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
-        this.callListeners(ancestor.listeners[_event.type], _event);
-      }
       return true; //TODO: return a meaningful value, see documentation of dispatch event
     }
 
