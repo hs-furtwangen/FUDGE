@@ -214,7 +214,7 @@ namespace FudgeCore {
         frustum[0], frustum[4], frustum[1], frustum[5], frustum[2], frustum[6], frustum[3], frustum[7]  // sides
       ], _mtxWorld, _color, _alphaOccluded);
 
-      Recycler.storeMultiple(frustum);
+      Recycler.store(frustum);
     }
 
     /**

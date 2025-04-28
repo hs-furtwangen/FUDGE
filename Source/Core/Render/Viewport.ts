@@ -152,7 +152,9 @@ namespace FudgeCore {
      */
     public setBranch(_branch: Node): void {
       if (_branch) {
-        _branch.broadcastEvent(new Event(EVENT.ATTACH_BRANCH));
+        const event: RecyclableEvent = RecyclableEvent.get(EVENT.ATTACH_BRANCH);
+        _branch.broadcastEvent(event);
+        Recycler.store(event);
       }
       this.#branch = _branch;
     }
@@ -222,13 +224,17 @@ namespace FudgeCore {
     }
 
     /**
-     * Prepares all nodes in the branch for rendering by updating their world transforms etc.
+     * Prepares all nodes in the branch for rendering by updating their world transforms and supplying the gpu renderbuffers with the neccessary node and component data to draw a frame.
      */
     // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
-      this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_START));
+      const eventPrepareStart: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_PREPARE_START);
+      this.dispatchEvent(eventPrepareStart);
+      RecyclableEvent.store(eventPrepareStart);
       Render.prepare(this.#branch);
-      this.dispatchEvent(new Event(EVENT.RENDER_PREPARE_END));
+      const eventPrepareEnd: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_PREPARE_END);
+      this.dispatchEvent(eventPrepareEnd);
+      RecyclableEvent.store(eventPrepareEnd);
       this.componentsPick = Render.componentsPick;
     }
 

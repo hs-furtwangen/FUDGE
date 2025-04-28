@@ -51,14 +51,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Stores the provided objects using the {@link Recycler.store} method.
-     */
-    public static storeMultiple(_instances: Object[]): void {
-      for (const instance of _instances)
-        Recycler.store(instance);
-    }
-
-    /**
      * Emptys the depot of a given type, leaving the objects for the garbage collector. May result in a short stall when many objects were in
      * @param _t
      */
