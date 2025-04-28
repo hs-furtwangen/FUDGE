@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export type MapLightTypeToLightList = Map<TypeOfLight, RecycableArray<ComponentLight>>;
+  export type MapLightTypeToLightList = Map<LIGHT_TYPE, RecycableArray<ComponentLight>>;
 
   export interface RenderPrepareOptions {
     ignorePhysics?: boolean;
@@ -64,7 +64,7 @@ namespace FudgeCore {
         if (!cmpLight.isActive)
           continue;
 
-        let type: TypeOfLight = cmpLight.light.getType();
+        let type: LIGHT_TYPE = cmpLight.lightType;
         let lightsOfType: RecycableArray<ComponentLight> = Render.lights.get(type);
         if (!lightsOfType) {
           lightsOfType = new RecycableArray<ComponentLight>();
@@ -176,7 +176,7 @@ namespace FudgeCore {
       }
       // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
-      const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera);
+      const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera) ?? _branch.getComponent(ComponentVRDevice); // checking for both of these is rather slow, maybe only update used cameras after all?
       if (cmpCamera && cmpCamera.isActive && (cmpCamera.mtxPivot.modified || _recalculate)) {
         Matrix4x4.PRODUCT(mtxWorldBranch, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
         cmpCamera.mtxPivot.modified = false;

@@ -13,6 +13,7 @@
       "shader": "ShaderGouraud",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0,
@@ -61,16 +62,14 @@
               "ComponentLight": [
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[70, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[0.8196078431372549, 0.8196078431372549, 0.8196078431372549, 1]"
-                      }
-                    },
+                    "color": "[0.8196078431372549, 0.8196078431372549, 0.8196078431372549, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -78,16 +77,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightAmbient",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightAmbient": {
-                        "color": "[0.38823529411764707, 0.38823529411764707, 0.38823529411764707, 1]"
-                      }
-                    },
+                    "color": "[0.38823529411764707, 0.38823529411764707, 0.38823529411764707, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }

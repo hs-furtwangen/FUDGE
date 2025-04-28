@@ -364,6 +364,69 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
+    class RecyclableEvent extends Event {
+        static #depot = {};
+        static #init = {};
+        #target;
+        #currentTarget;
+        #eventPhase;
+        constructor(_type, _bubbles = false, _cancelable = false) {
+            RecyclableEvent.#init.bubbles = _bubbles;
+            RecyclableEvent.#init.cancelable = _cancelable;
+            super(_type, RecyclableEvent.#init);
+            this.path = [];
+        }
+        static get(_type, _bubbles = false, _cancelable = false) {
+            return RecyclableEvent.#depot[`${_type}${_bubbles}${_cancelable}`]?.pop()?.recycle() ?? new RecyclableEvent(_type, _bubbles, _cancelable);
+        }
+        static store(_event) {
+            (RecyclableEvent.#depot[`${_event.type}${_event.bubbles}${_event.cancelable}`] ??= new FudgeCore.RecycableArray()).push(_event);
+        }
+        static dump(_type, _bubbles = false, _cancelable = false) {
+            delete RecyclableEvent.#depot[`${_type}${_bubbles}${_cancelable}`];
+        }
+        static dumpAll() {
+            RecyclableEvent.#depot = {};
+        }
+        static [Symbol.hasInstance](_instance) {
+            return _instance.isRecyclableEvent;
+        }
+        get isRecyclableEvent() {
+            return true;
+        }
+        get target() {
+            return this.#target ?? super.target;
+        }
+        get currentTarget() {
+            return this.#currentTarget ?? super.currentTarget;
+        }
+        get eventPhase() {
+            return this.#eventPhase ?? super.eventPhase;
+        }
+        setTarget(_target) {
+            this.#target = _target;
+            return this;
+        }
+        setCurrentTarget(_currentTarget) {
+            this.#currentTarget = _currentTarget;
+            return this;
+        }
+        setEventPhase(_eventPhase) {
+            this.#eventPhase = _eventPhase;
+            return this;
+        }
+        recycle() {
+            this.#target = null;
+            this.#currentTarget = null;
+            this.#eventPhase = null;
+            this.path.length = 0;
+            return this;
+        }
+    }
+    FudgeCore.RecyclableEvent = RecyclableEvent;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
     function getMutatorOfArbitrary(_object) {
         let mutator = {};
         let attributes = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
@@ -391,15 +454,17 @@ var FudgeCore;
         if (_context.kind == "getter" || _context.kind == "accessor") {
             if (typeof _context.name != "string")
                 return;
-            if (!Object.hasOwn(metadata, "enumerableKeys"))
+            if (!Object.hasOwn(metadata, "enumerateKeys"))
                 metadata.enumerateKeys = [];
             metadata.enumerateKeys.push(_context.name.toString());
             return;
         }
         if (_context.kind == "class") {
-            if (metadata.enumerateKeys)
+            if (metadata.enumerateKeys) {
+                const descriptor = { enumerable: true };
                 for (const key of metadata.enumerateKeys)
-                    Object.defineProperty(_value.prototype, key, { enumerable: true });
+                    Object.defineProperty(_value.prototype, key, descriptor);
+            }
             return;
         }
     }
@@ -546,9 +611,11 @@ var FudgeCore;
         if (_context) {
             let meta = _context.metadata;
             const prototype = _constructor.prototype;
-            if (meta.enumerateKeys)
+            if (meta.enumerateKeys) {
+                const descriptor = { enumerable: true };
                 for (const key of meta.enumerateKeys)
-                    Object.defineProperty(prototype, key, { enumerable: true });
+                    Object.defineProperty(prototype, key, descriptor);
+            }
             const originalSerialize = prototype.serialize;
             const originalDeserialize = prototype.deserialize;
             const serializables = meta.serializables;
@@ -634,7 +701,7 @@ var FudgeCore;
             meta.serializables[_context.name] = type;
             if (_context.kind != "getter")
                 return;
-            if (!Object.hasOwn(meta, "enumerableKeys"))
+            if (!Object.hasOwn(meta, "enumerateKeys"))
                 meta.enumerateKeys = [];
             meta.enumerateKeys.push(_context.name.toString());
         };
@@ -2284,19 +2351,19 @@ var FudgeCore;
             if (!RenderWebGL.uboLights)
                 return;
             RenderWebGL.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
-            let cmpLights = _lights.get(FudgeCore.LightAmbient);
+            let cmpLights = _lights.get(FudgeCore.LIGHT_TYPE.AMBIENT);
             if (cmpLights) {
                 let clrSum = new FudgeCore.Color(0, 0, 0, 0);
                 for (let cmpLight of cmpLights) {
-                    let clrLight = FudgeCore.Color.SCALE(cmpLight.light.color, cmpLight.light.intensity);
+                    let clrLight = FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity);
                     clrSum.add(clrLight);
                     FudgeCore.Recycler.store(clrLight);
                 }
                 RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets["u_ambient"], new Float32Array(clrSum.get()));
             }
-            bufferLightsOfType(FudgeCore.LightDirectional, "u_nLightsDirectional", "u_directional");
-            bufferLightsOfType(FudgeCore.LightPoint, "u_nLightsPoint", "u_point");
-            bufferLightsOfType(FudgeCore.LightSpot, "u_nLightsSpot", "u_spot");
+            bufferLightsOfType(FudgeCore.LIGHT_TYPE.DIRECTIONAL, "u_nLightsDirectional", "u_directional");
+            bufferLightsOfType(FudgeCore.LIGHT_TYPE.POINT, "u_nLightsPoint", "u_point");
+            bufferLightsOfType(FudgeCore.LIGHT_TYPE.SPOT, "u_nLightsSpot", "u_spot");
             function bufferLightsOfType(_type, _uniName, _uniStruct) {
                 const cmpLights = _lights.get(_type);
                 RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets[_uniName], new Uint8Array([cmpLights?.length ?? 0]));
@@ -2307,16 +2374,16 @@ var FudgeCore;
                 let iLight = 0;
                 for (let cmpLight of cmpLights) {
                     const lightDataOffset = iLight * lightDataSize;
-                    let clrLight = FudgeCore.Color.SCALE(cmpLight.light.color, cmpLight.light.intensity);
+                    let clrLight = FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity);
                     lightsData.set(clrLight.get(), lightDataOffset + 0);
                     FudgeCore.Recycler.store(clrLight);
                     let mtxTotal = FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
-                    if (_type == FudgeCore.LightDirectional) {
+                    if (_type == FudgeCore.LIGHT_TYPE.DIRECTIONAL) {
                         mtxTotal.translation.set(0, 0, 0);
                         mtxTotal.translation = mtxTotal.translation;
                     }
                     lightsData.set(mtxTotal.getArray(), lightDataOffset + 4);
-                    if (_type != FudgeCore.LightDirectional) {
+                    if (_type != FudgeCore.LIGHT_TYPE.DIRECTIONAL) {
                         let mtxInverse = FudgeCore.Matrix4x4.INVERSE(mtxTotal);
                         lightsData.set(mtxInverse.getArray(), lightDataOffset + 4 + 16);
                         FudgeCore.Recycler.store(mtxInverse);
@@ -2349,7 +2416,7 @@ var FudgeCore;
                 RenderWebGL.drawNode(node, _cmpCamera);
             if (cmpBloom?.isActive)
                 RenderWebGL.drawBloom(cmpBloom);
-            if (cmpOutline?.isActive)
+            if (cmpOutline?.isActive && cmpOutline.selection)
                 RenderWebGL.drawOutline(cmpOutline.selection, _cmpCamera, cmpOutline);
             crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
             crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboTarget);
@@ -2361,8 +2428,8 @@ var FudgeCore;
             RenderWebGL.bindTexture(FudgeCore.ShaderAmbientOcclusion, RenderWebGL.texPosition, WebGL2RenderingContext.TEXTURE0, "u_texPosition");
             RenderWebGL.bindTexture(FudgeCore.ShaderAmbientOcclusion, RenderWebGL.texNormal, WebGL2RenderingContext.TEXTURE1, "u_texNormal");
             RenderWebGL.bindTexture(FudgeCore.ShaderAmbientOcclusion, RenderWebGL.texNoise, WebGL2RenderingContext.TEXTURE2, "u_texNoise");
-            crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fNear"], _cmpCamera.getNear());
-            crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fFar"], _cmpCamera.getFar());
+            crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fNear"], _cmpCamera.near);
+            crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fFar"], _cmpCamera.far);
             crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fBias"], _cmpAmbientOcclusion.bias);
             crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fSampleRadius"], _cmpAmbientOcclusion.sampleRadius);
             crc3.uniform1f(FudgeCore.ShaderAmbientOcclusion.uniforms["u_fAttenuationConstant"], _cmpAmbientOcclusion.attenuationConstant);
@@ -2704,18 +2771,18 @@ var FudgeCore;
                     ancestor = ancestor.getParent();
                 return ancestor;
             }
-            getPath() {
+            getPath(_out = [], _offset = 0) {
                 let ancestor = this;
-                let path = [this];
-                while (ancestor.getParent())
-                    path.unshift(ancestor = ancestor.getParent());
-                return path;
+                _out[_offset] = ancestor;
+                while ((ancestor = ancestor.getParent()))
+                    _out[++_offset] = ancestor;
+                return _out.reverse();
             }
             getChild(_index) {
                 return this.children[_index];
             }
             getChildren() {
-                return this.children.slice(0);
+                return this.children;
             }
             getChildByName(_name) {
                 for (let i = 0; i < this.children.length; i++) {
@@ -2926,39 +2993,67 @@ var FudgeCore;
                             listenersForType.splice(i, 1);
             }
             dispatchEvent(_event) {
-                let ancestors = [];
-                let upcoming = this;
-                Object.defineProperty(_event, "target", { writable: true, value: this });
-                while (upcoming.parent)
-                    ancestors.push(upcoming = upcoming.parent);
-                Object.defineProperty(_event, "path", { writable: true, value: new Array(this, ...ancestors) });
-                Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.CAPTURING_PHASE });
-                for (let i = ancestors.length - 1; i >= 0; i--) {
-                    let ancestor = ancestors[i];
-                    Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
-                    this.callListeners(ancestor.captures[_event.type], _event);
+                if (_event instanceof FudgeCore.RecyclableEvent) {
+                    _event.setTarget(this);
+                    const path = _event.path;
+                    path.length = 0;
+                    this.getPath(path).reverse();
+                    _event.setEventPhase(Event.CAPTURING_PHASE);
+                    for (let i = path.length - 1; i >= 1; i--) {
+                        let ancestor = path[i];
+                        _event.setCurrentTarget(ancestor);
+                        this.callListeners(ancestor.captures[_event.type], _event);
+                    }
+                    _event.setEventPhase(Event.AT_TARGET);
+                    _event.setCurrentTarget(this);
+                    this.callListeners(this.captures[_event.type], _event);
+                    this.callListeners(this.listeners[_event.type], _event);
+                    if (!_event.bubbles)
+                        return true;
+                    _event.setEventPhase(Event.BUBBLING_PHASE);
+                    for (let i = 1; i < path.length; i++) {
+                        let ancestor = path[i];
+                        _event.setCurrentTarget(ancestor);
+                        this.callListeners(ancestor.listeners[_event.type], _event);
+                    }
                 }
-                Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
-                Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
-                this.callListeners(this.captures[_event.type], _event);
-                this.callListeners(this.listeners[_event.type], _event);
-                if (!_event.bubbles)
-                    return true;
-                Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.BUBBLING_PHASE });
-                for (let i = 0; i < ancestors.length; i++) {
-                    let ancestor = ancestors[i];
-                    Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
-                    this.callListeners(ancestor.listeners[_event.type], _event);
+                else {
+                    let ancestors = [];
+                    let upcoming = this;
+                    Object.defineProperty(_event, "target", { writable: true, value: this });
+                    while (upcoming.parent)
+                        ancestors.push(upcoming = upcoming.parent);
+                    Object.defineProperty(_event, "path", { writable: true, value: new Array(this, ...ancestors) });
+                    Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.CAPTURING_PHASE });
+                    for (let i = ancestors.length - 1; i >= 0; i--) {
+                        let ancestor = ancestors[i];
+                        Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
+                        this.callListeners(ancestor.captures[_event.type], _event);
+                    }
+                    Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
+                    Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
+                    this.callListeners(this.captures[_event.type], _event);
+                    this.callListeners(this.listeners[_event.type], _event);
+                    if (!_event.bubbles)
+                        return true;
+                    Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.BUBBLING_PHASE });
+                    for (let i = 0; i < ancestors.length; i++) {
+                        let ancestor = ancestors[i];
+                        Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
+                        this.callListeners(ancestor.listeners[_event.type], _event);
+                    }
                 }
                 return true;
             }
             dispatchEventToTargetOnly(_event) {
-                Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
-                Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
-                this.callListeners(this.listeners[_event.type], _event);
-                return true;
-            }
-            dispatchPreparedEventToTargetOnly(_event) {
+                if (_event instanceof FudgeCore.RecyclableEvent) {
+                    _event.setCurrentTarget(this);
+                    _event.setEventPhase(Event.AT_TARGET);
+                }
+                else {
+                    Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
+                    Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
+                }
                 this.callListeners(this.listeners[_event.type], _event);
                 return true;
             }
@@ -6227,209 +6322,276 @@ var FudgeCore;
         PROJECTION["DIMETRIC"] = "dimetric";
         PROJECTION["STEREO"] = "stereo";
     })(PROJECTION = FudgeCore.PROJECTION || (FudgeCore.PROJECTION = {}));
-    class ComponentCamera extends FudgeCore.Component {
-        constructor() {
-            super(...arguments);
-            this.mtxPivot = FudgeCore.Matrix4x4.IDENTITY();
-            this.mtxWorld = FudgeCore.Matrix4x4.IDENTITY();
-            this.clrBackground = new FudgeCore.Color(0, 0, 0, 1);
-            this.projection = PROJECTION.CENTRAL;
-            this.fieldOfView = 45;
-            this.aspectRatio = 1.0;
-            this.direction = FIELD_OF_VIEW.DIAGONAL;
-            this.near = 1;
-            this.far = 2000;
-            this.backgroundEnabled = true;
-        }
-        static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentCamera); }
-        #mtxWorldToView;
-        #mtxCameraInverse;
-        #mtxProjection;
-        get mtxWorldToView() {
-            if (this.#mtxWorldToView)
+    let ComponentCamera = (() => {
+        let _classDecorators = [FudgeCore.enumerate];
+        let _classDescriptor;
+        let _classExtraInitializers = [];
+        let _classThis;
+        let _classSuper = FudgeCore.Component;
+        let _instanceExtraInitializers = [];
+        let _get_backgroundEnabled_decorators;
+        let _get_projection_decorators;
+        let _get_aspectRatio_decorators;
+        let _get_fieldOfView_decorators;
+        let _get_direction_decorators;
+        let _get_near_decorators;
+        let _get_far_decorators;
+        var ComponentCamera = class extends _classSuper {
+            static { _classThis = this; }
+            constructor() {
+                super(...arguments);
+                this.mtxPivot = (__runInitializers(this, _instanceExtraInitializers), FudgeCore.Matrix4x4.IDENTITY());
+                this.mtxWorld = FudgeCore.Matrix4x4.IDENTITY();
+                this.clrBackground = new FudgeCore.Color(0, 0, 0, 1);
+                this.#projection = PROJECTION.CENTRAL;
+                this.#fieldOfView = 45;
+                this.#aspectRatio = 1.0;
+                this.#direction = FIELD_OF_VIEW.DIAGONAL;
+                this.#near = 1;
+                this.#far = 2000;
+                this.#backgroundEnabled = true;
+                this.#mtxWorldToView = FudgeCore.Matrix4x4.IDENTITY();
+                this.#mtxCameraInverse = FudgeCore.Matrix4x4.IDENTITY();
+                this.#mtxProjection = FudgeCore.Matrix4x4.IDENTITY();
+            }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _get_backgroundEnabled_decorators = [FudgeCore.enumerate];
+                _get_projection_decorators = [FudgeCore.enumerate];
+                _get_aspectRatio_decorators = [FudgeCore.enumerate];
+                _get_fieldOfView_decorators = [FudgeCore.enumerate];
+                _get_direction_decorators = [FudgeCore.enumerate];
+                _get_near_decorators = [FudgeCore.enumerate];
+                _get_far_decorators = [FudgeCore.enumerate];
+                __esDecorate(this, null, _get_backgroundEnabled_decorators, { kind: "getter", name: "backgroundEnabled", static: false, private: false, access: { has: obj => "backgroundEnabled" in obj, get: obj => obj.backgroundEnabled }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_projection_decorators, { kind: "getter", name: "projection", static: false, private: false, access: { has: obj => "projection" in obj, get: obj => obj.projection }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_aspectRatio_decorators, { kind: "getter", name: "aspectRatio", static: false, private: false, access: { has: obj => "aspectRatio" in obj, get: obj => obj.aspectRatio }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_fieldOfView_decorators, { kind: "getter", name: "fieldOfView", static: false, private: false, access: { has: obj => "fieldOfView" in obj, get: obj => obj.fieldOfView }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_direction_decorators, { kind: "getter", name: "direction", static: false, private: false, access: { has: obj => "direction" in obj, get: obj => obj.direction }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_near_decorators, { kind: "getter", name: "near", static: false, private: false, access: { has: obj => "near" in obj, get: obj => obj.near }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _get_far_decorators, { kind: "getter", name: "far", static: false, private: false, access: { has: obj => "far" in obj, get: obj => obj.far }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                ComponentCamera = _classThis = _classDescriptor.value;
+                if (_metadata)
+                    Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentCamera); }
+            #projection;
+            #fieldOfView;
+            #aspectRatio;
+            #direction;
+            #near;
+            #far;
+            #backgroundEnabled;
+            #mtxWorldToView;
+            #mtxCameraInverse;
+            #mtxProjection;
+            get mtxWorldToView() {
+                if (this.#mtxProjection.modified || this.mtxCameraInverse.modified) {
+                    FudgeCore.Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxCameraInverse, this.#mtxWorldToView);
+                    this.#mtxProjection.modified = false;
+                    this.mtxCameraInverse.modified = false;
+                }
                 return this.#mtxWorldToView;
-            this.#mtxWorldToView = FudgeCore.Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxCameraInverse);
-            return this.#mtxWorldToView;
-        }
-        get mtxCameraInverse() {
-            if (this.#mtxCameraInverse)
+            }
+            get mtxCameraInverse() {
+                if (this.mtxWorld.modified) {
+                    FudgeCore.Matrix4x4.INVERSE(this.mtxWorld, this.#mtxCameraInverse);
+                    this.mtxWorld.modified = false;
+                }
                 return this.#mtxCameraInverse;
-            this.#mtxCameraInverse = FudgeCore.Matrix4x4.INVERSE(this.mtxWorld);
-            return this.#mtxCameraInverse;
-        }
-        get mtxProjection() {
-            return this.#mtxProjection;
-        }
-        resetWorldToView() {
-            if (this.#mtxWorldToView)
-                FudgeCore.Recycler.store(this.#mtxWorldToView);
-            if (this.#mtxCameraInverse)
-                FudgeCore.Recycler.store(this.#mtxCameraInverse);
-            this.#mtxWorldToView = null;
-            this.#mtxCameraInverse = null;
-        }
-        getProjection() {
-            return this.projection;
-        }
-        getBackgroundEnabled() {
-            return this.backgroundEnabled;
-        }
-        getAspect() {
-            return this.aspectRatio;
-        }
-        getFieldOfView() {
-            return this.fieldOfView;
-        }
-        getDirection() {
-            return this.direction;
-        }
-        getNear() {
-            return this.near;
-        }
-        getFar() {
-            return this.far;
-        }
-        projectCentral(_aspect = this.aspectRatio, _fieldOfView = this.fieldOfView, _direction = this.direction, _near = this.near, _far = this.far) {
-            this.aspectRatio = _aspect;
-            this.fieldOfView = _fieldOfView;
-            this.direction = _direction;
-            this.projection = PROJECTION.CENTRAL;
-            this.near = _near;
-            this.far = _far;
-            this.#mtxProjection = FudgeCore.Matrix4x4.PROJECTION_CENTRAL(_aspect, this.fieldOfView, _near, _far, this.direction);
-        }
-        projectOrthographic(_left, _right, _bottom, _top) {
-            const rectCanvas = FudgeCore.Render.getCanvasRectangle();
-            const width = rectCanvas.width;
-            const height = rectCanvas.height;
-            _left = -width / 2;
-            _right = width / 2;
-            _bottom = height / 2;
-            _top = -height / 2;
-            this.projection = PROJECTION.ORTHOGRAPHIC;
-            this.#mtxProjection = FudgeCore.Matrix4x4.PROJECTION_ORTHOGRAPHIC(_left, _right, _bottom, _top, 400, -400);
-        }
-        getProjectionRectangle() {
-            let tanFov = Math.tan(Math.PI * this.fieldOfView / 360);
-            let tanHorizontal = 0;
-            let tanVertical = 0;
-            if (this.direction == FIELD_OF_VIEW.DIAGONAL) {
-                let aspect = Math.sqrt(this.aspectRatio);
-                tanHorizontal = tanFov * aspect;
-                tanVertical = tanFov / aspect;
             }
-            else if (this.direction == FIELD_OF_VIEW.VERTICAL) {
-                tanVertical = tanFov;
-                tanHorizontal = tanVertical * this.aspectRatio;
+            get mtxProjection() {
+                return this.#mtxProjection;
             }
-            else {
-                tanHorizontal = tanFov;
-                tanVertical = tanHorizontal / this.aspectRatio;
+            get backgroundEnabled() {
+                return this.#backgroundEnabled;
             }
-            return FudgeCore.Rectangle.GET(0, 0, tanHorizontal * 2, tanVertical * 2);
-        }
-        pointWorldToClip(_pointInWorldSpace) {
-            let result;
-            let m = this.mtxWorldToView.getArray();
-            let w = m[3] * _pointInWorldSpace.x + m[7] * _pointInWorldSpace.y + m[11] * _pointInWorldSpace.z + m[15];
-            result = FudgeCore.Vector3.TRANSFORMATION(_pointInWorldSpace, this.mtxWorldToView);
-            result.scale(1 / w);
-            return result;
-        }
-        pointClipToWorld(_pointInClipSpace) {
-            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(this.mtxWorldToView);
-            let m = mtxViewToWorld.getArray();
-            let rayWorld = FudgeCore.Vector3.TRANSFORMATION(_pointInClipSpace, mtxViewToWorld, true);
-            let w = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];
-            rayWorld.scale(1 / w);
-            return rayWorld;
-        }
-        getWorldToPixelScale(_posWorld) {
-            let distance = this.mtxWorld.translation.getDistance(_posWorld);
-            let scale;
-            let rect = FudgeCore.Render.getRenderRectangle();
-            switch (this.getDirection()) {
-                case FIELD_OF_VIEW.VERTICAL:
-                    scale = 1 / rect.height * window.devicePixelRatio;
-                    break;
-                case FIELD_OF_VIEW.HORIZONTAL:
-                    scale = 1 / rect.width * window.devicePixelRatio;
-                    break;
-                case FIELD_OF_VIEW.DIAGONAL:
-                    scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
-                    break;
+            get projection() {
+                return this.#projection;
             }
-            return scale * distance;
-        }
-        serialize() {
-            let serialization = {
-                backgroundColor: this.clrBackground,
-                backgroundEnabled: this.backgroundEnabled,
-                projection: this.projection,
-                fieldOfView: this.fieldOfView,
-                direction: this.direction,
-                near: this.near,
-                far: this.far,
-                aspect: this.aspectRatio,
-                pivot: this.mtxPivot.serialize(),
-                [super.constructor.name]: super.serialize()
-            };
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await this.clrBackground.deserialize(_serialization.backgroundColor);
-            this.backgroundEnabled = _serialization.backgroundEnabled;
-            this.projection = _serialization.projection;
-            this.fieldOfView = _serialization.fieldOfView;
-            this.aspectRatio = _serialization.aspect;
-            this.direction = _serialization.direction;
-            this.near = _serialization.near ?? this.near;
-            this.far = _serialization.far ?? this.far;
-            await this.mtxPivot.deserialize(_serialization.pivot);
-            await super.deserialize(_serialization[super.constructor.name]);
-            switch (this.projection) {
-                case PROJECTION.ORTHOGRAPHIC:
-                    this.projectOrthographic();
-                    break;
-                case PROJECTION.CENTRAL:
-                    this.projectCentral();
-                    break;
+            get aspectRatio() {
+                return this.#aspectRatio;
             }
-            return this;
-        }
-        getMutatorAttributeTypes(_mutator) {
-            let types = super.getMutatorAttributeTypes(_mutator);
-            if (types.direction)
-                types.direction = FIELD_OF_VIEW;
-            if (types.projection)
-                types.projection = PROJECTION;
-            return types;
-        }
-        async mutate(_mutator, _selection = null, _dispatchMutate = true) {
-            await super.mutate(_mutator, _selection, _dispatchMutate);
-            switch (this.projection) {
-                case PROJECTION.CENTRAL:
-                    this.projectCentral(this.aspectRatio, this.fieldOfView, this.direction, this.near, this.far);
-                    break;
+            get fieldOfView() {
+                return this.#fieldOfView;
             }
-        }
-        drawGizmos() {
-            const mtxWorld = this.mtxWorld.clone;
-            mtxWorld.scaling = mtxWorld.scaling.set(0.5, 0.5, 0.5);
-            const color = FudgeCore.Color.CSS("lightgrey");
-            FudgeCore.Gizmos.drawIcon(FudgeCore.TextureDefault.iconCamera, mtxWorld, color);
-            FudgeCore.Recycler.store(mtxWorld);
-            FudgeCore.Recycler.store(color);
-        }
-        drawGizmosSelected() {
-            FudgeCore.Gizmos.drawWireFrustum(this.getAspect(), this.getFieldOfView(), this.getNear(), this.getFar(), this.getDirection(), this.mtxWorld, FudgeCore.Color.CSS("lightgrey"));
-        }
-        ;
-        reduceMutator(_mutator) {
-            delete _mutator.transform;
-            super.reduceMutator(_mutator);
-        }
-    }
+            get direction() {
+                return this.#direction;
+            }
+            get near() {
+                return this.#near;
+            }
+            get far() {
+                return this.#far;
+            }
+            getProjection() {
+                return this.#projection;
+            }
+            getBackgroundEnabled() {
+                return this.#backgroundEnabled;
+            }
+            getAspect() {
+                return this.#aspectRatio;
+            }
+            getFieldOfView() {
+                return this.#fieldOfView;
+            }
+            getDirection() {
+                return this.#direction;
+            }
+            getNear() {
+                return this.#near;
+            }
+            getFar() {
+                return this.#far;
+            }
+            projectCentral(_aspect = this.#aspectRatio, _fieldOfView = this.#fieldOfView, _direction = this.#direction, _near = this.#near, _far = this.#far) {
+                this.#aspectRatio = _aspect;
+                this.#fieldOfView = _fieldOfView;
+                this.#direction = _direction;
+                this.#projection = PROJECTION.CENTRAL;
+                this.#near = _near;
+                this.#far = _far;
+                FudgeCore.Matrix4x4.PROJECTION_CENTRAL(_aspect, this.#fieldOfView, _near, _far, this.#direction, this.#mtxProjection);
+            }
+            projectOrthographic(_left, _right, _bottom, _top) {
+                const rectCanvas = FudgeCore.Render.getCanvasRectangle();
+                const width = rectCanvas.width;
+                const height = rectCanvas.height;
+                _left = -width / 2;
+                _right = width / 2;
+                _bottom = height / 2;
+                _top = -height / 2;
+                this.#projection = PROJECTION.ORTHOGRAPHIC;
+                FudgeCore.Matrix4x4.PROJECTION_ORTHOGRAPHIC(_left, _right, _bottom, _top, 400, -400, this.#mtxProjection);
+            }
+            getProjectionRectangle() {
+                let tanFov = Math.tan(Math.PI * this.#fieldOfView / 360);
+                let tanHorizontal = 0;
+                let tanVertical = 0;
+                if (this.#direction == FIELD_OF_VIEW.DIAGONAL) {
+                    let aspect = Math.sqrt(this.#aspectRatio);
+                    tanHorizontal = tanFov * aspect;
+                    tanVertical = tanFov / aspect;
+                }
+                else if (this.#direction == FIELD_OF_VIEW.VERTICAL) {
+                    tanVertical = tanFov;
+                    tanHorizontal = tanVertical * this.#aspectRatio;
+                }
+                else {
+                    tanHorizontal = tanFov;
+                    tanVertical = tanHorizontal / this.#aspectRatio;
+                }
+                return FudgeCore.Rectangle.GET(0, 0, tanHorizontal * 2, tanVertical * 2);
+            }
+            pointWorldToClip(_pointInWorldSpace) {
+                let result;
+                let m = this.mtxWorldToView.getArray();
+                let w = m[3] * _pointInWorldSpace.x + m[7] * _pointInWorldSpace.y + m[11] * _pointInWorldSpace.z + m[15];
+                result = FudgeCore.Vector3.TRANSFORMATION(_pointInWorldSpace, this.mtxWorldToView);
+                result.scale(1 / w);
+                return result;
+            }
+            pointClipToWorld(_pointInClipSpace) {
+                let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(this.mtxWorldToView);
+                let m = mtxViewToWorld.getArray();
+                let rayWorld = FudgeCore.Vector3.TRANSFORMATION(_pointInClipSpace, mtxViewToWorld, true);
+                let w = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];
+                rayWorld.scale(1 / w);
+                return rayWorld;
+            }
+            getWorldToPixelScale(_posWorld) {
+                let distance = this.mtxWorld.translation.getDistance(_posWorld);
+                let scale;
+                let rect = FudgeCore.Render.getRenderRectangle();
+                switch (this.#direction) {
+                    case FIELD_OF_VIEW.VERTICAL:
+                        scale = 1 / rect.height * window.devicePixelRatio;
+                        break;
+                    case FIELD_OF_VIEW.HORIZONTAL:
+                        scale = 1 / rect.width * window.devicePixelRatio;
+                        break;
+                    case FIELD_OF_VIEW.DIAGONAL:
+                        scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
+                        break;
+                }
+                return scale * distance;
+            }
+            serialize() {
+                let serialization = {
+                    backgroundColor: this.clrBackground,
+                    backgroundEnabled: this.#backgroundEnabled,
+                    projection: this.#projection,
+                    fieldOfView: this.#fieldOfView,
+                    direction: this.#direction,
+                    near: this.#near,
+                    far: this.#far,
+                    aspect: this.#aspectRatio,
+                    pivot: this.mtxPivot.serialize(),
+                    [super.constructor.name]: super.serialize()
+                };
+                return serialization;
+            }
+            async deserialize(_serialization) {
+                await this.clrBackground.deserialize(_serialization.backgroundColor);
+                this.#backgroundEnabled = _serialization.backgroundEnabled;
+                this.#projection = _serialization.projection;
+                this.#fieldOfView = _serialization.fieldOfView;
+                this.#aspectRatio = _serialization.aspect;
+                this.#direction = _serialization.direction;
+                this.#near = _serialization.near ?? this.#near;
+                this.#far = _serialization.far ?? this.#far;
+                await this.mtxPivot.deserialize(_serialization.pivot);
+                await super.deserialize(_serialization[super.constructor.name]);
+                switch (this.#projection) {
+                    case PROJECTION.ORTHOGRAPHIC:
+                        this.projectOrthographic();
+                        break;
+                    case PROJECTION.CENTRAL:
+                        this.projectCentral();
+                        break;
+                }
+                return this;
+            }
+            getMutatorAttributeTypes(_mutator) {
+                let types = super.getMutatorAttributeTypes(_mutator);
+                if (types.direction)
+                    types.direction = FIELD_OF_VIEW;
+                if (types.projection)
+                    types.projection = PROJECTION;
+                return types;
+            }
+            async mutate(_mutator, _selection = null, _dispatchMutate = true) {
+                await super.mutate(_mutator, _selection, _dispatchMutate);
+                switch (this.#projection) {
+                    case PROJECTION.CENTRAL:
+                        this.projectCentral(this.#aspectRatio, this.#fieldOfView, this.#direction, this.#near, this.#far);
+                        break;
+                }
+            }
+            drawGizmos() {
+                const mtxWorld = this.mtxWorld.clone;
+                mtxWorld.scaling = mtxWorld.scaling.set(0.5, 0.5, 0.5);
+                const color = FudgeCore.Color.CSS("lightgrey");
+                FudgeCore.Gizmos.drawIcon(FudgeCore.TextureDefault.iconCamera, mtxWorld, color);
+                FudgeCore.Recycler.store(mtxWorld);
+                FudgeCore.Recycler.store(color);
+            }
+            drawGizmosSelected() {
+                FudgeCore.Gizmos.drawWireFrustum(this.#aspectRatio, this.#fieldOfView, this.#near, this.#far, this.#direction, this.mtxWorld, FudgeCore.Color.CSS("lightgrey"));
+            }
+            ;
+            reduceMutator(_mutator) {
+                delete _mutator.transform;
+                super.reduceMutator(_mutator);
+            }
+            static {
+                __runInitializers(_classThis, _classExtraInitializers);
+            }
+        };
+        return ComponentCamera = _classThis;
+    })();
     FudgeCore.ComponentCamera = ComponentCamera;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
@@ -6495,46 +6657,6 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class Light extends FudgeCore.Mutable {
-        constructor(_color = new FudgeCore.Color(1, 1, 1, 1), _intensity = 1) {
-            super();
-            this.color = _color;
-            this.intensity = _intensity;
-        }
-        getType() {
-            return this.constructor;
-        }
-        serialize() {
-            let serialization = {
-                color: this.color.serialize(),
-                intensity: this.intensity
-            };
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await this.color.deserialize(_serialization.color);
-            if (_serialization.intensity != undefined)
-                this.intensity = _serialization.intensity;
-            return this;
-        }
-        reduceMutator() { }
-    }
-    FudgeCore.Light = Light;
-    class LightAmbient extends Light {
-    }
-    FudgeCore.LightAmbient = LightAmbient;
-    class LightDirectional extends Light {
-    }
-    FudgeCore.LightDirectional = LightDirectional;
-    class LightPoint extends Light {
-    }
-    FudgeCore.LightPoint = LightPoint;
-    class LightSpot extends Light {
-    }
-    FudgeCore.LightSpot = LightSpot;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
     let LIGHT_TYPE;
     (function (LIGHT_TYPE) {
         LIGHT_TYPE["AMBIENT"] = "LightAmbient";
@@ -6542,95 +6664,102 @@ var FudgeCore;
         LIGHT_TYPE["POINT"] = "LightPoint";
         LIGHT_TYPE["SPOT"] = "LightSpot";
     })(LIGHT_TYPE = FudgeCore.LIGHT_TYPE || (FudgeCore.LIGHT_TYPE = {}));
-    class ComponentLight extends FudgeCore.Component {
-        static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentLight); }
-        constructor(_light = new FudgeCore.LightAmbient()) {
-            super();
-            this.mtxPivot = FudgeCore.Matrix4x4.IDENTITY();
-            this.light = null;
-            this.singleton = false;
-            this.light = _light;
-        }
-        setType(_class) {
-            let mtrOld = {};
-            if (this.light)
-                mtrOld = this.light.getMutator();
-            this.light = new _class();
-            this.light.mutate(mtrOld);
-        }
-        serialize() {
-            let serialization = {
-                pivot: this.mtxPivot.serialize(),
-                light: FudgeCore.Serializer.serialize(this.light)
-            };
-            serialization[super.constructor.name] = super.serialize();
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization[super.constructor.name]);
-            await this.mtxPivot.deserialize(_serialization.pivot);
-            this.light = await FudgeCore.Serializer.deserialize(_serialization.light);
-            return this;
-        }
-        getMutator() {
-            let mutator = super.getMutator(true);
-            mutator.type = this.light.getType().name;
-            return mutator;
-        }
-        getMutatorAttributeTypes(_mutator) {
-            let types = super.getMutatorAttributeTypes(_mutator);
-            if (types.type)
-                types.type = LIGHT_TYPE;
-            return types;
-        }
-        async mutate(_mutator, _selection = null, _dispatchMutate = true) {
-            let type = _mutator.type;
-            if (typeof (type) !== "undefined" && type != this.light.constructor.name)
-                this.setType(FudgeCore.Serializer.getConstructor(type));
-            delete (_mutator.type);
-            super.mutate(_mutator, _selection, _dispatchMutate);
-            _mutator.type = type;
-        }
-        drawGizmos() {
-            let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
-            mtxShape.scaling = new FudgeCore.Vector3(0.5, 0.5, 0.5);
-            FudgeCore.Gizmos.drawIcon(FudgeCore.TextureDefault.iconLight, mtxShape, this.light.color);
-            FudgeCore.Recycler.store(mtxShape);
-        }
-        ;
-        drawGizmosSelected() {
-            let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
-            let color = FudgeCore.Color.CSS("yellow");
-            switch (this.light.getType()) {
-                case FudgeCore.LightDirectional:
-                    const radius = 0.5;
-                    FudgeCore.Gizmos.drawWireCircle(mtxShape, color);
-                    const lines = new Array(10).fill(null).map(() => FudgeCore.Recycler.get(FudgeCore.Vector3));
-                    lines[0].set(0, 0, 0);
-                    lines[1].set(0, 0, 1);
-                    lines[2].set(0, radius, 0);
-                    lines[3].set(0, radius, 1);
-                    lines[6].set(0, -radius, 0);
-                    lines[7].set(0, -radius, 1);
-                    lines[4].set(radius, 0, 0);
-                    lines[5].set(radius, 0, 1);
-                    lines[8].set(-radius, 0, 0);
-                    lines[9].set(-radius, 0, 1);
-                    FudgeCore.Gizmos.drawLines(lines, mtxShape, color);
-                    FudgeCore.Recycler.storeMultiple(lines);
-                    break;
-                case FudgeCore.LightPoint:
-                    mtxShape.scale(new FudgeCore.Vector3(2, 2, 2));
-                    FudgeCore.Gizmos.drawWireSphere(mtxShape, color);
-                    break;
-                case FudgeCore.LightSpot:
-                    FudgeCore.Gizmos.drawWireCone(mtxShape, color);
-                    break;
+    let ComponentLight = (() => {
+        let _classSuper = FudgeCore.Component;
+        let _lightType_decorators;
+        let _lightType_initializers = [];
+        let _lightType_extraInitializers = [];
+        return class ComponentLight extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _lightType_decorators = [FudgeCore.type(LIGHT_TYPE)];
+                __esDecorate(null, null, _lightType_decorators, { kind: "field", name: "lightType", static: false, private: false, access: { has: obj => "lightType" in obj, get: obj => obj.lightType, set: (obj, value) => { obj.lightType = value; } }, metadata: _metadata }, _lightType_initializers, _lightType_extraInitializers);
+                if (_metadata)
+                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            FudgeCore.Recycler.store(mtxShape);
-            FudgeCore.Recycler.store(color);
-        }
-    }
+            static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentLight); }
+            constructor(_lightType = LIGHT_TYPE.AMBIENT, _color = new FudgeCore.Color(1, 1, 1, 1), _intensity = 1) {
+                super();
+                this.lightType = __runInitializers(this, _lightType_initializers, void 0);
+                this.mtxPivot = (__runInitializers(this, _lightType_extraInitializers), FudgeCore.Matrix4x4.IDENTITY());
+                this.singleton = false;
+                this.lightType = _lightType;
+                this.color = _color;
+                this.intensity = _intensity;
+            }
+            serialize() {
+                let serialization = {
+                    lightType: this.lightType,
+                    pivot: this.mtxPivot.serialize(),
+                    color: this.color.serialize(),
+                    intensity: this.intensity
+                };
+                serialization[super.constructor.name] = super.serialize();
+                return serialization;
+            }
+            async deserialize(_serialization) {
+                await super.deserialize(_serialization[super.constructor.name]);
+                if (_serialization.lightType != undefined)
+                    this.lightType = _serialization.lightType;
+                await this.mtxPivot.deserialize(_serialization.pivot);
+                if (_serialization.color != undefined)
+                    await this.color.deserialize(_serialization.color);
+                if (_serialization.intensity != undefined)
+                    this.intensity = _serialization.intensity;
+                let light = _serialization.light;
+                if (light != undefined) {
+                    for (const path in light) {
+                        this.lightType = FudgeCore.Serializer.getConstructor(path).name;
+                        light = light[path];
+                        if (light.color != undefined)
+                            await this.color.deserialize(light.color);
+                        if (light.intensity != undefined)
+                            this.intensity = light.intensity;
+                    }
+                }
+                return this;
+            }
+            drawGizmos() {
+                let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
+                mtxShape.scaling = new FudgeCore.Vector3(0.5, 0.5, 0.5);
+                FudgeCore.Gizmos.drawIcon(FudgeCore.TextureDefault.iconLight, mtxShape, this.color);
+                FudgeCore.Recycler.store(mtxShape);
+            }
+            ;
+            drawGizmosSelected() {
+                let mtxShape = FudgeCore.Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
+                let color = FudgeCore.Color.CSS("yellow");
+                switch (this.lightType) {
+                    case LIGHT_TYPE.DIRECTIONAL:
+                        const radius = 0.5;
+                        FudgeCore.Gizmos.drawWireCircle(mtxShape, color);
+                        const lines = new Array(10).fill(null).map(() => FudgeCore.Recycler.get(FudgeCore.Vector3));
+                        lines[0].set(0, 0, 0);
+                        lines[1].set(0, 0, 1);
+                        lines[2].set(0, radius, 0);
+                        lines[3].set(0, radius, 1);
+                        lines[6].set(0, -radius, 0);
+                        lines[7].set(0, -radius, 1);
+                        lines[4].set(radius, 0, 0);
+                        lines[5].set(radius, 0, 1);
+                        lines[8].set(-radius, 0, 0);
+                        lines[9].set(-radius, 0, 1);
+                        FudgeCore.Gizmos.drawLines(lines, mtxShape, color);
+                        FudgeCore.Recycler.store(lines);
+                        break;
+                    case LIGHT_TYPE.POINT:
+                        mtxShape.scale(new FudgeCore.Vector3(2, 2, 2));
+                        FudgeCore.Gizmos.drawWireSphere(mtxShape, color);
+                        break;
+                    case LIGHT_TYPE.SPOT:
+                        FudgeCore.Gizmos.drawWireCone(mtxShape, color);
+                        break;
+                }
+                FudgeCore.Recycler.store(mtxShape);
+                FudgeCore.Recycler.store(color);
+            }
+        };
+    })();
     FudgeCore.ComponentLight = ComponentLight;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
@@ -14144,7 +14273,6 @@ var FudgeCore;
             cmpCameraPick.mtxWorld.translation = _ray.origin;
             cmpCameraPick.mtxWorld.lookAt(FudgeCore.Vector3.SUM(_ray.origin, _ray.direction));
             cmpCameraPick.projectCentral(1, 0.001, FudgeCore.FIELD_OF_VIEW.DIAGONAL, _min, _max);
-            cmpCameraPick.resetWorldToView();
             let picks;
             if (_from[0] instanceof FudgeCore.Node)
                 picks = FudgeCore.Render.pick(_from, cmpCameraPick);
@@ -14163,7 +14291,7 @@ var FudgeCore;
             }
             else
                 ray.transform(_cmpCamera.mtxPivot);
-            let picks = Picker.pickRay(_from, ray, length * _cmpCamera.getNear(), length * _cmpCamera.getFar());
+            let picks = Picker.pickRay(_from, ray, length * _cmpCamera.near, length * _cmpCamera.far);
             return picks;
         }
         static pickViewport(_viewport, _posClient) {
@@ -14544,15 +14672,13 @@ var FudgeCore;
         static { this.nodesSimple = new FudgeCore.RecycableArray(); }
         static { this.nodesAlpha = new FudgeCore.RecycableArray(); }
         static { this.componentsSkeleton = new FudgeCore.RecycableArray(); }
-        static {
-            this.prepareEvent = (() => {
-                let event = new Event("renderPrepare");
-                Object.defineProperty(event, "eventPhase", { writable: true, value: Event.AT_TARGET });
-                Object.defineProperty(event, "currentTarget", { writable: true });
-                return event;
-            })();
-        }
-        static prepare(_branch, _options = {}, _mtxWorld = FudgeCore.Matrix4x4.IDENTITY(), _recalculate = false) {
+        static #eventPrepare = FudgeCore.RecyclableEvent.get("renderPrepare");
+        static #eventPrepareStart = FudgeCore.RecyclableEvent.get("renderPrepareStart");
+        static #eventPrepareEnd = FudgeCore.RecyclableEvent.get("renderPrepareEnd");
+        static #defaultRootNode = new FudgeCore.Node("Root");
+        static #defaultOptions = {};
+        static #mapNodeToParent = new WeakMap();
+        static prepare(_branch, _options = Render.#defaultOptions, _recalculate = false) {
             Render.timestampUpdate = performance.now();
             Render.nodesSimple.reset();
             Render.nodesAlpha.reset();
@@ -14562,9 +14688,9 @@ var FudgeCore;
             Render.lights.forEach(_array => _array.reset());
             FudgeCore.Node.resetRenderData();
             FudgeCore.Coat.resetRenderData();
-            _branch.dispatchEvent(new Event("renderPrepareStart"));
-            this.prepareBranch(_branch, _options, _mtxWorld, _recalculate);
-            _branch.dispatchEvent(new Event("renderPrepareEnd"));
+            _branch.dispatchEvent(Render.#eventPrepareStart);
+            this.prepareBranch(_branch, _options, _branch.getParent() ?? Render.#defaultRootNode, _recalculate);
+            _branch.dispatchEvent(Render.#eventPrepareEnd);
             for (const cmpSkeleton of Render.componentsSkeleton)
                 cmpSkeleton.updateRenderBuffer();
             FudgeCore.Node.updateRenderbuffer();
@@ -14575,7 +14701,7 @@ var FudgeCore;
             for (let cmpLight of _cmpLights) {
                 if (!cmpLight.isActive)
                     continue;
-                let type = cmpLight.light.getType();
+                let type = cmpLight.lightType;
                 let lightsOfType = Render.lights.get(type);
                 if (!lightsOfType) {
                     lightsOfType = new FudgeCore.RecycableArray();
@@ -14593,23 +14719,29 @@ var FudgeCore;
             const sorted = Render.nodesAlpha.getSorted((_a, _b) => Reflect.get(_b, "zCamera") - Reflect.get(_a, "zCamera"));
             Render.drawNodes(Render.nodesSimple, sorted, _cmpCamera);
         }
-        static prepareBranch(_branch, _options, _mtxWorld, _recalculate) {
+        static prepareBranch(_branch, _options, _parent, _recalculate) {
             if (!_branch.isActive)
                 return;
             _branch.nNodesInBranch = 1;
             _branch.radius = 0;
-            Render.prepareEvent.currentTarget = _branch;
-            _branch.dispatchPreparedEventToTargetOnly(Render.prepareEvent);
+            _branch.dispatchEventToTargetOnly(Render.#eventPrepare);
             _branch.timestampUpdate = Render.timestampUpdate;
+            const mtxWorldParent = _parent.mtxWorld;
+            const mtxWorldBranch = _branch.mtxWorld;
+            let previousParent = Render.#mapNodeToParent.get(_branch);
+            if (_parent != previousParent) {
+                Render.#mapNodeToParent.set(_branch, _parent);
+                _recalculate = true;
+            }
             const cmpTransform = _branch.getComponent(FudgeCore.ComponentTransform);
             if (cmpTransform?.isActive) {
                 if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
-                    FudgeCore.Matrix4x4.PRODUCT(_mtxWorld, cmpTransform.mtxLocal, _branch.mtxWorld);
+                    FudgeCore.Matrix4x4.PRODUCT(mtxWorldParent, cmpTransform.mtxLocal, mtxWorldBranch);
                     cmpTransform.mtxLocal.modified = false;
                 }
             }
             else
-                _branch.mtxWorld.copy(_mtxWorld);
+                mtxWorldBranch.copy(mtxWorldParent);
             const cmpRigidbody = _branch.getComponent(FudgeCore.ComponentRigidbody);
             if (cmpRigidbody?.isActive) {
                 Render.nodesPhysics.push(_branch);
@@ -14625,10 +14757,9 @@ var FudgeCore;
             const cmpMesh = _branch.getComponent(FudgeCore.ComponentMesh);
             const cmpMaterial = _branch.getComponent(FudgeCore.ComponentMaterial);
             if (cmpMesh?.isActive && cmpMaterial?.isActive) {
-                if (cmpMesh.mtxPivot.modified || _branch.mtxWorld.modified) {
-                    FudgeCore.Matrix4x4.PRODUCT(_branch.mtxWorld, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
+                if (cmpMesh.mtxPivot.modified || _recalculate) {
+                    FudgeCore.Matrix4x4.PRODUCT(mtxWorldBranch, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
                     cmpMesh.mtxPivot.modified = false;
-                    _branch.mtxWorld.modified = false;
                 }
                 let cmpFaceCamera = _branch.getComponent(FudgeCore.ComponentFaceCamera);
                 let cmpParticleSystem = _branch.getComponent(FudgeCore.ComponentParticleSystem);
@@ -14644,18 +14775,19 @@ var FudgeCore;
                     material.coat.updateRenderData();
                 }
             }
+            const cmpCamera = _branch.getComponent(FudgeCore.ComponentCamera) ?? _branch.getComponent(FudgeCore.ComponentVRDevice);
+            if (cmpCamera && cmpCamera.isActive && (cmpCamera.mtxPivot.modified || _recalculate)) {
+                FudgeCore.Matrix4x4.PRODUCT(mtxWorldBranch, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
+                cmpCamera.mtxPivot.modified = false;
+            }
             const cmpSkeletons = _branch.getComponents(FudgeCore.ComponentSkeleton);
             for (let cmpSkeleton of cmpSkeletons)
                 if (cmpSkeleton?.isActive)
                     Render.componentsSkeleton.push(cmpSkeleton);
             for (let child of _branch.getChildren()) {
-                Render.prepareBranch(child, _options, _branch.mtxWorld, _recalculate);
+                Render.prepareBranch(child, _options, _branch, _recalculate);
                 _branch.nNodesInBranch += child.nNodesInBranch;
-            }
-            let parent = _branch.getParent();
-            if (parent) {
-                let position = cmpMesh?.mtxWorld.translation ?? _branch.mtxWorld.translation;
-                parent.radius = Math.max(parent.radius, position.getDistance(parent.mtxWorld.translation) + _branch.radius);
+                _branch.radius = Math.max(_branch.radius, (child.getComponent(FudgeCore.ComponentMesh)?.mtxWorld.translation ?? child.mtxWorld.translation).getDistance(mtxWorldBranch.translation) + child.radius);
             }
         }
         static transformByPhysics(_node, _cmpRigidbody) {
@@ -14862,8 +14994,8 @@ var FudgeCore;
             this.#branch = null;
             this.#crc2 = null;
             this.#canvas = null;
-            this.#rectCanvas = FudgeCore.Recycler.get(FudgeCore.Rectangle);
-            this.#rectClient = FudgeCore.Recycler.get(FudgeCore.Rectangle);
+            this.#rectCanvas = FudgeCore.Rectangle.GET(0, 0, 0, 0);
+            this.#rectClient = FudgeCore.Rectangle.GET(0, 0, 0, 0);
             this.#canvasResizeObserver = new ResizeObserver(() => {
                 this.#rectClient.width = this.#canvas.clientWidth;
                 this.#rectClient.height = this.#canvas.clientHeight;
@@ -14896,11 +15028,18 @@ var FudgeCore;
             this.#canvas = _canvas;
             this.#crc2 = _canvas.getContext("2d");
             this.#canvas.tabIndex = 0;
+            this.#rectCanvas.width = _canvas.width;
+            this.#rectCanvas.height = _canvas.height;
+            this.#rectClient.width = _canvas.clientWidth;
+            this.#rectClient.height = _canvas.clientHeight;
             this.rectSource = FudgeCore.Render.getCanvasRectangle().clone;
             this.rectDestination = FudgeCore.Rectangle.GET(0, 0, this.#canvas.clientWidth, this.#canvas.clientHeight);
             this.#canvasResizeObserver.disconnect();
             this.#canvasResizeObserver.observe(this.#canvas);
             this.setBranch(_branch);
+        }
+        disconnect() {
+            this.#canvasResizeObserver.disconnect();
         }
         getCanvasRectangle() {
             return FudgeCore.Rectangle.GET(0, 0, this.#canvas.width, this.#canvas.height);
@@ -14939,12 +15078,8 @@ var FudgeCore;
                 return;
             if (!this.camera.isActive)
                 return;
-            if (this.camera.node) {
-                FudgeCore.Matrix4x4.PRODUCT(this.camera.node.mtxWorld, this.camera.mtxPivot, this.camera.mtxWorld);
-            }
-            else {
+            if (!this.camera.node)
                 this.camera.mtxWorld.copy(this.camera.mtxPivot);
-            }
             if (this.adjustingFrames)
                 this.adjustFrames();
             if (this.adjustingCamera)
@@ -14953,14 +15088,10 @@ var FudgeCore;
                 this.prepareBranch();
         }
         prepareBranch() {
-            let parent = this.#branch.getParent();
-            let mtxRoot = parent?.mtxWorld ?? FudgeCore.Matrix4x4.IDENTITY();
             this.dispatchEvent(new Event("renderPrepareStart"));
-            FudgeCore.Render.prepare(this.#branch, {}, mtxRoot);
+            FudgeCore.Render.prepare(this.#branch);
             this.dispatchEvent(new Event("renderPrepareEnd"));
             this.componentsPick = FudgeCore.Render.componentsPick;
-            if (!parent)
-                FudgeCore.Recycler.store(mtxRoot);
         }
         dispatchPointerEvent(_event) {
             let posClient = new FudgeCore.Vector2(_event.clientX, _event.clientY);
@@ -15003,14 +15134,8 @@ var FudgeCore;
             FudgeCore.Recycler.store(rectRender);
         }
         adjustCamera() {
-            const rect = FudgeCore.Render.getRenderRectangle();
-            const projection = this.camera.getProjection();
-            switch (projection) {
-                case FudgeCore.PROJECTION.CENTRAL:
-                    this.camera.projectCentral(rect.width / rect.height, this.camera.getFieldOfView(), this.camera.getDirection(), this.camera.getNear(), this.camera.getFar());
-                    break;
-            }
-            this.camera.resetWorldToView();
+            const rectRender = FudgeCore.Render.getRenderRectangle();
+            this.camera.projectCentral(rectRender.width / rectRender.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
         }
         getRayFromClient(_point) {
             let posProjection = this.pointClientToProjection(_point);
@@ -15143,7 +15268,6 @@ var FudgeCore;
                 FudgeCore.Render.setScissorTest(true, viewport.x, viewport.y, viewport.width, viewport.height);
                 if (this.useVRController)
                     this.setControllerConfigs(_xrFrame);
-                this.camera.resetWorldToView();
                 this.camera.mtxProjection.setArray(view.projectionMatrix);
                 this.camera.mtxCameraInverse.setArray(view.transform.inverse.matrix);
                 if (this.physicsDebugMode != FudgeCore.PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY)
@@ -18910,7 +19034,7 @@ var FudgeCore;
             }
         }
         setTimer(_lapse, _count, _handler, ..._arguments) {
-            new FudgeCore.Timer(this, _lapse, _count, _handler, _arguments);
+            new FudgeCore.Timer(this, _lapse, _count, _handler, ..._arguments);
             return this.idTimerAddedLast;
         }
         addTimer(_timer) {
@@ -18975,7 +19099,7 @@ var FudgeCore;
                     if (--this.count == 0)
                         _time.deleteTimerByItsInternalId(this.idWindow);
             };
-            this.idWindow = window.setInterval(callback, this.timeoutReal, _arguments);
+            this.idWindow = window.setInterval(callback, this.timeoutReal, ..._arguments);
             this.active = true;
             _time.addTimer(this);
         }

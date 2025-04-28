@@ -32,11 +32,11 @@ namespace SkeletonTest {
     scene.addChild(camera);
 
     // setup light
-    const cmpLightDirectional: ƒ.ComponentLight = new ƒ.ComponentLight(new ƒ.LightDirectional(new ƒ.Color(0.5, 0.5, 0.5)));
+    const cmpLightDirectional: ƒ.ComponentLight = new ƒ.ComponentLight(ƒ.LIGHT_TYPE.DIRECTIONAL, new ƒ.Color(0.5, 0.5, 0.5));
     cmpLightDirectional.mtxPivot.rotateY(180);
     scene.addComponent(cmpLightDirectional);
 
-    const cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(new ƒ.LightAmbient(new ƒ.Color(0.5, 0.5, 0.5)));
+    const cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(ƒ.LIGHT_TYPE.AMBIENT, new ƒ.Color(0.5, 0.5, 0.5));
     scene.addComponent(cmpLightAmbient);
 
     // setup viewport

@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta charset="utf-8" />
-  <meta type="settings" autoview="Graph|2023-07-25T08:47:48.755Z|05108"
-    project="{'name':'SkeletonImport','graphAutoView':'Graph|2023-07-25T08:47:48.755Z|05108'}"
-    panels="[{'type':'PanelProject','state':{}},{'type':'PanelGraph','state':{'graph':'Graph|2023-07-25T08:47:48.755Z|05108'}}]" />
+  <meta type="settings" autoview="Graph|2023-07-25T08:47:48.755Z|05108" project="{'name':'SkeletonImport','graphAutoView':'Graph|2023-07-25T08:47:48.755Z|05108'}" />
   <title>SkeletonImport</title>
   <!--Load FUDGE-->
   <script src="./../../Distribution/FudgeCore.js"></script>
@@ -41,8 +38,10 @@
   <!--Canvas for FUDGE to render to-->
   <canvas class="fullscreen">
   </canvas>
-  <span is="ui-fps" class="ui-canvas"></span>
-  <span is="ui-time" class="ui-canvas"></span>
+  <span is="ui-fps" class="ui-canvas">
+</span>
+  <span is="ui-time" class="ui-canvas">
+</span>
 
   <div id="ui" class="ui-canvas">
     <select id="file" onchange="load()">
@@ -50,11 +49,10 @@
       <option value="./GLTF/robot.glb">Robot</option>
     </select>
     <select id="amount" onchange="load()">
-      <option value="1" selected>1</option>
+      <option value="1" selected="">1</option>
       <option value="2">2</option>
       <option value="3">3</option>
     </select>
   </div>
 </body>
-
 </html>

@@ -24,7 +24,7 @@ namespace ScreenToRayToScreen {
     crc2 = canvas.getContext("2d");
 
     // enable unlimited mouse-movement (user needs to click on canvas first)
-    canvas.addEventListener("click", canvas.requestPointerLock);
+    canvas.addEventListener("click", () => canvas.requestPointerLock());
 
     labelDOM = document.createElement("span");
     labelDOM.appendChild(ƒ.DebugTextArea.textArea);
@@ -103,10 +103,10 @@ namespace ScreenToRayToScreen {
     root.addChild(new ƒAid.NodeCoordinateSystem());
 
     // set lights
-    let cmpLight: ƒ.ComponentLight = new ƒ.ComponentLight(new ƒ.LightDirectional(ƒ.Color.CSS("WHITE")));
+    let cmpLight: ƒ.ComponentLight = new ƒ.ComponentLight(f.LIGHT_TYPE.DIRECTIONAL, f.Color.CSS("WHITE"));
     cmpLight.mtxPivot.lookAt(new ƒ.Vector3(-1, -3, -2));
     root.addComponent(cmpLight);
-    let cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(new ƒ.LightAmbient(ƒ.Color.CSS("grey")));
+    let cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(f.LIGHT_TYPE.AMBIENT, f.Color.CSS("GREY"));
     root.addComponent(cmpLightAmbient);
 
     // setup orbiting camera

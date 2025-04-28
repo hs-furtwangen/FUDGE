@@ -3,6 +3,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.149Z|19233",
       "name": "chairtrippy.obj",
+      "type": "MeshOBJ",
       "url": "objs\\chairtrippy.obj"
     }
   },
@@ -10,6 +11,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.149Z|81090",
       "name": "cookingfront.obj",
+      "type": "MeshOBJ",
       "url": "objs\\cookingfront.obj"
     }
   },
@@ -17,6 +19,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.150Z|59657",
       "name": "crazyhighbottles.obj",
+      "type": "MeshOBJ",
       "url": "objs\\crazyhighbottles.obj"
     }
   },
@@ -24,6 +27,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.150Z|21206",
       "name": "dampfabzug.obj",
+      "type": "MeshOBJ",
       "url": "objs\\dampfabzug.obj"
     }
   },
@@ -31,6 +35,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.151Z|20749",
       "name": "lamptop.obj",
+      "type": "MeshOBJ",
       "url": "objs\\lamptop.obj"
     }
   },
@@ -38,6 +43,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.152Z|43348",
       "name": "sofa01.obj",
+      "type": "MeshOBJ",
       "url": "objs\\sofa01.obj"
     }
   },
@@ -45,6 +51,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
       "name": "sofa_pillow.obj",
+      "type": "MeshOBJ",
       "url": "objs\\sofa_pillow.obj"
     }
   },
@@ -52,6 +59,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.153Z|57538",
       "name": "tv.obj",
+      "type": "MeshOBJ",
       "url": "objs\\tv.obj"
     }
   },
@@ -59,6 +67,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.154Z|81543",
       "name": "vase_blender.obj",
+      "type": "MeshOBJ",
       "url": "objs\\vase_blender.obj"
     }
   },
@@ -66,6 +75,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:27:28.155Z|86045",
       "name": "wooden_cube.obj",
+      "type": "MeshOBJ",
       "url": "objs\\wooden_cube.obj"
     }
   },
@@ -73,6 +83,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:47:44.602Z|75216",
       "name": "tvFront.obj",
+      "type": "MeshOBJ",
       "url": "objs\\tvFront.obj"
     }
   },
@@ -80,6 +91,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:50:05.953Z|51783",
       "name": "backpillow_sofa.obj",
+      "type": "MeshOBJ",
       "url": "objs\\backpillow_sofa.obj"
     }
   },
@@ -87,6 +99,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:51:20.045Z|75128",
       "name": "cooking_space.obj",
+      "type": "MeshOBJ",
       "url": "objs\\cooking_space.obj"
     }
   },
@@ -94,6 +107,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T08:57:39.794Z|02727",
       "name": "cooking_interior.obj",
+      "type": "MeshOBJ",
       "url": "objs\\cooking_interior.obj"
     }
   },
@@ -101,6 +115,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T09:00:42.254Z|78108",
       "name": "floor.obj",
+      "type": "MeshOBJ",
       "url": "objs\\floor.obj"
     }
   },
@@ -108,6 +123,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T09:02:49.211Z|53790",
       "name": "table.obj",
+      "type": "MeshOBJ",
       "url": "objs\\table.obj"
     }
   },
@@ -115,6 +131,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T09:05:59.249Z|33773",
       "name": "curtain.obj",
+      "type": "MeshOBJ",
       "url": "objs\\curtain.obj"
     }
   },
@@ -125,6 +142,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0,
@@ -138,6 +156,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T09:47:05.308Z|51663",
       "name": "faucet.obj",
+      "type": "MeshOBJ",
       "url": "objs\\faucet.obj"
     }
   },
@@ -145,6 +164,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T09:58:36.888Z|09564",
       "name": "cooking_inline.obj",
+      "type": "MeshOBJ",
       "url": "objs\\cooking_inline.obj"
     }
   },
@@ -155,6 +175,7 @@
       "shader": "ShaderGouraud",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0,
@@ -171,6 +192,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:08:00.199Z|27557",
           "diffuse": 1,
@@ -196,6 +218,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T10:01:52.289Z|37393",
       "name": "cooking_downpart.obj",
+      "type": "MeshOBJ",
       "url": "objs\\cooking_downpart.obj"
     }
   },
@@ -206,6 +229,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:21:37.378Z|28859",
           "diffuse": 0.7000000000000001,
@@ -231,6 +255,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T10:16:48.218Z|62813",
       "name": "cooking_washing.obj",
+      "type": "MeshOBJ",
       "url": "objs\\cooking_washing.obj"
     }
   },
@@ -241,6 +266,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:33:53.009Z|42179",
           "diffuse": 1,
@@ -269,6 +295,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:49:00.461Z|36877",
           "diffuse": 1,
@@ -297,6 +324,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T11:01:00.240Z|41766",
           "diffuse": 1,
@@ -325,6 +353,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T11:09:46.803Z|84833",
           "diffuse": 1,
@@ -360,6 +389,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:57:48.941Z|20511",
           "diffuse": 1,
@@ -385,6 +415,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T12:50:20.197Z|73863",
       "name": "house.obj",
+      "type": "MeshOBJ",
       "url": "objs\\house.obj"
     }
   },
@@ -392,6 +423,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T12:52:49.155Z|25966",
       "name": "window.obj",
+      "type": "MeshOBJ",
       "url": "objs\\window.obj"
     }
   },
@@ -399,6 +431,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:14:26.221Z|58407",
       "name": "table.obj",
+      "type": "MeshOBJ",
       "url": "objs\\table.obj"
     }
   },
@@ -409,6 +442,7 @@
       "shader": "ShaderGouraud",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[0.12941176470588237, 0.12941176470588237, 0.12941176470588237, 1]",
           "diffuse": 1,
           "specular": 1,
@@ -422,6 +456,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:11:22.163Z|97222",
       "name": "lightskitchen.obj",
+      "type": "MeshOBJ",
       "url": "objs\\lightskitchen.obj"
     }
   },
@@ -432,6 +467,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T13:29:10.553Z|74675",
           "diffuse": 1,
@@ -460,6 +496,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T13:35:34.542Z|34324",
           "diffuse": 1,
@@ -488,6 +525,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:53:43.709Z|37364",
           "diffuse": 1,
@@ -513,6 +551,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:20:57.844Z|47808",
       "name": "firstLivingroomTable.obj",
+      "type": "MeshOBJ",
       "url": "objs\\firstLivingroomTable.obj"
     }
   },
@@ -520,6 +559,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:21:46.499Z|65302",
       "name": "secondLivingroomTable.obj",
+      "type": "MeshOBJ",
       "url": "objs\\secondLivingroomTable.obj"
     }
   },
@@ -527,6 +567,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:30:56.683Z|85792",
       "name": "sofarightpillow.obj",
+      "type": "MeshOBJ",
       "url": "objs\\sofarightpillow.obj"
     }
   },
@@ -537,6 +578,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T13:40:15.821Z|50504",
           "diffuse": 1,
@@ -565,6 +607,7 @@
       "shader": "ShaderFlatTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-11-29T10:21:37.378Z|28859",
           "diffuse": 0.5000000000000001,
@@ -579,6 +622,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:49:30.957Z|06519",
       "name": "woodenchair.obj",
+      "type": "MeshOBJ",
       "url": "objs\\woodenchair.obj"
     }
   },
@@ -586,6 +630,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T13:55:53.778Z|73434",
       "name": "bowl_livingroom.obj",
+      "type": "MeshOBJ",
       "url": "objs\\bowl_livingroom.obj"
     }
   },
@@ -593,6 +638,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T14:04:27.940Z|82033",
       "name": "door.obj",
+      "type": "MeshOBJ",
       "url": "objs\\door.obj"
     }
   },
@@ -603,6 +649,7 @@
       "shader": "ShaderPhong",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0,
@@ -625,6 +672,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-12-06T13:08:51.384Z|38779",
           "diffuse": 16,
@@ -653,6 +701,7 @@
       "shader": "ShaderGouraudTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2022-12-14T13:31:40.277Z|98724",
           "diffuse": 1,
@@ -688,6 +737,7 @@
       "shader": "ShaderLit",
       "coat": {
         "ƒ.CoatColored": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]"
         }
       }
@@ -707,16 +757,14 @@
               "ComponentLight": [
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[75, 0, 289]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -724,16 +772,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[-92, 0, -90]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -741,16 +787,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[310, 0, -509]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -758,16 +802,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[220, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -3943,6 +3985,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2022-11-29T09:04:15.779Z|05631",
       "name": "woodenchair.obj",
+      "type": "MeshOBJ",
       "url": "objs\\woodenchair.obj"
     }
   },

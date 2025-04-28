@@ -683,11 +683,11 @@ namespace FudgeCore {
       RenderWebGL.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
 
       // fill the buffer with the ambient light color
-      let cmpLights: RecycableArray<ComponentLight> = _lights.get(LightAmbient);
+      let cmpLights: RecycableArray<ComponentLight> = _lights.get(LIGHT_TYPE.AMBIENT);
       if (cmpLights) {
         let clrSum: Color = new Color(0, 0, 0, 0);
         for (let cmpLight of cmpLights) {
-          let clrLight: Color = Color.SCALE(cmpLight.light.color, cmpLight.light.intensity);
+          let clrLight: Color = Color.SCALE(cmpLight.color, cmpLight.intensity);
           clrSum.add(clrLight);
           Recycler.store(clrLight);
         }
@@ -701,11 +701,11 @@ namespace FudgeCore {
 
       // fill the buffer with the light data for each light type
       // we are currently doing a maximum of 4 crc3.bufferSubData() calls, but we could do this in one call
-      bufferLightsOfType(LightDirectional, "u_nLightsDirectional", "u_directional");
-      bufferLightsOfType(LightPoint, "u_nLightsPoint", "u_point");
-      bufferLightsOfType(LightSpot, "u_nLightsSpot", "u_spot");
+      bufferLightsOfType(LIGHT_TYPE.DIRECTIONAL, "u_nLightsDirectional", "u_directional");
+      bufferLightsOfType(LIGHT_TYPE.POINT, "u_nLightsPoint", "u_point");
+      bufferLightsOfType(LIGHT_TYPE.SPOT, "u_nLightsSpot", "u_spot");
 
-      function bufferLightsOfType(_type: TypeOfLight, _uniName: string, _uniStruct: string): void {
+      function bufferLightsOfType(_type: LIGHT_TYPE, _uniName: string, _uniStruct: string): void {
         const cmpLights: RecycableArray<ComponentLight> = _lights.get(_type);
 
         RenderWebGL.crc3.bufferSubData(
@@ -725,13 +725,13 @@ namespace FudgeCore {
           const lightDataOffset: number = iLight * lightDataSize;
 
           // set vctColor
-          let clrLight: Color = Color.SCALE(cmpLight.light.color, cmpLight.light.intensity);
+          let clrLight: Color = Color.SCALE(cmpLight.color, cmpLight.intensity);
           lightsData.set(clrLight.get(), lightDataOffset + 0);
           Recycler.store(clrLight);
 
           // set mtxShape
           let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
-          if (_type == LightDirectional) {
+          if (_type == LIGHT_TYPE.DIRECTIONAL) {
             mtxTotal.translation.set(0, 0, 0);
             mtxTotal.translation = mtxTotal.translation;
           }
@@ -739,7 +739,7 @@ namespace FudgeCore {
           lightsData.set(mtxTotal.getArray(), lightDataOffset + 4); // offset + vctColor
 
           // set mtxShapeInverse
-          if (_type != LightDirectional) {
+          if (_type != LIGHT_TYPE.DIRECTIONAL) {
             let mtxInverse: Matrix4x4 = Matrix4x4.INVERSE(mtxTotal);
             lightsData.set(mtxInverse.getArray(), lightDataOffset + 4 + 16); // offset + vctColor + mtxShape
             Recycler.store(mtxInverse);

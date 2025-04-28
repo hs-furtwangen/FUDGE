@@ -1,4 +1,3 @@
-///<reference path="../Light/Light.ts"/>
 namespace FudgeCore {
 
   /**
@@ -19,34 +18,26 @@ namespace FudgeCore {
   export class ComponentLight extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentLight);
 
-    // private static constructors: { [type: string]: General } = { [LIGHT_TYPE.AMBIENT]: LightAmbient, [LIGHT_TYPE.DIRECTIONAL]: LightDirectional, [LIGHT_TYPE.POINT]: LightPoint, [LIGHT_TYPE.SPOT]: LightSpot };
+    @type(LIGHT_TYPE)
+    public lightType: LIGHT_TYPE;
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
-    public light: Light = null;
-    //TODO: since there is almost no functionality left in Light, eliminate it and put all in the component as with the camera...
+    public color: Color;
+    public intensity: number;
 
-    public constructor(_light: Light = new LightAmbient()) {
+    public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
       super();
       this.singleton = false;
-      this.light = _light;
-    }
-
-    // TODO: use TypeOfLight as return type?
-    /**
-     * Set the type of {@link Light} used by this component.
-     */
-    public setType<T extends Light>(_class: new () => T): void {
-      let mtrOld: Mutator = {};
-      if (this.light)
-        mtrOld = this.light.getMutator();
-
-      this.light = new _class();
-      this.light.mutate(mtrOld);
+      this.lightType = _lightType;
+      this.color = _color;
+      this.intensity = _intensity;
     }
 
     public serialize(): Serialization {
       let serialization: Serialization = {
+        lightType: this.lightType,
         pivot: this.mtxPivot.serialize(),
-        light: Serializer.serialize(this.light)
+        color: this.color.serialize(),
+        intensity: this.intensity
       };
       serialization[super.constructor.name] = super.serialize();
       return serialization;
@@ -54,37 +45,34 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization[super.constructor.name]);
+      if (_serialization.lightType != undefined)
+        this.lightType = _serialization.lightType;
       await this.mtxPivot.deserialize(_serialization.pivot);
-      this.light = await <Promise<Light>>Serializer.deserialize(_serialization.light);
+      if (_serialization.color != undefined)
+        await this.color.deserialize(_serialization.color);
+      if (_serialization.intensity != undefined)
+        this.intensity = _serialization.intensity;
+
+      // backwards compatibility, remove in future versions
+      let light: Serialization = _serialization.light;
+      if (light != undefined) { 
+        for (const path in light) {
+          this.lightType = <LIGHT_TYPE>Serializer.getConstructor(path).name;
+          light = light[path];
+          if (light.color != undefined)
+            await this.color.deserialize(light.color);
+          if (light.intensity != undefined)
+            this.intensity = light.intensity;
+        }
+      }
+
       return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.type = this.light.getType().name;
-      return mutator;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.type)
-        types.type = LIGHT_TYPE;
-      return types;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      let type: string = _mutator.type;
-      if (typeof (type) !== "undefined" && type != this.light.constructor.name)
-        this.setType(Serializer.getConstructor<Light>(type));
-      delete (_mutator.type); // exclude light type from further mutation
-      super.mutate(_mutator, _selection, _dispatchMutate);
-      _mutator.type = type; // reconstruct mutator
     }
 
     public drawGizmos(): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);
-      Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.light.color);
+      Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.color);
       Recycler.store(mtxShape);
     };
 
@@ -92,8 +80,8 @@ namespace FudgeCore {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       let color: Color = Color.CSS("yellow");
 
-      switch (this.light.getType()) {
-        case LightDirectional:
+      switch (this.lightType) {
+        case LIGHT_TYPE.DIRECTIONAL:
           const radius: number = 0.5;
           Gizmos.drawWireCircle(mtxShape, color);
           const lines: Vector3[] = new Array(10).fill(null).map(() => Recycler.get(Vector3));
@@ -103,13 +91,13 @@ namespace FudgeCore {
           lines[4].set(radius, 0, 0); lines[5].set(radius, 0, 1);
           lines[8].set(-radius, 0, 0); lines[9].set(-radius, 0, 1);
           Gizmos.drawLines(lines, mtxShape, color);
-          Recycler.storeMultiple(lines);
+          Recycler.store(lines);
           break;
-        case LightPoint:
+        case LIGHT_TYPE.POINT:
           mtxShape.scale(new Vector3(2, 2, 2));
           Gizmos.drawWireSphere(mtxShape, color);
           break;
-        case LightSpot:
+        case LIGHT_TYPE.SPOT:
           Gizmos.drawWireCone(mtxShape, color);
           break;
       }

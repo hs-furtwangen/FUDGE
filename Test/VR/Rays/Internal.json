@@ -13,6 +13,7 @@
       "shader": "ShaderFlat",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0,
@@ -45,6 +46,7 @@
       "shader": "ShaderGouraud",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 1,
@@ -61,6 +63,7 @@
       "shader": "ShaderPhong",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0,
@@ -77,6 +80,7 @@
       "shader": "ShaderLit",
       "coat": {
         "ƒ.CoatColored": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]"
         }
       }
@@ -96,16 +100,14 @@
               "ComponentLight": [
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightPoint",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightPoint": {
-                        "color": "[1, 1, 1, 0.39]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 0.39]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -113,16 +115,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[34, 180, 40]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -130,16 +130,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -869,6 +867,7 @@
       "shader": "ShaderPhong",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 0, 0, 1]",
           "diffuse": 1,
           "specular": 4,

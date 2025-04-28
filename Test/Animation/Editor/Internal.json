@@ -6,6 +6,7 @@
       "shader": "ShaderLit",
       "coat": {
         "ƒ.CoatColored": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]"
         }
       }
@@ -52,6 +53,7 @@
                         "slopeOut": 0.03168513262793446
                       }
                     ],
+                    "keyType": "Number",
                     "animationSequence": true
                   }
                 }
@@ -81,6 +83,7 @@
                             "slopeOut": 0.07374833733551069
                           }
                         ],
+                        "keyType": "Number",
                         "animationSequence": true
                       }
                     }
@@ -100,6 +103,7 @@
       "shader": "ShaderGouraud",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0.5,
@@ -170,16 +174,14 @@
               "ComponentLight": [
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightPoint",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 90, 0]",
                       "scaling": "[15, 15, 15]"
                     },
-                    "light": {
-                      "ƒ.LightPoint": {
-                        "color": "[1, 1, 1, 1]"
-                      }
-                    },
+                    "color": "[1, 1, 1, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }

@@ -65,7 +65,7 @@ namespace FudgePhysics_Communication {
     bodies[3].getComponent(f.ComponentRigidbody).isTrigger = true;
     bodies[3].getComponent(f.ComponentRigidbody).addEventListener(f.EVENT_PHYSICS.TRIGGER_ENTER, resetBall);
 
-    let cmpLight: f.ComponentLight = new f.ComponentLight(new f.LightDirectional(f.Color.CSS("WHITE")));
+    let cmpLight: f.ComponentLight = new f.ComponentLight(f.LIGHT_TYPE.DIRECTIONAL, f.Color.CSS("WHITE"));
     cmpLight.mtxPivot.lookAt(new f.Vector3(0.5, -1, -0.8));
     hierarchy.addComponent(cmpLight);
 

@@ -64,11 +64,11 @@ namespace SkeletonTest {
     // console.log(loader.fbx);
 
     // setup light
-    const cmpLightDirectional: ƒ.ComponentLight = new ƒ.ComponentLight(new ƒ.LightDirectional(new ƒ.Color(0.5, 0.5, 0.5)));
+    const cmpLightDirectional: ƒ.ComponentLight = new ƒ.ComponentLight(ƒ.LIGHT_TYPE.DIRECTIONAL, new ƒ.Color(0.5, 0.5, 0.5));
     // cmpLightDirectional.mtxPivot.rotateY(180);
     graph.addComponent(cmpLightDirectional);
 
-    const cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(new ƒ.LightAmbient(new ƒ.Color(0.5, 0.5, 0.5)));
+    const cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(ƒ.LIGHT_TYPE.AMBIENT, new ƒ.Color(0.5, 0.5, 0.5));
     graph.addComponent(cmpLightAmbient);
 
     const viewport: ƒ.Viewport = new ƒ.Viewport();
@@ -77,7 +77,7 @@ namespace SkeletonTest {
     viewport.canvas.addEventListener("pointermove", hndPointerMove);
     viewport.canvas.addEventListener("wheel", hndWheelMove);
 
-    canvas.addEventListener("mousedown", canvas.requestPointerLock);
+    canvas.addEventListener("mousedown", () => canvas.requestPointerLock());
     canvas.addEventListener("mouseup", () => document.exitPointerLock());
 
     let timeSpan: UI.Time = document.querySelector('span[is=ui-time]');

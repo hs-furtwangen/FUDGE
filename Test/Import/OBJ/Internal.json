@@ -3,6 +3,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:14.683Z|37989",
       "name": "cubeFlat.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeFlat.obj"
     }
   },
@@ -10,6 +11,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:17.274Z|05163",
       "name": "cubeFlatUV.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeFlatUV.obj"
     }
   },
@@ -17,6 +19,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:16.123Z|75380",
       "name": "cubeFlatNormal.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeFlatNormal.obj"
     }
   },
@@ -24,6 +27,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:18.333Z|36610",
       "name": "cubeFlatUVNormal.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeFlatUVNormal.obj"
     }
   },
@@ -31,6 +35,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:20.015Z|86022",
       "name": "cubeSmooth.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeSmooth.obj"
     }
   },
@@ -38,6 +43,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:21.973Z|32015",
       "name": "cubeSmoothUV.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeSmoothUV.obj"
     }
   },
@@ -45,6 +51,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:21.002Z|53003",
       "name": "cubeSmoothNormal.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeSmoothNormal.obj"
     }
   },
@@ -52,6 +59,7 @@
     "ƒ.MeshOBJ": {
       "idResource": "MeshOBJ|2023-10-13T07:18:22.735Z|36572",
       "name": "cubeSmoothUVNormal.obj",
+      "type": "MeshOBJ",
       "url": "OBJ\\cubeSmoothUVNormal.obj"
     }
   },
@@ -62,6 +70,7 @@
       "shader": "ShaderPhongTextured",
       "coat": {
         "ƒ.CoatRemissiveTextured": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "idTexture": "TextureImage|2023-10-27T07:42:17.897Z|03527",
           "diffuse": 1,
@@ -90,6 +99,7 @@
       "shader": "ShaderPhong",
       "coat": {
         "ƒ.CoatRemissive": {
+          "alphaClip": 0.01,
           "color": "[1, 1, 1, 1]",
           "diffuse": 1,
           "specular": 0.5,
@@ -113,16 +123,14 @@
               "ComponentLight": [
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightAmbient",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightAmbient": {
-                        "color": "[0.3215686274509804, 0.3215686274509804, 0.3215686274509804, 1]"
-                      }
-                    },
+                    "color": "[0.3215686274509804, 0.3215686274509804, 0.3215686274509804, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }
@@ -130,16 +138,14 @@
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "lightType": "LightDirectional",
                     "pivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 180, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "light": {
-                      "ƒ.LightDirectional": {
-                        "color": "[0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1]"
-                      }
-                    },
+                    "color": "[0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1]",
+                    "intensity": 1,
                     "Component": {
                       "active": true
                     }

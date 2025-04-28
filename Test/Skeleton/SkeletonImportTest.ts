@@ -30,7 +30,7 @@ namespace SkeletonTest {
     viewport.initialize("InteractiveViewport", graph, cmpCamera, canvas);
     ƒ.Debug.log("Viewport:", viewport);
     // hide the cursor when interacting, also suppressing right-click menu
-    canvas.addEventListener("mousedown", canvas.requestPointerLock);
+    canvas.addEventListener("mousedown", () => canvas.requestPointerLock());
     canvas.addEventListener("mouseup", function () { document.exitPointerLock(); });
     // make the camera interactive (complex method in ƒAid)
     ƒAid.Viewport.expandCameraToInteractiveOrbit(viewport);
@@ -47,7 +47,7 @@ namespace SkeletonTest {
     let iShader: number = 0;
     const shaders: typeof ƒ.Shader[] = [ƒ.ShaderFlatSkin, ƒ.ShaderGouraudSkin, ƒ.ShaderPhongSkin];
 
-    let cmpLightDirectional: ƒ.ComponentLight = graph.getChildrenByName("Light")[0]?.getComponents(ƒ.ComponentLight)?.find((_cmp: ƒ.ComponentLight) => _cmp.light instanceof ƒ.LightDirectional);
+    let cmpLightDirectional: ƒ.ComponentLight = graph.getChildrenByName("Light")[0]?.getComponents(ƒ.ComponentLight)?.find((_cmp: ƒ.ComponentLight) => _cmp.lightType == ƒ.LIGHT_TYPE.DIRECTIONAL);
 
     ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, update);
     ƒ.Loop.start();

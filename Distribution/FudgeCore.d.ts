@@ -276,6 +276,85 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * A subclass of {@link Event} that can be (re)used via {@link RecyclableEvent.get} and {@link RecyclableEvent.store} to avoid garbage collection.
+     * If dispatched repeatedly without recycling through get/store, call {@link recycle} manually before each dispatch.
+     * Exposes some readonly properties of the event class as writable properties for the event system.
+     *
+     * **Example get/store**:
+     * ```typescript
+     * import f = FudgeCore;
+     * const node: f.Node = new f.Node("Node");
+     * const event: f.RecyclableEvent = f.RecyclableEvent.get("myevent", true); // get event from depot
+     * node.dispatchEvent(event);
+     * f.RecyclableEvent.store(event); // store event in depot for reuse
+     * ```
+     *
+     * **Example manual recycle**:
+     * ```typescript
+     * import f = FudgeCore;
+     * const node: f.Node = new f.Node("Node");
+     * const event: f.RecyclableEvent = f.RecyclableEvent.get("myevent", true); // get event and cache it
+     *
+     * // called repeatedly, e.g. in a loop
+     * function update(): void {
+     *   node.dispatchEvent(event.recycle()); // recycle the event before each dispatch
+     * }
+     * ```
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    class RecyclableEvent extends Event {
+        #private;
+        readonly path: EventTarget[];
+        constructor(_type: string, _bubbles?: boolean, _cancelable?: boolean);
+        /**
+         * Fetches an event of the requested type and initialization from the depot. If the depot for the requested type is empty it returns a new instance.
+         * Use {@link RecyclableEvent.store} after dispatching the event to store it for reuse.
+         */
+        static get(_type: string, _bubbles?: boolean, _cancelable?: boolean): RecyclableEvent;
+        /**
+         * Stores the event in the depot for later reuse.
+         */
+        static store(_event: RecyclableEvent): void;
+        /**
+         * Emptys the depot of a given type, leaving the events for the garbage collector.
+         */
+        static dump(_type: string, _bubbles?: boolean, _cancelable?: boolean): void;
+        /**
+         * Emptys all depots, leaving all events to the garbage collector.
+         */
+        static dumpAll(): void;
+        static [Symbol.hasInstance](_instance: unknown): boolean;
+        /**
+         * Flag for fast type checking.
+         */
+        get isRecyclableEvent(): boolean;
+        get target(): EventTarget;
+        get currentTarget(): EventTarget;
+        get eventPhase(): Event["eventPhase"];
+        /**
+         * Set the target of the event. Used by the event system.
+         * @returns A reference to this event.
+         */
+        setTarget(_target: EventTarget): RecyclableEvent;
+        /**
+         * Set the current target of the event. Used by the event system.
+         * @returns A reference to this event.
+         */
+        setCurrentTarget(_currentTarget: EventTarget): RecyclableEvent;
+        /**
+         * Set the event phase of the event. Used by the event system.
+         * @returns A reference to this event.
+         */
+        setEventPhase(_eventPhase: Event["NONE"] | Event["CAPTURING_PHASE"] | Event["AT_TARGET"] | Event["BUBBLING_PHASE"]): RecyclableEvent;
+        /**
+         * Reset the event to default values. Used by the event system.
+         * @returns A reference to this event.
+         */
+        recycle(): RecyclableEvent;
+    }
+}
+declare namespace FudgeCore {
+    /**
      * Interface describing the datatypes of the attributes a mutator as strings
      */
     interface MutatorAttributeTypes {
@@ -1373,13 +1452,13 @@ declare namespace FudgeCore {
          */
         getParent(): Node | null;
         /**
-         * Traces back the ancestors of this node and returns the first
+         * Traces back the ancestors of this node and returns the first.
          */
         getAncestor(): Node | null;
         /**
-         * Traces the hierarchy upwards to the first ancestor and returns the path through the graph to this node
+         * Traces the hierarchy upwards to the root and returns the path from the root to this node.
          */
-        getPath(): Node[];
+        getPath(_out?: Node[], _offset?: number): Node[];
         /**
          * Returns child at the given index in the list of children
          */
@@ -3428,71 +3507,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    type TypeOfLight = new () => Light;
-    /**
-     * Baseclass for different kinds of lights.
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2019
-     */
-    abstract class Light extends Mutable implements Serializable {
-        color: Color;
-        intensity: number;
-        constructor(_color?: Color, _intensity?: number);
-        /**
-         * Returns the {@link TypeOfLight} of this light.
-         */
-        getType(): TypeOfLight;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(): void;
-    }
-    /**
-     * Ambient light, coming from all directions, illuminating everything with its color independent of position and orientation (like a foggy day or in the shades)
-     * Attached to a node by {@link ComponentLight}, the pivot matrix is ignored.
-     * ```text
-     * ~ ~ ~
-     *  ~ ~ ~
-     * ```
-     */
-    class LightAmbient extends Light {
-    }
-    /**
-     * Directional light, illuminating everything from a specified direction with its color (like standing in bright sunlight)
-     * Attached to a node by {@link ComponentLight}, the pivot matrix specifies the direction of the light only.
-     * ```text
-     * --->
-     * --->
-     * --->
-     * ```
-     */
-    class LightDirectional extends Light {
-    }
-    /**
-     * Omnidirectional light emitting from its position, illuminating objects depending on their position and distance with its color (like a colored light bulb)
-     * Attached to a node by {@link ComponentLight}, the pivot matrix specifies the position of the light, it's shape and rotation.
-     * So with uneven scaling, other shapes than a perfect sphere, such as an oval or a disc, are possible, which creates a visible effect of the rotation too.
-     * The intensity of the light drops linearly from 1 in the center to 0 at the perimeter of the shape.
-     * ```text
-     *         .\|/.
-     *        -- o --
-     *         ´/|\`
-     * ```
-     */
-    class LightPoint extends Light {
-    }
-    /**
-     * Spot light emitting within a specified angle from its position, illuminating objects depending on their position and distance with its color
-     * Attached to a node by {@link ComponentLight}, the pivot matrix specifies the position of the light, the direction and the size and angles of the cone.
-     * The intensity of the light drops linearly from 1 in the center to 0 at the outer limits of the cone.
-     * ```text
-     *          o
-     *         /|\
-     *        / | \
-     * ```
-     */
-    class LightSpot extends Light {
-    }
-}
-declare namespace FudgeCore {
     /**
      * Defines identifiers for the various types of light this component can provide.
      */
@@ -3509,18 +3523,13 @@ declare namespace FudgeCore {
       */
     class ComponentLight extends Component {
         static readonly iSubclass: number;
+        lightType: LIGHT_TYPE;
         mtxPivot: Matrix4x4;
-        light: Light;
-        constructor(_light?: Light);
-        /**
-         * Set the type of {@link Light} used by this component.
-         */
-        setType<T extends Light>(_class: new () => T): void;
+        color: Color;
+        intensity: number;
+        constructor(_lightType?: LIGHT_TYPE, _color?: Color, _intensity?: number);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         drawGizmos(): void;
         drawGizmosSelected(): void;
     }
@@ -7620,51 +7629,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    type Writable<T, K extends keyof T> = Omit<T, K> & {
-        -readonly [P in K]: T[P];
-    };
-    type WritableEvent = Writable<Event, "type" | "target" | "currentTarget" | "eventPhase" | "bubbles" | "cancelable">;
-    /**
-     * A subclass of {@link Event} that can be reused via the {@link Recycler} to reduce the number of event objects created.
-     * Exposes readonly properties of the event class as writable properties.
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    export class RecyclableEvent extends Event implements Recycable {
-        constructor(_type?: string, _init?: EventInit);
-        static [Symbol.hasInstance](_instance: unknown): boolean;
-        /**
-         * Returns a event of the specified type with the specified options from the {@link Recycler}. See {@link Event} constructor for details on the parameters.
-         */
-        static GET(_type: string, _bubbles?: boolean, _cancelable?: boolean): RecyclableEvent;
-        /**
-         * Flag for fast type checking.
-         */
-        get isRecyclableEvent(): boolean;
-        recycle(this: WritableEvent): void;
-        /**
-         * Set the type and options of the event. See {@link Event} constructor for details.
-         * @returns A reference to this event.
-         */
-        set(this: WritableEvent, _type: string, _bubbles?: boolean, _cancelable?: boolean): RecyclableEvent;
-        /**
-         * Set the target of the event. Used by the event system.
-         * @returns A reference to this event.
-         */
-        setTarget(this: WritableEvent, _target: EventTarget): RecyclableEvent;
-        /**
-         * Set the current target of the event. Used by the event system.
-         * @returns A reference to this event.
-         */
-        setCurrentTarget(this: WritableEvent, _currentTarget: EventTarget): RecyclableEvent;
-        /**
-         * Set the event phase of the event. Used by the event system.
-         * @returns A reference to this event.
-         */
-        setEventPhase(this: WritableEvent, _eventPhase: Event["NONE"] | Event["CAPTURING_PHASE"] | Event["AT_TARGET"] | Event["BUBBLING_PHASE"]): RecyclableEvent;
-    }
-    export {};
-}
-declare namespace FudgeCore {
     /**
      * The interface to render visual aids in the editor. Implemented by {@link Component}s. Can be used on its own to draw and pick visual aids independent of a scene graph.
      */
@@ -7778,7 +7742,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    type MapLightTypeToLightList = Map<TypeOfLight, RecycableArray<ComponentLight>>;
+    type MapLightTypeToLightList = Map<LIGHT_TYPE, RecycableArray<ComponentLight>>;
     interface RenderPrepareOptions {
         ignorePhysics?: boolean;
     }
