@@ -1,6 +1,9 @@
 namespace FudgeCore {
 
   /**
+   * Manages {@link ComponentLight} data to be transmitted during rendering.
+   * @internal
+   * @authors Jonas Plotzky, HFU, 2025
    */
   export abstract class RenderManagerComponentLight {
     public static readonly MAX_LIGHTS_DIRECTIONAL: number = 15; // must match the define in the shader
@@ -38,7 +41,7 @@ namespace FudgeCore {
       crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.LIGHTS.BINDING, RenderManagerComponentLight.buffer);
     }
 
-    /** @internal */
+    /** @internal Replaces the decorated method with the manager’s implementation of the same name. */
     public static decorate<M extends (this: typeof ComponentLight, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof ComponentLight, M>): M {
       return Reflect.get(this, _context.name);
     }

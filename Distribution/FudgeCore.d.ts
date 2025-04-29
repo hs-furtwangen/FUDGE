@@ -737,6 +737,8 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
     namespace ParticleData {
         enum FUNCTION {
             ADDITION = "addition",
@@ -794,10 +796,6 @@ declare namespace FudgeCore {
          * @param _instance
          */
         static store(_instance: Object): void;
-        /**
-         * Stores the provided objects using the {@link Recycler.store} method.
-         */
-        static storeMultiple(_instances: Object[]): void;
         /**
          * Emptys the depot of a given type, leaving the objects for the garbage collector. May result in a short stall when many objects were in
          * @param _t
@@ -1222,8 +1220,6 @@ declare namespace FudgeCore {
         private static texPick;
         private static texDepthPick;
         private static uboCamera;
-        private static uboLights;
-        private static uboLightsOffsets;
         private static uboFog;
         private static dataFog;
         private static dataCamera;
@@ -1350,11 +1346,6 @@ declare namespace FudgeCore {
          * Buffer the fog parameters into the fog ubo
          */
         protected static bufferFog(_cmpFog: ComponentFog): void;
-        protected static initializeLights(): void;
-        /**
-         * Buffer the data from the lights in the scenegraph into the lights ubo
-         */
-        protected static bufferLights(_lights: MapLightTypeToLightList): void;
         /**
          * Draws the given nodes using the given camera and the post process components attached to the same node as the camera
          * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
@@ -1443,6 +1434,10 @@ declare namespace FudgeCore {
          * Returns an iterator over this node and all its descendants in the graph below
          */
         [Symbol.iterator](): IterableIterator<Node>;
+        /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+        updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void;
+        /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+        useRenderData(_mtxWorldOverride: Matrix4x4): void;
         /**
          * De- / Activate this node. Inactive nodes will not be processed by the renderer.
          */
@@ -4310,6 +4305,10 @@ declare namespace FudgeCore {
          * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
          */
         alphaClip: number;
+        /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+        updateRenderData(): void;
+        /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+        useRenderData(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         protected reduceMutator(_mutator: Mutator): void;
@@ -7915,7 +7914,7 @@ declare namespace FudgeCore {
         */
         prepare(_prepareBranch?: boolean): void;
         /**
-         * Prepares all nodes in the branch for rendering by updating their world transforms etc.
+         * Prepares all nodes in the branch for rendering by updating their world transforms and supplying the gpu renderbuffers with the neccessary node and component data to draw a frame.
          */
         prepareBranch(): void;
         /**

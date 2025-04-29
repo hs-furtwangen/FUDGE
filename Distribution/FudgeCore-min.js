@@ -869,43 +869,36 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class RenderBufferManager {
-        constructor(_blockBinding, _blockSize, _maxObjects) {
-            this.mapObjectToOffset = new WeakMap();
-            this.count = 0;
+        static { this.mapObjectToOffset = new WeakMap(); }
+        static decorate(_method, _context) {
+            return Reflect.get(this, _context.name).bind(this);
+        }
+        static initialize(_renderWebGL, _blockBinding, _blockSize, _maxObjects) {
             this.blockSize = _blockSize;
             this.blockBinding = _blockBinding;
-            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            const crc3 = _renderWebGL.getRenderingContext();
             const alignment = crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
             this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment;
             this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
             this.data = new Float32Array(this.spaceData * _maxObjects);
-            this.buffer = FudgeCore.RenderWebGL.assert(crc3.createBuffer());
+            this.count = 0;
+            this.buffer = _renderWebGL.assert(crc3.createBuffer());
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
             crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
         }
-        static get instance() {
-            Object.defineProperty(this, "instance", {
-                value: new this()
-            });
-            return this.instance;
-        }
-        static decorate(_method, _context) {
-            const method = Reflect.get(this.instance, _context.name);
-            return method.bind(this.instance);
-        }
-        resetRenderData() {
+        static resetRenderData() {
             this.count = 0;
         }
-        updateRenderbuffer() {
+        static updateRenderbuffer() {
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
             crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.data, 0, this.count * this.spaceData);
         }
-        useRenderData(_object) {
+        static useRenderData(_object) {
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.mapObjectToOffset.get(_object), this.blockSize);
         }
-        store(_object) {
+        static store(_object) {
             const offsetData = this.count * this.spaceData;
             this.mapObjectToOffset.set(_object, this.count * this.spaceBuffer);
             this.count++;
@@ -913,7 +906,10 @@ var FudgeCore;
                 this.grow();
             return offsetData;
         }
-        grow() {
+        static updateRenderData(_object, ..._data) {
+        }
+        ;
+        static grow() {
             const data = new Float32Array(this.data.length * 1.5);
             data.set(this.data);
             this.data = data;
@@ -927,15 +923,12 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class RenderManagerCoat extends FudgeCore.RenderBufferManager {
-        constructor() {
+        static initialize(_renderWebGL) {
             const maxMaterials = 128;
             const blockSize = (4 + 1 + 1 + 1 + 1 + 1) * 4;
-            super(FudgeCore.UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
+            super.initialize(_renderWebGL, FudgeCore.UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
         }
-        static decorate(_method, _context) {
-            return super.decorate(_method, _context);
-        }
-        updateRenderData(_coat) {
+        static updateRenderData(_coat) {
             const offset = this.store(_coat);
             const data = this.data;
             if (_coat instanceof FudgeCore.CoatColored) {
@@ -953,7 +946,7 @@ var FudgeCore;
             }
             data[offset + 8] = _coat.alphaClip;
         }
-        useRenderData(_coat) {
+        static useRenderData(_coat) {
             super.useRenderData(_coat);
             if (_coat instanceof FudgeCore.CoatTextured)
                 _coat.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.COLOR.UNIT);
@@ -968,15 +961,12 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     class RenderManagerNode extends FudgeCore.RenderBufferManager {
-        constructor() {
+        static initialize(_renderWebGL) {
             const maxNodes = 256;
             const blockSize = (16 + 12 + 4 + 1 + 1 + 1 + 1 + 1 + 1) * 4;
-            super(FudgeCore.UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
+            super.initialize(_renderWebGL, FudgeCore.UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
         }
-        static decorate(_method, _context) {
-            return super.decorate(_method, _context);
-        }
-        updateRenderData(_node, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem) {
+        static updateRenderData(_node, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem) {
             const offset = this.store(_node);
             const data = this.data;
             data.set(_cmpMesh.mtxWorld.getArray(), offset);
@@ -1004,7 +994,7 @@ var FudgeCore;
                 data[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
             }
         }
-        useRenderData(_node, _mtxWorldOverride) {
+        static useRenderData(_node, _mtxWorldOverride) {
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             let offset = this.mapObjectToOffset.get(_node);
             crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, offset, this.blockSize);
@@ -1013,6 +1003,82 @@ var FudgeCore;
         }
     }
     FudgeCore.RenderManagerNode = RenderManagerNode;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class RenderManagerComponentLight {
+        static { this.MAX_LIGHTS_DIRECTIONAL = 15; }
+        static { this.MAX_LIGHTS_POINT = 100; }
+        static { this.MAX_LIGHTS_SPOT = 100; }
+        static { this.FLOATS_PER_LIGHT = 4 + 16 + 16; }
+        static { this.HEADER_UINTS = 4; }
+        static initialize(_renderWebGL) {
+            const MAX_LIGHTS_DIRECTIONAL = 15;
+            const MAX_LIGHTS_POINT = 100;
+            const MAX_LIGHTS_SPOT = 100;
+            const FLOATS_PER_LIGHT = 4 + 16 + 16;
+            const HEADER_UINTS = 4;
+            RenderManagerComponentLight.data = new Float32Array(HEADER_UINTS + (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * FLOATS_PER_LIGHT);
+            RenderManagerComponentLight.dataHeader = new Uint32Array(RenderManagerComponentLight.data.buffer);
+            RenderManagerComponentLight.offsets = {
+                LightAmbient: HEADER_UINTS,
+                LightDirectional: HEADER_UINTS + FLOATS_PER_LIGHT,
+                LightPoint: HEADER_UINTS + FLOATS_PER_LIGHT * (1 + MAX_LIGHTS_DIRECTIONAL),
+                LightSpot: HEADER_UINTS + FLOATS_PER_LIGHT * (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT)
+            };
+            const crc3 = _renderWebGL.getRenderingContext();
+            RenderManagerComponentLight.buffer = _renderWebGL.assert(crc3.createBuffer());
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderManagerComponentLight.buffer);
+            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderManagerComponentLight.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.LIGHTS.BINDING, RenderManagerComponentLight.buffer);
+        }
+        static decorate(_method, _context) {
+            return Reflect.get(this, _context.name);
+        }
+        static updateRenderbuffer(_lights) {
+            let cmpLights = _lights.get(FudgeCore.LIGHT_TYPE.AMBIENT);
+            if (cmpLights?.length > 0) {
+                let clrSum = FudgeCore.Recycler.get(FudgeCore.Color).set(0, 0, 0, 0);
+                let clrLight = FudgeCore.Recycler.get(FudgeCore.Color);
+                for (let cmpLight of cmpLights)
+                    clrSum.add(FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity, clrLight));
+                FudgeCore.Recycler.store(clrSum);
+                FudgeCore.Recycler.store(clrLight);
+                clrSum.toArray(RenderManagerComponentLight.data, RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.AMBIENT]);
+            }
+            const color = FudgeCore.Recycler.get(FudgeCore.Color);
+            const mtxShape = FudgeCore.Matrix4x4.IDENTITY();
+            RenderManagerComponentLight.bufferLights(_lights.get(FudgeCore.LIGHT_TYPE.DIRECTIONAL), RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.DIRECTIONAL], 0, color, mtxShape);
+            RenderManagerComponentLight.bufferLights(_lights.get(FudgeCore.LIGHT_TYPE.POINT), RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.POINT], 1, color, mtxShape);
+            RenderManagerComponentLight.bufferLights(_lights.get(FudgeCore.LIGHT_TYPE.SPOT), RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.SPOT], 2, color, mtxShape);
+            FudgeCore.Recycler.store(color);
+            FudgeCore.Recycler.store(mtxShape);
+            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderManagerComponentLight.buffer);
+            crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, RenderManagerComponentLight.data);
+        }
+        static bufferLights(_cmpLights, _offset, _iHeader, _color, _mtxShape) {
+            if (!_cmpLights) {
+                RenderManagerComponentLight.dataHeader[_iHeader] = 0;
+                return;
+            }
+            RenderManagerComponentLight.dataHeader[_iHeader] = _cmpLights.length;
+            if (_cmpLights.length == 0)
+                return;
+            for (let cmpLight of _cmpLights) {
+                FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity, _color).toArray(RenderManagerComponentLight.data, _offset);
+                FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot, _mtxShape);
+                if (cmpLight.lightType == FudgeCore.LIGHT_TYPE.DIRECTIONAL)
+                    _mtxShape.translation = _mtxShape.translation.set(0, 0, 0);
+                _mtxShape.toArray(RenderManagerComponentLight.data, _offset + 4);
+                if (cmpLight.lightType != FudgeCore.LIGHT_TYPE.DIRECTIONAL)
+                    FudgeCore.Matrix4x4.INVERSE(_mtxShape, _mtxShape).toArray(RenderManagerComponentLight.data, _offset + 4 + 16);
+                _offset += RenderManagerComponentLight.FLOATS_PER_LIGHT;
+            }
+            return;
+        }
+    }
+    FudgeCore.RenderManagerComponentLight = RenderManagerComponentLight;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -1523,10 +1589,6 @@ var FudgeCore;
         static store(_instance) {
             (Recycler.depot[_instance.constructor.name] ??= new FudgeCore.RecycableArray()).push(_instance);
         }
-        static storeMultiple(_instances) {
-            for (const instance of _instances)
-                Recycler.store(instance);
-        }
         static dump(_t) {
             Recycler.depot[_t.name] = new FudgeCore.RecycableArray();
         }
@@ -2022,8 +2084,10 @@ var FudgeCore;
             RenderWebGL.initializeAttachments();
             RenderWebGL.adjustAttachments();
             RenderWebGL.initializeCamera();
-            RenderWebGL.initializeLights();
             RenderWebGL.initializeFog();
+            FudgeCore.RenderManagerNode.initialize(RenderWebGL);
+            FudgeCore.RenderManagerCoat.initialize(RenderWebGL);
+            FudgeCore.RenderManagerComponentLight.initialize(RenderWebGL);
             return crc3;
         }
         static assert(_value, _message = "") {
@@ -2326,73 +2390,6 @@ var FudgeCore;
             }
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboFog);
             crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
-        }
-        static initializeLights() {
-            const MAX_LIGHTS_DIRECTIONAL = 15;
-            const MAX_LIGHTS_POINT = 100;
-            const MAX_LIGHTS_SPOT = 100;
-            const BYTES_PER_LIGHT = Float32Array.BYTES_PER_ELEMENT * (4 + 16 + 16);
-            RenderWebGL.uboLightsOffsets = {};
-            RenderWebGL.uboLightsOffsets["u_nLightsDirectional"] = Uint32Array.BYTES_PER_ELEMENT * 0;
-            RenderWebGL.uboLightsOffsets["u_nLightsPoint"] = Uint32Array.BYTES_PER_ELEMENT * 1;
-            RenderWebGL.uboLightsOffsets["u_nLightsSpot"] = Uint32Array.BYTES_PER_ELEMENT * 2;
-            RenderWebGL.uboLightsOffsets["u_ambient"] = Uint32Array.BYTES_PER_ELEMENT * 4;
-            RenderWebGL.uboLightsOffsets["u_directional"] = RenderWebGL.uboLightsOffsets["u_ambient"] + BYTES_PER_LIGHT * 1;
-            RenderWebGL.uboLightsOffsets["u_point"] = RenderWebGL.uboLightsOffsets["u_directional"] + BYTES_PER_LIGHT * MAX_LIGHTS_DIRECTIONAL;
-            RenderWebGL.uboLightsOffsets["u_spot"] = RenderWebGL.uboLightsOffsets["u_point"] + BYTES_PER_LIGHT * MAX_LIGHTS_POINT;
-            const crc3 = RenderWebGL.getRenderingContext();
-            RenderWebGL.uboLights = RenderWebGL.assert(crc3.createBuffer());
-            const blockSize = RenderWebGL.uboLightsOffsets["u_spot"] + BYTES_PER_LIGHT * MAX_LIGHTS_SPOT;
-            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
-            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
-            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGL.uboLights);
-        }
-        static bufferLights(_lights) {
-            if (!RenderWebGL.uboLights)
-                return;
-            RenderWebGL.crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
-            let cmpLights = _lights.get(FudgeCore.LIGHT_TYPE.AMBIENT);
-            if (cmpLights) {
-                let clrSum = new FudgeCore.Color(0, 0, 0, 0);
-                for (let cmpLight of cmpLights) {
-                    let clrLight = FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity);
-                    clrSum.add(clrLight);
-                    FudgeCore.Recycler.store(clrLight);
-                }
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets["u_ambient"], new Float32Array(clrSum.get()));
-            }
-            bufferLightsOfType(FudgeCore.LIGHT_TYPE.DIRECTIONAL, "u_nLightsDirectional", "u_directional");
-            bufferLightsOfType(FudgeCore.LIGHT_TYPE.POINT, "u_nLightsPoint", "u_point");
-            bufferLightsOfType(FudgeCore.LIGHT_TYPE.SPOT, "u_nLightsSpot", "u_spot");
-            function bufferLightsOfType(_type, _uniName, _uniStruct) {
-                const cmpLights = _lights.get(_type);
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets[_uniName], new Uint8Array([cmpLights?.length ?? 0]));
-                if (!cmpLights)
-                    return;
-                const lightDataSize = 4 + 16 + 16;
-                const lightsData = new Float32Array(cmpLights.length * lightDataSize);
-                let iLight = 0;
-                for (let cmpLight of cmpLights) {
-                    const lightDataOffset = iLight * lightDataSize;
-                    let clrLight = FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity);
-                    lightsData.set(clrLight.get(), lightDataOffset + 0);
-                    FudgeCore.Recycler.store(clrLight);
-                    let mtxTotal = FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
-                    if (_type == FudgeCore.LIGHT_TYPE.DIRECTIONAL) {
-                        mtxTotal.translation.set(0, 0, 0);
-                        mtxTotal.translation = mtxTotal.translation;
-                    }
-                    lightsData.set(mtxTotal.getArray(), lightDataOffset + 4);
-                    if (_type != FudgeCore.LIGHT_TYPE.DIRECTIONAL) {
-                        let mtxInverse = FudgeCore.Matrix4x4.INVERSE(mtxTotal);
-                        lightsData.set(mtxInverse.getArray(), lightDataOffset + 4 + 16);
-                        FudgeCore.Recycler.store(mtxInverse);
-                    }
-                    FudgeCore.Recycler.store(mtxTotal);
-                    iLight++;
-                }
-                RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, RenderWebGL.uboLightsOffsets[_uniStruct], lightsData);
-            }
         }
         static drawNodes(_nodesOpaque, _nodesAlpha, _cmpCamera) {
             const crc3 = RenderWebGL.getRenderingContext();
@@ -2753,9 +2750,13 @@ var FudgeCore;
             [(_static_resetRenderData_decorators = [(_a = FudgeCore.RenderManagerNode).decorate.bind(_a)], _static_updateRenderbuffer_decorators = [(_b = FudgeCore.RenderManagerNode).decorate.bind(_b)], _static_updateRenderData_decorators = [(_c = FudgeCore.RenderManagerNode).decorate.bind(_c)], _static_useRenderData_decorators = [(_d = FudgeCore.RenderManagerNode).decorate.bind(_d)], Symbol.iterator)]() {
                 return this.getIterator();
             }
-            updateRenderData(_cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem) { Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem); }
+            updateRenderData(_cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem) {
+                Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem);
+            }
             ;
-            useRenderData(_mtxWorldOverride) { Node.useRenderData(this, _mtxWorldOverride); }
+            useRenderData(_mtxWorldOverride) {
+                Node.useRenderData(this, _mtxWorldOverride);
+            }
             ;
             activate(_on) {
                 this.active = _on;
@@ -6665,7 +6666,10 @@ var FudgeCore;
         LIGHT_TYPE["SPOT"] = "LightSpot";
     })(LIGHT_TYPE = FudgeCore.LIGHT_TYPE || (FudgeCore.LIGHT_TYPE = {}));
     let ComponentLight = (() => {
+        var _a;
         let _classSuper = FudgeCore.Component;
+        let _staticExtraInitializers = [];
+        let _static_updateRenderbuffer_decorators;
         let _lightType_decorators;
         let _lightType_initializers = [];
         let _lightType_extraInitializers = [];
@@ -6673,11 +6677,13 @@ var FudgeCore;
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _lightType_decorators = [FudgeCore.type(LIGHT_TYPE)];
+                _static_updateRenderbuffer_decorators = [(_a = FudgeCore.RenderManagerComponentLight).decorate.bind(_a)];
+                __esDecorate(this, null, _static_updateRenderbuffer_decorators, { kind: "method", name: "updateRenderbuffer", static: true, private: false, access: { has: obj => "updateRenderbuffer" in obj, get: obj => obj.updateRenderbuffer }, metadata: _metadata }, null, _staticExtraInitializers);
                 __esDecorate(null, null, _lightType_decorators, { kind: "field", name: "lightType", static: false, private: false, access: { has: obj => "lightType" in obj, get: obj => obj.lightType, set: (obj, value) => { obj.lightType = value; } }, metadata: _metadata }, _lightType_initializers, _lightType_extraInitializers);
                 if (_metadata)
                     Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
-            static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentLight); }
+            static { this.iSubclass = (__runInitializers(this, _staticExtraInitializers), FudgeCore.Component.registerSubclass(ComponentLight)); }
             constructor(_lightType = LIGHT_TYPE.AMBIENT, _color = new FudgeCore.Color(1, 1, 1, 1), _intensity = 1) {
                 super();
                 this.lightType = __runInitializers(this, _lightType_initializers, void 0);
@@ -6687,6 +6693,8 @@ var FudgeCore;
                 this.color = _color;
                 this.intensity = _intensity;
             }
+            static updateRenderbuffer(_lights) { }
+            ;
             serialize() {
                 let serialization = {
                     lightType: this.lightType,
@@ -8212,9 +8220,13 @@ var FudgeCore;
             ;
             static useRenderData(_coat) { }
             ;
-            updateRenderData() { Coat.updateRenderData(this); }
+            updateRenderData() {
+                Coat.updateRenderData(this);
+            }
             ;
-            useRenderData() { Coat.useRenderData(this); }
+            useRenderData() {
+                Coat.useRenderData(this);
+            }
             ;
             serialize() {
                 return {
@@ -14480,7 +14492,7 @@ var FudgeCore;
                 frustum[4], frustum[5], frustum[5], frustum[6], frustum[6], frustum[7], frustum[7], frustum[4],
                 frustum[0], frustum[4], frustum[1], frustum[5], frustum[2], frustum[6], frustum[3], frustum[7]
             ], _mtxWorld, _color, _alphaOccluded);
-            FudgeCore.Recycler.storeMultiple(frustum);
+            FudgeCore.Recycler.store(frustum);
         }
         static drawWireCube(_mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
             Gizmos.drawLines(Gizmos.wireCube, _mtxWorld, _color, _alphaOccluded);
@@ -14695,7 +14707,7 @@ var FudgeCore;
                 cmpSkeleton.updateRenderBuffer();
             FudgeCore.Node.updateRenderbuffer();
             FudgeCore.Coat.updateRenderbuffer();
-            Render.bufferLights(Render.lights);
+            FudgeCore.ComponentLight.updateRenderbuffer(Render.lights);
         }
         static addLights(_cmpLights) {
             for (let cmpLight of _cmpLights) {
@@ -15049,7 +15061,9 @@ var FudgeCore;
         }
         setBranch(_branch) {
             if (_branch) {
-                _branch.broadcastEvent(new Event("attachBranch"));
+                const event = FudgeCore.RecyclableEvent.get("attachBranch");
+                _branch.broadcastEvent(event);
+                FudgeCore.Recycler.store(event);
             }
             this.#branch = _branch;
         }
@@ -15088,9 +15102,13 @@ var FudgeCore;
                 this.prepareBranch();
         }
         prepareBranch() {
-            this.dispatchEvent(new Event("renderPrepareStart"));
+            const eventPrepareStart = FudgeCore.RecyclableEvent.get("renderPrepareStart");
+            this.dispatchEvent(eventPrepareStart);
+            FudgeCore.RecyclableEvent.store(eventPrepareStart);
             FudgeCore.Render.prepare(this.#branch);
-            this.dispatchEvent(new Event("renderPrepareEnd"));
+            const eventPrepareEnd = FudgeCore.RecyclableEvent.get("renderPrepareEnd");
+            this.dispatchEvent(eventPrepareEnd);
+            FudgeCore.RecyclableEvent.store(eventPrepareEnd);
             this.componentsPick = FudgeCore.Render.componentsPick;
         }
         dispatchPointerEvent(_event) {

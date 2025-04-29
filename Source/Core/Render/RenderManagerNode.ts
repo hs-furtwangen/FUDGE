@@ -6,20 +6,14 @@ namespace FudgeCore {
    * @internal
    * @authors Jonas Plotzky, HFU, 2025
    */
-  export class RenderManagerNode extends RenderBufferManager {
-    protected static override readonly instance: RenderManagerNode; // lazy initialized in base class
-
-    private constructor() {
+  export abstract class RenderManagerNode extends RenderBufferManager {
+    public static override initialize(_renderWebGL: typeof RenderWebGL): void {
       const maxNodes: number = 256;
       const blockSize: number = (16 + 12 + 4 + 1 + 1 + 1 + 1 + 1 + 1) * 4; // mat4 mtxWorld, mat3 mtxPivot, vec4 color, float blendMode, float duration, float size, float time, bool faceCameraActive, bool faceCameraRestrict, 
-      super(UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
+      super.initialize(_renderWebGL, UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
     }
 
-    public static override decorate<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof Node, M>): M {
-      return super.decorate(_method, _context);
-    }
-
-    protected override updateRenderData(_node: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void {
+    protected static override updateRenderData(_node: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void {
       const offset: number = this.store(_node);
 
       const data: Float32Array = this.data;
@@ -58,7 +52,7 @@ namespace FudgeCore {
       }
     }
 
-    protected override useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void {
+    protected static override useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       let offset: number = this.mapObjectToOffset.get(_node);

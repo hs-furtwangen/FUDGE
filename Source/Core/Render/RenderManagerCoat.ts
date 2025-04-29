@@ -6,19 +6,13 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2025
    */
   export class RenderManagerCoat extends RenderBufferManager {
-    protected static override readonly instance: RenderManagerCoat; // lazy initialized in base class
-
-    private constructor() {
+    public static override initialize(_renderWebGL: typeof RenderWebGL): void {
       const maxMaterials: number = 128;
       const blockSize: number = (4 + 1 + 1 + 1 + 1 + 1) * 4; // vct4 color, float diffuse, float specular, float intensity, float metallic, float alphaClip
-      super(UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
+      super.initialize(_renderWebGL, UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
     }
 
-    public static decorate<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof Coat, M>): M {
-      return super.decorate(_method, _context);
-    }
-
-    protected override updateRenderData(_coat: Coat): void {
+    protected static override updateRenderData(_coat: Coat): void {
       const offset: number = this.store(_coat);
 
       const data: Float32Array = this.data;
@@ -41,7 +35,7 @@ namespace FudgeCore {
       data[offset + 8] = _coat.alphaClip;
     }
 
-    protected override useRenderData(_coat: Coat): void {
+    protected static override useRenderData(_coat: Coat): void {
       super.useRenderData(_coat);
 
       if (_coat instanceof CoatTextured)

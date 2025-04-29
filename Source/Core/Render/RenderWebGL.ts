@@ -163,6 +163,8 @@ namespace FudgeCore {
 
       RenderWebGL.initializeCamera();
       RenderWebGL.initializeFog();
+      RenderManagerNode.initialize(RenderWebGL);
+      RenderManagerCoat.initialize(RenderWebGL);
       RenderManagerComponentLight.initialize(RenderWebGL);
 
       return crc3;
