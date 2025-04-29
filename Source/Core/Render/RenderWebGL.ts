@@ -118,11 +118,13 @@ namespace FudgeCore {
 
     private static uboCamera: WebGLBuffer; // TODO: technically we should have one buffer per camera, and switch between them, similar to how skeletons are handled. But having cameras outside of any scene proves to be a problem...
     private static uboLights: WebGLBuffer;
-    private static uboLightsOffsets: { [_name: string]: number }; // Maps the names of the variables inside the Lights uniform block to their respective byte offset
     private static uboFog: WebGLBuffer;
 
     private static dataFog: Float32Array;
     private static dataCamera: Float32Array;
+    private static dataLights: Float32Array;
+    private static dataLightsHeader: Uint32Array;
+    private static dataLightsOffsets: { [key in LIGHT_TYPE]: number };
 
     private static readonly attachmentsColorPositionNormal = [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] as const; // eslint-disable-line
     private static readonly attachmentsColor = [WebGL2RenderingContext.COLOR_ATTACHMENT0] as const; // eslint-disable-line
@@ -653,30 +655,30 @@ namespace FudgeCore {
       const MAX_LIGHTS_DIRECTIONAL: number = 15; // must match the define in the shader
       const MAX_LIGHTS_POINT: number = 100;
       const MAX_LIGHTS_SPOT: number = 100;
-      const BYTES_PER_LIGHT: number = Float32Array.BYTES_PER_ELEMENT * (4 + 16 + 16); // vctColor + mtxShape + mtxShapeInverse as float32s in shader
+      const FLOATS_PER_LIGHT: number = 4 + 16 + 16;
+      const HEADER_UINTS: number = 4; // 1 for each light type + 1 for ambient light
 
-      RenderWebGL.uboLightsOffsets = {};
-      RenderWebGL.uboLightsOffsets["u_nLightsDirectional"] = Uint32Array.BYTES_PER_ELEMENT * 0;
-      RenderWebGL.uboLightsOffsets["u_nLightsPoint"] = Uint32Array.BYTES_PER_ELEMENT * 1;
-      RenderWebGL.uboLightsOffsets["u_nLightsSpot"] = Uint32Array.BYTES_PER_ELEMENT * 2;
-      RenderWebGL.uboLightsOffsets["u_ambient"] = Uint32Array.BYTES_PER_ELEMENT * 4;
-      RenderWebGL.uboLightsOffsets["u_directional"] = RenderWebGL.uboLightsOffsets["u_ambient"] + BYTES_PER_LIGHT * 1;
-      RenderWebGL.uboLightsOffsets["u_point"] = RenderWebGL.uboLightsOffsets["u_directional"] + BYTES_PER_LIGHT * MAX_LIGHTS_DIRECTIONAL;
-      RenderWebGL.uboLightsOffsets["u_spot"] = RenderWebGL.uboLightsOffsets["u_point"] + BYTES_PER_LIGHT * MAX_LIGHTS_POINT;
+      RenderWebGL.dataLights = new Float32Array(HEADER_UINTS + (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * FLOATS_PER_LIGHT);
+      RenderWebGL.dataLightsHeader = new Uint32Array(RenderWebGL.dataLights.buffer);
+      RenderWebGL.dataLightsOffsets = {
+        LightAmbient: HEADER_UINTS,
+        LightDirectional: HEADER_UINTS + FLOATS_PER_LIGHT,
+        LightPoint: HEADER_UINTS + FLOATS_PER_LIGHT * (1 + MAX_LIGHTS_DIRECTIONAL),
+        LightSpot: HEADER_UINTS + FLOATS_PER_LIGHT * (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT)
+      };
 
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       RenderWebGL.uboLights = RenderWebGL.assert(crc3.createBuffer());
-      const blockSize: number = RenderWebGL.uboLightsOffsets["u_spot"] + BYTES_PER_LIGHT * MAX_LIGHTS_SPOT;
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboLights);
-      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, blockSize, crc3.DYNAMIC_DRAW);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.dataLights.byteLength, crc3.DYNAMIC_DRAW);
       crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGL.uboLights);
     }
 
     /**
      * Buffer the data from the lights in the scenegraph into the lights ubo
      */
-    protected static bufferLights(_lights: MapLightTypeToLightList): void {
+    protected static bufferLights(_lights: MapLightTypeToLightList): void { // TODO: maybe seperate light code into a different class i.e. RenderInjector?
       if (!RenderWebGL.uboLights)
         return;
 
@@ -684,77 +686,58 @@ namespace FudgeCore {
 
       // fill the buffer with the ambient light color
       let cmpLights: RecycableArray<ComponentLight> = _lights.get(LIGHT_TYPE.AMBIENT);
-      if (cmpLights) {
-        let clrSum: Color = new Color(0, 0, 0, 0);
-        for (let cmpLight of cmpLights) {
-          let clrLight: Color = Color.SCALE(cmpLight.color, cmpLight.intensity);
-          clrSum.add(clrLight);
-          Recycler.store(clrLight);
-        }
-
-        RenderWebGL.crc3.bufferSubData(
-          RenderWebGL.crc3.UNIFORM_BUFFER,
-          RenderWebGL.uboLightsOffsets["u_ambient"], // byte offset of the struct Light "u_ambient" inside the ubo
-          new Float32Array(clrSum.get())
-        );
+      if (cmpLights?.length > 0) {
+        let clrSum: Color = Recycler.get(Color).set(0, 0, 0, 0);
+        let clrLight: Color = Recycler.get(Color);
+        for (let cmpLight of cmpLights)
+          clrSum.add(Color.SCALE(cmpLight.color, cmpLight.intensity, clrLight));
+        Recycler.store(clrSum);
+        Recycler.store(clrLight);
+        clrSum.toArray(RenderWebGL.dataLights, RenderWebGL.dataLightsOffsets[LIGHT_TYPE.AMBIENT]);
       }
 
-      // fill the buffer with the light data for each light type
-      // we are currently doing a maximum of 4 crc3.bufferSubData() calls, but we could do this in one call
-      bufferLightsOfType(LIGHT_TYPE.DIRECTIONAL, "u_nLightsDirectional", "u_directional");
-      bufferLightsOfType(LIGHT_TYPE.POINT, "u_nLightsPoint", "u_point");
-      bufferLightsOfType(LIGHT_TYPE.SPOT, "u_nLightsSpot", "u_spot");
+      const color: Color = Recycler.get(Color);
+      const mtxShape: Matrix4x4 = Matrix4x4.IDENTITY();
 
-      function bufferLightsOfType(_type: LIGHT_TYPE, _uniName: string, _uniStruct: string): void {
-        const cmpLights: RecycableArray<ComponentLight> = _lights.get(_type);
+      RenderWebGL.bufferLightsOfType(_lights.get(LIGHT_TYPE.DIRECTIONAL), RenderWebGL.dataLightsOffsets[LIGHT_TYPE.DIRECTIONAL], 0, color, mtxShape);
+      RenderWebGL.bufferLightsOfType(_lights.get(LIGHT_TYPE.POINT), RenderWebGL.dataLightsOffsets[LIGHT_TYPE.POINT], 1, color, mtxShape);
+      RenderWebGL.bufferLightsOfType(_lights.get(LIGHT_TYPE.SPOT), RenderWebGL.dataLightsOffsets[LIGHT_TYPE.SPOT], 2, color, mtxShape);
 
-        RenderWebGL.crc3.bufferSubData(
-          RenderWebGL.crc3.UNIFORM_BUFFER,
-          RenderWebGL.uboLightsOffsets[_uniName], // byte offset of the uint "u_nLightsDirectional" inside the ubo
-          new Uint8Array([cmpLights?.length ?? 0])
-        );
+      Recycler.store(color);
+      Recycler.store(mtxShape);
 
-        if (!cmpLights)
-          return;
+      RenderWebGL.crc3.bufferSubData(RenderWebGL.crc3.UNIFORM_BUFFER, 0, RenderWebGL.dataLights);
+    }
 
-        const lightDataSize: number = 4 + 16 + 16; // vctColor + mtxShape + mtxShapeInverse, as float32s
-        const lightsData: Float32Array = new Float32Array(cmpLights.length * lightDataSize); // TODO: don't allocate at runtime
-
-        let iLight: number = 0;
-        for (let cmpLight of cmpLights) {
-          const lightDataOffset: number = iLight * lightDataSize;
-
-          // set vctColor
-          let clrLight: Color = Color.SCALE(cmpLight.color, cmpLight.intensity);
-          lightsData.set(clrLight.get(), lightDataOffset + 0);
-          Recycler.store(clrLight);
-
-          // set mtxShape
-          let mtxTotal: Matrix4x4 = Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot);
-          if (_type == LIGHT_TYPE.DIRECTIONAL) {
-            mtxTotal.translation.set(0, 0, 0);
-            mtxTotal.translation = mtxTotal.translation;
-          }
-
-          lightsData.set(mtxTotal.getArray(), lightDataOffset + 4); // offset + vctColor
-
-          // set mtxShapeInverse
-          if (_type != LIGHT_TYPE.DIRECTIONAL) {
-            let mtxInverse: Matrix4x4 = Matrix4x4.INVERSE(mtxTotal);
-            lightsData.set(mtxInverse.getArray(), lightDataOffset + 4 + 16); // offset + vctColor + mtxShape
-            Recycler.store(mtxInverse);
-          }
-
-          Recycler.store(mtxTotal);
-          iLight++;
-        }
-
-        RenderWebGL.crc3.bufferSubData(
-          RenderWebGL.crc3.UNIFORM_BUFFER,
-          RenderWebGL.uboLightsOffsets[_uniStruct], // byte offset of the struct Light array inside the ubo
-          lightsData
-        );
+    protected static bufferLightsOfType(_cmpLights: RecycableArray<ComponentLight>, _offset: number, _iHeader: number, _color: Color, _mtxShape: Matrix4x4): void {
+      if (!_cmpLights) {
+        RenderWebGL.dataLightsHeader[_iHeader] = 0;
+        return;
       }
+
+      RenderWebGL.dataLightsHeader[_iHeader] = _cmpLights.length;
+
+      if (_cmpLights.length == 0)
+        return;
+
+      for (let cmpLight of _cmpLights) {
+        // set vctColor
+        Color.SCALE(cmpLight.color, cmpLight.intensity, _color).toArray(RenderWebGL.dataLights, _offset);
+
+        // set mtxShape
+        Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot, _mtxShape);
+        if (cmpLight.lightType == LIGHT_TYPE.DIRECTIONAL)
+          _mtxShape.translation = _mtxShape.translation.set(0, 0, 0);
+        _mtxShape.toArray(RenderWebGL.dataLights, _offset + 4); // offset + vctColor
+
+        // set mtxShapeInverse
+        if (cmpLight.lightType != LIGHT_TYPE.DIRECTIONAL)
+          Matrix4x4.INVERSE(_mtxShape, _mtxShape).toArray(RenderWebGL.dataLights, _offset + 4 + 16); // offset + vctColor + mtxShape
+
+        _offset += 4 + 16 + 16;
+      }
+
+      return;
     }
 
     /**

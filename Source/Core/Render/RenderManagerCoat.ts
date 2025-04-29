@@ -23,7 +23,7 @@ namespace FudgeCore {
 
       const data: Float32Array = this.data;
 
-      if (_coat instanceof CoatColored) {
+      if (_coat instanceof CoatColored) { // TODO: use inheritance to avoid check?
         const color: Color = _coat.color;
         data[offset] = color.r;
         data[offset + 1] = color.g;
