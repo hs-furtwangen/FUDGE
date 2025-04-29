@@ -32,6 +32,10 @@ namespace FudgeCore {
       this.intensity = _intensity;
     }
 
+    /** @internal reroute to {@link RenderManagerComponentLight.updateRenderbuffer} */
+    @RenderManagerComponentLight.decorate
+    public static updateRenderbuffer(_lights: MapLightTypeToLightList): void { /* injected */ };
+
     public serialize(): Serialization {
       let serialization: Serialization = {
         lightType: this.lightType,
@@ -55,7 +59,7 @@ namespace FudgeCore {
 
       // backwards compatibility, remove in future versions
       let light: Serialization = _serialization.light;
-      if (light != undefined) { 
+      if (light != undefined) {
         for (const path in light) {
           this.lightType = <LIGHT_TYPE>Serializer.getConstructor(path).name;
           light = light[path];

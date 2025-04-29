@@ -55,8 +55,7 @@ namespace FudgeCore {
         cmpSkeleton.updateRenderBuffer();
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
-
-      Render.bufferLights(Render.lights); // TODO: buffer lights directly instead of collectiung them?
+      ComponentLight.updateRenderbuffer(Render.lights);
     }
 
     public static addLights(_cmpLights: readonly ComponentLight[]): void {

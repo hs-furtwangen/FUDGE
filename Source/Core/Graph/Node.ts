@@ -161,11 +161,15 @@ namespace FudgeCore {
       return this.getIterator();
     }
 
-    /** @internal reroute to {@link RenderManagerNode.updateRenderData} */
-    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem); };
+    /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { 
+      Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem); 
+    };
 
-    /** @internal reroute to {@link RenderManagerNode.useRenderData} */
-    public useRenderData(_mtxWorldOverride: Matrix4x4): void { Node.useRenderData(this, _mtxWorldOverride); };
+    /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+    public useRenderData(_mtxWorldOverride: Matrix4x4): void { 
+      Node.useRenderData(this, _mtxWorldOverride);
+    };
 
     /**
      * De- / Activate this node. Inactive nodes will not be processed by the renderer.
