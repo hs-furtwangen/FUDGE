@@ -10,7 +10,7 @@ namespace FudgeCore {
 
     static #buffer: WebGLBuffer;
     static #data: Float32Array;
-    static #dataHeader: Uint32Array;
+    static #dataUint: Uint32Array;
     static #offsets: { [key in LIGHT_TYPE]: number };
 
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
@@ -21,7 +21,7 @@ namespace FudgeCore {
       const HEADER_UINTS: number = 4; // 1 for each light type + 1 for ambient light
 
       RenderWebGLComponentLight.#data = new Float32Array(HEADER_UINTS + (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * FLOATS_PER_LIGHT);
-      RenderWebGLComponentLight.#dataHeader = new Uint32Array(RenderWebGLComponentLight.#data.buffer);
+      RenderWebGLComponentLight.#dataUint = new Uint32Array(RenderWebGLComponentLight.#data.buffer);
       RenderWebGLComponentLight.#offsets = {
         LightAmbient: HEADER_UINTS,
         LightDirectional: HEADER_UINTS + FLOATS_PER_LIGHT,
@@ -75,11 +75,11 @@ namespace FudgeCore {
 
     private static bufferLights(_cmpLights: RecycableArray<ComponentLight>, _offset: number, _iHeader: number, _color: Color, _mtxShape: Matrix4x4): void {
       if (!_cmpLights) {
-        RenderWebGLComponentLight.#dataHeader[_iHeader] = 0;
+        RenderWebGLComponentLight.#dataUint[_iHeader] = 0;
         return;
       }
 
-      RenderWebGLComponentLight.#dataHeader[_iHeader] = _cmpLights.length;
+      RenderWebGLComponentLight.#dataUint[_iHeader] = _cmpLights.length;
 
       if (_cmpLights.length == 0)
         return;

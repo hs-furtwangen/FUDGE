@@ -11,7 +11,7 @@ layout(std140) uniform Node {
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
 
-  uniform int u_iBlendMode;
+  uniform uint u_iBlendMode;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
   uniform float u_fParticleSystemTime;

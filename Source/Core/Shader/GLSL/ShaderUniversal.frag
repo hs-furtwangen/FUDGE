@@ -11,7 +11,7 @@ layout(std140) uniform Node {
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
 
-  uniform int u_iBlendMode;
+  uniform uint u_iBlendMode;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
   uniform float u_fParticleSystemTime;
@@ -297,7 +297,7 @@ void main() {
 
     #if defined(PARTICLE)
 
-      if (u_iBlendMode == 2 || u_iBlendMode == 3 || u_iBlendMode == 4)  // for blend additive, subtractive, modulate
+      if (u_iBlendMode == 2u || u_iBlendMode == 3u || u_iBlendMode == 4u)  // for blend additive, subtractive, modulate
         vctFrag.a = mix(vctFrag.a, 0.0, fFog);                          // fade out particle when in fog to make it disappear completely
 
     #endif

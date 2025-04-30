@@ -43,12 +43,13 @@ namespace FudgeCore {
       data[offset + 31] = color.a;
 
       if (_cmpParticleSystem) {
-        data[offset + 32] = _cmpParticleSystem.blendMode;
+        const dataUint: Uint32Array = this.dataUInt;
+        dataUint[offset + 32] = _cmpParticleSystem.blendMode;
         data[offset + 33] = _cmpParticleSystem.duration;
         data[offset + 34] = _cmpParticleSystem.size;
         data[offset + 35] = _cmpParticleSystem.time;
-        data[offset + 36] = _cmpFaceCamera?.isActive ? 1 : 0;
-        data[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
+        dataUint[offset + 36] = _cmpFaceCamera?.isActive ? 1 : 0;
+        dataUint[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
       }
     }
 

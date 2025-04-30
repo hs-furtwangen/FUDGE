@@ -16,6 +16,8 @@ namespace FudgeCore {
     protected static spaceBuffer: number;
 
     protected static data: Float32Array;
+    protected static dataUInt: Uint32Array;
+
     /** The offset in elements between the beginning of consecutive object block data */
     protected static spaceData: number;
 
@@ -35,6 +37,7 @@ namespace FudgeCore {
       this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment; // round to multiple of alignment
       this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
       this.data = new Float32Array(this.spaceData * _maxObjects);
+      this.dataUInt = new Uint32Array(this.data.buffer);
       this.count = 0;
 
       this.buffer = _renderWebGL.assert<WebGLBuffer>(crc3.createBuffer());
@@ -75,6 +78,7 @@ namespace FudgeCore {
       const data: Float32Array = new Float32Array(this.data.length * 1.5);
       data.set(this.data);
       this.data = data;
+      this.dataUInt = new Uint32Array(this.data.buffer);
 
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
