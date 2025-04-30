@@ -85,13 +85,15 @@ namespace FudgeCore {
      * Draws the scene from the point of view of the given camera
      */
     public static draw(_cmpCamera: ComponentCamera): void {
-      // TODO: sort nodes alpha in place, don't create new arrays
-      for (let node of Render.nodesAlpha)
-        Reflect.set(node, "zCamera", _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z);
+      let nodesAlpha: Node[];
+      if (Render.nodesAlpha.length > 0) { // TODO: avoid object and function creation in loop
+        for (let node of Render.nodesAlpha)
+          Reflect.set(node, "zCamera", _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z);
+  
+        nodesAlpha = Render.nodesAlpha.getSorted((_a: Node, _b: Node) => Reflect.get(_b, "zCamera") - Reflect.get(_a, "zCamera"));
+      }
 
-      const sorted: Node[] = Render.nodesAlpha.getSorted((_a: Node, _b: Node) => Reflect.get(_b, "zCamera") - Reflect.get(_a, "zCamera"));
-
-      Render.drawNodes(Render.nodesSimple, sorted, _cmpCamera);
+      Render.drawNodes(Render.nodesSimple, nodesAlpha ?? Render.nodesAlpha, _cmpCamera);
     }
 
     private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _parent: Node, _recalculate: boolean): void {

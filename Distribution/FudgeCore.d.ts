@@ -1084,8 +1084,15 @@ declare namespace FudgeCore {
          * Sets the position and size of the rectangle according to the given parameters.
          * @param _origin The origin of the rectangle. The default is {@link ORIGIN2D.TOPLEFT}.
          * @returns A reference to this rectangle.
+         * @deprecated Use {@link set} instead.
          */
         setPositionAndSize(_x?: number, _y?: number, _width?: number, _height?: number, _origin?: ORIGIN2D): Rectangle;
+        /**
+         * Sets the position and size of the rectangle according to the given parameters.
+         * @param _origin The origin of the rectangle. The default is {@link ORIGIN2D.TOPLEFT}.
+         * @returns A reference to this rectangle.
+         */
+        set(_x?: number, _y?: number, _width?: number, _height?: number, _origin?: ORIGIN2D): Rectangle;
         /**
          * Transforms the given point from this rectangles space to the target rectangles space.
          * @param _out Optional vector to store the result in.
@@ -1352,7 +1359,7 @@ declare namespace FudgeCore {
          */
         protected static drawNodes(_nodesOpaque: Iterable<Node>, _nodesAlpha: Iterable<Node>, _cmpCamera: ComponentCamera): void;
         /**
-         * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component
+         * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component.
          */
         protected static drawAmbientOcclusion(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void;
         /**
@@ -3431,17 +3438,20 @@ declare namespace FudgeCore {
          */
         projectOrthographic(_left?: number, _right?: number, _bottom?: number, _top?: number): void;
         /**
-         * Return the calculated dimension of a projection surface in the hypothetical distance of 1 to the camera
+         * Returns a (recycled) rectangle of the calculated dimension of a projection surface in the hypothetical distance of 1 to the camera.
+         * @param _out Optional rectangle to store the result in.
          */
-        getProjectionRectangle(): Rectangle;
+        getProjectionRectangle(_out?: Rectangle): Rectangle;
         /**
-         * Transforms the given point from world space to clip space
+         * Transforms the given point from world space to clip space.
+         * @param _out Optional vector to store the result in.
          */
-        pointWorldToClip(_pointInWorldSpace: Vector3): Vector3;
+        pointWorldToClip(_pointInWorldSpace: Vector3, _out?: Vector3): Vector3;
         /**
-         * Transforms the given point from clip space to world space
+         * Transforms the given point from clip space to world space.
+         * @param _out Optional vector to store the result in.
          */
-        pointClipToWorld(_pointInClipSpace: Vector3): Vector3;
+        pointClipToWorld(_pointInClipSpace: Vector3, _out?: Vector3): Vector3;
         /**
          * Returns a scaling factor that, given a position in world space,
          * scales an object at that position so that one unit equals one (logical) pixel on the screen
@@ -3451,7 +3461,6 @@ declare namespace FudgeCore {
         getWorldToPixelScale(_posWorld: Vector3): number;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         drawGizmos(): void;
         drawGizmosSelected(): void;
