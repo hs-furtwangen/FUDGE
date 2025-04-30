@@ -154,8 +154,18 @@ namespace FudgeCore {
      * Sets the position and size of the rectangle according to the given parameters.
      * @param _origin The origin of the rectangle. The default is {@link ORIGIN2D.TOPLEFT}.
      * @returns A reference to this rectangle.
+     * @deprecated Use {@link set} instead.
      */
     public setPositionAndSize(_x: number = 0, _y: number = 0, _width: number = 1, _height: number = 1, _origin: ORIGIN2D = ORIGIN2D.TOPLEFT): Rectangle {
+      return this.set(_x, _y, _width, _height, _origin);
+    }
+
+    /**
+     * Sets the position and size of the rectangle according to the given parameters.
+     * @param _origin The origin of the rectangle. The default is {@link ORIGIN2D.TOPLEFT}.
+     * @returns A reference to this rectangle.
+     */
+    public set(_x: number = 0, _y: number = 0, _width: number = 1, _height: number = 1, _origin: ORIGIN2D = ORIGIN2D.TOPLEFT): Rectangle {
       this.size.set(_width, _height);
       switch (_origin & 0x03) {
         case 0x00: this.position.x = _x; break;

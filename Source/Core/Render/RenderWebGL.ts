@@ -100,6 +100,7 @@ namespace FudgeCore {
     /** The area on the offscreen-canvas to render to. */
     private static rectRender: Rectangle;
 
+    // TODO: move to render injectors
     // TODO: render attachments can't be static as different viewport might have different resilutions each viewport needs its own attachments
     private static fboMain: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
     private static fboPost: WebGLFramebuffer; // used for post-processing effects, attachments get swapped for different effects
@@ -487,7 +488,7 @@ namespace FudgeCore {
       data.set(mtxView.getArray(), 0);
       data.set(mtxProjection.getArray(), 16);
       data.set(mtxViewProjection.getArray(), 32);
-      data.set(vctPosition.get(), 48);
+      vctPosition.toArray(data, 48);
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboCamera);
       crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
@@ -634,8 +635,8 @@ namespace FudgeCore {
     /**
      * Buffer the fog parameters into the fog ubo
      */
-    protected static bufferFog(_cmpFog: ComponentFog): void {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+    protected static bufferFog(_cmpFog: ComponentFog): void { // TODO: move to camera render injector
+      const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
 
       const data: Float32Array = RenderWebGL.dataFog ??= new Float32Array(8);
 
@@ -658,10 +659,11 @@ namespace FudgeCore {
     protected static drawNodes(_nodesOpaque: Iterable<Node>, _nodesAlpha: Iterable<Node>, _cmpCamera: ComponentCamera): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      const cmpFog: ComponentFog = _cmpCamera.node?.getComponent(ComponentFog);
-      const cmpAmbientOcclusion: ComponentAmbientOcclusion = _cmpCamera.node?.getComponent(ComponentAmbientOcclusion);
-      const cmpBloom: ComponentBloom = _cmpCamera.node?.getComponent(ComponentBloom);
-      const cmpOutline: ComponentOutline = _cmpCamera.node?.getComponent(ComponentOutline);
+      const node: Node = _cmpCamera.node;
+      const cmpFog: ComponentFog = node?.getComponent(ComponentFog);
+      const cmpAmbientOcclusion: ComponentAmbientOcclusion = node?.getComponent(ComponentAmbientOcclusion);
+      const cmpBloom: ComponentBloom = node?.getComponent(ComponentBloom);
+      const cmpOutline: ComponentOutline = node?.getComponent(ComponentOutline);
 
       RenderWebGL.bufferFog(cmpFog);
       RenderWebGL.bufferCamera(_cmpCamera);
@@ -704,10 +706,9 @@ namespace FudgeCore {
     }
 
     /**
-     * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component
+     * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component.
      */
-    // @PerformanceMonitor.measure()
-    protected static drawAmbientOcclusion(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void {
+    protected static drawAmbientOcclusion(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void { // TODO: move to cmp ao render injector
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       ShaderAmbientOcclusion.useProgram();
 
@@ -723,7 +724,7 @@ namespace FudgeCore {
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationLinear"], _cmpAmbientOcclusion.attenuationLinear);
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationQuadratic"], _cmpAmbientOcclusion.attenuationQuadratic);
       crc3.uniform2f(ShaderAmbientOcclusion.uniforms["u_vctResolution"], RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height);
-      crc3.uniform3fv(ShaderAmbientOcclusion.uniforms["u_vctCamera"], _cmpCamera.mtxWorld.translation.get());
+      crc3.uniform3fv(ShaderAmbientOcclusion.uniforms["u_vctCamera"], _cmpCamera.mtxWorld.translation.get()); // TODO: remove get
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
@@ -736,7 +737,7 @@ namespace FudgeCore {
      * Draws the bloom-effect over the color-buffer, using the given bloom-component
      */
     // @PerformanceMonitor.measure()
-    protected static drawBloom(_cmpBloom: ComponentBloom): void {
+    protected static drawBloom(_cmpBloom: ComponentBloom): void { // TODO: move to cmp bloom render injector
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       ShaderBloom.useProgram();
 
@@ -802,7 +803,7 @@ namespace FudgeCore {
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
     }
 
-    protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void {
+    protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void { // TODO: move to cmp outline render injector
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);

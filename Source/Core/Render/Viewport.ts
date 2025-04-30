@@ -103,6 +103,7 @@ namespace FudgeCore {
       this.camera = _camera;
       this.#canvas = _canvas;
       this.#crc2 = _canvas.getContext("2d");
+      this.#crc2.imageSmoothingEnabled = false;
       this.#canvas.tabIndex = 0; // can get focus and receive keyboard events
 
       this.#rectCanvas.width = _canvas.width;
@@ -189,10 +190,11 @@ namespace FudgeCore {
         Physics.draw(this.camera, this.physicsDebugMode);
       }
 
-      this.dispatchEvent(new Event(EVENT.RENDER_END));
+      const eventRenderEnd: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_END);
+      this.dispatchEvent(eventRenderEnd);
+      RecyclableEvent.store(eventRenderEnd);
 
-      this.#crc2.clearRect(0, 0, this.#rectCanvas.width, this.#rectCanvas.height);
-      this.#crc2.imageSmoothingEnabled = false;
+      // this.#crc2.clearRect(0, 0, this.#rectCanvas.width, this.#rectCanvas.height); // for now don't clear to allow mulltiple viewport draw on same canvas
       this.#crc2.drawImage(
         Render.getCanvas(),
         this.rectSource.x, this.rectSource.y, this.rectSource.width, this.rectSource.height,
