@@ -1,7 +1,8 @@
 ///<reference path="RenderBufferManager.ts"/>
 ///<reference path="RenderManagerCoat.ts"/>
 ///<reference path="RenderManagerNode.ts"/>
-///<reference path="RenderManagerComponentLight.ts"/>
+///<reference path="RenderWebGLComponentLight.ts"/>
+///<reference path="RenderWebGLComponentFog.ts"/>
 
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
@@ -120,9 +121,6 @@ namespace FudgeCore {
     private static texDepthPick: WebGLTexture;
 
     private static uboCamera: WebGLBuffer; // TODO: technically we should have one buffer per camera, and switch between them, similar to how skeletons are handled. But having cameras outside of any scene proves to be a problem...
-    private static uboFog: WebGLBuffer;
-
-    private static dataFog: Float32Array;
     private static dataCamera: Float32Array;
 
     private static readonly attachmentsColorPositionNormal = [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] as const; // eslint-disable-line
@@ -163,10 +161,10 @@ namespace FudgeCore {
       RenderWebGL.adjustAttachments();
 
       RenderWebGL.initializeCamera();
-      RenderWebGL.initializeFog();
+      RenderWebGLComponentFog.initialize(RenderWebGL);
       RenderManagerNode.initialize(RenderWebGL);
       RenderManagerCoat.initialize(RenderWebGL);
-      RenderManagerComponentLight.initialize(RenderWebGL);
+      RenderWebGLComponentLight.initialize(RenderWebGL);
 
       return crc3;
     }
@@ -627,31 +625,6 @@ namespace FudgeCore {
       RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.CAMERA.BINDING, RenderWebGL.uboCamera);
     }
 
-    protected static initializeFog(): void {
-      RenderWebGL.uboFog = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
-      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.FOG.BINDING, RenderWebGL.uboFog);
-    }
-
-    /**
-     * Buffer the fog parameters into the fog ubo
-     */
-    protected static bufferFog(_cmpFog: ComponentFog): void { // TODO: move to camera render injector
-      const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
-
-      const data: Float32Array = RenderWebGL.dataFog ??= new Float32Array(8);
-
-      data[0] = _cmpFog?.isActive ? 1 : 0;
-      if (_cmpFog) {
-        data[1] = _cmpFog.near;
-        data[2] = _cmpFog.far;
-        data.set(_cmpFog.color.get(), 4);
-      }
-
-      // buffer data to bound buffer
-      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboFog);
-      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
-    }
-
     /**
      * Draws the given nodes using the given camera and the post process components attached to the same node as the camera
      * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
@@ -665,7 +638,7 @@ namespace FudgeCore {
       const cmpBloom: ComponentBloom = node?.getComponent(ComponentBloom);
       const cmpOutline: ComponentOutline = node?.getComponent(ComponentOutline);
 
-      RenderWebGL.bufferFog(cmpFog);
+      RenderWebGLComponentFog.useRenderbuffer(cmpFog);
       RenderWebGL.bufferCamera(_cmpCamera);
 
       // opaque pass 

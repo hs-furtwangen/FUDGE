@@ -32,8 +32,8 @@ namespace FudgeCore {
       this.intensity = _intensity;
     }
 
-    /** @internal reroute to {@link RenderManagerComponentLight.updateRenderbuffer} */
-    @RenderManagerComponentLight.decorate
+    /** @internal reroute to {@link RenderWebGLComponentLight.updateRenderbuffer} */
+    @RenderWebGLComponentLight.decorate
     public static updateRenderbuffer(_lights: MapLightTypeToLightList): void { /* injected */ };
 
     public serialize(): Serialization {
