@@ -88,6 +88,7 @@ namespace FudgeCore {
      * Returns the cameras {@link PROJECTION} mode.
      */
     @enumerate
+    @type(PROJECTION)
     public get projection(): PROJECTION {
       return this.#projection;
     }
@@ -112,6 +113,7 @@ namespace FudgeCore {
      * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
      */
     @enumerate
+    @type(FIELD_OF_VIEW)
     public get direction(): FIELD_OF_VIEW {
       return this.#direction;
     }
@@ -225,9 +227,10 @@ namespace FudgeCore {
     }
 
     /**
-     * Return the calculated dimension of a projection surface in the hypothetical distance of 1 to the camera
+     * Returns a (recycled) rectangle of the calculated dimension of a projection surface in the hypothetical distance of 1 to the camera.
+     * @param _out Optional rectangle to store the result in.
      */
-    public getProjectionRectangle(): Rectangle {
+    public getProjectionRectangle(_out: Rectangle = Recycler.reuse(Rectangle)): Rectangle {
       let tanFov: number = Math.tan(Math.PI * this.#fieldOfView / 360); // Half of the angle, to calculate dimension from the center -> right angle
       let tanHorizontal: number = 0;
       let tanVertical: number = 0;
@@ -244,33 +247,30 @@ namespace FudgeCore {
         tanVertical = tanHorizontal / this.#aspectRatio;
       }
 
-      return Rectangle.GET(0, 0, tanHorizontal * 2, tanVertical * 2);
+      return _out.set(0, 0, tanHorizontal * 2, tanVertical * 2);
     }
 
     /**
-     * Transforms the given point from world space to clip space
+     * Transforms the given point from world space to clip space.
+     * @param _out Optional vector to store the result in.
      */
-    public pointWorldToClip(_pointInWorldSpace: Vector3): Vector3 {
-      let result: Vector3;
-      let m: ArrayLike<number> = this.mtxWorldToView.getArray();
-      let w: number = m[3] * _pointInWorldSpace.x + m[7] * _pointInWorldSpace.y + m[11] * _pointInWorldSpace.z + m[15];
+    public pointWorldToClip(_pointInWorldSpace: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      const m: ArrayLike<number> = this.mtxWorldToView.getArray();
+      const w: number = m[3] * _pointInWorldSpace.x + m[7] * _pointInWorldSpace.y + m[11] * _pointInWorldSpace.z + m[15];
 
-      result = Vector3.TRANSFORMATION(_pointInWorldSpace, this.mtxWorldToView);
-      result.scale(1 / w);
-      return result;
+      return Vector3.TRANSFORMATION(_pointInWorldSpace, this.mtxWorldToView, true, _out).scale(1 / w);
     }
 
     /**
-     * Transforms the given point from clip space to world space
+     * Transforms the given point from clip space to world space.
+     * @param _out Optional vector to store the result in.
      */
-    public pointClipToWorld(_pointInClipSpace: Vector3): Vector3 {
-      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(this.mtxWorldToView);
-      let m: ArrayLike<number> = mtxViewToWorld.getArray();
-      let rayWorld: Vector3 = Vector3.TRANSFORMATION(_pointInClipSpace, mtxViewToWorld, true);
-      let w: number = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];
-      rayWorld.scale(1 / w);
-
-      return rayWorld;
+    public pointClipToWorld(_pointInClipSpace: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
+      const mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(this.mtxWorldToView);
+      const m: ArrayLike<number> = mtxViewToWorld.getArray();
+      const w: number = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];
+      Recycler.store(mtxViewToWorld);
+      return Vector3.TRANSFORMATION(_pointInClipSpace, mtxViewToWorld, true, _out).scale(1 / w);
     }
 
     /**
@@ -335,15 +335,6 @@ namespace FudgeCore {
           break;
       }
       return this;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.direction)
-        types.direction = FIELD_OF_VIEW;
-      if (types.projection)
-        types.projection = PROJECTION;
-      return types;
     }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
