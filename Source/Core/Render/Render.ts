@@ -43,7 +43,9 @@ namespace FudgeCore {
       Render.componentsPick.reset();
       Render.componentsSkeleton.reset();
 
-      Render.lights.forEach(_array => _array.reset());
+      for (const cmpLights of Render.lights.values()) 
+        cmpLights.reset();
+      
       Node.resetRenderData();
       Coat.resetRenderData();
 

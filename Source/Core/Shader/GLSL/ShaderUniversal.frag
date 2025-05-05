@@ -86,16 +86,16 @@ layout(location = 2) out vec4 vctFragNormal;
     mat4 mtxShapeInverse;
   };
 
-  const uint MAX_LIGHTS_DIRECTIONAL = 15u;
-  const uint MAX_LIGHTS_POINT = 100u;
-  const uint MAX_LIGHTS_SPOT = 100u;
+  #define MAX_LIGHTS_DIRECTIONAL 15u
+  #define MAX_LIGHTS_POINT 100u
+  #define MAX_LIGHTS_SPOT 100u
 
-  layout(std140) uniform Lights {
+  layout(std140) uniform Lights { // TODO: put ambient color in header
     uint u_nLightsDirectional;
     uint u_nLightsPoint;
     uint u_nLightsSpot;
-    uint ligthsPadding; // Add padding to align to 16 bytes
-    Light u_ambient;
+    vec4 u_vctAmbientColor; 
+
     Light u_directional[MAX_LIGHTS_DIRECTIONAL];
     Light u_point[MAX_LIGHTS_POINT];
     Light u_spot[MAX_LIGHTS_SPOT];
@@ -201,7 +201,7 @@ void main() {
   
   #if defined(FLAT) || defined(PHONG)
 
-    vec3 vctDiffuse = u_fDiffuse * u_ambient.vctColor.rgb;
+    vec3 vctDiffuse = u_fDiffuse * u_vctAmbientColor.rgb;
     vec3 vctSpecular = vec3(0, 0, 0);
 
     // directional lights

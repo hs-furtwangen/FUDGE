@@ -881,6 +881,7 @@ var FudgeCore;
             this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment;
             this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
             this.data = new Float32Array(this.spaceData * _maxObjects);
+            this.dataUInt = new Uint32Array(this.data.buffer);
             this.count = 0;
             this.buffer = _renderWebGL.assert(crc3.createBuffer());
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
@@ -913,6 +914,7 @@ var FudgeCore;
             const data = new Float32Array(this.data.length * 1.5);
             data.set(this.data);
             this.data = data;
+            this.dataUInt = new Uint32Array(this.data.buffer);
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
             crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
@@ -986,12 +988,13 @@ var FudgeCore;
             data[offset + 30] = color.b;
             data[offset + 31] = color.a;
             if (_cmpParticleSystem) {
-                data[offset + 32] = _cmpParticleSystem.blendMode;
+                const dataUint = this.dataUInt;
+                dataUint[offset + 32] = _cmpParticleSystem.blendMode;
                 data[offset + 33] = _cmpParticleSystem.duration;
                 data[offset + 34] = _cmpParticleSystem.size;
                 data[offset + 35] = _cmpParticleSystem.time;
-                data[offset + 36] = _cmpFaceCamera?.isActive ? 1 : 0;
-                data[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
+                dataUint[offset + 36] = _cmpFaceCamera?.isActive ? 1 : 0;
+                dataUint[offset + 37] = _cmpFaceCamera?.restrict ? 1 : 0;
             }
         }
         static useRenderData(_node, _mtxWorldOverride) {
@@ -1006,31 +1009,33 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class RenderManagerComponentLight {
-        static { this.MAX_LIGHTS_DIRECTIONAL = 15; }
-        static { this.MAX_LIGHTS_POINT = 100; }
-        static { this.MAX_LIGHTS_SPOT = 100; }
-        static { this.FLOATS_PER_LIGHT = 4 + 16 + 16; }
-        static { this.HEADER_UINTS = 4; }
+    class RenderWebGLComponentLight {
+        static #buffer;
+        static #data;
+        static #dataHeader;
+        static #dataAmbient;
+        static #dataPoint;
+        static #dataSpot;
+        static #dataDirectional;
         static initialize(_renderWebGL) {
             const MAX_LIGHTS_DIRECTIONAL = 15;
             const MAX_LIGHTS_POINT = 100;
             const MAX_LIGHTS_SPOT = 100;
-            const FLOATS_PER_LIGHT = 4 + 16 + 16;
             const HEADER_UINTS = 4;
-            RenderManagerComponentLight.data = new Float32Array(HEADER_UINTS + (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * FLOATS_PER_LIGHT);
-            RenderManagerComponentLight.dataHeader = new Uint32Array(RenderManagerComponentLight.data.buffer);
-            RenderManagerComponentLight.offsets = {
-                LightAmbient: HEADER_UINTS,
-                LightDirectional: HEADER_UINTS + FLOATS_PER_LIGHT,
-                LightPoint: HEADER_UINTS + FLOATS_PER_LIGHT * (1 + MAX_LIGHTS_DIRECTIONAL),
-                LightSpot: HEADER_UINTS + FLOATS_PER_LIGHT * (1 + MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT)
-            };
+            const COLOR_FLOATS = 4;
+            const MATRIX_FLOATS = 16;
+            const LIGHT_FLOATS = COLOR_FLOATS + MATRIX_FLOATS + MATRIX_FLOATS;
+            RenderWebGLComponentLight.#data = new Float32Array(HEADER_UINTS + COLOR_FLOATS + (MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * LIGHT_FLOATS);
+            RenderWebGLComponentLight.#dataHeader = new Uint32Array(RenderWebGLComponentLight.#data.buffer, 0, HEADER_UINTS);
+            RenderWebGLComponentLight.#dataAmbient = new Float32Array(RenderWebGLComponentLight.#data.buffer, RenderWebGLComponentLight.#dataHeader.byteOffset + RenderWebGLComponentLight.#dataHeader.byteLength, COLOR_FLOATS);
+            RenderWebGLComponentLight.#dataDirectional = new Float32Array(RenderWebGLComponentLight.#data.buffer, RenderWebGLComponentLight.#dataAmbient.byteOffset + RenderWebGLComponentLight.#dataAmbient.byteLength, MAX_LIGHTS_DIRECTIONAL * LIGHT_FLOATS);
+            RenderWebGLComponentLight.#dataPoint = new Float32Array(RenderWebGLComponentLight.#data.buffer, RenderWebGLComponentLight.#dataDirectional.byteOffset + RenderWebGLComponentLight.#dataDirectional.byteLength, MAX_LIGHTS_POINT * LIGHT_FLOATS);
+            RenderWebGLComponentLight.#dataSpot = new Float32Array(RenderWebGLComponentLight.#data.buffer, RenderWebGLComponentLight.#dataPoint.byteOffset + RenderWebGLComponentLight.#dataPoint.byteLength, MAX_LIGHTS_SPOT * LIGHT_FLOATS);
             const crc3 = _renderWebGL.getRenderingContext();
-            RenderManagerComponentLight.buffer = _renderWebGL.assert(crc3.createBuffer());
-            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderManagerComponentLight.buffer);
-            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderManagerComponentLight.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
-            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.LIGHTS.BINDING, RenderManagerComponentLight.buffer);
+            RenderWebGLComponentLight.#buffer = _renderWebGL.assert(crc3.createBuffer());
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#buffer);
+            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGLComponentLight.#buffer);
         }
         static decorate(_method, _context) {
             return Reflect.get(this, _context.name);
@@ -1044,41 +1049,74 @@ var FudgeCore;
                     clrSum.add(FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity, clrLight));
                 FudgeCore.Recycler.store(clrSum);
                 FudgeCore.Recycler.store(clrLight);
-                clrSum.toArray(RenderManagerComponentLight.data, RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.AMBIENT]);
+                clrSum.toArray(RenderWebGLComponentLight.#dataAmbient);
             }
-            const color = FudgeCore.Recycler.get(FudgeCore.Color);
-            const mtxShape = FudgeCore.Matrix4x4.IDENTITY();
-            RenderManagerComponentLight.bufferLights(_lights.get(FudgeCore.LIGHT_TYPE.DIRECTIONAL), RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.DIRECTIONAL], 0, color, mtxShape);
-            RenderManagerComponentLight.bufferLights(_lights.get(FudgeCore.LIGHT_TYPE.POINT), RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.POINT], 1, color, mtxShape);
-            RenderManagerComponentLight.bufferLights(_lights.get(FudgeCore.LIGHT_TYPE.SPOT), RenderManagerComponentLight.offsets[FudgeCore.LIGHT_TYPE.SPOT], 2, color, mtxShape);
-            FudgeCore.Recycler.store(color);
-            FudgeCore.Recycler.store(mtxShape);
+            const cmpLightsDirectional = _lights.get(FudgeCore.LIGHT_TYPE.DIRECTIONAL);
+            const cmpLightsPoint = _lights.get(FudgeCore.LIGHT_TYPE.POINT);
+            const cmpLightsSpot = _lights.get(FudgeCore.LIGHT_TYPE.SPOT);
+            RenderWebGLComponentLight.#dataHeader[0] = cmpLightsDirectional?.length ?? 0;
+            RenderWebGLComponentLight.#dataHeader[1] = cmpLightsPoint?.length ?? 0;
+            RenderWebGLComponentLight.#dataHeader[2] = cmpLightsSpot?.length ?? 0;
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
-            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderManagerComponentLight.buffer);
-            crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, RenderManagerComponentLight.data);
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#buffer);
+            crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, RenderWebGLComponentLight.#data, 0, RenderWebGLComponentLight.#dataHeader.length + RenderWebGLComponentLight.#dataAmbient.length);
+            const clrOut = FudgeCore.Recycler.get(FudgeCore.Color);
+            const mtxOut = FudgeCore.Matrix4x4.IDENTITY();
+            RenderWebGLComponentLight.bufferLights(crc3, cmpLightsDirectional, RenderWebGLComponentLight.#dataDirectional, clrOut, mtxOut);
+            RenderWebGLComponentLight.bufferLights(crc3, cmpLightsPoint, RenderWebGLComponentLight.#dataPoint, clrOut, mtxOut);
+            RenderWebGLComponentLight.bufferLights(crc3, cmpLightsSpot, RenderWebGLComponentLight.#dataSpot, clrOut, mtxOut);
+            FudgeCore.Recycler.store(clrOut);
+            FudgeCore.Recycler.store(mtxOut);
         }
-        static bufferLights(_cmpLights, _offset, _iHeader, _color, _mtxShape) {
-            if (!_cmpLights) {
-                RenderManagerComponentLight.dataHeader[_iHeader] = 0;
+        static bufferLights(_crc3, _cmpLights, _data, _clrOut, _mtxOut) {
+            if (!_cmpLights)
                 return;
-            }
-            RenderManagerComponentLight.dataHeader[_iHeader] = _cmpLights.length;
-            if (_cmpLights.length == 0)
-                return;
+            let iLight = 0;
             for (let cmpLight of _cmpLights) {
-                FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity, _color).toArray(RenderManagerComponentLight.data, _offset);
-                FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot, _mtxShape);
+                FudgeCore.Color.SCALE(cmpLight.color, cmpLight.intensity, _clrOut).toArray(_data, iLight);
+                FudgeCore.Matrix4x4.PRODUCT(cmpLight.node.mtxWorld, cmpLight.mtxPivot, _mtxOut);
                 if (cmpLight.lightType == FudgeCore.LIGHT_TYPE.DIRECTIONAL)
-                    _mtxShape.translation = _mtxShape.translation.set(0, 0, 0);
-                _mtxShape.toArray(RenderManagerComponentLight.data, _offset + 4);
+                    _mtxOut.translation = _mtxOut.translation.set(0, 0, 0);
+                _mtxOut.toArray(_data, iLight + 4);
                 if (cmpLight.lightType != FudgeCore.LIGHT_TYPE.DIRECTIONAL)
-                    FudgeCore.Matrix4x4.INVERSE(_mtxShape, _mtxShape).toArray(RenderManagerComponentLight.data, _offset + 4 + 16);
-                _offset += RenderManagerComponentLight.FLOATS_PER_LIGHT;
+                    FudgeCore.Matrix4x4.INVERSE(_mtxOut, _mtxOut).toArray(_data, iLight + 20);
+                iLight += 36;
             }
-            return;
+            _crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, _data.byteOffset, _data, 0, iLight);
         }
     }
-    FudgeCore.RenderManagerComponentLight = RenderManagerComponentLight;
+    FudgeCore.RenderWebGLComponentLight = RenderWebGLComponentLight;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class RenderWebGLComponentFog {
+        static #buffer;
+        static #data;
+        static decorate(_method, _context) {
+            return Reflect.get(this, _context.name);
+        }
+        static initialize(_renderWebGL) {
+            const crc3 = _renderWebGL.getRenderingContext();
+            RenderWebGLComponentFog.#buffer = _renderWebGL.assert(crc3.createBuffer());
+            RenderWebGLComponentFog.#data = new Float32Array(8);
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#buffer);
+            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+            crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.FOG.BINDING, RenderWebGLComponentFog.#buffer);
+        }
+        static useRenderbuffer(_cmpFog) {
+            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            const data = RenderWebGLComponentFog.#data;
+            data[0] = _cmpFog?.isActive ? 1 : 0;
+            if (_cmpFog) {
+                data[1] = _cmpFog.near;
+                data[2] = _cmpFog.far;
+                data.set(_cmpFog.color.get(), 4);
+            }
+            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#buffer);
+            crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, RenderWebGLComponentFog.#data);
+        }
+    }
+    FudgeCore.RenderWebGLComponentFog = RenderWebGLComponentFog;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -2087,10 +2125,10 @@ var FudgeCore;
             RenderWebGL.initializeAttachments();
             RenderWebGL.adjustAttachments();
             RenderWebGL.initializeCamera();
-            RenderWebGL.initializeFog();
+            FudgeCore.RenderWebGLComponentFog.initialize(RenderWebGL);
             FudgeCore.RenderManagerNode.initialize(RenderWebGL);
             FudgeCore.RenderManagerCoat.initialize(RenderWebGL);
-            FudgeCore.RenderManagerComponentLight.initialize(RenderWebGL);
+            FudgeCore.RenderWebGLComponentLight.initialize(RenderWebGL);
             return crc3;
         }
         static assert(_value, _message = "") {
@@ -2378,22 +2416,6 @@ var FudgeCore;
             RenderWebGL.uboCamera = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
             RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.CAMERA.BINDING, RenderWebGL.uboCamera);
         }
-        static initializeFog() {
-            RenderWebGL.uboFog = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
-            RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.FOG.BINDING, RenderWebGL.uboFog);
-        }
-        static bufferFog(_cmpFog) {
-            const crc3 = RenderWebGL.crc3;
-            const data = RenderWebGL.dataFog ??= new Float32Array(8);
-            data[0] = _cmpFog?.isActive ? 1 : 0;
-            if (_cmpFog) {
-                data[1] = _cmpFog.near;
-                data[2] = _cmpFog.far;
-                data.set(_cmpFog.color.get(), 4);
-            }
-            crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboFog);
-            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
-        }
         static drawNodes(_nodesOpaque, _nodesAlpha, _cmpCamera) {
             const crc3 = RenderWebGL.getRenderingContext();
             const node = _cmpCamera.node;
@@ -2401,7 +2423,7 @@ var FudgeCore;
             const cmpAmbientOcclusion = node?.getComponent(FudgeCore.ComponentAmbientOcclusion);
             const cmpBloom = node?.getComponent(FudgeCore.ComponentBloom);
             const cmpOutline = node?.getComponent(FudgeCore.ComponentOutline);
-            RenderWebGL.bufferFog(cmpFog);
+            FudgeCore.RenderWebGLComponentFog.useRenderbuffer(cmpFog);
             RenderWebGL.bufferCamera(_cmpCamera);
             crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
             crc3.drawBuffers(cmpAmbientOcclusion?.isActive ? RenderWebGL.attachmentsColorPositionNormal : RenderWebGL.attachmentsColor);
@@ -6669,7 +6691,7 @@ var FudgeCore;
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
                 _lightType_decorators = [FudgeCore.type(LIGHT_TYPE)];
-                _static_updateRenderbuffer_decorators = [(_a = FudgeCore.RenderManagerComponentLight).decorate.bind(_a)];
+                _static_updateRenderbuffer_decorators = [(_a = FudgeCore.RenderWebGLComponentLight).decorate.bind(_a)];
                 __esDecorate(this, null, _static_updateRenderbuffer_decorators, { kind: "method", name: "updateRenderbuffer", static: true, private: false, access: { has: obj => "updateRenderbuffer" in obj, get: obj => obj.updateRenderbuffer }, metadata: _metadata }, null, _staticExtraInitializers);
                 __esDecorate(null, null, _lightType_decorators, { kind: "field", name: "lightType", static: false, private: false, access: { has: obj => "lightType" in obj, get: obj => obj.lightType, set: (obj, value) => { obj.lightType = value; } }, metadata: _metadata }, _lightType_initializers, _lightType_extraInitializers);
                 if (_metadata)
@@ -14689,7 +14711,8 @@ var FudgeCore;
             Render.nodesPhysics.reset();
             Render.componentsPick.reset();
             Render.componentsSkeleton.reset();
-            Render.lights.forEach(_array => _array.reset());
+            for (const cmpLights of Render.lights.values())
+                cmpLights.reset();
             FudgeCore.Node.resetRenderData();
             FudgeCore.Coat.resetRenderData();
             _branch.dispatchEvent(Render.#eventPrepareStart);
@@ -17753,7 +17776,7 @@ layout(std140) uniform Node {
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
 
-  uniform int u_iBlendMode;
+  uniform uint u_iBlendMode;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
   uniform float u_fParticleSystemTime;
@@ -17828,16 +17851,16 @@ layout(location = 2) out vec4 vctFragNormal;
     mat4 mtxShapeInverse;
   };
 
-  const uint MAX_LIGHTS_DIRECTIONAL = 15u;
-  const uint MAX_LIGHTS_POINT = 100u;
-  const uint MAX_LIGHTS_SPOT = 100u;
+  #define MAX_LIGHTS_DIRECTIONAL 15u
+  #define MAX_LIGHTS_POINT 100u
+  #define MAX_LIGHTS_SPOT 100u
 
-  layout(std140) uniform Lights {
+  layout(std140) uniform Lights { // TODO: put ambient color in header
     uint u_nLightsDirectional;
     uint u_nLightsPoint;
     uint u_nLightsSpot;
-    uint ligthsPadding; // Add padding to align to 16 bytes
-    Light u_ambient;
+    vec4 u_vctAmbientColor; 
+
     Light u_directional[MAX_LIGHTS_DIRECTIONAL];
     Light u_point[MAX_LIGHTS_POINT];
     Light u_spot[MAX_LIGHTS_SPOT];
@@ -17943,7 +17966,7 @@ void main() {
   
   #if defined(FLAT) || defined(PHONG)
 
-    vec3 vctDiffuse = u_fDiffuse * u_ambient.vctColor.rgb;
+    vec3 vctDiffuse = u_fDiffuse * u_vctAmbientColor.rgb;
     vec3 vctSpecular = vec3(0, 0, 0);
 
     // directional lights
@@ -18039,7 +18062,7 @@ void main() {
 
     #if defined(PARTICLE)
 
-      if (u_iBlendMode == 2 || u_iBlendMode == 3 || u_iBlendMode == 4)  // for blend additive, subtractive, modulate
+      if (u_iBlendMode == 2u || u_iBlendMode == 3u || u_iBlendMode == 4u)  // for blend additive, subtractive, modulate
         vctFrag.a = mix(vctFrag.a, 0.0, fFog);                          // fade out particle when in fog to make it disappear completely
 
     #endif
@@ -18058,7 +18081,7 @@ layout(std140) uniform Node {
   uniform mat3 u_mtxPivot; // texture pivot matrix
   uniform vec4 u_vctColorPrimary; // component material color
 
-  uniform int u_iBlendMode;
+  uniform uint u_iBlendMode;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
   uniform float u_fParticleSystemTime;
@@ -18115,16 +18138,16 @@ out vec4 v_vctColor;
     mat4 mtxShapeInverse;
   };
 
-  const uint MAX_LIGHTS_DIRECTIONAL = 15u;
-  const uint MAX_LIGHTS_POINT = 100u;
-  const uint MAX_LIGHTS_SPOT = 100u;
+  #define MAX_LIGHTS_DIRECTIONAL 15u
+  #define MAX_LIGHTS_POINT 100u
+  #define MAX_LIGHTS_SPOT 100u
 
-  layout(std140) uniform Lights {
+  layout(std140) uniform Lights { // TODO: put ambient color in header
     uint u_nLightsDirectional;
     uint u_nLightsPoint;
     uint u_nLightsSpot;
-    uint ligthsPadding; // Add padding to align to 16 bytes
-    Light u_ambient;
+    vec4 u_vctAmbientColor;
+
     Light u_directional[MAX_LIGHTS_DIRECTIONAL];
     Light u_point[MAX_LIGHTS_POINT];
     Light u_spot[MAX_LIGHTS_SPOT];
@@ -18300,7 +18323,7 @@ void main() {
   
     vec3 vctView = normalize(vctPosition.xyz - u_vctCamera);
     vec3 vctNormal = normalize(v_vctNormal);
-    v_vctDiffuse = u_fDiffuse * u_ambient.vctColor.rgb;
+    v_vctDiffuse = u_fDiffuse * u_vctAmbientColor.rgb;
     v_vctSpecular = vec3(0, 0, 0);
 
     // calculate directional light effect

@@ -735,6 +735,16 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
+    abstract class RenderWebGLComponentFog {
+        #private;
+        static initialize(_renderWebGL: typeof RenderWebGL): void;
+        /**
+         * Buffer the fog parameters into the fog ubo.
+         */
+        static useRenderbuffer(_cmpFog: ComponentFog): void;
+    }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -1227,8 +1237,6 @@ declare namespace FudgeCore {
         private static texPick;
         private static texDepthPick;
         private static uboCamera;
-        private static uboFog;
-        private static dataFog;
         private static dataCamera;
         private static readonly attachmentsColorPositionNormal;
         private static readonly attachmentsColor;
@@ -1348,11 +1356,6 @@ declare namespace FudgeCore {
          */
         protected static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
         protected static initializeCamera(): void;
-        protected static initializeFog(): void;
-        /**
-         * Buffer the fog parameters into the fog ubo
-         */
-        protected static bufferFog(_cmpFog: ComponentFog): void;
         /**
          * Draws the given nodes using the given camera and the post process components attached to the same node as the camera
          * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
