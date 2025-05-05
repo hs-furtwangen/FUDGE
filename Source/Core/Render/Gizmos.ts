@@ -128,7 +128,7 @@ namespace FudgeCore {
       Gizmos.#camera = _cmpCamera;
       Gizmos.posIcons.clear();
 
-      RenderWebGL.bufferCamera(_cmpCamera);
+      RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
 
       for (const gizmo of _gizmos) {
         gizmo.drawGizmos?.(_cmpCamera, Gizmos.#picking);

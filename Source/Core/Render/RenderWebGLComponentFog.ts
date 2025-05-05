@@ -3,11 +3,6 @@ namespace FudgeCore {
     static #buffer: WebGLBuffer;
     static #data: Float32Array;
 
-    /** @internal Replaces the decorated method with the manager’s implementation of the same name. */
-    public static decorate<C extends typeof ComponentFog, M extends (this: C, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<C, M>): M {
-      return Reflect.get(this, _context.name);
-    }
-
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
 

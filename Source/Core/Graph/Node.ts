@@ -377,7 +377,7 @@ namespace FudgeCore {
     /**
      * Returns a list of all components attached to this node, independent of type. 
      */
-    public getAllComponents(): Component[] {
+    public getAllComponents(): Component[] { // TODO: rework this
       let all: Component[] = [];
       for (let type in this.components) {
         all = all.concat(this.components[type]);

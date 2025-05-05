@@ -3,6 +3,7 @@
 ///<reference path="RenderManagerNode.ts"/>
 ///<reference path="RenderWebGLComponentLight.ts"/>
 ///<reference path="RenderWebGLComponentFog.ts"/>
+///<reference path="RenderWebGLComponentCamera.ts"/>
 
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
@@ -120,9 +121,6 @@ namespace FudgeCore {
     private static texPick: WebGLTexture;
     private static texDepthPick: WebGLTexture;
 
-    private static uboCamera: WebGLBuffer; // TODO: technically we should have one buffer per camera, and switch between them, similar to how skeletons are handled. But having cameras outside of any scene proves to be a problem...
-    private static dataCamera: Float32Array;
-
     private static readonly attachmentsColorPositionNormal = [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] as const; // eslint-disable-line
     private static readonly attachmentsColor = [WebGL2RenderingContext.COLOR_ATTACHMENT0] as const; // eslint-disable-line
 
@@ -160,11 +158,11 @@ namespace FudgeCore {
       RenderWebGL.initializeAttachments();
       RenderWebGL.adjustAttachments();
 
-      RenderWebGL.initializeCamera();
+      RenderWebGLComponentCamera.initialize(RenderWebGL);
       RenderWebGLComponentFog.initialize(RenderWebGL);
+      RenderWebGLComponentLight.initialize(RenderWebGL);
       RenderManagerNode.initialize(RenderWebGL);
       RenderManagerCoat.initialize(RenderWebGL);
-      RenderWebGLComponentLight.initialize(RenderWebGL);
 
       return crc3;
     }
@@ -472,26 +470,6 @@ namespace FudgeCore {
       crc3.bindTexture(crc3.TEXTURE_2D, null);
     }
 
-    /**
-     * Buffer the camera data into the camera ubo
-     */
-    public static bufferCamera(_cmpCamera: ComponentCamera): void {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const mtxView: Matrix4x4 = _cmpCamera.mtxCameraInverse;
-      const mtxProjection: Matrix4x4 = _cmpCamera.mtxProjection;
-      const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
-      const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
-
-      const data: Float32Array = RenderWebGL.dataCamera ??= new Float32Array(16 + 16 + 16 + 3);
-      data.set(mtxView.getArray(), 0);
-      data.set(mtxProjection.getArray(), 16);
-      data.set(mtxViewProjection.getArray(), 32);
-      vctPosition.toArray(data, 48);
-
-      crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGL.uboCamera);
-      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, data, WebGL2RenderingContext.DYNAMIC_DRAW);
-    }
-
     public static useNodeUniforms(_shader: ShaderInterface, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _id?: number): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
 
@@ -532,7 +510,7 @@ namespace FudgeCore {
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
       crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
 
-      RenderWebGL.bufferCamera(_cmpCamera);
+      RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
 
       // buffer size into pick shaders
       ShaderPick.useProgram();
@@ -620,11 +598,6 @@ namespace FudgeCore {
     }
     //#endregion
 
-    protected static initializeCamera(): void {
-      RenderWebGL.uboCamera = RenderWebGL.assert(RenderWebGL.crc3.createBuffer());
-      RenderWebGL.crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.CAMERA.BINDING, RenderWebGL.uboCamera);
-    }
-
     /**
      * Draws the given nodes using the given camera and the post process components attached to the same node as the camera
      * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
@@ -639,7 +612,7 @@ namespace FudgeCore {
       const cmpOutline: ComponentOutline = node?.getComponent(ComponentOutline);
 
       RenderWebGLComponentFog.useRenderbuffer(cmpFog);
-      RenderWebGL.bufferCamera(_cmpCamera);
+      RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
 
       // opaque pass 
       // TODO: think about disabling blending for all opaque objects, this might improve performance 

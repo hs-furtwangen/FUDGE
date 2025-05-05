@@ -745,6 +745,16 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    abstract class RenderWebGLComponentCamera {
+        #private;
+        static initialize(_renderWebGL: typeof RenderWebGL): void;
+        /**
+         * Buffer the fog parameters into the fog ubo.
+         */
+        static useRenderbuffer(_cmpCamera: ComponentCamera): void;
+    }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -1236,8 +1246,6 @@ declare namespace FudgeCore {
         private static fboPick;
         private static texPick;
         private static texDepthPick;
-        private static uboCamera;
-        private static dataCamera;
         private static readonly attachmentsColorPositionNormal;
         private static readonly attachmentsColor;
         /**
@@ -1336,10 +1344,6 @@ declare namespace FudgeCore {
          * ⚠️ CAUTION: Expensive operation, use only when canvas size changed.
          */
         static adjustAttachments(): void;
-        /**
-         * Buffer the camera data into the camera ubo
-         */
-        static bufferCamera(_cmpCamera: ComponentCamera): void;
         static useNodeUniforms(_shader: ShaderInterface, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _id?: number): void;
         /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
@@ -1355,7 +1359,6 @@ declare namespace FudgeCore {
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
         protected static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
-        protected static initializeCamera(): void;
         /**
          * Draws the given nodes using the given camera and the post process components attached to the same node as the camera
          * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
