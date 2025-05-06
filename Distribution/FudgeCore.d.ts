@@ -165,8 +165,8 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    interface MapEventTypeToListener {
-        [eventType: string]: EventListenerUnified[];
+    interface MapEventTypeToListeners {
+        [eventType: string]: Set<EventListenerUnified>;
     }
     /**
      * Types of events specific to FUDGE, in addition to the standard DOM/Browser-Types and custom strings
@@ -755,6 +755,49 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Handles the ambient occlusion post-processing effect.
+     */
+    class RenderWebGLComponentAmbientOcclusion {
+        #private;
+        static ssaoSupport: boolean;
+        static fboOut: WebGLFramebuffer;
+        static texOut: WebGLTexture;
+        static texNoise: WebGLTexture;
+        /** Initialize SSAO resources: shaders, noise texture, FBO attachments */
+        static initialize(_renderWebGL: typeof RenderWebGL): void;
+        /**
+         * Execute the ambient occlusion pass.
+         * @param _cmpCamera The camera component providing view parameters
+         * @param _cmpAmbientOcclusion The ambient occlusion component with settings
+         */
+        static draw(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void;
+        /** Adjust SSAO-related attachments on resize */
+        static resize(_renderWebGL: typeof RenderWebGL, _width: number, _height: number): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Handles the ambient occlusion post-processing effect.
+     */
+    class RenderWebGLComponentBloom {
+        static ssaoSupport: boolean;
+        static fboOut: WebGLFramebuffer;
+        static texOut: WebGLTexture;
+        static fbos: WebGLFramebuffer[];
+        private static textures;
+        /** Initialize SSAO resources: shaders, noise texture, FBO attachments */
+        static initialize(_renderWebGL: typeof RenderWebGL): void;
+        /**
+         * Execute the ambient occlusion pass.
+         * @param _cmpBloom The camera component providing view parameters
+         */
+        static draw(_cmpBloom: ComponentBloom): void;
+        /** Adjust SSAO-related attachments on resize */
+        static resize(_renderWebGL: typeof RenderWebGL, _width: number, _height: number): void;
+    }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -1228,6 +1271,10 @@ declare namespace FudgeCore {
      * Methods and attributes of this class should not be called directly, only through {@link Render}
      */
     abstract class RenderWebGL extends EventTargetStatic {
+        static texColor: WebGLTexture;
+        static texPosition: WebGLTexture;
+        static texNormal: WebGLTexture;
+        static texDepthStencil: WebGLTexture;
         protected static crc3: WebGL2RenderingContext;
         /** The area of the offscreen-canvas in CSS pixels. */
         private static rectCanvas;
@@ -1236,12 +1283,6 @@ declare namespace FudgeCore {
         private static fboMain;
         private static fboPost;
         private static fboTarget;
-        private static texColor;
-        private static texPosition;
-        private static texNormal;
-        private static texNoise;
-        private static texDepthStencil;
-        private static texBloomSamples;
         private static texDepthStencilOutline;
         private static fboPick;
         private static texPick;
@@ -1344,6 +1385,8 @@ declare namespace FudgeCore {
          * ⚠️ CAUTION: Expensive operation, use only when canvas size changed.
          */
         static adjustAttachments(): void;
+        static createTexture(_filter: number, _wrap: number): WebGLTexture;
+        static bindTexture(_shader: ShaderInterface, _texture: WebGLTexture, _unit: number, _uniform: string): void;
         static useNodeUniforms(_shader: ShaderInterface, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _id?: number): void;
         /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
@@ -1364,14 +1407,6 @@ declare namespace FudgeCore {
          * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
          */
         protected static drawNodes(_nodesOpaque: Iterable<Node>, _nodesAlpha: Iterable<Node>, _cmpCamera: ComponentCamera): void;
-        /**
-         * Draws the occlusion over the color-buffer, using the given ambient-occlusion-component.
-         */
-        protected static drawAmbientOcclusion(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void;
-        /**
-         * Draws the bloom-effect over the color-buffer, using the given bloom-component
-         */
-        protected static drawBloom(_cmpBloom: ComponentBloom): void;
         protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void;
         /**
          * Draw a mesh buffer using the given infos and the complete projection matrix
@@ -1379,7 +1414,6 @@ declare namespace FudgeCore {
         protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
         protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _nIndices: number): void;
         private static faceCamera;
-        private static bindTexture;
     }
 }
 declare namespace FudgeCore {
@@ -1405,8 +1439,6 @@ declare namespace FudgeCore {
         private parent;
         private children;
         private components;
-        private listeners;
-        private captures;
         private active;
         /**
          * Creates a new node with a name and initializes all attributes
@@ -1590,6 +1622,9 @@ declare namespace FudgeCore {
          */
         broadcastEvent(_event: Event): void;
         private broadcastEventRecursive;
+        /**
+         * Calls the listeners with the given event. The listeners are called in the order they were added. Handles listeners removing themselves or other listeners from the list during execution.
+         */
         private callListeners;
     }
 }

@@ -22,9 +22,9 @@ namespace FudgeCore {
     private components: MapClassToComponents = {};
     // private tags: string[] = []; // Names of tags that are attached to this node. (TODO: As of yet no functionality)
     // private layers: string[] = []; // Names of the layers this node is on. (TODO: As of yet no functionality)
-    private listeners: MapEventTypeToListener = {};
-    private captures: MapEventTypeToListener = {};
     private active: boolean = true;
+    #listeners: MapEventTypeToListeners = {};
+    #captures: MapEventTypeToListeners = {};
 
     #mtxWorldInverseUpdated: number;
     #mtxWorldInverse: Matrix4x4;
@@ -162,12 +162,12 @@ namespace FudgeCore {
     }
 
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { 
-      Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem); 
+    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void {
+      Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem);
     };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-    public useRenderData(_mtxWorldOverride: Matrix4x4): void { 
+    public useRenderData(_mtxWorldOverride: Matrix4x4): void {
       Node.useRenderData(this, _mtxWorldOverride);
     };
 
@@ -557,21 +557,20 @@ namespace FudgeCore {
      * Deviating from the standard EventTarget, here the _handler must be a function and _capture is the only option.
      */
     public addEventListener(_type: EVENT | string, _handler: EventListenerUnified, _capture: boolean /*| AddEventListenerOptions*/ = false): void {
-      let listListeners: MapEventTypeToListener = _capture ? this.captures : this.listeners;
-      if (!listListeners[_type])
-        listListeners[_type] = [];
-      listListeners[_type].push(_handler);
+      const listListeners: MapEventTypeToListeners = _capture ? this.#captures : this.#listeners;
+      const listenersForType: Set<EventListenerUnified> = listListeners[_type] ??= new Set();
+      listenersForType.add(_handler);
     }
 
     /**
      * Removes an event listener from the node. The signature must match the one used with addEventListener
      */
     public removeEventListener(_type: EVENT | string, _handler: EventListenerUnified, _capture: boolean /*| AddEventListenerOptions*/ = false): void {
-      let listenersForType: EventListenerUnified[] = _capture ? this.captures[_type] : this.listeners[_type];
-      if (listenersForType)
-        for (let i: number = listenersForType.length - 1; i >= 0; i--)
-          if (listenersForType[i] == _handler)
-            listenersForType.splice(i, 1);
+      const listenersForType: Set<EventListenerUnified> = _capture ? this.#captures[_type] : this.#listeners[_type];
+      if (!listenersForType)
+        return;
+
+      listenersForType.delete(_handler);
     }
 
     /**
@@ -582,7 +581,7 @@ namespace FudgeCore {
     public dispatchEvent(_event: Event): boolean {
       if (_event instanceof RecyclableEvent) {
         _event.setTarget(this);
-        
+
         // update path
         const path: Node[] = <Node[]>_event.path;
         path.length = 0;
@@ -593,14 +592,14 @@ namespace FudgeCore {
         for (let i: number = path.length - 1; i >= 1; i--) {
           let ancestor: Node = path[i];
           _event.setCurrentTarget(ancestor);
-          this.callListeners(ancestor.captures[_event.type], _event);
+          this.callListeners(ancestor.#captures[_event.type], _event);
         }
 
         // target phase
         _event.setEventPhase(Event.AT_TARGET);
         _event.setCurrentTarget(this);
-        this.callListeners(this.captures[_event.type], _event);
-        this.callListeners(this.listeners[_event.type], _event);
+        this.callListeners(this.#captures[_event.type], _event);
+        this.callListeners(this.#listeners[_event.type], _event);
 
         // bubble phase
         if (!_event.bubbles)
@@ -610,7 +609,7 @@ namespace FudgeCore {
         for (let i: number = 1; i < path.length; i++) {
           let ancestor: Node = path[i];
           _event.setCurrentTarget(ancestor);
-          this.callListeners(ancestor.listeners[_event.type], _event);
+          this.callListeners(ancestor.#listeners[_event.type], _event);
         }
       } else {
         let ancestors: Node[] = [];
@@ -627,14 +626,14 @@ namespace FudgeCore {
         for (let i: number = ancestors.length - 1; i >= 0; i--) {
           let ancestor: Node = ancestors[i];
           Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
-          this.callListeners(ancestor.captures[_event.type], _event);
+          this.callListeners(ancestor.#captures[_event.type], _event);
         }
 
         // target phase
         Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.AT_TARGET });
         Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
-        this.callListeners(this.captures[_event.type], _event);
-        this.callListeners(this.listeners[_event.type], _event);
+        this.callListeners(this.#captures[_event.type], _event);
+        this.callListeners(this.#listeners[_event.type], _event);
 
         if (!_event.bubbles)
           return true;
@@ -644,7 +643,7 @@ namespace FudgeCore {
         for (let i: number = 0; i < ancestors.length; i++) {
           let ancestor: Node = ancestors[i];
           Object.defineProperty(_event, "currentTarget", { writable: true, value: ancestor });
-          this.callListeners(ancestor.listeners[_event.type], _event);
+          this.callListeners(ancestor.#listeners[_event.type], _event);
         }
       }
 
@@ -663,7 +662,7 @@ namespace FudgeCore {
         Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
       }
 
-      this.callListeners(this.listeners[_event.type], _event); // TODO: examine if this should go to the captures instead of the listeners
+      this.callListeners(this.#listeners[_event.type], _event); // TODO: examine if this should go to the captures instead of the listeners
       return true;
     }
 
@@ -672,26 +671,25 @@ namespace FudgeCore {
      * invoking matching handlers of the nodes listening to the capture phase. Watch performance when there are many nodes involved
      */
     public broadcastEvent(_event: Event): void {
-      // overwrite event target and phase
-      Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.CAPTURING_PHASE });
-      Object.defineProperty(_event, "target", { writable: true, value: this });
+      if (_event instanceof RecyclableEvent) {
+        _event.setCurrentTarget(this);
+        _event.setEventPhase(Event.CAPTURING_PHASE);
+      } else {
+        // overwrite event target and phase
+        Object.defineProperty(_event, "eventPhase", { writable: true, value: Event.CAPTURING_PHASE });
+        Object.defineProperty(_event, "target", { writable: true, value: this });
+      }
+
       this.broadcastEventRecursive(_event);
     }
 
     private broadcastEventRecursive(_event: Event): void {
-      // capture phase only
-      Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
-      let captures: EventListenerUnified[] = this.captures[_event.type];
-      if (captures) {
-        captures = [...captures]; // create a copy to avoid problems with handlers that detach themselves
-        for (let handler of captures)
-          // @ts-ignore
-          handler(_event);
-        // appears to be slower, astonishingly...
-        // captures.forEach(function (handler: Function): void {
-        //     handler(_event);
-        // });
-      }
+      if (_event instanceof RecyclableEvent)
+        _event.setEventPhase(Event.CAPTURING_PHASE);
+      else
+        Object.defineProperty(_event, "currentTarget", { writable: true, value: this });
+
+      this.callListeners(this.#captures[_event.type], _event);
 
       // same for children
       for (let child of this.children) {
@@ -699,11 +697,17 @@ namespace FudgeCore {
       }
     }
 
-    private callListeners(_listeners: EventListenerUnified[], _event: Event): void {
-      if (_listeners?.length > 0)
-        for (let handler of _listeners)
-          // @ts-ignore
-          handler(_event);
+    /**
+     * Calls the listeners with the given event. The listeners are called in the order they were added. Handles listeners removing themselves or other listeners from the list during execution.
+     */
+    private callListeners(_listeners: Set<EventListenerUnified>, _event: Event): void {
+      if (!_listeners || _listeners.size == 0)
+        return;
+
+      for (const handler of _listeners) {
+        // @ts-ignore
+        handler(_event);
+      }
     }
     // #endregion
   }

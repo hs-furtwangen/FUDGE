@@ -1,6 +1,6 @@
 namespace FudgeCore {
-  export interface MapEventTypeToListener {
-    [eventType: string]: EventListenerUnified[];
+  export interface MapEventTypeToListeners {
+    [eventType: string]: Set<EventListenerUnified>;
   }
 
   /**
