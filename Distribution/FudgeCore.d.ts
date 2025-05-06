@@ -1412,7 +1412,7 @@ declare namespace FudgeCore {
          * Draw a mesh buffer using the given infos and the complete projection matrix
         */
         protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
-        protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _nIndices: number): void;
+        private static drawParticles;
         private static faceCamera;
     }
 }
@@ -1482,7 +1482,7 @@ declare namespace FudgeCore {
         /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
         updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void;
         /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-        useRenderData(_mtxWorldOverride: Matrix4x4): void;
+        useRenderData(_mtxWorldOverride?: Matrix4x4): void;
         /**
          * De- / Activate this node. Inactive nodes will not be processed by the renderer.
          */

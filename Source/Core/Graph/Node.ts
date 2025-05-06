@@ -106,7 +106,7 @@ namespace FudgeCore {
 
     /** @internal reroute to {@link RenderManagerNode.useRenderData} */
     @RenderManagerNode.decorate
-    protected static useRenderData(_node: Node, _mtxWorldOverride: Matrix4x4): void { /* injected */ };
+    protected static useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void { /* injected */ };
 
     public get isActive(): boolean {
       return this.active;
@@ -167,7 +167,7 @@ namespace FudgeCore {
     };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-    public useRenderData(_mtxWorldOverride: Matrix4x4): void {
+    public useRenderData(_mtxWorldOverride?: Matrix4x4): void {
       Node.useRenderData(this, _mtxWorldOverride);
     };
 

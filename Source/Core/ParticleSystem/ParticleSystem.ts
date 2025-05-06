@@ -99,7 +99,7 @@ namespace FudgeCore {
     #data: ParticleData.System;
     /** Map of shader universal derivates to corresponding computed {@link ShaderParticleSystem}. 
      * This way each particle system resource can be used in conjunction with multiple shader universal derivates */
-    #shaderToShaderParticleSystem: Map<ShaderInterface, ShaderParticleSystem> = new Map();
+    #mapShaderToShaderParticleSystem: Map<ShaderInterface, ShaderParticleSystem> = new Map();
 
     public constructor(_name: string = ParticleSystem.name, _data: ParticleData.System = {}) {
       super();
@@ -115,8 +115,8 @@ namespace FudgeCore {
 
     public set data(_data: ParticleData.System) {
       this.#data = _data;
-      this.#shaderToShaderParticleSystem.forEach(_shader => _shader.deleteProgram());
-      this.#shaderToShaderParticleSystem.clear();
+      this.#mapShaderToShaderParticleSystem.forEach(_shader => _shader.deleteProgram());
+      this.#mapShaderToShaderParticleSystem.clear();
     }
 
     /**
@@ -126,16 +126,16 @@ namespace FudgeCore {
      * @internal
      */
     public getShaderFrom(_source: ShaderInterface): ShaderParticleSystem {
-      if (!this.#shaderToShaderParticleSystem.has(_source)) {
+      if (!this.#mapShaderToShaderParticleSystem.has(_source)) {
         let particleShader: ShaderParticleSystem = new ShaderParticleSystem();
         particleShader.data = this.data;
         particleShader.define = [...particleShader.define, ..._source.define];
         particleShader.vertexShaderSource = _source.getVertexShaderSource();
         particleShader.fragmentShaderSource = _source.getFragmentShaderSource();
-        this.#shaderToShaderParticleSystem.set(_source, particleShader);
+        this.#mapShaderToShaderParticleSystem.set(_source, particleShader);
       }
 
-      return this.#shaderToShaderParticleSystem.get(_source);
+      return this.#mapShaderToShaderParticleSystem.get(_source);
     }
 
     //#region Transfer

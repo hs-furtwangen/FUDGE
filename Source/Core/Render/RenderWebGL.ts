@@ -374,7 +374,7 @@ namespace FudgeCore {
      */
     public static initializeAttachments(): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
-      
+
       crc3.getExtension("EXT_color_buffer_float"); // TODO: disable ssao if not supported
 
       RenderWebGL.fboMain = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
@@ -680,66 +680,52 @@ namespace FudgeCore {
     /**
      * Draw a mesh buffer using the given infos and the complete projection matrix
     */
-    // @PerformanceMonitor.measure("Render.drawNode")
     protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
-      // PerformanceMonitor.startMeasure("Render.drawNode get components");
       let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
       let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
+      let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
+      if (cmpParticleSystem?.isActive) {
+        RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
+        return;
+      }
+
       let cmpText: ComponentText = _node.getComponent(ComponentText);
       let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
-      let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
-      let drawParticles: boolean = cmpParticleSystem?.isActive;
-      let shader: ShaderInterface = cmpMaterial.material.getShader();
-      if (drawParticles)
-        shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
-      // PerformanceMonitor.endMeasure("Render.drawNode get components");
 
-      // PerformanceMonitor.startMeasure("Render.drawNode useProgram");
-      shader.useProgram();
-      // PerformanceMonitor.endMeasure("Render.drawNode useProgram");
-
-      // PerformanceMonitor.startMeasure("Render.drawNode useRenderData");
-      cmpMaterial.material.coat.useRenderData();
-
-      // PerformanceMonitor.endMeasure("Render.drawNode useRenderData");
+      const material: Material = cmpMaterial.material;
+      material.getShader().useProgram();
+      material.coat.useRenderData();
 
       if (cmpMesh.skeleton?.isActive)
         cmpMesh.skeleton.useRenderBuffer();
-
-      // PerformanceMonitor.startMeasure("Render.drawNode other");
 
       let mtxWorldOverride: Matrix4x4;
 
       if (cmpText?.isActive)
         mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
 
-      if (cmpFaceCamera?.isActive && !drawParticles)
+      if (cmpFaceCamera?.isActive)
         mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
 
-      // RenderWebGL.useRenderDataNode(_node, mtxWorldOverride);
       _node.useRenderData(mtxWorldOverride);
-      // PerformanceMonitor.endMeasure("Render.drawNode other");
 
-      // PerformanceMonitor.startMeasure("Render.drawNode getRenderBuffers");
       const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
-      // PerformanceMonitor.endMeasure("Render.drawNode getRenderBuffers");
-
-      // PerformanceMonitor.startMeasure("Render.drawNode drawElements");
-      if (drawParticles)
-        RenderWebGL.drawParticles(cmpParticleSystem, renderBuffers.nIndices);
-      else
-        RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
-
-      // PerformanceMonitor.endMeasure("Render.drawNode drawElements");
+      RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
     }
 
-    protected static drawParticles(_cmpParticleSystem: ComponentParticleSystem, _nIndices: number): void {
+    private static drawParticles(_node: Node, _cmpParticleSystem: ComponentParticleSystem, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
+      const renderBuffers: RenderBuffers = _cmpMesh.mesh.useRenderBuffers();
+      const material: Material = _cmpMaterial.material;
+      material.coat.useRenderData();
+      _cmpParticleSystem.particleSystem.getShaderFrom(material.getShader()).useProgram();
       _cmpParticleSystem.useRenderData();
+      _node.useRenderData();
+
       crc3.depthMask(_cmpParticleSystem.depthMask);
       RenderWebGL.setBlendMode(_cmpParticleSystem.blendMode);
-      crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, _nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
+      crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
       crc3.depthMask(true);
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
     }

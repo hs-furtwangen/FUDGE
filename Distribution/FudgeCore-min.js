@@ -2605,35 +2605,38 @@ var FudgeCore;
         static drawNode(_node, _cmpCamera) {
             let cmpMesh = _node.getComponent(FudgeCore.ComponentMesh);
             let cmpMaterial = _node.getComponent(FudgeCore.ComponentMaterial);
+            let cmpParticleSystem = _node.getComponent(FudgeCore.ComponentParticleSystem);
+            if (cmpParticleSystem?.isActive) {
+                RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
+                return;
+            }
             let cmpText = _node.getComponent(FudgeCore.ComponentText);
             let cmpFaceCamera = _node.getComponent(FudgeCore.ComponentFaceCamera);
-            let cmpParticleSystem = _node.getComponent(FudgeCore.ComponentParticleSystem);
-            let drawParticles = cmpParticleSystem?.isActive;
-            let shader = cmpMaterial.material.getShader();
-            if (drawParticles)
-                shader = cmpParticleSystem.particleSystem.getShaderFrom(shader);
-            shader.useProgram();
-            cmpMaterial.material.coat.useRenderData();
+            const material = cmpMaterial.material;
+            material.getShader().useProgram();
+            material.coat.useRenderData();
             if (cmpMesh.skeleton?.isActive)
                 cmpMesh.skeleton.useRenderBuffer();
             let mtxWorldOverride;
             if (cmpText?.isActive)
                 mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
-            if (cmpFaceCamera?.isActive && !drawParticles)
+            if (cmpFaceCamera?.isActive)
                 mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
             _node.useRenderData(mtxWorldOverride);
             const renderBuffers = cmpMesh.mesh.useRenderBuffers();
-            if (drawParticles)
-                RenderWebGL.drawParticles(cmpParticleSystem, renderBuffers.nIndices);
-            else
-                RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+            RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
         }
-        static drawParticles(_cmpParticleSystem, _nIndices) {
+        static drawParticles(_node, _cmpParticleSystem, _cmpMesh, _cmpMaterial) {
             const crc3 = RenderWebGL.getRenderingContext();
+            const renderBuffers = _cmpMesh.mesh.useRenderBuffers();
+            const material = _cmpMaterial.material;
+            material.coat.useRenderData();
+            _cmpParticleSystem.particleSystem.getShaderFrom(material.getShader()).useProgram();
             _cmpParticleSystem.useRenderData();
+            _node.useRenderData();
             crc3.depthMask(_cmpParticleSystem.depthMask);
             RenderWebGL.setBlendMode(_cmpParticleSystem.blendMode);
-            crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, _nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
+            crc3.drawElementsInstanced(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0, _cmpParticleSystem.size);
             crc3.depthMask(true);
             RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
         }
@@ -4496,11 +4499,11 @@ var FudgeCore;
                 __runInitializers(_classThis, _classExtraInitializers);
             }
             #data;
-            #shaderToShaderParticleSystem;
+            #mapShaderToShaderParticleSystem;
             constructor(_name = ParticleSystem.name, _data = {}) {
                 super();
                 this.idResource = undefined;
-                this.#shaderToShaderParticleSystem = new Map();
+                this.#mapShaderToShaderParticleSystem = new Map();
                 this.name = _name;
                 this.data = _data;
                 FudgeCore.Project.register(this);
@@ -4510,19 +4513,19 @@ var FudgeCore;
             }
             set data(_data) {
                 this.#data = _data;
-                this.#shaderToShaderParticleSystem.forEach(_shader => _shader.deleteProgram());
-                this.#shaderToShaderParticleSystem.clear();
+                this.#mapShaderToShaderParticleSystem.forEach(_shader => _shader.deleteProgram());
+                this.#mapShaderToShaderParticleSystem.clear();
             }
             getShaderFrom(_source) {
-                if (!this.#shaderToShaderParticleSystem.has(_source)) {
+                if (!this.#mapShaderToShaderParticleSystem.has(_source)) {
                     let particleShader = new FudgeCore.ShaderParticleSystem();
                     particleShader.data = this.data;
                     particleShader.define = [...particleShader.define, ..._source.define];
                     particleShader.vertexShaderSource = _source.getVertexShaderSource();
                     particleShader.fragmentShaderSource = _source.getFragmentShaderSource();
-                    this.#shaderToShaderParticleSystem.set(_source, particleShader);
+                    this.#mapShaderToShaderParticleSystem.set(_source, particleShader);
                 }
-                return this.#shaderToShaderParticleSystem.get(_source);
+                return this.#mapShaderToShaderParticleSystem.get(_source);
             }
             serialize() {
                 let serialization = {
