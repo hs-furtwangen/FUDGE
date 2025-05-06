@@ -7,7 +7,7 @@ namespace FudgeCore {
   export class RenderWebGLComponentAmbientOcclusion {
     public static ssaoSupport: boolean; // TODO:
 
-    public static fbo: WebGLFramebuffer;
+    public static fboOut: WebGLFramebuffer;
     public static texOut: WebGLTexture;
     public static texNoise: WebGLTexture; // stores random values for each pixel
 
@@ -20,8 +20,8 @@ namespace FudgeCore {
       RenderWebGLComponentAmbientOcclusion.texOut = _renderWebGL.texColor;
       RenderWebGLComponentAmbientOcclusion.texNoise = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
-      RenderWebGLComponentAmbientOcclusion.fbo = _renderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentAmbientOcclusion.fbo);
+      RenderWebGLComponentAmbientOcclusion.fboOut = _renderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentAmbientOcclusion.fboOut);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLComponentAmbientOcclusion.texOut, 0);
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
     }
@@ -49,7 +49,7 @@ namespace FudgeCore {
       crc3.uniform2f(ShaderAmbientOcclusion.uniforms["u_vctResolution"], RenderWebGL.getCanvasRectangle().width, RenderWebGL.getCanvasRectangle().height);
       crc3.uniform3fv(ShaderAmbientOcclusion.uniforms["u_vctCamera"], _cmpCamera.mtxWorld.translation.toArray(RenderWebGLComponentAmbientOcclusion.#dataCamera));
 
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentAmbientOcclusion.fbo);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentAmbientOcclusion.fboOut);
       RenderWebGL.setBlendMode(BLEND.SUBTRACTIVE);
       crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
