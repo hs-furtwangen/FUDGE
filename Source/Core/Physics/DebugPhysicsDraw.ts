@@ -205,7 +205,7 @@ namespace FudgeCore {
       this.oimoDebugDraw = new OIMO.DebugDraw();
       this.oimoDebugDraw.wireframe = true; //Triangle Rendering is handled by FUDGE so, only the physics lines/points need to be rendered, although triangle is still implemented
 
-      this.gl = RenderWebGL.crc3;
+      this.gl = RenderWebGL.getRenderingContext();
       this.initializeOverride();
       this.shader = new PhysicsDebugShader(this.gl);
       this.shader.compile(this.vertexShaderSource(), this.fragmentShaderSource());

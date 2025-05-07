@@ -749,6 +749,8 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
     namespace ParticleData {
         enum FUNCTION {
             ADDITION = "addition",
@@ -1222,16 +1224,13 @@ declare namespace FudgeCore {
         static texPosition: WebGLTexture;
         static texNormal: WebGLTexture;
         static texDepthStencil: WebGLTexture;
-        protected static crc3: WebGL2RenderingContext;
+        private static crc3;
         /** The area of the offscreen-canvas in CSS pixels. */
         private static rectCanvas;
         /** The area on the offscreen-canvas to render to. */
         private static rectRender;
         private static fboScene;
         private static fboOut;
-        private static fboPick;
-        private static texPick;
-        private static texDepthPick;
         private static readonly attachmentsColorPositionNormal;
         private static readonly attachmentsColor;
         /**
@@ -1334,23 +1333,20 @@ declare namespace FudgeCore {
         static bindTexture(_shader: ShaderInterface, _texture: WebGLTexture, _unit: number, _uniform: string): void;
         static useNodeUniforms(_shader: ShaderInterface, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _id?: number): void;
         /**
-         * Used with a {@link Picker}-camera, this method renders one pixel with picking information
-         * for each pickable object in the line of sight and returns that as an unsorted array of {@link Pick}s.
-         * The function to render the objects into the pick buffer must be provided by the caller.
-         * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object.
-         * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
-         */
-        static pickFrom<T>(_from: readonly T[], _cmpCamera: ComponentCamera, _pick: (_from: readonly T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[];
-        /**
          * Draw a mesh buffer using the given infos and the complete projection matrix
         */
         static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
+        /**
+         * Used with a {@link Picker}-camera, this method renders one pixel with picking information
+         * for each node in the line of sight and return that as an unsorted {@link Pick}-array
+         */
+        static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * The render function for picking nodes.
          * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
          */
-        protected static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
+        protected static pickNodes(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws the given nodes using the given camera and the post process components attached to the same node as the camera
          * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
@@ -7732,6 +7728,7 @@ declare namespace FudgeCore {
         private static drawElementsLines;
         private static drawArrays;
         private static getMesh;
+        private static pickGizmos;
     }
 }
 declare namespace FudgeCore {
@@ -7761,11 +7758,6 @@ declare namespace FudgeCore {
          */
         static prepare(_branch: Node, _options?: RenderPrepareOptions, _recalculate?: boolean): void;
         static addLights(_cmpLights: readonly ComponentLight[]): void;
-        /**
-         * Used with a {@link Picker}-camera, this method renders one pixel with picking information
-         * for each node in the line of sight and return that as an unsorted {@link Pick}-array
-         */
-        static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[];
         /**
          * Draws the scene from the point of view of the given camera
          */

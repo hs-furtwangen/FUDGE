@@ -1,6 +1,7 @@
 ///<reference path="RenderBufferManager.ts"/>
 ///<reference path="RenderManagerCoat.ts"/>
 ///<reference path="RenderManagerNode.ts"/>
+///<reference path="RenderWebGLPicking.ts"/>
 ///<reference path="RenderWebGLComponentLight.ts"/>
 ///<reference path="RenderWebGLComponentFog.ts"/>
 ///<reference path="RenderWebGLComponentCamera.ts"/>
@@ -98,25 +99,21 @@ namespace FudgeCore {
    * Methods and attributes of this class should not be called directly, only through {@link Render}
    */
   export abstract class RenderWebGL extends EventTargetStatic {
+    // TODO: render attachments can't be static as different viewport might have different resolutions each viewport needs its own attachments
     public static texColor: WebGLTexture; // stores the color of each pixel rendered
     public static texPosition: WebGLTexture; // stores the position of each pixel in world space
     public static texNormal: WebGLTexture; // stores the normal of each pixel in world space
-    public static texDepthStencil: WebGLTexture; // stores the depth of each pixel, currently unused
+    public static texDepthStencil: WebGLTexture; // stores the depth of each pixel
 
-    protected static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
+    private static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
 
     /** The area of the offscreen-canvas in CSS pixels. */
     private static rectCanvas: Rectangle;
     /** The area on the offscreen-canvas to render to. */
     private static rectRender: Rectangle;
 
-    // TODO: render attachments can't be static as different viewport might have different resilutions each viewport needs its own attachments
     private static fboScene: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
     private static fboOut: WebGLFramebuffer; // used to render the final image to, usually "null" to render to the canvas default framebuffer. Used by XR to render to the XRWebGLLayer framebuffer.
-
-    private static fboPick: WebGLBuffer;
-    private static texPick: WebGLTexture;
-    private static texDepthPick: WebGLTexture;
 
     private static readonly attachmentsColorPositionNormal = [WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.COLOR_ATTACHMENT2] as const; // eslint-disable-line
     private static readonly attachmentsColor = [WebGL2RenderingContext.COLOR_ATTACHMENT0] as const; // eslint-disable-line
@@ -376,14 +373,11 @@ namespace FudgeCore {
 
       RenderWebGL.fboScene = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
       RenderWebGL.fboOut = null;
-      RenderWebGL.fboPick = RenderWebGL.assert(crc3.createFramebuffer());
 
       RenderWebGL.texColor = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texPosition = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texNormal = RenderWebGL.createTexture(WebGL2RenderingContext.LINEAR, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texDepthStencil = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-      RenderWebGL.texPick = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-      RenderWebGL.texDepthPick = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
@@ -391,15 +385,12 @@ namespace FudgeCore {
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
 
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick, 0);
-
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 
       RenderWebGLComponentAmbientOcclusion.initialize(RenderWebGL);
       RenderWebGLComponentBloom.initialize(RenderWebGL);
       RenderWebGLComponentOutline.initialize(RenderWebGL);
+      RenderWebGLPicking.initialize(RenderWebGL);
     }
 
     /**
@@ -473,81 +464,6 @@ namespace FudgeCore {
         RenderWebGL.crc3.uniform1i(uniform, _id);
     }
 
-    //#region Picking
-    /**
-     * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
-     * for each pickable object in the line of sight and returns that as an unsorted array of {@link Pick}s.
-     * The function to render the objects into the pick buffer must be provided by the caller.
-     * @param _pick The function which renders objects into the pick buffer. Returns a {@link Pick} for each rendered object. 
-     * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
-     */
-    public static pickFrom<T>(_from: readonly T[], _cmpCamera: ComponentCamera, _pick: (_from: readonly T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
-      const size: number = Math.ceil(Math.sqrt(_from.length));
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-
-      // adjust pick buffer size
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
-      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null); // could use RBGA32F in the future e.g. WebGPU
-      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
-      crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
-
-      RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
-
-      // buffer size into pick shaders
-      ShaderPick.useProgram();
-      crc3.uniform2fv(ShaderPick.uniforms["u_vctSize"], [size, size]);
-
-      ShaderPickTextured.useProgram();
-      crc3.uniform2fv(ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
-
-      // render picks into pick buffer
-      RenderWebGL.setBlendMode(BLEND.OPAQUE);
-      let picks: Pick[] = _pick(_from, _cmpCamera);
-      RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
-
-      // get/filter picks
-      // evaluate texture by reading pixels and extract, convert and store the information about each mesh hit
-      let data: Int32Array = new Int32Array(size * size * 4);
-      Render.crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
-
-      let picked: Pick[] = [];
-      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
-      for (let i: number = 0; i < picks.length; i++) {
-        let zBuffer: number = data[4 * i + 0] + data[4 * i + 1] / 256;
-        if (zBuffer == 0) // discard misses 
-          continue;
-        let pick: Pick = picks[i];
-        pick.zBuffer = convertInt32toFloat32(data, 4 * i + 0) * 2 - 1;
-        pick.color = convertInt32toColor(data, 4 * i + 1);
-        pick.textureUV = Recycler.reuse(Vector2);
-        pick.textureUV.set(convertInt32toFloat32(data, 4 * i + 2), convertInt32toFloat32(data, 4 * i + 3));
-        pick.mtxViewToWorld = mtxViewToWorld;
-
-        picked.push(pick);
-      }
-
-      RenderWebGL.resetFramebuffer();
-
-      return picked;
-
-      function convertInt32toFloat32(_int32Array: Int32Array, _index: number): number {
-        let buffer: ArrayBuffer = new ArrayBuffer(4);
-        let view: DataView = new DataView(buffer);
-        view.setInt32(0, _int32Array[_index]);
-        return view.getFloat32(0);
-      }
-
-      function convertInt32toColor(_int32Array: Int32Array, _index: number): Color {
-        let buffer: ArrayBuffer = new ArrayBuffer(4);
-        let view: DataView = new DataView(buffer);
-        view.setInt32(0, _int32Array[_index]);
-        let color: Color = Color.CSS(`rgb(${view.getUint8(0)}, ${view.getUint8(1)}, ${view.getUint8(2)})`, view.getUint8(3) / 255);
-        return color;
-      }
-    }
-
     /**
      * Draw a mesh buffer using the given infos and the complete projection matrix
     */
@@ -585,11 +501,19 @@ namespace FudgeCore {
     }
 
     /**
+     * Used with a {@link Picker}-camera, this method renders one pixel with picking information 
+     * for each node in the line of sight and return that as an unsorted {@link Pick}-array
+     */
+    public static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
+      return RenderWebGLPicking.pickFrom(_nodes, _cmpCamera, RenderWebGL.pickNodes);
+    }
+
+    /**
      * The render function for picking nodes. 
      * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,  
      * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
      */
-    protected static pick(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[] {
+    protected static pickNodes(_nodes: readonly Node[], _cmpCamera: ComponentCamera): Pick[] {
       let picks: Pick[] = [];
 
       for (const node of _nodes) {
@@ -615,7 +539,6 @@ namespace FudgeCore {
 
       return picks;
     }
-    //#endregion
 
     /**
      * Draws the given nodes using the given camera and the post process components attached to the same node as the camera

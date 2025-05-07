@@ -141,31 +141,7 @@ namespace FudgeCore {
      * Picks all gizmos in the line of sight and returns an unsorted array of {@link Pick}s each associated with the gizmo the pick ray hit.
      */
     public static pick(_gizmos: readonly Gizmos[], _cmpCamera: ComponentCamera): Pick[] {
-      return RenderWebGL.pickFrom(_gizmos, _cmpCamera, pick);
-
-      function pick(_gizmos: readonly Gizmo[], _cmpCamera: ComponentCamera): Pick[] {
-        const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-        crc3.uniformMatrix3fv(ShaderPickTextured.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().getArray()); // only needed for textured pick shader, but gizmos have no pivot
-
-        Gizmos.#camera = _cmpCamera;
-        Gizmos.posIcons.clear();
-
-        let picks: Pick[] = [];
-        for (let gizmo of _gizmos) {
-          if (!gizmo.drawGizmos)
-            continue;
-
-          Gizmos.pickId = picks.length;
-          gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
-          let pick: Pick = new Pick(gizmo.node);
-          pick.gizmo = gizmo;
-          picks.push(pick);
-        }
-
-        Gizmos.pickId = null;
-
-        return picks;
-      }
+      return RenderWebGLPicking.pickFrom(_gizmos, _cmpCamera, Gizmos.pickGizmos);
     }
 
     /**
@@ -493,6 +469,30 @@ namespace FudgeCore {
       Project.deregister(mesh);
       Gizmos.#meshes[key] = mesh;
       return mesh;
+    }
+
+    private static pickGizmos(_gizmos: readonly Gizmo[], _cmpCamera: ComponentCamera): Pick[] {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      crc3.uniformMatrix3fv(ShaderPickTextured.uniforms["u_mtxPivot"], false, Matrix3x3.IDENTITY().getArray()); // only needed for textured pick shader, but gizmos have no pivot
+
+      Gizmos.#camera = _cmpCamera;
+      Gizmos.posIcons.clear();
+
+      let picks: Pick[] = [];
+      for (let gizmo of _gizmos) {
+        if (!gizmo.drawGizmos)
+          continue;
+
+        Gizmos.pickId = picks.length;
+        gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
+        let pick: Pick = new Pick(gizmo.node);
+        pick.gizmo = gizmo;
+        picks.push(pick);
+      }
+
+      Gizmos.pickId = null;
+
+      return picks;
     }
   }
 }
