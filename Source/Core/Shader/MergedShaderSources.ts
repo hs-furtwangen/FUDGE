@@ -567,7 +567,7 @@ precision mediump float;
 precision highp int;
 
 uniform int u_id;
-uniform vec2 u_vctSize;
+uniform int u_size;
 uniform vec4 u_vctColor;
 out ivec4 vctFrag;
 
@@ -579,7 +579,7 @@ out ivec4 vctFrag;
 #endif
 
 void main() {
-  int pixel = int(trunc(gl_FragCoord.x) + u_vctSize.x * trunc(gl_FragCoord.y));
+  int pixel = int(gl_FragCoord.x) + u_size * int(gl_FragCoord.y);
 
   if (pixel != u_id)
     discard;

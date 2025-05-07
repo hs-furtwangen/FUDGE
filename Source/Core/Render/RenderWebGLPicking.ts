@@ -6,9 +6,13 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2025
    */
   export class RenderWebGLPicking {
-    private static fboPick: WebGLBuffer;
-    private static texPick: WebGLTexture;
-    private static texDepthPick: WebGLTexture;
+    public static fboPick: WebGLBuffer;
+    public static texPick: WebGLTexture;
+    public static texDepth: WebGLTexture;
+
+    static #sizeMax: number; // the dimension of the square pick texture
+    static #data: Int32Array;
+    static #dataClearColor: number[] = [0, 0, 0, 0];
 
     /** 
      * Initialize framebuffers and render attachments.
@@ -18,11 +22,13 @@ namespace FudgeCore {
 
       RenderWebGLPicking.fboPick = _renderWebGL.assert(crc3.createFramebuffer());
       RenderWebGLPicking.texPick = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-      RenderWebGLPicking.texDepthPick = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+      RenderWebGLPicking.texDepth = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLPicking.fboPick);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texPick, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texDepthPick, 0);
+      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texDepth, 0);
+
+      RenderWebGLPicking.resize(_renderWebGL, 10); // initial size
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
     }
@@ -35,38 +41,41 @@ namespace FudgeCore {
      * **MUST** use {@link ShaderPick} or {@link ShaderPickTextured} to render objects.
      */
     public static pickFrom<T>(_from: readonly T[], _cmpCamera: ComponentCamera, _pick: (_from: readonly T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[] { // TODO: see if third parameter _world?: Matrix4x4 would be usefull
-      const size: number = Math.ceil(Math.sqrt(_from.length));
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      // adjust pick buffer size
+      // adjust buffer size
+      const size: number = Math.ceil(Math.sqrt(_from.length));
+      if (size > RenderWebGLPicking.#sizeMax)
+        RenderWebGLPicking.resize(RenderWebGL, size);
+
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLPicking.fboPick);
-      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texPick);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null); // could use RBGA32F in the future e.g. WebGPU
-      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texDepthPick);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
-      crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
+      crc3.viewport(0, 0, size, size);
+
+      // clear buffer
+      crc3.clearBufferiv(WebGL2RenderingContext.COLOR, 0, RenderWebGLPicking.#dataClearColor);
+      crc3.clearBufferfi(WebGL2RenderingContext.DEPTH_STENCIL, 0, 1, 0);
 
       RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
 
       // buffer size into pick shaders
       ShaderPick.useProgram();
-      crc3.uniform2fv(ShaderPick.uniforms["u_vctSize"], [size, size]);
+      crc3.uniform1i(ShaderPick.uniforms["u_size"], size);
 
       ShaderPickTextured.useProgram();
-      crc3.uniform2fv(ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
+      crc3.uniform1i(ShaderPickTextured.uniforms["u_size"], size);
 
       // render picks into pick buffer
       RenderWebGL.setBlendMode(BLEND.OPAQUE);
-      let picks: Pick[] = _pick(_from, _cmpCamera);
+      const picks: Pick[] = _pick(_from, _cmpCamera);
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
 
       // get/filter picks
       // evaluate texture by reading pixels and extract, convert and store the information about each mesh hit
-      let data: Int32Array = new Int32Array(size * size * 4);
+      const data: Int32Array = RenderWebGLPicking.#data;
       crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
 
-      let picked: Pick[] = [];
-      let mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
+      const picked: Pick[] = [];
+      const mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
       for (let i: number = 0; i < picks.length; i++) {
         let zBuffer: number = data[4 * i + 0] + data[4 * i + 1] / 256;
         if (zBuffer == 0) // discard misses 
@@ -80,8 +89,12 @@ namespace FudgeCore {
 
         picked.push(pick);
       }
+      Recycler.store(mtxViewToWorld);
 
+      // reset
       RenderWebGL.resetFramebuffer();
+      const canvasRectangle: Rectangle = RenderWebGL.getCanvasRectangle();
+      crc3.viewport(0, 0, canvasRectangle.width, canvasRectangle.height);
 
       return picked;
     }
@@ -101,32 +114,15 @@ namespace FudgeCore {
       return color;
     }
 
-    // /** 
-    //  * Resize the render attachments.
-    //  */
-    // public static resize(_renderWebGL: typeof RenderWebGL, _width: number, _height: number): void {
-    //   const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
-    //   const canvasWidth: number = _width || 1;
-    //   const canvasHeight: number = _height || 1;
+    private static resize(_renderWebGL: typeof RenderWebGL, _size: number): void {
+      const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
 
-    //   crc3.activeTexture(crc3.TEXTURE0);
-
-    //   crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLComponentAmbientOcclusion.texOut);
-    //   crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
-
-    //   const nValues: number = canvasWidth * canvasHeight * 4;
-    //   const noiseData: Uint8Array = new Uint8Array(nValues);
-
-    //   for (let i: number = 0; i < nValues; i += 4) {
-    //     noiseData[i] = Math.floor(Math.random() * 256);
-    //     noiseData[i + 1] = Math.floor(Math.random() * 256);
-    //     noiseData[i + 2] = Math.floor(Math.random() * 256);
-    //     noiseData[i + 3] = Math.floor(Math.random() * 256);
-    //   }
-
-    //   crc3.bindTexture(crc3.TEXTURE_2D, RenderWebGLComponentAmbientOcclusion.texNoise);
-    //   crc3.texImage2D(crc3.TEXTURE_2D, 0, crc3.RGBA, canvasWidth, canvasHeight, 0, crc3.RGBA, crc3.UNSIGNED_BYTE, noiseData);
-    //   crc3.bindTexture(crc3.TEXTURE_2D, null);
-    // }
+      RenderWebGLPicking.#sizeMax = _size;
+      RenderWebGLPicking.#data = new Int32Array(_size * _size * 4);
+      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texPick);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, _size, _size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null); // could use RBGA32F in the future e.g. WebGPU
+      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texDepth);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, _size, _size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
+    }
   }
 }
