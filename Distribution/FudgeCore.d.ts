@@ -735,67 +735,14 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
-    abstract class RenderWebGLComponentFog {
-        #private;
-        static initialize(_renderWebGL: typeof RenderWebGL): void;
-        /**
-         * Buffer the fog parameters into the fog ubo.
-         */
-        static useRenderbuffer(_cmpFog: ComponentFog): void;
-    }
 }
 declare namespace FudgeCore {
-    abstract class RenderWebGLComponentCamera {
-        #private;
-        static initialize(_renderWebGL: typeof RenderWebGL): void;
-        /**
-         * Buffer the fog parameters into the fog ubo.
-         */
-        static useRenderbuffer(_cmpCamera: ComponentCamera): void;
-    }
 }
 declare namespace FudgeCore {
-    /**
-     * Handles the ambient occlusion post-processing effect.
-     */
-    class RenderWebGLComponentAmbientOcclusion {
-        #private;
-        static ssaoSupport: boolean;
-        static fboOut: WebGLFramebuffer;
-        static texOut: WebGLTexture;
-        static texNoise: WebGLTexture;
-        /** Initialize SSAO resources: shaders, noise texture, FBO attachments */
-        static initialize(_renderWebGL: typeof RenderWebGL): void;
-        /**
-         * Execute the ambient occlusion pass.
-         * @param _cmpCamera The camera component providing view parameters
-         * @param _cmpAmbientOcclusion The ambient occlusion component with settings
-         */
-        static draw(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void;
-        /** Adjust SSAO-related attachments on resize */
-        static resize(_renderWebGL: typeof RenderWebGL, _width: number, _height: number): void;
-    }
 }
 declare namespace FudgeCore {
-    /**
-     * Handles the ambient occlusion post-processing effect.
-     */
-    class RenderWebGLComponentBloom {
-        static ssaoSupport: boolean;
-        static fboOut: WebGLFramebuffer;
-        static texOut: WebGLTexture;
-        static fbos: WebGLFramebuffer[];
-        private static textures;
-        /** Initialize SSAO resources: shaders, noise texture, FBO attachments */
-        static initialize(_renderWebGL: typeof RenderWebGL): void;
-        /**
-         * Execute the ambient occlusion pass.
-         * @param _cmpBloom The camera component providing view parameters
-         */
-        static draw(_cmpBloom: ComponentBloom): void;
-        /** Adjust SSAO-related attachments on resize */
-        static resize(_renderWebGL: typeof RenderWebGL, _width: number, _height: number): void;
-    }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -1280,10 +1227,8 @@ declare namespace FudgeCore {
         private static rectCanvas;
         /** The area on the offscreen-canvas to render to. */
         private static rectRender;
-        private static fboMain;
-        private static fboPost;
-        private static fboTarget;
-        private static texDepthStencilOutline;
+        private static fboScene;
+        private static fboOut;
         private static fboPick;
         private static texPick;
         private static texDepthPick;
@@ -1397,6 +1342,10 @@ declare namespace FudgeCore {
          */
         static pickFrom<T>(_from: readonly T[], _cmpCamera: ComponentCamera, _pick: (_from: readonly T[], _cmpCamera: ComponentCamera) => Pick[]): Pick[];
         /**
+         * Draw a mesh buffer using the given infos and the complete projection matrix
+        */
+        static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
+        /**
          * The render function for picking nodes.
          * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,
          * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
@@ -1407,11 +1356,6 @@ declare namespace FudgeCore {
          * The opaque nodes are drawn first, then ssao is applied, then bloom is applied, then nodes alpha (sortForAlpha) are drawn.
          */
         protected static drawNodes(_nodesOpaque: Iterable<Node>, _nodesAlpha: Iterable<Node>, _cmpCamera: ComponentCamera): void;
-        protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void;
-        /**
-         * Draw a mesh buffer using the given infos and the complete projection matrix
-        */
-        protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
         private static drawParticles;
         private static faceCamera;
     }

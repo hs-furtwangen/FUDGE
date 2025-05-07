@@ -1,8 +1,9 @@
-///<reference path="RenderWebGL.ts"/>
-
 namespace FudgeCore {
+
   /**
-   * Handles the ambient occlusion post-processing effect.
+   * Handles the {@link ComponentAmbientOcclusion ambient occlusion} post-processing effect.
+   * @internal
+   * @authors Jonas Plotzky, HFU, 2025
    */
   export class RenderWebGLComponentAmbientOcclusion {
     public static ssaoSupport: boolean; // TODO:
@@ -13,7 +14,9 @@ namespace FudgeCore {
 
     static #dataCamera: Float32Array = new Float32Array(3);
 
-    /** Initialize SSAO resources: shaders, noise texture, FBO attachments */
+    /** 
+     * Initialize framebuffers and render attachments.
+     */
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
 
@@ -27,9 +30,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Execute the ambient occlusion pass.
-     * @param _cmpCamera The camera component providing view parameters
-     * @param _cmpAmbientOcclusion The ambient occlusion component with settings
+     * Draw the ambient occlusion effect.
      */
     public static draw(_cmpCamera: ComponentCamera, _cmpAmbientOcclusion: ComponentAmbientOcclusion): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
@@ -55,7 +56,9 @@ namespace FudgeCore {
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
     }
 
-    /** Adjust SSAO-related attachments on resize */
+    /** 
+     * Resize the render attachments.
+     */
     public static resize(_renderWebGL: typeof RenderWebGL, _width: number, _height: number): void {
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
       const canvasWidth: number = _width || 1;

@@ -1,8 +1,17 @@
 namespace FudgeCore {
+
+  /**
+   * Manages {@link ComponentCamera} data to be transmitted during rendering.
+   * @internal
+   * @authors Jonas Plotzky, HFU, 2025
+   */
   export abstract class RenderWebGLComponentCamera {
     static #buffer: WebGLBuffer;
     static #data: Float32Array;
 
+    /**
+     * Initialize the camera uniform buffer.
+     */
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
 
@@ -15,7 +24,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Buffer the fog parameters into the fog ubo.
+     * Buffer the camera data to the uniform buffer.
      */
     public static useRenderbuffer(_cmpCamera: ComponentCamera): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();

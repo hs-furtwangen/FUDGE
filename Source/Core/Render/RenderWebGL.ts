@@ -6,6 +6,7 @@
 ///<reference path="RenderWebGLComponentCamera.ts"/>
 ///<reference path="RenderWebGLComponentAmbientOcclusion.ts"/>
 ///<reference path="RenderWebGLComponentBloom.ts"/>
+///<reference path="RenderWebGLComponentOutline.ts"/>
 
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
@@ -109,13 +110,9 @@ namespace FudgeCore {
     /** The area on the offscreen-canvas to render to. */
     private static rectRender: Rectangle;
 
-    // TODO: move to render injectors
     // TODO: render attachments can't be static as different viewport might have different resilutions each viewport needs its own attachments
-    private static fboMain: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
-    private static fboPost: WebGLFramebuffer; // used for post-processing effects, attachments get swapped for different effects
-    private static fboTarget: WebGLFramebuffer; // used to render the final image to, usually "null" to render to the canvas default framebuffer. Used by XR to render to the XRWebGLLayer framebuffer.
-
-    private static texDepthStencilOutline: WebGLTexture;
+    private static fboScene: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
+    private static fboOut: WebGLFramebuffer; // used to render the final image to, usually "null" to render to the canvas default framebuffer. Used by XR to render to the XRWebGLLayer framebuffer.
 
     private static fboPick: WebGLBuffer;
     private static texPick: WebGLTexture;
@@ -269,14 +266,14 @@ namespace FudgeCore {
      * Used by XR to render to the XRWebGLLayer framebuffer.
      */
     public static setFramebufferTarget(_buffer: WebGLFramebuffer): void {
-      RenderWebGL.fboTarget = _buffer;
+      RenderWebGL.fboOut = _buffer;
     }
 
     /**
      * Reset the framebuffer to the main color buffer.
      */
     public static resetFramebuffer(): void {
-      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
     }
 
     /**
@@ -360,7 +357,7 @@ namespace FudgeCore {
     public static pointRenderToWorld(_render: Vector2): Vector3 {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       const data: Float32Array = new Float32Array(4);
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.readBuffer(WebGL2RenderingContext.COLOR_ATTACHMENT1);
       crc3.readPixels(_render.x, RenderWebGL.rectRender.height - _render.y, 1, 1, crc3.RGBA, crc3.FLOAT, data);
       crc3.readBuffer(WebGL2RenderingContext.COLOR_ATTACHMENT0);
@@ -377,9 +374,8 @@ namespace FudgeCore {
 
       crc3.getExtension("EXT_color_buffer_float"); // TODO: disable ssao if not supported
 
-      RenderWebGL.fboMain = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
-      RenderWebGL.fboPost = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
-      RenderWebGL.fboTarget = null;
+      RenderWebGL.fboScene = RenderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
+      RenderWebGL.fboOut = null;
       RenderWebGL.fboPick = RenderWebGL.assert(crc3.createFramebuffer());
 
       RenderWebGL.texColor = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
@@ -389,9 +385,7 @@ namespace FudgeCore {
       RenderWebGL.texPick = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGL.texDepthPick = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
 
-      RenderWebGL.texDepthStencilOutline = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
       crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
@@ -405,6 +399,7 @@ namespace FudgeCore {
 
       RenderWebGLComponentAmbientOcclusion.initialize(RenderWebGL);
       RenderWebGLComponentBloom.initialize(RenderWebGL);
+      RenderWebGLComponentOutline.initialize(RenderWebGL);
     }
 
     /**
@@ -432,13 +427,11 @@ namespace FudgeCore {
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
 
-      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
-
       crc3.bindTexture(crc3.TEXTURE_2D, null);
 
       RenderWebGLComponentAmbientOcclusion.resize(RenderWebGL, canvasWidth, canvasHeight);
       RenderWebGLComponentBloom.resize(RenderWebGL, canvasWidth, canvasHeight);
+      RenderWebGLComponentOutline.resize(RenderWebGL, canvasWidth, canvasHeight);
     }
 
     public static createTexture(_filter: number, _wrap: number): WebGLTexture {
@@ -556,6 +549,42 @@ namespace FudgeCore {
     }
 
     /**
+     * Draw a mesh buffer using the given infos and the complete projection matrix
+    */
+    public static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
+      let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
+      let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
+      let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
+      if (cmpParticleSystem?.isActive) {
+        RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
+        return;
+      }
+
+      let cmpText: ComponentText = _node.getComponent(ComponentText);
+      let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
+
+      const material: Material = cmpMaterial.material;
+      material.getShader().useProgram();
+      material.coat.useRenderData();
+
+      if (cmpMesh.skeleton?.isActive)
+        cmpMesh.skeleton.useRenderBuffer();
+
+      let mtxWorldOverride: Matrix4x4;
+
+      if (cmpText?.isActive)
+        mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
+
+      if (cmpFaceCamera?.isActive)
+        mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
+
+      _node.useRenderData(mtxWorldOverride);
+
+      const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
+      RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
+    }
+
+    /**
      * The render function for picking nodes. 
      * A cameraprojection with extremely narrow focus is used, so each pixel of the buffer would hold the same information from the node,  
      * but the fragment shader renders only 1 pixel for each node into the render buffer, 1st node to 1st pixel, 2nd node to second pixel etc.
@@ -607,7 +636,7 @@ namespace FudgeCore {
       // opaque pass 
       // TODO: think about disabling blending for all opaque objects, this might improve performance 
       // as otherwise the 3 color attachments (color, position and normals) all need to be blended
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.drawBuffers(cmpAmbientOcclusion?.isActive ? RenderWebGL.attachmentsColorPositionNormal : RenderWebGL.attachmentsColor);
 
       crc3.disable(WebGL2RenderingContext.BLEND);
@@ -620,7 +649,7 @@ namespace FudgeCore {
         RenderWebGLComponentAmbientOcclusion.draw(_cmpCamera, cmpAmbientOcclusion);
 
       // transparent pass TODO: think about disabling depth write for all transparent objects -> this might make depth mask option in component particle system obsolete
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.drawBuffers(RenderWebGL.attachmentsColor);
 
       // crc3.depthMask(false);
@@ -633,84 +662,12 @@ namespace FudgeCore {
         RenderWebGLComponentBloom.draw(cmpBloom);
 
       if (cmpOutline?.isActive && cmpOutline.selection)
-        RenderWebGL.drawOutline(cmpOutline.selection, _cmpCamera, cmpOutline);
+        RenderWebGLComponentOutline.draw(cmpOutline.selection, _cmpCamera, cmpOutline);
 
       // copy framebuffer to canvas
-      crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
-      crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboTarget);
+      crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboScene);
+      crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboOut);
       crc3.blitFramebuffer(0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, 0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
-    }
-
-    protected static drawOutline(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera, _cmpOutline: ComponentOutline): void { // TODO: move to cmp outline render injector
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-
-      crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);
-
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline, 0);
-
-      RenderWebGL.clear();
-
-      crc3.disable(WebGL2RenderingContext.BLEND);
-      for (let selected of _nodes)
-        for (const node of selected) {
-          if (node.getComponent(ComponentMesh)?.isActive && node.getComponent(ComponentMaterial)?.isActive)
-            RenderWebGL.drawNode(node, _cmpCamera);
-        }
-      crc3.enable(WebGL2RenderingContext.BLEND);
-
-      ShaderOutline.useProgram();
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-
-      crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-      crc3.drawBuffers([WebGL2RenderingContext.COLOR_ATTACHMENT0]);
-      RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencilOutline, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
-      RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencil, WebGL2RenderingContext.TEXTURE1, "u_texDepthScene");
-
-
-      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.get());
-      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
-
-      crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(RenderWebGL.rectCanvas.width), 1 / Math.round(RenderWebGL.rectCanvas.height)); // half texel size
-
-      crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
-    }
-
-    /**
-     * Draw a mesh buffer using the given infos and the complete projection matrix
-    */
-    protected static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
-      let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
-      let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
-      let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
-      if (cmpParticleSystem?.isActive) {
-        RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
-        return;
-      }
-
-      let cmpText: ComponentText = _node.getComponent(ComponentText);
-      let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
-
-      const material: Material = cmpMaterial.material;
-      material.getShader().useProgram();
-      material.coat.useRenderData();
-
-      if (cmpMesh.skeleton?.isActive)
-        cmpMesh.skeleton.useRenderBuffer();
-
-      let mtxWorldOverride: Matrix4x4;
-
-      if (cmpText?.isActive)
-        mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
-
-      if (cmpFaceCamera?.isActive)
-        mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
-
-      _node.useRenderData(mtxWorldOverride);
-
-      const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
-      RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
     }
 
     private static drawParticles(_node: Node, _cmpParticleSystem: ComponentParticleSystem, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial): void {

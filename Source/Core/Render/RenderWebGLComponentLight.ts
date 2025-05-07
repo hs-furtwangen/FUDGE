@@ -13,7 +13,10 @@ namespace FudgeCore {
     static #dataPoint: Float32Array;
     static #dataSpot: Float32Array;
     static #dataDirectional: Float32Array;
-  
+
+    /**
+     * Initialize the light uniform buffer.
+     */
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
       const MAX_LIGHTS_DIRECTIONAL: number = 15;
       const MAX_LIGHTS_POINT: number = 100;
@@ -23,7 +26,7 @@ namespace FudgeCore {
       const COLOR_FLOATS: number = 4;
       const MATRIX_FLOATS: number = 16;
       const LIGHT_FLOATS: number = COLOR_FLOATS + MATRIX_FLOATS + MATRIX_FLOATS;
-      
+
       RenderWebGLComponentLight.#data = new Float32Array(HEADER_UINTS + COLOR_FLOATS + (MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * LIGHT_FLOATS);
 
       RenderWebGLComponentLight.#dataHeader = new Uint32Array(RenderWebGLComponentLight.#data.buffer, 0, HEADER_UINTS);
@@ -40,13 +43,13 @@ namespace FudgeCore {
       crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGLComponentLight.#buffer);
     }
 
-    /** @internal Replaces the decorated method with the manager’s implementation of the same name. */
+    /** Replaces the decorated method with the manager’s implementation of the same name. */
     public static decorate<M extends (this: typeof ComponentLight, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof ComponentLight, M>): M {
       return Reflect.get(this, _context.name);
     }
 
     /**
-     * Buffer the data from the lights in the scenegraph into the lights buffer.
+     * Buffer the light data to the uniform buffer.
      */
     public static updateRenderbuffer(this: typeof ComponentLight, _lights: MapLightTypeToLightList): void {
       // fill the buffer with the ambient light color
