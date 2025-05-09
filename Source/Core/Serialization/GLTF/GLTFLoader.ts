@@ -287,8 +287,8 @@ namespace FudgeCore {
      * Loads a scene from the glTF file into the given {@link Graph}.
      * @internal
      */
-    public async getGraph<T extends Node>(_iScene: number | string, _graph: T): Promise<T>;
-    public async getGraph(_iScene: number | string = this.#gltf.scene, _graph?: Node): Promise<Node> {
+    public async getGraph<T extends Node>(_iScene: number | string, _graphOut: T): Promise<T>;
+    public async getGraph(_iScene: number | string = this.#gltf.scene, _graphOut?: Node): Promise<Node> {
       _iScene = this.getIndex(_iScene, this.#gltf.scenes);
 
       if (_iScene == -1)
@@ -296,7 +296,7 @@ namespace FudgeCore {
 
       const id: string = `${GraphGLTF.name}|${_iScene}`;
 
-      if (!_graph && this.#resources[id])
+      if (!_graphOut && this.#resources[id])
         return <Node><unknown>this.#resources[id];
 
       let cache: GLTFLoadingCache = {
@@ -305,13 +305,13 @@ namespace FudgeCore {
       };
 
       const gltfScene: GLTF.Scene = this.#gltf.scenes[_iScene];
-      const graph: Node = _graph ?? new GraphGLTF();
+      const graph: Node = _graphOut ?? new GraphGLTF();
       graph.name = gltfScene.name;
       if (graph instanceof GraphGLTF)
         graph.url = this.#url;
-      if (_graph) {
-        _graph.removeAllChildren();
-        _graph.removeComponents(ComponentSkeleton);
+      if (_graphOut) {
+        _graphOut.removeAllChildren();
+        _graphOut.removeComponents(ComponentSkeleton);
       }
 
       for (const iNode of gltfScene.nodes)
@@ -326,7 +326,7 @@ namespace FudgeCore {
       for (const skeleton of cache.skeletons)
         graph.addComponent(skeleton);
 
-      if (!_graph)
+      if (!_graphOut)
         this.#resources[id] = <GraphGLTF>graph;
 
       return graph;
@@ -344,8 +344,8 @@ namespace FudgeCore {
      * Loads an animation from the glTF file into the given {@link Animation}.
      * @internal
      */
-    public async getAnimation<T extends Animation>(_iAnimation: number | string, _animation: T): Promise<T>;
-    public async getAnimation(_iAnimation: number | string, _animation?: Animation): Promise<Animation> {
+    public async getAnimation<T extends Animation>(_iAnimation: number | string, _animationOut: T): Promise<T>;
+    public async getAnimation(_iAnimation: number | string, _animationOut?: Animation): Promise<Animation> {
       _iAnimation = this.getIndex(_iAnimation, this.#gltf.animations);
 
       if (_iAnimation == -1)
@@ -353,7 +353,7 @@ namespace FudgeCore {
 
       const id: string = `${Animation.name}|${_iAnimation}`;
 
-      if (!_animation && this.#resources[id])
+      if (!_animationOut && this.#resources[id])
         return <Animation>this.#resources[id];
 
       const gltfAnimation: GLTF.Animation = this.#gltf.animations?.[_iAnimation];
@@ -386,14 +386,14 @@ namespace FudgeCore {
           <General>await this.getAnimationSequence(gltfAnimation.samplers[gltfChannel.sampler], gltfChannel.target.path);
       }
 
-      const animation: Animation = _animation ?? new AnimationGLTF();
+      const animation: Animation = _animationOut ?? new AnimationGLTF();
       animation.animationStructure = animationStructure;
       animation.clearCache();
       animation.name = gltfAnimation.name;
       animation.calculateTotalTime();
       if (animation instanceof AnimationGLTF)
         animation.url = this.#url;
-      if (!_animation) {
+      if (!_animationOut) {
         Project.deregister(animation);
         this.#resources[id] = animation;
       }
@@ -410,11 +410,11 @@ namespace FudgeCore {
      */
     public async getMesh(_iMesh: number, _iPrimitive?: number): Promise<Mesh>;
     /**
-     * Loads a mesh from the glTF file into the given {@link Mesh}
+     * Loads a mesh from the glTF file into the given {@link Mesh}.
      * @internal
     */
-    public async getMesh<T extends Mesh>(_iMesh: number | string, _iPrimitive: number, _mesh: T): Promise<T>;
-    public async getMesh(_iMesh: number | string, _iPrimitive: number = 0, _mesh?: Mesh): Promise<Mesh> {
+    public async getMesh<T extends Mesh>(_iMesh: number | string, _iPrimitive: number, _meshOut: T): Promise<T>;
+    public async getMesh(_iMesh: number | string, _iPrimitive: number = 0, _meshOut?: Mesh): Promise<Mesh> {
       _iMesh = this.getIndex(_iMesh, this.#gltf.meshes);
 
       if (_iMesh == -1)
@@ -422,7 +422,7 @@ namespace FudgeCore {
 
       const id: string = `${MeshGLTF.name}|${_iMesh}|${_iPrimitive}`;
 
-      if (!_mesh && this.#resources[id])
+      if (!_meshOut && this.#resources[id])
         return <MeshGLTF>this.#resources[id];
 
       const gltfMesh: GLTF.Mesh = this.#gltf.meshes[_iMesh];
@@ -466,6 +466,7 @@ namespace FudgeCore {
 
       if (gltfPrimitive.attributes.NORMAL != undefined)
         normals = await this.getFloat32Array(gltfPrimitive.attributes.NORMAL);
+      // TODO: calculate flat normals if not provided, fudge will calculate smooth normals if not provided
 
       if (gltfPrimitive.attributes.TANGENT != undefined)
         tangents = await this.getFloat32Array(gltfPrimitive.attributes.TANGENT);
@@ -483,72 +484,73 @@ namespace FudgeCore {
         weights = await this.getFloat32Array(gltfPrimitive.attributes.WEIGHTS_0);
       }
 
-      const mesh: Mesh = _mesh ?? new MeshGLTF();
+      const mesh: Mesh = _meshOut ?? new MeshGLTF();
       mesh.name = gltfMesh.name;
       if (mesh instanceof MeshGLTF) {
         mesh.iPrimitive = _iPrimitive;
         mesh.url = this.#url;
       }
-      if (_mesh) {
-        _mesh.clear();
-        _mesh.faces = [];
-        _mesh.vertices = new Vertices();
+      if (_meshOut) {
+        _meshOut.clear();
+        _meshOut.faces = [];
+        _meshOut.vertices = new Vertices();
       }
 
+      if (!normals || !tangents) {
+        // Create mesh vertices and faces so that normals and tangents can be calculated if either is missing.
+        for (let iVector2: number = 0, iVector3: number = 0, iVector4: number = 0; iVector3 < positions?.length; iVector2 += 2, iVector3 += 3, iVector4 += 4) {
+          mesh.vertices.push(
+            new Vertex(
+              new Vector3(positions[iVector3 + 0], positions[iVector3 + 1], positions[iVector3 + 2]),
+              textureUVs ?
+                new Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]) :
+                undefined,
+              normals ?
+                new Vector3(normals[iVector3 + 0], normals[iVector3 + 1], normals[iVector3 + 2]) :
+                undefined,
+              tangents ?
+                new Vector4(tangents[iVector4 + 0], tangents[iVector4 + 1], tangents[iVector4 + 2], tangents[iVector4 + 3]) :
+                undefined,
+              colors ?
+                new Color(colors[iVector4 + 0], colors[iVector4 + 1], colors[iVector4 + 2], colors[iVector4 + 3]) :
+                undefined,
+              bones && weights ?
+                [
+                  { index: bones[iVector4 + 0], weight: weights[iVector4 + 0] },
+                  { index: bones[iVector4 + 1], weight: weights[iVector4 + 1] },
+                  { index: bones[iVector4 + 2], weight: weights[iVector4 + 2] },
+                  { index: bones[iVector4 + 3], weight: weights[iVector4 + 3] }
+                ] :
+                undefined
+            )
+          );
+        }
 
-      // Create mesh vertices and faces so that normals and tangents can be calculated if missing. If they are not missing this could be omitted.
-      for (let iVector2: number = 0, iVector3: number = 0, iVector4: number = 0; iVector3 < positions?.length; iVector2 += 2, iVector3 += 3, iVector4 += 4) {
-        mesh.vertices.push(
-          new Vertex(
-            new Vector3(positions[iVector3 + 0], positions[iVector3 + 1], positions[iVector3 + 2]),
-            textureUVs ?
-              new Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]) :
-              undefined,
-            normals ?
-              new Vector3(normals[iVector3 + 0], normals[iVector3 + 1], normals[iVector3 + 2]) :
-              undefined,
-            tangents ?
-              new Vector4(tangents[iVector4 + 0], tangents[iVector4 + 1], tangents[iVector4 + 2], tangents[iVector4 + 3]) :
-              undefined,
-            colors ?
-              new Color(colors[iVector4 + 0], colors[iVector4 + 1], colors[iVector4 + 2], colors[iVector4 + 3]) :
-              undefined,
-            bones && weights ?
-              [
-                { index: bones[iVector4 + 0], weight: weights[iVector4 + 0] },
-                { index: bones[iVector4 + 1], weight: weights[iVector4 + 1] },
-                { index: bones[iVector4 + 2], weight: weights[iVector4 + 2] },
-                { index: bones[iVector4 + 3], weight: weights[iVector4 + 3] }
-              ] :
-              undefined
-          )
-        );
-      }
-
-      for (let iFaceVertexIndex: number = 0; iFaceVertexIndex < indices?.length; iFaceVertexIndex += 3) {
-        try {
-          mesh.faces.push(new Face(
-            mesh.vertices,
-            indices[iFaceVertexIndex + 0],
-            indices[iFaceVertexIndex + 1],
-            indices[iFaceVertexIndex + 2]
-          ));
-        } catch (_e: unknown) {
-          Debug.fudge("Face excluded", (<Error>_e).message);
+        for (let iFaceVertexIndex: number = 0; iFaceVertexIndex < indices?.length; iFaceVertexIndex += 3) {
+          try {
+            mesh.faces.push(new Face(
+              mesh.vertices,
+              indices[iFaceVertexIndex + 0],
+              indices[iFaceVertexIndex + 1],
+              indices[iFaceVertexIndex + 2]
+            ));
+          } catch (_e: unknown) {
+            Debug.fudge("Face excluded", (<Error>_e).message);
+          }
         }
       }
 
+      const renderMesh: RenderMesh = mesh.renderMesh;
+      renderMesh.positions = positions;
+      renderMesh.indices = indices;
+      renderMesh.normals = normals;
+      renderMesh.tangents = tangents;
+      renderMesh.textureUVs = textureUVs;
+      renderMesh.colors = colors;
+      renderMesh.bones = bones;
+      renderMesh.weights = weights;
 
-      mesh.renderMesh.positions = positions;
-      mesh.renderMesh.indices = indices;
-      mesh.renderMesh.normals = normals;
-      mesh.renderMesh.tangents = tangents;
-      mesh.renderMesh.textureUVs = textureUVs;
-      mesh.renderMesh.colors = colors;
-      mesh.renderMesh.bones = bones;
-      mesh.renderMesh.weights = weights;
-
-      if (!_mesh) {
+      if (!_meshOut) {
         Project.deregister(mesh);
         // mesh.idResource = id;
         this.#resources[id] = mesh;
@@ -574,8 +576,8 @@ namespace FudgeCore {
      * Loads a material from the glTF file into the given {@link Material}.
      * @internal
      */
-    public async getMaterial<T extends Material>(_iMaterial: number | string, _material?: T, _skin?: boolean, _flat?: boolean): Promise<T>;
-    public async getMaterial(_iMaterial: number | string, _material?: Material, _skin: boolean = false, _flat: boolean = false): Promise<Material> {
+    public async getMaterial<T extends Material>(_iMaterial: number | string, _materialOut?: T, _skin?: boolean): Promise<T>;
+    public async getMaterial(_iMaterial: number | string, _materialOut?: Material, _skin: boolean = false): Promise<Material> {
       _iMaterial = this.getIndex(_iMaterial, this.#gltf.materials);
 
       if (_iMaterial == -1)
@@ -583,7 +585,7 @@ namespace FudgeCore {
 
       const id: string = `${Material.name}|${_iMaterial}`;
 
-      if (this.#resources[id] && !_material)
+      if (this.#resources[id] && !_materialOut)
         return <Material>this.#resources[id];
 
       // TODO: in the future create an appropriate shader based on the glTF material properties
@@ -626,11 +628,7 @@ namespace FudgeCore {
         coat.alphaClip = gltfMaterial.alphaCutoff;
 
       let shader: typeof Shader;
-      if (_flat) { // TODO: make flat a flag in the material so that we can have flat mesh with phong shading gradients
-        shader = gltfBaseColorTexture ?
-          (_skin ? ShaderFlatTexturedSkin : ShaderFlatTextured) :
-          (_skin ? ShaderFlatSkin : ShaderFlat);
-      } else if (isLit) {
+      if (isLit) {
         shader = gltfBaseColorTexture ?
           (_skin ? ShaderLitTexturedSkin : ShaderLitTextured) :
           (_skin ? ShaderLitSkin : ShaderLit);
@@ -642,7 +640,7 @@ namespace FudgeCore {
           (_skin ? ShaderPhongSkin : ShaderPhong);
       }
 
-      const material: Material = _material ?? new MaterialGLTF(gltfMaterial.name);
+      const material: Material = _materialOut ?? new MaterialGLTF(gltfMaterial.name);
       material.name = gltfMaterial.name;
       material.coat = coat;
 
@@ -651,7 +649,7 @@ namespace FudgeCore {
       if (material instanceof MaterialGLTF)
         material.url = this.#url;
 
-      if (!_material) {
+      if (!_materialOut) {
         Project.deregister(material);
         this.#resources[id] = material;
       }
@@ -798,8 +796,7 @@ namespace FudgeCore {
                 GLTFLoader.defaultSkinMaterial :
                 GLTFLoader.defaultMaterial);
             } else {
-              const isFlat: boolean = gltfMesh.primitives[iPrimitive].attributes.NORMAL == undefined;
-              cmpMaterial = new ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin, isFlat));
+              cmpMaterial = new ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin));
 
               // TODO: maybe this should be a fudge material property
               const gltfMaterial: GLTF.Material = this.#gltf.materials[iMaterial];

@@ -1009,6 +1009,87 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
+    class RenderWebGLPicking {
+        static #sizeMax;
+        static #data;
+        static #dataClearColor = [0, 0, 0, 0];
+        static initialize(_renderWebGL) {
+            const crc3 = _renderWebGL.getRenderingContext();
+            RenderWebGLPicking.fboPick = _renderWebGL.assert(crc3.createFramebuffer());
+            RenderWebGLPicking.texPick = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+            RenderWebGLPicking.texDepth = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLPicking.fboPick);
+            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texPick, 0);
+            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texDepth, 0);
+            RenderWebGLPicking.resize(_renderWebGL, 10);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+        }
+        static pickFrom(_from, _cmpCamera, _pick) {
+            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            const size = Math.ceil(Math.sqrt(_from.length));
+            if (size > RenderWebGLPicking.#sizeMax)
+                RenderWebGLPicking.resize(FudgeCore.RenderWebGL, size);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLPicking.fboPick);
+            crc3.viewport(0, 0, size, size);
+            crc3.clearBufferiv(WebGL2RenderingContext.COLOR, 0, RenderWebGLPicking.#dataClearColor);
+            crc3.clearBufferfi(WebGL2RenderingContext.DEPTH_STENCIL, 0, 1, 0);
+            FudgeCore.RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
+            FudgeCore.ShaderPick.useProgram();
+            crc3.uniform1i(FudgeCore.ShaderPick.uniforms["u_size"], size);
+            FudgeCore.ShaderPickTextured.useProgram();
+            crc3.uniform1i(FudgeCore.ShaderPickTextured.uniforms["u_size"], size);
+            FudgeCore.RenderWebGL.setBlendMode(FudgeCore.BLEND.OPAQUE);
+            const picks = _pick(_from, _cmpCamera);
+            FudgeCore.RenderWebGL.setBlendMode(FudgeCore.BLEND.TRANSPARENT);
+            const data = RenderWebGLPicking.#data;
+            crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
+            const picked = [];
+            const mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
+            for (let i = 0; i < picks.length; i++) {
+                let zBuffer = data[4 * i + 0] + data[4 * i + 1] / 256;
+                if (zBuffer == 0)
+                    continue;
+                let pick = picks[i];
+                pick.zBuffer = RenderWebGLPicking.convertInt32toFloat32(data, 4 * i + 0) * 2 - 1;
+                pick.color = RenderWebGLPicking.convertInt32toColor(data, 4 * i + 1);
+                pick.textureUV = FudgeCore.Recycler.reuse(FudgeCore.Vector2);
+                pick.textureUV.set(RenderWebGLPicking.convertInt32toFloat32(data, 4 * i + 2), RenderWebGLPicking.convertInt32toFloat32(data, 4 * i + 3));
+                pick.mtxViewToWorld = mtxViewToWorld;
+                picked.push(pick);
+            }
+            FudgeCore.Recycler.store(mtxViewToWorld);
+            FudgeCore.RenderWebGL.resetFramebuffer();
+            const canvasRectangle = FudgeCore.RenderWebGL.getCanvasRectangle();
+            crc3.viewport(0, 0, canvasRectangle.width, canvasRectangle.height);
+            return picked;
+        }
+        static convertInt32toFloat32(_int32Array, _index) {
+            let buffer = new ArrayBuffer(4);
+            let view = new DataView(buffer);
+            view.setInt32(0, _int32Array[_index]);
+            return view.getFloat32(0);
+        }
+        static convertInt32toColor(_int32Array, _index) {
+            let buffer = new ArrayBuffer(4);
+            let view = new DataView(buffer);
+            view.setInt32(0, _int32Array[_index]);
+            let color = FudgeCore.Color.CSS(`rgb(${view.getUint8(0)}, ${view.getUint8(1)}, ${view.getUint8(2)})`, view.getUint8(3) / 255);
+            return color;
+        }
+        static resize(_renderWebGL, _size) {
+            const crc3 = _renderWebGL.getRenderingContext();
+            RenderWebGLPicking.#sizeMax = _size;
+            RenderWebGLPicking.#data = new Int32Array(_size * _size * 4);
+            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texPick);
+            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, _size, _size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null);
+            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLPicking.texDepth);
+            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, _size, _size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
+        }
+    }
+    FudgeCore.RenderWebGLPicking = RenderWebGLPicking;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
     class RenderWebGLComponentLight {
         static #buffer;
         static #data;
@@ -1276,6 +1357,52 @@ var FudgeCore;
         }
     }
     FudgeCore.RenderWebGLComponentBloom = RenderWebGLComponentBloom;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class RenderWebGLComponentOutline {
+        static initialize(_renderWebGL) {
+            const crc3 = _renderWebGL.getRenderingContext();
+            RenderWebGLComponentOutline.texDepthStencil = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
+            RenderWebGLComponentOutline.fboDepthPass = _renderWebGL.assert(crc3.createFramebuffer());
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentOutline.fboDepthPass);
+            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLComponentOutline.texDepthStencil, 0);
+            RenderWebGLComponentOutline.texOut = _renderWebGL.texColor;
+            RenderWebGLComponentOutline.fboOut = _renderWebGL.assert(crc3.createFramebuffer());
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentOutline.fboOut);
+            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGLComponentOutline.texOut, 0);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+        }
+        static draw(_nodes, _cmpCamera, _cmpOutline) {
+            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentOutline.fboDepthPass);
+            FudgeCore.RenderWebGL.clear();
+            crc3.disable(WebGL2RenderingContext.BLEND);
+            for (let selected of _nodes)
+                for (const node of selected) {
+                    if (node.getComponent(FudgeCore.ComponentMesh)?.isActive && node.getComponent(FudgeCore.ComponentMaterial)?.isActive)
+                        FudgeCore.RenderWebGL.drawNode(node, _cmpCamera);
+                }
+            crc3.enable(WebGL2RenderingContext.BLEND);
+            FudgeCore.ShaderOutline.useProgram();
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentOutline.fboOut);
+            FudgeCore.RenderWebGL.bindTexture(FudgeCore.ShaderOutline, RenderWebGLComponentOutline.texDepthStencil, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
+            FudgeCore.RenderWebGL.bindTexture(FudgeCore.ShaderOutline, FudgeCore.RenderWebGL.texDepthStencil, WebGL2RenderingContext.TEXTURE1, "u_texDepthScene");
+            crc3.uniform4fv(FudgeCore.ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.get());
+            crc3.uniform4fv(FudgeCore.ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
+            const rectCanvas = FudgeCore.RenderWebGL.getCanvasRectangle();
+            crc3.uniform2f(FudgeCore.ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(rectCanvas.width), 1 / Math.round(rectCanvas.height));
+            crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
+        }
+        static resize(_renderWebGL, _width, _height) {
+            const crc3 = _renderWebGL.getRenderingContext();
+            const canvasWidth = _width || 1;
+            const canvasHeight = _height || 1;
+            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGLComponentOutline.texDepthStencil);
+            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
+        }
+    }
+    FudgeCore.RenderWebGLComponentOutline = RenderWebGLComponentOutline;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -2340,10 +2467,10 @@ var FudgeCore;
             RenderWebGL.crc3.clear(mask);
         }
         static setFramebufferTarget(_buffer) {
-            RenderWebGL.fboTarget = _buffer;
+            RenderWebGL.fboOut = _buffer;
         }
         static resetFramebuffer() {
-            RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+            RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
         }
         static setDepthTest(_test) {
             if (_test)
@@ -2395,7 +2522,7 @@ var FudgeCore;
         static pointRenderToWorld(_render) {
             const crc3 = RenderWebGL.getRenderingContext();
             const data = new Float32Array(4);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
             crc3.readBuffer(WebGL2RenderingContext.COLOR_ATTACHMENT1);
             crc3.readPixels(_render.x, RenderWebGL.rectRender.height - _render.y, 1, 1, crc3.RGBA, crc3.FLOAT, data);
             crc3.readBuffer(WebGL2RenderingContext.COLOR_ATTACHMENT0);
@@ -2406,28 +2533,22 @@ var FudgeCore;
         static initializeAttachments() {
             const crc3 = RenderWebGL.crc3;
             crc3.getExtension("EXT_color_buffer_float");
-            RenderWebGL.fboMain = RenderWebGL.assert(crc3.createFramebuffer());
-            RenderWebGL.fboPost = RenderWebGL.assert(crc3.createFramebuffer());
-            RenderWebGL.fboTarget = null;
-            RenderWebGL.fboPick = RenderWebGL.assert(crc3.createFramebuffer());
+            RenderWebGL.fboScene = RenderWebGL.assert(crc3.createFramebuffer());
+            RenderWebGL.fboOut = null;
             RenderWebGL.texColor = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texPosition = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texNormal = RenderWebGL.createTexture(WebGL2RenderingContext.LINEAR, WebGL2RenderingContext.CLAMP_TO_EDGE);
             RenderWebGL.texDepthStencil = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-            RenderWebGL.texPick = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-            RenderWebGL.texDepthPick = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-            RenderWebGL.texDepthStencilOutline = RenderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
             crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
             crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT1, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition, 0);
             crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal, 0);
             crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil, 0);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick, 0);
             crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
             FudgeCore.RenderWebGLComponentAmbientOcclusion.initialize(RenderWebGL);
             FudgeCore.RenderWebGLComponentBloom.initialize(RenderWebGL);
+            FudgeCore.RenderWebGLComponentOutline.initialize(RenderWebGL);
+            FudgeCore.RenderWebGLPicking.initialize(RenderWebGL);
         }
         static adjustAttachments() {
             const crc3 = RenderWebGL.getRenderingContext();
@@ -2442,11 +2563,10 @@ var FudgeCore;
             crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
             crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
             crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
-            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline);
-            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
             crc3.bindTexture(crc3.TEXTURE_2D, null);
             FudgeCore.RenderWebGLComponentAmbientOcclusion.resize(RenderWebGL, canvasWidth, canvasHeight);
             FudgeCore.RenderWebGLComponentBloom.resize(RenderWebGL, canvasWidth, canvasHeight);
+            FudgeCore.RenderWebGLComponentOutline.resize(RenderWebGL, canvasWidth, canvasHeight);
         }
         static createTexture(_filter, _wrap) {
             const crc3 = RenderWebGL.getRenderingContext();
@@ -2480,56 +2600,34 @@ var FudgeCore;
             if (uniform)
                 RenderWebGL.crc3.uniform1i(uniform, _id);
         }
-        static pickFrom(_from, _cmpCamera, _pick) {
-            const size = Math.ceil(Math.sqrt(_from.length));
-            const crc3 = RenderWebGL.getRenderingContext();
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPick);
-            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPick);
-            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32I, size, size, 0, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, null);
-            crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthPick);
-            crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH_COMPONENT24, size, size, 0, WebGL2RenderingContext.DEPTH_COMPONENT, WebGL2RenderingContext.UNSIGNED_INT, null);
-            crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
-            FudgeCore.RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
-            FudgeCore.ShaderPick.useProgram();
-            crc3.uniform2fv(FudgeCore.ShaderPick.uniforms["u_vctSize"], [size, size]);
-            FudgeCore.ShaderPickTextured.useProgram();
-            crc3.uniform2fv(FudgeCore.ShaderPickTextured.uniforms["u_vctSize"], [size, size]);
-            RenderWebGL.setBlendMode(BLEND.OPAQUE);
-            let picks = _pick(_from, _cmpCamera);
-            RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
-            let data = new Int32Array(size * size * 4);
-            FudgeCore.Render.crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
-            let picked = [];
-            let mtxViewToWorld = FudgeCore.Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
-            for (let i = 0; i < picks.length; i++) {
-                let zBuffer = data[4 * i + 0] + data[4 * i + 1] / 256;
-                if (zBuffer == 0)
-                    continue;
-                let pick = picks[i];
-                pick.zBuffer = convertInt32toFloat32(data, 4 * i + 0) * 2 - 1;
-                pick.color = convertInt32toColor(data, 4 * i + 1);
-                pick.textureUV = FudgeCore.Recycler.reuse(FudgeCore.Vector2);
-                pick.textureUV.set(convertInt32toFloat32(data, 4 * i + 2), convertInt32toFloat32(data, 4 * i + 3));
-                pick.mtxViewToWorld = mtxViewToWorld;
-                picked.push(pick);
+        static drawNode(_node, _cmpCamera) {
+            let cmpMesh = _node.getComponent(FudgeCore.ComponentMesh);
+            let cmpMaterial = _node.getComponent(FudgeCore.ComponentMaterial);
+            let cmpParticleSystem = _node.getComponent(FudgeCore.ComponentParticleSystem);
+            if (cmpParticleSystem?.isActive) {
+                RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
+                return;
             }
-            RenderWebGL.resetFramebuffer();
-            return picked;
-            function convertInt32toFloat32(_int32Array, _index) {
-                let buffer = new ArrayBuffer(4);
-                let view = new DataView(buffer);
-                view.setInt32(0, _int32Array[_index]);
-                return view.getFloat32(0);
-            }
-            function convertInt32toColor(_int32Array, _index) {
-                let buffer = new ArrayBuffer(4);
-                let view = new DataView(buffer);
-                view.setInt32(0, _int32Array[_index]);
-                let color = FudgeCore.Color.CSS(`rgb(${view.getUint8(0)}, ${view.getUint8(1)}, ${view.getUint8(2)})`, view.getUint8(3) / 255);
-                return color;
-            }
+            let cmpText = _node.getComponent(FudgeCore.ComponentText);
+            let cmpFaceCamera = _node.getComponent(FudgeCore.ComponentFaceCamera);
+            const material = cmpMaterial.material;
+            material.getShader().useProgram();
+            material.coat.useRenderData();
+            if (cmpMesh.skeleton?.isActive)
+                cmpMesh.skeleton.useRenderBuffer();
+            let mtxWorldOverride;
+            if (cmpText?.isActive)
+                mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
+            if (cmpFaceCamera?.isActive)
+                mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
+            _node.useRenderData(mtxWorldOverride);
+            const renderBuffers = cmpMesh.mesh.useRenderBuffers();
+            RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
         }
         static pick(_nodes, _cmpCamera) {
+            return FudgeCore.RenderWebGLPicking.pickFrom(_nodes, _cmpCamera, RenderWebGL.pickNodes);
+        }
+        static pickNodes(_nodes, _cmpCamera) {
             let picks = [];
             for (const node of _nodes) {
                 let cmpMesh = node.getComponent(FudgeCore.ComponentMesh);
@@ -2557,7 +2655,7 @@ var FudgeCore;
             const cmpOutline = node?.getComponent(FudgeCore.ComponentOutline);
             FudgeCore.RenderWebGLComponentFog.useRenderbuffer(cmpFog);
             FudgeCore.RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
             crc3.drawBuffers(cmpAmbientOcclusion?.isActive ? RenderWebGL.attachmentsColorPositionNormal : RenderWebGL.attachmentsColor);
             crc3.disable(WebGL2RenderingContext.BLEND);
             for (let node of _nodesOpaque)
@@ -2565,66 +2663,17 @@ var FudgeCore;
             crc3.enable(WebGL2RenderingContext.BLEND);
             if (cmpAmbientOcclusion?.isActive)
                 FudgeCore.RenderWebGLComponentAmbientOcclusion.draw(_cmpCamera, cmpAmbientOcclusion);
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboMain);
+            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
             crc3.drawBuffers(RenderWebGL.attachmentsColor);
             for (let node of _nodesAlpha)
                 RenderWebGL.drawNode(node, _cmpCamera);
             if (cmpBloom?.isActive)
                 FudgeCore.RenderWebGLComponentBloom.draw(cmpBloom);
             if (cmpOutline?.isActive && cmpOutline.selection)
-                RenderWebGL.drawOutline(cmpOutline.selection, _cmpCamera, cmpOutline);
-            crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboMain);
-            crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboTarget);
+                FudgeCore.RenderWebGLComponentOutline.draw(cmpOutline.selection, _cmpCamera, cmpOutline);
+            crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboScene);
+            crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboOut);
             crc3.blitFramebuffer(0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, 0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
-        }
-        static drawOutline(_nodes, _cmpCamera, _cmpOutline) {
-            const crc3 = RenderWebGL.getRenderingContext();
-            crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboPost);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencilOutline, 0);
-            RenderWebGL.clear();
-            crc3.disable(WebGL2RenderingContext.BLEND);
-            for (let selected of _nodes)
-                for (const node of selected) {
-                    if (node.getComponent(FudgeCore.ComponentMesh)?.isActive && node.getComponent(FudgeCore.ComponentMaterial)?.isActive)
-                        RenderWebGL.drawNode(node, _cmpCamera);
-                }
-            crc3.enable(WebGL2RenderingContext.BLEND);
-            FudgeCore.ShaderOutline.useProgram();
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-            crc3.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT2, WebGL2RenderingContext.TEXTURE_2D, null, 0);
-            crc3.drawBuffers([WebGL2RenderingContext.COLOR_ATTACHMENT0]);
-            RenderWebGL.bindTexture(FudgeCore.ShaderOutline, RenderWebGL.texDepthStencilOutline, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
-            RenderWebGL.bindTexture(FudgeCore.ShaderOutline, RenderWebGL.texDepthStencil, WebGL2RenderingContext.TEXTURE1, "u_texDepthScene");
-            crc3.uniform4fv(FudgeCore.ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.get());
-            crc3.uniform4fv(FudgeCore.ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
-            crc3.uniform2f(FudgeCore.ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(RenderWebGL.rectCanvas.width), 1 / Math.round(RenderWebGL.rectCanvas.height));
-            crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
-        }
-        static drawNode(_node, _cmpCamera) {
-            let cmpMesh = _node.getComponent(FudgeCore.ComponentMesh);
-            let cmpMaterial = _node.getComponent(FudgeCore.ComponentMaterial);
-            let cmpParticleSystem = _node.getComponent(FudgeCore.ComponentParticleSystem);
-            if (cmpParticleSystem?.isActive) {
-                RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
-                return;
-            }
-            let cmpText = _node.getComponent(FudgeCore.ComponentText);
-            let cmpFaceCamera = _node.getComponent(FudgeCore.ComponentFaceCamera);
-            const material = cmpMaterial.material;
-            material.getShader().useProgram();
-            material.coat.useRenderData();
-            if (cmpMesh.skeleton?.isActive)
-                cmpMesh.skeleton.useRenderBuffer();
-            let mtxWorldOverride;
-            if (cmpText?.isActive)
-                mtxWorldOverride = cmpText.useRenderData(cmpMesh.mtxWorld, _cmpCamera);
-            if (cmpFaceCamera?.isActive)
-                mtxWorldOverride = RenderWebGL.faceCamera(_node, mtxWorldOverride ?? cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
-            _node.useRenderData(mtxWorldOverride);
-            const renderBuffers = cmpMesh.mesh.useRenderBuffers();
-            RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
         }
         static drawParticles(_node, _cmpParticleSystem, _cmpMesh, _cmpMaterial) {
             const crc3 = RenderWebGL.getRenderingContext();
@@ -13098,7 +13147,7 @@ var FudgeCore;
             this.style = new OIMO.DebugDrawStyle();
             this.oimoDebugDraw = new OIMO.DebugDraw();
             this.oimoDebugDraw.wireframe = true;
-            this.gl = FudgeCore.RenderWebGL.crc3;
+            this.gl = FudgeCore.RenderWebGL.getRenderingContext();
             this.initializeOverride();
             this.shader = new PhysicsDebugShader(this.gl);
             this.shader.compile(this.vertexShaderSource(), this.fragmentShaderSource());
@@ -14521,25 +14570,7 @@ var FudgeCore;
             }
         }
         static pick(_gizmos, _cmpCamera) {
-            return FudgeCore.RenderWebGL.pickFrom(_gizmos, _cmpCamera, pick);
-            function pick(_gizmos, _cmpCamera) {
-                const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
-                crc3.uniformMatrix3fv(FudgeCore.ShaderPickTextured.uniforms["u_mtxPivot"], false, FudgeCore.Matrix3x3.IDENTITY().getArray());
-                Gizmos.#camera = _cmpCamera;
-                Gizmos.posIcons.clear();
-                let picks = [];
-                for (let gizmo of _gizmos) {
-                    if (!gizmo.drawGizmos)
-                        continue;
-                    Gizmos.pickId = picks.length;
-                    gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
-                    let pick = new FudgeCore.Pick(gizmo.node);
-                    pick.gizmo = gizmo;
-                    picks.push(pick);
-                }
-                Gizmos.pickId = null;
-                return picks;
-            }
+            return FudgeCore.RenderWebGLPicking.pickFrom(_gizmos, _cmpCamera, Gizmos.pickGizmos);
         }
         static drawWireFrustum(_aspect, _fov, _near, _far, _direction, _mtxWorld, _color, _alphaOccluded = Gizmos.alphaOccluded) {
             const f = Math.tan(FudgeCore.Calc.deg2rad * _fov / 2);
@@ -14755,6 +14786,24 @@ var FudgeCore;
             Gizmos.#meshes[key] = mesh;
             return mesh;
         }
+        static pickGizmos(_gizmos, _cmpCamera) {
+            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            crc3.uniformMatrix3fv(FudgeCore.ShaderPickTextured.uniforms["u_mtxPivot"], false, FudgeCore.Matrix3x3.IDENTITY().getArray());
+            Gizmos.#camera = _cmpCamera;
+            Gizmos.posIcons.clear();
+            let picks = [];
+            for (let gizmo of _gizmos) {
+                if (!gizmo.drawGizmos)
+                    continue;
+                Gizmos.pickId = picks.length;
+                gizmo.drawGizmos(_cmpCamera, Gizmos.#picking);
+                let pick = new FudgeCore.Pick(gizmo.node);
+                pick.gizmo = gizmo;
+                picks.push(pick);
+            }
+            Gizmos.pickId = null;
+            return picks;
+        }
     }
     FudgeCore.Gizmos = Gizmos;
 })(FudgeCore || (FudgeCore = {}));
@@ -14806,9 +14855,6 @@ var FudgeCore;
                 }
                 lightsOfType.push(cmpLight);
             }
-        }
-        static pick(_nodes, _cmpCamera) {
-            return Render.pickFrom(_nodes, _cmpCamera, super.pick);
         }
         static draw(_cmpCamera) {
             let nodesAlpha;
@@ -16324,9 +16370,6 @@ var FudgeCore;
         #url;
         #gltf;
         #resources = {};
-        #nodes = [];
-        #cameras;
-        #skeletons;
         #buffers;
         constructor(_gltf, _url, _bufferChunk) {
             this.#gltf = _gltf;
@@ -16506,143 +16549,40 @@ var FudgeCore;
             }
             return resources;
         }
-        async getGraph(_iScene = this.#gltf.scene, _graph) {
+        async getGraph(_iScene = this.#gltf.scene, _graphOut) {
             _iScene = this.getIndex(_iScene, this.#gltf.scenes);
             if (_iScene == -1)
                 return null;
             const id = `${FudgeCore.GraphGLTF.name}|${_iScene}`;
-            if (!_graph && this.#resources[id])
+            if (!_graphOut && this.#resources[id])
                 return this.#resources[id];
-            this.#nodes = [];
-            this.#cameras = [];
-            this.#skeletons = [];
+            let cache = {
+                nodes: [],
+                skeletons: []
+            };
             const gltfScene = this.#gltf.scenes[_iScene];
-            const graph = _graph ?? new FudgeCore.GraphGLTF();
+            const graph = _graphOut ?? new FudgeCore.GraphGLTF();
             graph.name = gltfScene.name;
             if (graph instanceof FudgeCore.GraphGLTF)
                 graph.url = this.#url;
-            if (_graph) {
-                _graph.removeAllChildren();
-                _graph.removeComponents(FudgeCore.ComponentSkeleton);
+            if (_graphOut) {
+                _graphOut.removeAllChildren();
+                _graphOut.removeComponents(FudgeCore.ComponentSkeleton);
             }
             for (const iNode of gltfScene.nodes)
-                graph.addChild(await this.getNodeByIndex(iNode));
-            if (this.#skeletons)
-                for (const skeleton of this.#skeletons)
-                    graph.addComponent(skeleton);
-            if (!_graph)
+                graph.addChild(await this.getNodeByIndex(iNode, cache));
+            for (const skeleton of cache.skeletons)
+                graph.addComponent(skeleton);
+            if (!_graphOut)
                 this.#resources[id] = graph;
             return graph;
         }
-        async getNode(_name) {
-            const iNode = this.#gltf.nodes.findIndex(_node => _node.name == _name);
-            if (iNode == -1)
-                throw new Error(`${this}: Couldn't find name '${_name}' in glTF nodes.`);
-            return await this.getNodeByIndex(iNode);
-        }
-        async getNodeByIndex(_iNode) {
-            if (!this.#nodes[_iNode]) {
-                const gltfNode = this.#gltf.nodes[_iNode];
-                const node = new FudgeCore.Node(gltfNode.name);
-                this.#nodes[_iNode] = node;
-                if (gltfNode.children)
-                    for (const iNode of gltfNode.children)
-                        node.addChild(await this.getNodeByIndex(iNode));
-                if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
-                    node.addComponent(new FudgeCore.ComponentTransform());
-                    if (gltfNode.matrix) {
-                        node.mtxLocal.setArray(gltfNode.matrix);
-                    }
-                    else {
-                        if (gltfNode.translation) {
-                            const translation = FudgeCore.Recycler.get(FudgeCore.Vector3);
-                            translation.set(gltfNode.translation[0], gltfNode.translation[1], gltfNode.translation[2]);
-                            node.mtxLocal.translation = translation;
-                            FudgeCore.Recycler.store(translation);
-                        }
-                        if (gltfNode.rotation) {
-                            const rotation = FudgeCore.Recycler.get(FudgeCore.Quaternion);
-                            rotation.set(gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2], gltfNode.rotation[3]);
-                            node.mtxLocal.rotation = rotation;
-                            FudgeCore.Recycler.store(rotation);
-                        }
-                        if (gltfNode.scale) {
-                            const scale = FudgeCore.Recycler.get(FudgeCore.Vector3);
-                            scale.set(gltfNode.scale[0], gltfNode.scale[1], gltfNode.scale[2]);
-                            node.mtxLocal.scaling = scale;
-                            FudgeCore.Recycler.store(scale);
-                        }
-                    }
-                }
-                if (gltfNode.camera != undefined) {
-                    node.addComponent(await this.getCameraByIndex(gltfNode.camera));
-                }
-                if (gltfNode.mesh != undefined) {
-                    const gltfMesh = this.#gltf.meshes?.[gltfNode.mesh];
-                    const subComponents = [];
-                    for (let iPrimitive = 0; iPrimitive < gltfMesh.primitives.length; iPrimitive++) {
-                        const cmpMesh = new FudgeCore.ComponentMesh(await this.getMesh(gltfNode.mesh, iPrimitive));
-                        const isSkin = gltfNode.skin != undefined;
-                        if (isSkin)
-                            cmpMesh.skeleton = await this.getSkeletonByIndex(gltfNode.skin);
-                        let cmpMaterial;
-                        const iMaterial = gltfMesh.primitives?.[iPrimitive]?.material;
-                        if (iMaterial == undefined) {
-                            cmpMaterial = new FudgeCore.ComponentMaterial(isSkin ?
-                                GLTFLoader.defaultSkinMaterial :
-                                GLTFLoader.defaultMaterial);
-                        }
-                        else {
-                            const isFlat = gltfMesh.primitives[iPrimitive].attributes.NORMAL == undefined;
-                            cmpMaterial = new FudgeCore.ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin, isFlat));
-                            const gltfMaterial = this.#gltf.materials[iMaterial];
-                            if (gltfMaterial)
-                                cmpMaterial.sortForAlpha = gltfMaterial.alphaMode == "BLEND";
-                        }
-                        subComponents.push([cmpMesh, cmpMaterial]);
-                    }
-                    if (subComponents.length == 1) {
-                        node.addComponent(subComponents[0][0]);
-                        node.addComponent(subComponents[0][1]);
-                    }
-                    else {
-                        subComponents.forEach(([_cmpMesh, _cmpMaterial], _i) => {
-                            const nodePart = new FudgeCore.Node(`${node.name}_Primitive${_i}`);
-                            nodePart.addComponent(_cmpMesh);
-                            nodePart.addComponent(_cmpMaterial);
-                            node.addChild(nodePart);
-                        });
-                    }
-                }
-            }
-            return this.#nodes[_iNode];
-        }
-        async getCamera(_name) {
-            const iCamera = this.#gltf.cameras.findIndex(_camera => _camera.name == _name);
-            if (iCamera == -1)
-                throw new Error(`${this}: Couldn't find name '${_name}' in glTF cameras.`);
-            return await this.getCameraByIndex(iCamera);
-        }
-        async getCameraByIndex(_iCamera) {
-            if (!this.#cameras)
-                this.#cameras = [];
-            if (!this.#cameras[_iCamera]) {
-                const gltfCamera = this.#gltf.cameras[_iCamera];
-                const camera = new FudgeCore.ComponentCamera();
-                if (gltfCamera.perspective)
-                    camera.projectCentral(gltfCamera.perspective.aspectRatio, gltfCamera.perspective.yfov * FudgeCore.Calc.rad2deg, null, gltfCamera.perspective.znear, gltfCamera.perspective.zfar);
-                else
-                    camera.projectOrthographic(-gltfCamera.orthographic.xmag, gltfCamera.orthographic.xmag, -gltfCamera.orthographic.ymag, gltfCamera.orthographic.ymag);
-                return camera;
-            }
-            return this.#cameras[_iCamera];
-        }
-        async getAnimation(_iAnimation, _animation) {
+        async getAnimation(_iAnimation, _animationOut) {
             _iAnimation = this.getIndex(_iAnimation, this.#gltf.animations);
             if (_iAnimation == -1)
                 return null;
             const id = `${FudgeCore.Animation.name}|${_iAnimation}`;
-            if (!_animation && this.#resources[id])
+            if (!_animationOut && this.#resources[id])
                 return this.#resources[id];
             const gltfAnimation = this.#gltf.animations?.[_iAnimation];
             if (!gltfAnimation)
@@ -16665,25 +16605,25 @@ var FudgeCore;
                 mtxLocal[toInternTransformation[gltfChannel.target.path]] =
                     await this.getAnimationSequence(gltfAnimation.samplers[gltfChannel.sampler], gltfChannel.target.path);
             }
-            const animation = _animation ?? new FudgeCore.AnimationGLTF();
+            const animation = _animationOut ?? new FudgeCore.AnimationGLTF();
             animation.animationStructure = animationStructure;
             animation.clearCache();
             animation.name = gltfAnimation.name;
             animation.calculateTotalTime();
             if (animation instanceof FudgeCore.AnimationGLTF)
                 animation.url = this.#url;
-            if (!_animation) {
+            if (!_animationOut) {
                 FudgeCore.Project.deregister(animation);
                 this.#resources[id] = animation;
             }
             return animation;
         }
-        async getMesh(_iMesh, _iPrimitive = 0, _mesh) {
+        async getMesh(_iMesh, _iPrimitive = 0, _meshOut) {
             _iMesh = this.getIndex(_iMesh, this.#gltf.meshes);
             if (_iMesh == -1)
                 return null;
             const id = `${FudgeCore.MeshGLTF.name}|${_iMesh}|${_iPrimitive}`;
-            if (!_mesh && this.#resources[id])
+            if (!_meshOut && this.#resources[id])
                 return this.#resources[id];
             const gltfMesh = this.#gltf.meshes[_iMesh];
             const gltfPrimitive = gltfMesh.primitives[_iPrimitive];
@@ -16731,52 +16671,55 @@ var FudgeCore;
                 bones = await this.getBoneIndices(gltfPrimitive.attributes.JOINTS_0);
                 weights = await this.getFloat32Array(gltfPrimitive.attributes.WEIGHTS_0);
             }
-            const mesh = _mesh ?? new FudgeCore.MeshGLTF();
+            const mesh = _meshOut ?? new FudgeCore.MeshGLTF();
             mesh.name = gltfMesh.name;
             if (mesh instanceof FudgeCore.MeshGLTF) {
                 mesh.iPrimitive = _iPrimitive;
                 mesh.url = this.#url;
             }
-            if (_mesh) {
-                _mesh.clear();
-                _mesh.faces = [];
-                _mesh.vertices = new FudgeCore.Vertices();
+            if (_meshOut) {
+                _meshOut.clear();
+                _meshOut.faces = [];
+                _meshOut.vertices = new FudgeCore.Vertices();
             }
-            for (let iVector2 = 0, iVector3 = 0, iVector4 = 0; iVector3 < positions?.length; iVector2 += 2, iVector3 += 3, iVector4 += 4) {
-                mesh.vertices.push(new FudgeCore.Vertex(new FudgeCore.Vector3(positions[iVector3 + 0], positions[iVector3 + 1], positions[iVector3 + 2]), textureUVs ?
-                    new FudgeCore.Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]) :
-                    undefined, normals ?
-                    new FudgeCore.Vector3(normals[iVector3 + 0], normals[iVector3 + 1], normals[iVector3 + 2]) :
-                    undefined, tangents ?
-                    new FudgeCore.Vector4(tangents[iVector4 + 0], tangents[iVector4 + 1], tangents[iVector4 + 2], tangents[iVector4 + 3]) :
-                    undefined, colors ?
-                    new FudgeCore.Color(colors[iVector4 + 0], colors[iVector4 + 1], colors[iVector4 + 2], colors[iVector4 + 3]) :
-                    undefined, bones && weights ?
-                    [
-                        { index: bones[iVector4 + 0], weight: weights[iVector4 + 0] },
-                        { index: bones[iVector4 + 1], weight: weights[iVector4 + 1] },
-                        { index: bones[iVector4 + 2], weight: weights[iVector4 + 2] },
-                        { index: bones[iVector4 + 3], weight: weights[iVector4 + 3] }
-                    ] :
-                    undefined));
-            }
-            for (let iFaceVertexIndex = 0; iFaceVertexIndex < indices?.length; iFaceVertexIndex += 3) {
-                try {
-                    mesh.faces.push(new FudgeCore.Face(mesh.vertices, indices[iFaceVertexIndex + 0], indices[iFaceVertexIndex + 1], indices[iFaceVertexIndex + 2]));
+            if (!normals || !tangents) {
+                for (let iVector2 = 0, iVector3 = 0, iVector4 = 0; iVector3 < positions?.length; iVector2 += 2, iVector3 += 3, iVector4 += 4) {
+                    mesh.vertices.push(new FudgeCore.Vertex(new FudgeCore.Vector3(positions[iVector3 + 0], positions[iVector3 + 1], positions[iVector3 + 2]), textureUVs ?
+                        new FudgeCore.Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]) :
+                        undefined, normals ?
+                        new FudgeCore.Vector3(normals[iVector3 + 0], normals[iVector3 + 1], normals[iVector3 + 2]) :
+                        undefined, tangents ?
+                        new FudgeCore.Vector4(tangents[iVector4 + 0], tangents[iVector4 + 1], tangents[iVector4 + 2], tangents[iVector4 + 3]) :
+                        undefined, colors ?
+                        new FudgeCore.Color(colors[iVector4 + 0], colors[iVector4 + 1], colors[iVector4 + 2], colors[iVector4 + 3]) :
+                        undefined, bones && weights ?
+                        [
+                            { index: bones[iVector4 + 0], weight: weights[iVector4 + 0] },
+                            { index: bones[iVector4 + 1], weight: weights[iVector4 + 1] },
+                            { index: bones[iVector4 + 2], weight: weights[iVector4 + 2] },
+                            { index: bones[iVector4 + 3], weight: weights[iVector4 + 3] }
+                        ] :
+                        undefined));
                 }
-                catch (_e) {
-                    FudgeCore.Debug.fudge("Face excluded", _e.message);
+                for (let iFaceVertexIndex = 0; iFaceVertexIndex < indices?.length; iFaceVertexIndex += 3) {
+                    try {
+                        mesh.faces.push(new FudgeCore.Face(mesh.vertices, indices[iFaceVertexIndex + 0], indices[iFaceVertexIndex + 1], indices[iFaceVertexIndex + 2]));
+                    }
+                    catch (_e) {
+                        FudgeCore.Debug.fudge("Face excluded", _e.message);
+                    }
                 }
             }
-            mesh.renderMesh.positions = positions;
-            mesh.renderMesh.indices = indices;
-            mesh.renderMesh.normals = normals;
-            mesh.renderMesh.tangents = tangents;
-            mesh.renderMesh.textureUVs = textureUVs;
-            mesh.renderMesh.colors = colors;
-            mesh.renderMesh.bones = bones;
-            mesh.renderMesh.weights = weights;
-            if (!_mesh) {
+            const renderMesh = mesh.renderMesh;
+            renderMesh.positions = positions;
+            renderMesh.indices = indices;
+            renderMesh.normals = normals;
+            renderMesh.tangents = tangents;
+            renderMesh.textureUVs = textureUVs;
+            renderMesh.colors = colors;
+            renderMesh.bones = bones;
+            renderMesh.weights = weights;
+            if (!_meshOut) {
                 FudgeCore.Project.deregister(mesh);
                 this.#resources[id] = mesh;
             }
@@ -16786,12 +16729,12 @@ var FudgeCore;
                     FudgeCore.Debug.warn(`${_loader}: Mesh with index ${_iMesh} primitive ${_iPrimitive} has more than ${_max} sets of '${_check}' associated with it. FUGDE only supports up to ${_max} ${_check} sets per primitive.`);
             }
         }
-        async getMaterial(_iMaterial, _material, _skin = false, _flat = false) {
+        async getMaterial(_iMaterial, _materialOut, _skin = false) {
             _iMaterial = this.getIndex(_iMaterial, this.#gltf.materials);
             if (_iMaterial == -1)
                 return null;
             const id = `${FudgeCore.Material.name}|${_iMaterial}`;
-            if (this.#resources[id] && !_material)
+            if (this.#resources[id] && !_materialOut)
                 return this.#resources[id];
             const gltfMaterial = this.#gltf.materials[_iMaterial];
             if (!gltfMaterial)
@@ -16819,12 +16762,7 @@ var FudgeCore;
             if (gltfMaterial.alphaCutoff != undefined)
                 coat.alphaClip = gltfMaterial.alphaCutoff;
             let shader;
-            if (_flat) {
-                shader = gltfBaseColorTexture ?
-                    (_skin ? FudgeCore.ShaderFlatTexturedSkin : FudgeCore.ShaderFlatTextured) :
-                    (_skin ? FudgeCore.ShaderFlatSkin : FudgeCore.ShaderFlat);
-            }
-            else if (isLit) {
+            if (isLit) {
                 shader = gltfBaseColorTexture ?
                     (_skin ? FudgeCore.ShaderLitTexturedSkin : FudgeCore.ShaderLitTextured) :
                     (_skin ? FudgeCore.ShaderLitSkin : FudgeCore.ShaderLit);
@@ -16836,13 +16774,13 @@ var FudgeCore;
                         (_skin ? FudgeCore.ShaderPhongTexturedSkin : FudgeCore.ShaderPhongTextured) :
                     (_skin ? FudgeCore.ShaderPhongSkin : FudgeCore.ShaderPhong);
             }
-            const material = _material ?? new FudgeCore.MaterialGLTF(gltfMaterial.name);
+            const material = _materialOut ?? new FudgeCore.MaterialGLTF(gltfMaterial.name);
             material.name = gltfMaterial.name;
             material.coat = coat;
             Reflect.set(material, "shaderType", shader);
             if (material instanceof FudgeCore.MaterialGLTF)
                 material.url = this.#url;
-            if (!_material) {
+            if (!_materialOut) {
                 FudgeCore.Project.deregister(material);
                 this.#resources[id] = material;
             }
@@ -16895,16 +16833,87 @@ var FudgeCore;
             this.#resources[id] = texture;
             return texture;
         }
-        async getSkeleton(_name) {
-            const iSkeleton = this.#gltf.skins.findIndex(_skeleton => _skeleton.name == _name);
-            if (iSkeleton == -1)
-                throw new Error(`${this}: Couldn't find name '${_name}' in glTF skins.`);
-            return await this.getSkeletonByIndex(iSkeleton);
+        toString() {
+            return `${GLTFLoader.name} | ${this.#url}`;
         }
-        async getSkeletonByIndex(_iSkeleton) {
-            if (!this.#skeletons)
-                this.#skeletons = [];
-            if (!this.#skeletons[_iSkeleton]) {
+        async getNodeByIndex(_iNode, _cache) {
+            if (!_cache.nodes[_iNode]) {
+                const gltfNode = this.#gltf.nodes[_iNode];
+                const node = new FudgeCore.Node(gltfNode.name);
+                _cache.nodes[_iNode] = node;
+                if (gltfNode.children)
+                    for (const iNode of gltfNode.children)
+                        node.addChild(await this.getNodeByIndex(iNode, _cache));
+                if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
+                    node.addComponent(new FudgeCore.ComponentTransform());
+                    if (gltfNode.matrix) {
+                        node.mtxLocal.setArray(gltfNode.matrix);
+                    }
+                    else {
+                        if (gltfNode.translation) {
+                            const translation = FudgeCore.Recycler.get(FudgeCore.Vector3);
+                            translation.set(gltfNode.translation[0], gltfNode.translation[1], gltfNode.translation[2]);
+                            node.mtxLocal.translation = translation;
+                            FudgeCore.Recycler.store(translation);
+                        }
+                        if (gltfNode.rotation) {
+                            const rotation = FudgeCore.Recycler.get(FudgeCore.Quaternion);
+                            rotation.set(gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2], gltfNode.rotation[3]);
+                            node.mtxLocal.rotation = rotation;
+                            FudgeCore.Recycler.store(rotation);
+                        }
+                        if (gltfNode.scale) {
+                            const scale = FudgeCore.Recycler.get(FudgeCore.Vector3);
+                            scale.set(gltfNode.scale[0], gltfNode.scale[1], gltfNode.scale[2]);
+                            node.mtxLocal.scaling = scale;
+                            FudgeCore.Recycler.store(scale);
+                        }
+                    }
+                }
+                if (gltfNode.camera != undefined) {
+                    node.addComponent(await this.getCameraByIndex(gltfNode.camera));
+                }
+                if (gltfNode.mesh != undefined) {
+                    const gltfMesh = this.#gltf.meshes?.[gltfNode.mesh];
+                    const subComponents = [];
+                    for (let iPrimitive = 0; iPrimitive < gltfMesh.primitives.length; iPrimitive++) {
+                        const cmpMesh = new FudgeCore.ComponentMesh(await this.getMesh(gltfNode.mesh, iPrimitive));
+                        const isSkin = gltfNode.skin != undefined;
+                        if (isSkin)
+                            cmpMesh.skeleton = await this.getSkeletonByIndex(gltfNode.skin, _cache);
+                        let cmpMaterial;
+                        const iMaterial = gltfMesh.primitives?.[iPrimitive]?.material;
+                        if (iMaterial == undefined) {
+                            cmpMaterial = new FudgeCore.ComponentMaterial(isSkin ?
+                                GLTFLoader.defaultSkinMaterial :
+                                GLTFLoader.defaultMaterial);
+                        }
+                        else {
+                            cmpMaterial = new FudgeCore.ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin));
+                            const gltfMaterial = this.#gltf.materials[iMaterial];
+                            if (gltfMaterial)
+                                cmpMaterial.sortForAlpha = gltfMaterial.alphaMode == "BLEND";
+                        }
+                        subComponents.push([cmpMesh, cmpMaterial]);
+                    }
+                    if (subComponents.length == 1) {
+                        node.addComponent(subComponents[0][0]);
+                        node.addComponent(subComponents[0][1]);
+                    }
+                    else {
+                        subComponents.forEach(([_cmpMesh, _cmpMaterial], _i) => {
+                            const nodePart = new FudgeCore.Node(`${node.name}_Primitive${_i}`);
+                            nodePart.addComponent(_cmpMesh);
+                            nodePart.addComponent(_cmpMaterial);
+                            node.addChild(nodePart);
+                        });
+                    }
+                }
+            }
+            return _cache.nodes[_iNode];
+        }
+        async getSkeletonByIndex(_iSkeleton, _cache) {
+            if (!_cache.skeletons[_iSkeleton]) {
                 const gltfSkin = this.#gltf.skins[_iSkeleton];
                 const bones = [];
                 let mtxData;
@@ -16916,15 +16925,21 @@ var FudgeCore;
                     let mtxBindInverse;
                     if (mtxData)
                         mtxBindInverse = new FudgeCore.Matrix4x4(mtxData.slice(iBone * mtxDataSpan, (iBone + 1) * mtxDataSpan));
-                    bones.push(await this.getNodeByIndex(gltfSkin.joints[iBone]));
+                    bones.push(await this.getNodeByIndex(gltfSkin.joints[iBone], _cache));
                     mtxBindInverses.push(mtxBindInverse);
                 }
-                this.#skeletons[_iSkeleton] = new FudgeCore.ComponentSkeleton(bones, mtxBindInverses);
+                _cache.skeletons[_iSkeleton] = new FudgeCore.ComponentSkeleton(bones, mtxBindInverses);
             }
-            return this.#skeletons[_iSkeleton];
+            return _cache.skeletons[_iSkeleton];
         }
-        toString() {
-            return `${GLTFLoader.name} | ${this.#url}`;
+        async getCameraByIndex(_iCamera) {
+            const gltfCamera = this.#gltf.cameras[_iCamera];
+            const camera = new FudgeCore.ComponentCamera();
+            if (gltfCamera.perspective)
+                camera.projectCentral(gltfCamera.perspective.aspectRatio, gltfCamera.perspective.yfov * FudgeCore.Calc.rad2deg, null, gltfCamera.perspective.znear, gltfCamera.perspective.zfar);
+            else
+                camera.projectOrthographic(-gltfCamera.orthographic.xmag, gltfCamera.orthographic.xmag, -gltfCamera.orthographic.ymag, gltfCamera.orthographic.ymag);
+            return camera;
         }
         getIndex(_nameOrIndex, _array) {
             let index = typeof _nameOrIndex == "number" ?
@@ -17716,7 +17731,7 @@ precision mediump float;
 precision highp int;
 
 uniform int u_id;
-uniform vec2 u_vctSize;
+uniform int u_size;
 uniform vec4 u_vctColor;
 out ivec4 vctFrag;
 
@@ -17728,7 +17743,7 @@ out ivec4 vctFrag;
 #endif
 
 void main() {
-  int pixel = int(trunc(gl_FragCoord.x) + u_vctSize.x * trunc(gl_FragCoord.y));
+  int pixel = int(gl_FragCoord.x) + u_size * int(gl_FragCoord.y);
 
   if (pixel != u_id)
     discard;
@@ -19044,8 +19059,9 @@ var FudgeCore;
             Loop.ƒTimeLastFrameGameAvg = ((Loop.framesToAverage - 1) * Loop.ƒTimeLastFrameGameAvg + Loop.ƒTimeFrameGame) / Loop.framesToAverage;
             Loop.ƒTimeLastFrameRealAvg = ((Loop.framesToAverage - 1) * Loop.ƒTimeLastFrameRealAvg + Loop.ƒTimeFrameReal) / Loop.framesToAverage;
             Loop.ƒFrames++;
-            let event = new Event("loopFrame");
-            Loop.targetStatic.dispatchEvent(event);
+            const event = FudgeCore.RecyclableEvent.get("loopFrame");
+            Loop.dispatchEvent(event);
+            FudgeCore.RecyclableEvent.store(event);
             FudgeCore.PerformanceMonitor.endFrame();
         }
         static loopFrame() {

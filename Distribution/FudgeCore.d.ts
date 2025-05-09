@@ -9089,7 +9089,7 @@ declare namespace GLTF {
 declare namespace FudgeCore {
     /**
      * Asset loader for gl Transfer Format files.
-     * @authors Matthias Roming, HFU, 2022 | Jonas Plotzky, HFU, 2023
+     * @authors Matthias Roming, HFU, 2022 | Jonas Plotzky, HFU, 2023-2025
      */
     class GLTFLoader {
         #private;
@@ -9120,22 +9120,6 @@ declare namespace FudgeCore {
          */
         getGraph(_iScene?: number): Promise<Graph>;
         /**
-         * Returns the first {@link Node} with the given name.
-         */
-        getNode(_name: string): Promise<Node>;
-        /**
-         * Returns the {@link Node} for the given index.
-         */
-        getNodeByIndex(_iNode: number): Promise<Node>;
-        /**
-         * Returns the first {@link ComponentCamera} with the given camera name.
-         */
-        getCamera(_name: string): Promise<ComponentCamera>;
-        /**
-         * Returns the {@link ComponentCamera} for the given camera index.
-         */
-        getCameraByIndex(_iCamera: number): Promise<ComponentCamera>;
-        /**
          * Returns the first {@link Animation} with the given animation name.
          */
         getAnimation(_name: string): Promise<Animation>;
@@ -9163,15 +9147,19 @@ declare namespace FudgeCore {
          * Returns the {@link Texture} for the given texture index.
          */
         getTexture(_iTexture: number): Promise<Texture>;
-        /**
-        * Returns the first {@link ComponentSkeleton} with the given skeleton name.
-        */
-        getSkeleton(_name: string): Promise<ComponentSkeleton>;
-        /**
-         * Returns the {@link ComponentSkeleton} for the given skeleton index.
-         */
-        getSkeletonByIndex(_iSkeleton: number): Promise<ComponentSkeleton>;
         toString(): string;
+        /**
+         * Returns the {@link Node} for the given index.
+         */
+        private getNodeByIndex;
+        /**
+        * Returns the {@link ComponentSkeleton} for the given skeleton index.
+        */
+        private getSkeletonByIndex;
+        /**
+         * Returns the {@link ComponentCamera} for the given camera index.
+         */
+        private getCameraByIndex;
         private getIndex;
         private getBufferData;
         private getBufferViewData;
