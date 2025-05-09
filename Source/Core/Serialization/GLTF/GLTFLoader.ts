@@ -1,8 +1,16 @@
 namespace FudgeCore {
 
   /**
+   * Stores nodes and skeletons used within a glTF scene.
+   */
+  interface GLTFLoadingCache {
+    nodes: Node[];
+    skeletons: ComponentSkeleton[];
+  }
+
+  /**
    * Asset loader for gl Transfer Format files.
-   * @authors Matthias Roming, HFU, 2022 | Jonas Plotzky, HFU, 2023
+   * @authors Matthias Roming, HFU, 2022 | Jonas Plotzky, HFU, 2023-2025
    */
   export class GLTFLoader {
     private static loaders: { [url: string]: GLTFLoader };
@@ -14,10 +22,6 @@ namespace FudgeCore {
     readonly #gltf: GLTF.GlTf;
 
     #resources: Resources = {};
-
-    #nodes: Node[] = [];
-    #cameras: ComponentCamera[];
-    #skeletons: ComponentSkeleton[];
 
     #buffers: ArrayBuffer[];
 
@@ -295,9 +299,10 @@ namespace FudgeCore {
       if (!_graph && this.#resources[id])
         return <Node><unknown>this.#resources[id];
 
-      this.#nodes = [];
-      this.#cameras = [];
-      this.#skeletons = [];
+      let cache: GLTFLoadingCache = {
+        nodes: [],
+        skeletons: []
+      };
 
       const gltfScene: GLTF.Scene = this.#gltf.scenes[_iScene];
       const graph: Node = _graph ?? new GraphGLTF();
@@ -310,7 +315,7 @@ namespace FudgeCore {
       }
 
       for (const iNode of gltfScene.nodes)
-        graph.addChild(await this.getNodeByIndex(iNode));
+        graph.addChild(await this.getNodeByIndex(iNode, cache));
 
       // if (this.#gltf.animations?.length > 0 && !graph.getComponent(ComponentAnimation)) {
       //   let animation: Animation = await this.getAnimation(0);
@@ -318,165 +323,13 @@ namespace FudgeCore {
       //   graph.addComponent(new ComponentAnimation(animation));
       // }
 
-      // TODO: load only skeletons which belong to the scene???
-      // if (this.gltf.skins?.length > 0)
-      //   for (let iSkin: number = 0; iSkin < this.gltf.skins.length; iSkin++)
-      //     scene.addComponent(await this.getSkeletonByIndex(iSkin));
-      if (this.#skeletons)
-        for (const skeleton of this.#skeletons)
-          graph.addComponent(skeleton);
+      for (const skeleton of cache.skeletons)
+        graph.addComponent(skeleton);
 
       if (!_graph)
         this.#resources[id] = <GraphGLTF>graph;
 
       return graph;
-    }
-
-    /**
-     * Returns the first {@link Node} with the given name.
-     */
-    public async getNode(_name: string): Promise<Node> {
-      const iNode: number = this.#gltf.nodes.findIndex(_node => _node.name == _name);
-      if (iNode == -1)
-        throw new Error(`${this}: Couldn't find name '${_name}' in glTF nodes.`);
-      return await this.getNodeByIndex(iNode);
-    }
-
-    /**
-     * Returns the {@link Node} for the given index.
-     */
-    public async getNodeByIndex(_iNode: number): Promise<Node> {
-      if (!this.#nodes[_iNode]) {
-        const gltfNode: GLTF.Node = this.#gltf.nodes[_iNode];
-        const node: Node = new Node(gltfNode.name);
-
-        this.#nodes[_iNode] = node;
-
-        // check for children
-        if (gltfNode.children)
-          for (const iNode of gltfNode.children)
-            node.addChild(await this.getNodeByIndex(iNode));
-
-        // check for transformation
-        if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
-          node.addComponent(new ComponentTransform());
-          if (gltfNode.matrix) {
-            node.mtxLocal.setArray(gltfNode.matrix);
-          } else {
-            if (gltfNode.translation) {
-              const translation: Vector3 = Recycler.get(Vector3);
-              translation.set(gltfNode.translation[0], gltfNode.translation[1], gltfNode.translation[2]);
-              node.mtxLocal.translation = translation;
-              Recycler.store(translation);
-            }
-            if (gltfNode.rotation) {
-              const rotation: Quaternion = Recycler.get(Quaternion);
-              rotation.set(gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2], gltfNode.rotation[3]);
-              node.mtxLocal.rotation = rotation;
-              Recycler.store(rotation);
-            }
-            if (gltfNode.scale) {
-              const scale: Vector3 = Recycler.get(Vector3);
-              scale.set(gltfNode.scale[0], gltfNode.scale[1], gltfNode.scale[2]);
-              node.mtxLocal.scaling = scale;
-              Recycler.store(scale);
-            }
-          }
-        }
-
-        // check for camera
-        if (gltfNode.camera != undefined) {
-          node.addComponent(await this.getCameraByIndex(gltfNode.camera));
-        }
-
-        // check for mesh and material
-        if (gltfNode.mesh != undefined) {
-          const gltfMesh: GLTF.Mesh = this.#gltf.meshes?.[gltfNode.mesh];
-          // TODO: review this
-          const subComponents: [ComponentMesh, ComponentMaterial][] = [];
-          for (let iPrimitive: number = 0; iPrimitive < gltfMesh.primitives.length; iPrimitive++) {
-            const cmpMesh: ComponentMesh = new ComponentMesh(await this.getMesh(gltfNode.mesh, iPrimitive));
-            const isSkin: boolean = gltfNode.skin != undefined;
-
-            if (isSkin)
-              cmpMesh.skeleton = await this.getSkeletonByIndex(gltfNode.skin);
-
-            let cmpMaterial: ComponentMaterial;
-            const iMaterial: number = gltfMesh.primitives?.[iPrimitive]?.material;
-            if (iMaterial == undefined) {
-              cmpMaterial = new ComponentMaterial(isSkin ?
-                GLTFLoader.defaultSkinMaterial :
-                GLTFLoader.defaultMaterial);
-            } else {
-              const isFlat: boolean = gltfMesh.primitives[iPrimitive].attributes.NORMAL == undefined;
-              cmpMaterial = new ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin, isFlat));
-
-              // TODO: maybe this should be a fudge material property
-              const gltfMaterial: GLTF.Material = this.#gltf.materials[iMaterial];
-              if (gltfMaterial)
-                cmpMaterial.sortForAlpha = gltfMaterial.alphaMode == "BLEND";
-
-            }
-
-            subComponents.push([cmpMesh, cmpMaterial]);
-          }
-
-          if (subComponents.length == 1) {
-            node.addComponent(subComponents[0][0]);
-            node.addComponent(subComponents[0][1]);
-          } else {
-            subComponents.forEach(([_cmpMesh, _cmpMaterial], _i) => {
-              const nodePart: Node = new Node(`${node.name}_Primitive${_i}`);
-              nodePart.addComponent(_cmpMesh);
-              nodePart.addComponent(_cmpMaterial);
-              node.addChild(nodePart);
-            });
-          }
-        }
-      }
-
-      return this.#nodes[_iNode];
-    }
-
-    /**
-     * Returns the first {@link ComponentCamera} with the given camera name.
-     */
-    public async getCamera(_name: string): Promise<ComponentCamera> {
-      const iCamera: number = this.#gltf.cameras.findIndex(_camera => _camera.name == _name);
-      if (iCamera == -1)
-        throw new Error(`${this}: Couldn't find name '${_name}' in glTF cameras.`);
-      return await this.getCameraByIndex(iCamera);
-    }
-
-    /**
-     * Returns the {@link ComponentCamera} for the given camera index.
-     */
-    public async getCameraByIndex(_iCamera: number): Promise<ComponentCamera> {
-      if (!this.#cameras)
-        this.#cameras = [];
-      if (!this.#cameras[_iCamera]) {
-        const gltfCamera: GLTF.Camera = this.#gltf.cameras[_iCamera];
-        const camera: ComponentCamera = new ComponentCamera();
-
-        if (gltfCamera.perspective)
-          camera.projectCentral(
-            gltfCamera.perspective.aspectRatio,
-            gltfCamera.perspective.yfov * Calc.rad2deg,
-            null,
-            gltfCamera.perspective.znear,
-            gltfCamera.perspective.zfar
-          );
-        else
-          camera.projectOrthographic(
-            -gltfCamera.orthographic.xmag,
-            gltfCamera.orthographic.xmag,
-            -gltfCamera.orthographic.ymag,
-            gltfCamera.orthographic.ymag
-          );
-
-        return camera;
-      }
-      return this.#cameras[_iCamera];
     }
 
     /**
@@ -875,23 +728,111 @@ namespace FudgeCore {
       return texture;
     }
 
-    /**
-    * Returns the first {@link ComponentSkeleton} with the given skeleton name.
-    */
-    public async getSkeleton(_name: string): Promise<ComponentSkeleton> {
-      const iSkeleton: number = this.#gltf.skins.findIndex(_skeleton => _skeleton.name == _name);
-      if (iSkeleton == -1)
-        throw new Error(`${this}: Couldn't find name '${_name}' in glTF skins.`);
-      return await this.getSkeletonByIndex(iSkeleton);
+    public toString(): string {
+      return `${GLTFLoader.name} | ${this.#url}`;
     }
 
     /**
-     * Returns the {@link ComponentSkeleton} for the given skeleton index.
+     * Returns the {@link Node} for the given index.
      */
-    public async getSkeletonByIndex(_iSkeleton: number): Promise<ComponentSkeleton> {
-      if (!this.#skeletons)
-        this.#skeletons = [];
-      if (!this.#skeletons[_iSkeleton]) {
+    private async getNodeByIndex(_iNode: number, _cache: GLTFLoadingCache): Promise<Node> {
+      if (!_cache.nodes[_iNode]) {
+        const gltfNode: GLTF.Node = this.#gltf.nodes[_iNode];
+        const node: Node = new Node(gltfNode.name);
+
+        _cache.nodes[_iNode] = node;
+
+        // check for children
+        if (gltfNode.children)
+          for (const iNode of gltfNode.children)
+            node.addChild(await this.getNodeByIndex(iNode, _cache));
+
+        // check for transformation
+        if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
+          node.addComponent(new ComponentTransform());
+          if (gltfNode.matrix) {
+            node.mtxLocal.setArray(gltfNode.matrix);
+          } else {
+            if (gltfNode.translation) {
+              const translation: Vector3 = Recycler.get(Vector3);
+              translation.set(gltfNode.translation[0], gltfNode.translation[1], gltfNode.translation[2]);
+              node.mtxLocal.translation = translation;
+              Recycler.store(translation);
+            }
+            if (gltfNode.rotation) {
+              const rotation: Quaternion = Recycler.get(Quaternion);
+              rotation.set(gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2], gltfNode.rotation[3]);
+              node.mtxLocal.rotation = rotation;
+              Recycler.store(rotation);
+            }
+            if (gltfNode.scale) {
+              const scale: Vector3 = Recycler.get(Vector3);
+              scale.set(gltfNode.scale[0], gltfNode.scale[1], gltfNode.scale[2]);
+              node.mtxLocal.scaling = scale;
+              Recycler.store(scale);
+            }
+          }
+        }
+
+        // check for camera
+        if (gltfNode.camera != undefined) {
+          node.addComponent(await this.getCameraByIndex(gltfNode.camera));
+        }
+
+        // check for mesh and material
+        if (gltfNode.mesh != undefined) {
+          const gltfMesh: GLTF.Mesh = this.#gltf.meshes?.[gltfNode.mesh];
+          // TODO: review this
+          const subComponents: [ComponentMesh, ComponentMaterial][] = [];
+          for (let iPrimitive: number = 0; iPrimitive < gltfMesh.primitives.length; iPrimitive++) {
+            const cmpMesh: ComponentMesh = new ComponentMesh(await this.getMesh(gltfNode.mesh, iPrimitive));
+            const isSkin: boolean = gltfNode.skin != undefined;
+
+            if (isSkin)
+              cmpMesh.skeleton = await this.getSkeletonByIndex(gltfNode.skin, _cache);
+
+            let cmpMaterial: ComponentMaterial;
+            const iMaterial: number = gltfMesh.primitives?.[iPrimitive]?.material;
+            if (iMaterial == undefined) {
+              cmpMaterial = new ComponentMaterial(isSkin ?
+                GLTFLoader.defaultSkinMaterial :
+                GLTFLoader.defaultMaterial);
+            } else {
+              const isFlat: boolean = gltfMesh.primitives[iPrimitive].attributes.NORMAL == undefined;
+              cmpMaterial = new ComponentMaterial(await this.getMaterial(iMaterial, null, isSkin, isFlat));
+
+              // TODO: maybe this should be a fudge material property
+              const gltfMaterial: GLTF.Material = this.#gltf.materials[iMaterial];
+              if (gltfMaterial)
+                cmpMaterial.sortForAlpha = gltfMaterial.alphaMode == "BLEND";
+
+            }
+
+            subComponents.push([cmpMesh, cmpMaterial]);
+          }
+
+          if (subComponents.length == 1) {
+            node.addComponent(subComponents[0][0]);
+            node.addComponent(subComponents[0][1]);
+          } else {
+            subComponents.forEach(([_cmpMesh, _cmpMaterial], _i) => {
+              const nodePart: Node = new Node(`${node.name}_Primitive${_i}`);
+              nodePart.addComponent(_cmpMesh);
+              nodePart.addComponent(_cmpMaterial);
+              node.addChild(nodePart);
+            });
+          }
+        }
+      }
+
+      return _cache.nodes[_iNode];
+    }
+
+    /**
+    * Returns the {@link ComponentSkeleton} for the given skeleton index.
+    */
+    private async getSkeletonByIndex(_iSkeleton: number, _cache: GLTFLoadingCache): Promise<ComponentSkeleton> {
+      if (!_cache.skeletons[_iSkeleton]) {
         const gltfSkin: GLTF.Skin = this.#gltf.skins[_iSkeleton];
         const bones: Node[] = [];
 
@@ -905,21 +846,43 @@ namespace FudgeCore {
         // iterate over joints and get corresponding matrix from float array
         for (let iBone: number = 0; iBone < gltfSkin.joints.length; iBone++) {
           let mtxBindInverse: Matrix4x4;
-          if (mtxData) 
+          if (mtxData)
             mtxBindInverse = new Matrix4x4(mtxData.slice(iBone * mtxDataSpan, (iBone + 1) * mtxDataSpan));
 
-          bones.push(await this.getNodeByIndex(gltfSkin.joints[iBone]));
+          bones.push(await this.getNodeByIndex(gltfSkin.joints[iBone], _cache));
           mtxBindInverses.push(mtxBindInverse);
         }
 
-        this.#skeletons[_iSkeleton] = new ComponentSkeleton(bones, mtxBindInverses);
+        _cache.skeletons[_iSkeleton] = new ComponentSkeleton(bones, mtxBindInverses);
       }
 
-      return this.#skeletons[_iSkeleton];
+      return _cache.skeletons[_iSkeleton];
     }
 
-    public toString(): string {
-      return `${GLTFLoader.name} | ${this.#url}`;
+    /**
+     * Returns the {@link ComponentCamera} for the given camera index.
+     */
+    private async getCameraByIndex(_iCamera: number): Promise<ComponentCamera> {
+      const gltfCamera: GLTF.Camera = this.#gltf.cameras[_iCamera];
+      const camera: ComponentCamera = new ComponentCamera();
+
+      if (gltfCamera.perspective)
+        camera.projectCentral(
+          gltfCamera.perspective.aspectRatio,
+          gltfCamera.perspective.yfov * Calc.rad2deg,
+          null,
+          gltfCamera.perspective.znear,
+          gltfCamera.perspective.zfar
+        );
+      else
+        camera.projectOrthographic(
+          -gltfCamera.orthographic.xmag,
+          gltfCamera.orthographic.xmag,
+          -gltfCamera.orthographic.ymag,
+          gltfCamera.orthographic.ymag
+        );
+
+      return camera;
     }
 
     private getIndex(_nameOrIndex: string | number, _array: { name?: string }[]): number {
