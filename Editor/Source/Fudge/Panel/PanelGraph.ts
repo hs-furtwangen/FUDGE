@@ -129,7 +129,10 @@ namespace Fudge {
 
     private restoreNode(_graph: ƒ.Graph): ƒ.Node {
       let selected: string = sessionStorage.getItem(`${this.id}_${_graph.idResource}`);
-      return selected && ƒ.Node.FIND(_graph, selected);
+      if (selected == null)
+        return null;
+
+      return ƒ.Node.FIND(_graph, selected);
     }
 
     private storeGraph(_graph: ƒ.Graph): void {
