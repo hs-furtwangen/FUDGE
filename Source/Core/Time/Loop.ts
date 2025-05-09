@@ -161,8 +161,9 @@ namespace FudgeCore {
 
       // TODO: consider LoopEvent which conveys information such as timeElapsed etc...
       Loop.ƒFrames++;
-      let event: Event = new Event(EVENT.LOOP_FRAME);
-      Loop.targetStatic.dispatchEvent(event);
+      const event: RecyclableEvent = RecyclableEvent.get(EVENT.LOOP_FRAME);
+      Loop.dispatchEvent(event);
+      RecyclableEvent.store(event);
       PerformanceMonitor.endFrame();
     }
 

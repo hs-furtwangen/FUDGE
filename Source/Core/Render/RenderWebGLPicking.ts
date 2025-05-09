@@ -3,7 +3,6 @@ namespace FudgeCore {
   /**
    * Handles picking.
    * @internal
-   * @authors Jonas Plotzky, HFU, 2025
    */
   export class RenderWebGLPicking {
     public static fboPick: WebGLBuffer;
