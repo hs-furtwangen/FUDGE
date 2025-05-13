@@ -262,7 +262,7 @@ namespace FudgeCore {
       if (!Object.hasOwn(meta, "enumerateKeys"))
         meta.enumerateKeys = [];
 
-      meta.enumerateKeys.push(_context.name.toString());
+      meta.enumerateKeys.push(_context.name);
     };
   }
 

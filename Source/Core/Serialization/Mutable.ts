@@ -43,7 +43,7 @@ namespace FudgeCore {
    * Association of an attribute with its specified type (constructor).
    * @see {@link Metadata}.
    */
-  export type MetaAttributeTypes = Record<string | symbol, Function | Object>;
+  export type MetaAttributeTypes = Record<PropertyKey, Function | Object>;
 
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
@@ -54,7 +54,7 @@ namespace FudgeCore {
      * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
      */
     attributeTypes?: MetaAttributeTypes;
-    enumerateKeys?: string[];
+    enumerateKeys?: PropertyKey[];
 
     /**
      * Map of property names to the type of serialization that should be used for that property.
@@ -131,7 +131,7 @@ namespace FudgeCore {
       if (!Object.hasOwn(metadata, "enumerateKeys"))
         metadata.enumerateKeys = [];
 
-      metadata.enumerateKeys.push(_context.name.toString());
+      metadata.enumerateKeys.push(_context.name);
       return;
     }
 
