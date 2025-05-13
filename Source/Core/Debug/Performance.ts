@@ -21,44 +21,13 @@ namespace FudgeCore {
 
     private static readonly framesToAverage: number = 60;
 
-    public static measure(_name?: string): Function {
-      return (_value: General, _context: ClassMethodDecoratorContext | ClassGetterDecoratorContext | ClassFieldDecoratorContext) => {
-        const name: string = _name ?? _context.name.toString();
-        if (_context.kind === "method" || _context.kind === "getter") {
-          return function (this: General, ..._args: General[]) {
-            PerformanceMonitor.startMeasure(name);
-            const result: General = _value.call(this, ..._args);
-            PerformanceMonitor.endMeasure(name);
-            return result;
-          };
-        }
-        if (_context.kind === "field") {
-          return function (this: General, _initialValue: General) {
-            if (typeof _initialValue != "function")
-              return _initialValue;
-
-            const replacement: General = function (this: General, ..._args: General[]) {
-              PerformanceMonitor.startMeasure(name);
-              const result: General = _initialValue.call(this, ..._args);
-              PerformanceMonitor.endMeasure(name);
-              return result;
-            };
-
-            return replacement;
-          };
-        }
-
-        return null;
-      };
-    }
-
     public static startMeasure(_label: string): void {
       if (!this.measurements[_label]) {
         this.measurements[_label] = {
           frameTimeMin: Number.MAX_VALUE,
           frameTimeMax: -Number.MAX_VALUE,
           frameTimeAvg: 0,
-          
+
           callsPerFrame: 0,
           time: 0,
           calls: 0
@@ -98,6 +67,17 @@ namespace FudgeCore {
           measurement.callsPerFrame = measurement.calls;
         }
       }
+      let longestString: number = Object.keys(PerformanceMonitor.measurements).reduce((_a, _b) => _a.length > _b.length ? _a : _b).length;
+
+      let text: string = `${"Performance Monitor".padEnd(longestString)} |  time  |  calls\n`;
+      for (let key in PerformanceMonitor.measurements) {
+        let measurement: PerformanceMeasurement = PerformanceMonitor.measurements[key];
+        let avg: string = measurement.frameTimeAvg.toFixed(2).padStart(4);
+        let calls: string = measurement.callsPerFrame.toString().padStart(3);
+        text += `${key.padEnd(longestString)} | ${avg}ms | ${calls}cpf\n`;
+      }
+
+      this.display.textContent = text;
     }
   }
 
@@ -118,22 +98,7 @@ namespace FudgeCore {
       top: 0;
       z-index: 1000;
       pointer-events: none;`;
-      Loop.addEventListener(EVENT.LOOP_FRAME, this.update);
     }
-
-    public update = (): void => {
-      let longestString: number = Object.keys(PerformanceMonitor.measurements).reduce((_a, _b) => _a.length > _b.length ? _a : _b).length;
-
-      let text: string = `${"Performance Monitor".padEnd(longestString)} |  time  |  calls\n`;
-      for (let key in PerformanceMonitor.measurements) {
-        let measurement: PerformanceMeasurement = PerformanceMonitor.measurements[key];
-        let avg: string = measurement.frameTimeAvg.toFixed(2).padStart(4);
-        let calls: string = measurement.callsPerFrame.toString().padStart(3);
-        text += `${key.padEnd(longestString)} | ${avg}ms | ${calls}cpf\n`;
-      }
-
-      this.textContent = text;
-    };
   }
 
   customElements.define("ui-performance", PerformanceDisplay, { extends: "pre" });

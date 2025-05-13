@@ -16,7 +16,6 @@ declare namespace FudgeCore {
             [key: string]: PerformanceMeasurement;
         };
         private static readonly framesToAverage;
-        static measure(_name?: string): Function;
         static startMeasure(_label: string): void;
         static endMeasure(_label: string): number;
         static startFrame(): void;
@@ -24,7 +23,6 @@ declare namespace FudgeCore {
     }
     class PerformanceDisplay extends HTMLPreElement {
         constructor();
-        update: () => void;
     }
 }
 declare namespace FudgeCore {
@@ -2393,7 +2391,7 @@ declare namespace FudgeCore {
      * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
      */
     interface AnimationStructure {
-        [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | Vector3 | Quaternion>;
+        [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | MutatorVector3 | MutatorQuaternion>;
     }
     /**
     * An associative array mapping names of lables to timestamps.
@@ -2438,7 +2436,7 @@ declare namespace FudgeCore {
      * Describes and controls and animation by yielding mutators
      * according to the stored {@link AnimationStructure} and {@link AnimationSequenceNumber}s
      * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
-     * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
+     * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
      */
     class Animation extends Mutable implements SerializableResource {
         #private;
@@ -2482,13 +2480,13 @@ declare namespace FudgeCore {
          * Generates and returns a {@link Mutator} with the information to apply to the {@link Node} to animate
          * in the state the animation is in at the given time, direction and quantization
          */
-        getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION): Mutator;
+        getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION, _mutatorOut?: Mutator): Mutator;
         /**
          * Returns a list of the names of the events the {@link ComponentAnimation} needs to fire between _min and _max input values.
          * @param _direction The direction the animation is supposed to run in. >0 == forward, 0 == stop, <0 == backwards
          * @returns a list of strings with the names of the custom events to fire.
          */
-        getEventsToFire(_min: number, _max: number, _quantization: ANIMATION_QUANTIZATION, _direction: number): string[];
+        getEventsToFire(_min: number, _max: number, _quantization: ANIMATION_QUANTIZATION, _direction: number): string[] | null;
         /**
          * Adds an Event to the List of events.
          * @param _name The name of the event (needs to be unique per Animation).
@@ -2534,7 +2532,7 @@ declare namespace FudgeCore {
          */
         private getCorrectEventList;
         /**
-         * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time
+         * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time.
          */
         private traverseStructureForMutator;
         /**
@@ -2542,8 +2540,9 @@ declare namespace FudgeCore {
          * @param _structure The structure to traverse
          */
         private traverseStructureForTime;
+        private getAnimationStructure;
         /**
-         * Ensures the existance of the requested {@link AnimationStrcuture} and returns it.
+         * Ensures the existance of the requested {@link AnimationStructure} and returns it.
          * @param _type the type of the structure to get
          * @returns the requested [[@link AnimationStructure]]
          */
@@ -2591,22 +2590,34 @@ declare namespace FudgeCore {
         private calculateRasteredEventTriggers;
         /**
          * Checks which events lay between two given times and returns the names of the ones that do.
-         * @param _eventTriggers The event object to check the events inside of
-         * @param _min the minimum of the range to check between (inclusive)
-         * @param _max the maximum of the range to check between (exclusive)
-         * @returns an array of the names of the events in the given range.
+         * @param _eventTriggers The event object to check the events inside of.
+         * @param _min the minimum of the range to check between (inclusive).
+         * @param _max the maximum of the range to check between (exclusive).
+         * @param _events the array to add the names of the events to.
+         * @returns an given array of the events appended with the events in the given range.
          */
-        private checkEventsBetween;
+        private addEventsBetween;
     }
 }
 declare namespace FudgeCore {
+    interface MutatorVector3 {
+        x?: number;
+        y?: number;
+        z?: number;
+    }
+    interface MutatorQuaternion {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+    }
     /**
      * Calculates the values between {@link AnimationKeyNumber}s.
      * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`).
      * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
-     * @author Lukas Scheuerle, HFU, 2019
+     * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    abstract class AnimationFunction<T extends number | Vector3 | Quaternion> {
+    abstract class AnimationFunction<T extends AnimationReturnType> {
         protected a: T;
         protected b: T;
         protected c: T;
@@ -2629,7 +2640,7 @@ declare namespace FudgeCore {
          * @param _time the point in time at which to evaluate the function in milliseconds. Will be corrected for offset internally.
          * @returns the value at the given time
          */
-        abstract evaluate(_time: number): T;
+        abstract evaluate(_time: number, _mutatorOut: AnimationReturnType): T;
         /**
          * (Re-)Calculates the parameters of the cubic function.
          * See https://math.stackexchange.com/questions/3173469/calculate-cubic-equation-from-two-points-and-two-slopes-variably
@@ -2641,12 +2652,12 @@ declare namespace FudgeCore {
         evaluate(_time: number): number;
         calculate(): void;
     }
-    class AnimationFunctionVector3 extends AnimationFunction<Vector3> {
-        evaluate(_time: number): Vector3;
+    class AnimationFunctionVector3 extends AnimationFunction<MutatorVector3> {
+        evaluate(_time: number, _out?: MutatorVector3): MutatorVector3;
         calculate(): void;
     }
-    class AnimationFunctionQuaternion extends AnimationFunction<Quaternion> {
-        evaluate(_time: number): Quaternion;
+    class AnimationFunctionQuaternion extends AnimationFunction<MutatorQuaternion> {
+        evaluate(_time: number, _out?: MutatorQuaternion): MutatorQuaternion;
         calculate(): void;
     }
 }
@@ -2676,7 +2687,7 @@ declare namespace FudgeCore {
      * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    class AnimationKey<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
+    class AnimationKey<T extends AnimationReturnType> extends Mutable implements Serializable {
         #private;
         /**Don't modify this unless you know what you're doing.*/
         functionOut: AnimationFunction<T>;
@@ -2687,7 +2698,7 @@ declare namespace FudgeCore {
          * @param _b the animation key to check against
          * @returns >0 if a>b, 0 if a=b, <0 if a<b
          */
-        static compare<T extends number | Vector3 | Quaternion, K extends AnimationKey<T>>(_a: K, _b: K): number;
+        static compare<T extends AnimationReturnType, K extends AnimationKey<T>>(_a: K, _b: K): number;
         get time(): number;
         set time(_time: number);
         get value(): T;
@@ -2863,16 +2874,17 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    type AnimationValueType<T extends number | Vector3 | Quaternion> = T extends number ? NumberConstructor : T extends Vector3 ? typeof Vector3 : T extends Quaternion ? typeof Quaternion : never;
+    type AnimationReturnType = number | MutatorVector3 | MutatorQuaternion;
+    type AnimationValueType<T extends AnimationReturnType> = T extends number ? NumberConstructor : T extends MutatorVector3 ? typeof Vector3 : T extends MutatorQuaternion ? typeof Quaternion : never;
     /**
      * A sequence of {@link AnimationKey}s that is mapped to an attribute of a {@link Node} or its {@link Component}s inside the {@link Animation}.
      * Provides functions to modify said keys
-     * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022
+     * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022-2025
      */
-    class AnimationSequence<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
+    class AnimationSequence<T extends AnimationReturnType> extends Mutable implements Serializable {
         #private;
         protected keys: AnimationKey<T>[];
-        constructor(_keys: AnimationKey<T>[], _valueType: AnimationValueType<T>);
+        constructor(_keys: AnimationKey<T>[], _functionType: AnimationValueType<T>);
         get length(): number;
         get valueType(): AnimationValueType<T>;
         private set valueType(value);
@@ -2881,7 +2893,7 @@ declare namespace FudgeCore {
          * @param _time the point in time at which to evaluate the sequence in milliseconds.
          * @returns the value of the sequence at the given time. undefined if there are no keys.
          */
-        evaluate(_time: number, _frame?: number): T;
+        evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T;
         /**
          * Adds a new key to the sequence.
          * @param _key the key to add
@@ -2933,7 +2945,7 @@ declare namespace FudgeCore {
      */
     class AnimationSequenceSampled<T extends number | Vector3 | Quaternion> extends AnimationSequence<T> {
         /** Evaluates the sequence at the given frame and time. */
-        evaluate(_time: number, _frame?: number): T;
+        evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T;
         protected regenerateFunctions(_keys?: AnimationKey<T>[]): void;
     }
 }
@@ -3073,17 +3085,18 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
-     * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
+     * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022-2025
      */
     class ComponentAnimation extends Component {
         #private;
         static readonly iSubclass: number;
-        animation: Animation;
         playmode: ANIMATION_PLAYMODE;
         quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
         animateInEditor: boolean;
         constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
+        get animation(): Animation;
+        set animation(_animation: Animation);
         set scale(_scale: number);
         get scale(): number;
         /**

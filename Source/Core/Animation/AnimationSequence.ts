@@ -1,26 +1,28 @@
 namespace FudgeCore {
 
-  export type AnimationValueType<T extends number | Vector3 | Quaternion> =
+  export type AnimationReturnType = number | MutatorVector3 | MutatorQuaternion;
+
+  export type AnimationValueType<T extends AnimationReturnType> =
     T extends number ? NumberConstructor :
-      T extends Vector3 ? typeof Vector3 :
-        T extends Quaternion ? typeof Quaternion :
-          never;
+    T extends MutatorVector3 ? typeof Vector3 :
+    T extends MutatorQuaternion ? typeof Quaternion :
+    never;
 
   /**
    * A sequence of {@link AnimationKey}s that is mapped to an attribute of a {@link Node} or its {@link Component}s inside the {@link Animation}.
    * Provides functions to modify said keys
-   * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022
+   * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022-2025
    */
-  export class AnimationSequence<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
+  export class AnimationSequence<T extends AnimationReturnType> extends Mutable implements Serializable {
     protected keys: AnimationKey<T>[];
 
     #valueType: AnimationValueType<T>;
 
-    public constructor(_keys: AnimationKey<T>[] = [], _valueType: AnimationValueType<T>) {
+    public constructor(_keys: AnimationKey<T>[] = [], _functionType: AnimationValueType<T>) {
       super();
       this.keys = _keys;
       this.keys.sort(AnimationKey.compare);
-      this.valueType = _valueType;
+      this.valueType = _functionType;
       this.regenerateFunctions();
     }
 
@@ -41,7 +43,7 @@ namespace FudgeCore {
      * @param _time the point in time at which to evaluate the sequence in milliseconds.
      * @returns the value of the sequence at the given time. undefined if there are no keys.
      */
-    public evaluate(_time: number, _frame?: number): T {
+    public evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T {
       let iLeft: number = 0, iRight: number = this.keys.length - 1, iMid: number;
       while (iLeft <= iRight) {
         iMid = Math.floor((iLeft + iRight) / 2);
@@ -51,7 +53,7 @@ namespace FudgeCore {
           iRight = iMid - 1;
       }
       const key: AnimationKey<T> = this.keys[iRight] ?? this.keys[iLeft];
-      return key?.functionOut.evaluate(_time);
+      return key?.functionOut.evaluate(_time, _out);
 
 
       // if (this.keys.length == 0)
@@ -154,7 +156,7 @@ namespace FudgeCore {
     public serialize(): Serialization {
       let s: Serialization = {
         keys: [],
-        keyType: this.valueType.name,
+        functionType: this.valueType.name,
         animationSequence: true
       };
       for (let i: number = 0; i < this.keys.length; i++) {
@@ -168,7 +170,6 @@ namespace FudgeCore {
         this.valueType = <AnimationValueType<T>>Reflect.get(FudgeCore, _serialization.keyType);
 
       this.valueType ??= <AnimationValueType<T>>Number;
-
       for (let i: number = 0; i < _serialization.keys.length; i++) {
         // this.keys.push(<AnimationKey>Serializer.deserialize(_serialization.keys[i]));
         let k: AnimationKey<General> = new AnimationKey();
@@ -190,7 +191,7 @@ namespace FudgeCore {
       if (!this.valueType)
         throw new Error(`${this.constructor.name}: No key type specified. Cannot generate animation functions.`);
 
-      const functionType: new (..._args: General[]) => AnimationFunction<T> = Reflect.get(FudgeCore, AnimationFunction.name + this.valueType.name);
+      const functionType: new (..._args: ConstructorParameters<typeof AnimationFunction>) => AnimationFunction<T> = Reflect.get(FudgeCore, AnimationFunction.name + this.valueType.name);
 
       for (let i: number = 0; i < _keys.length; i++) {
         const key: AnimationKey<T> = _keys[i];
@@ -202,8 +203,6 @@ namespace FudgeCore {
     protected reduceMutator(_mutator: Mutator): void { /* */ }
   }
 
-
-
   /**
    * A sequence of {@link AnimationKeyNumber}s sampled from an original sequence. In a sampled sequence, the keys are stored at indices corresponding to discrete frames in accordance with the {@link Animation}'s frames per second.
    * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame. 
@@ -212,8 +211,8 @@ namespace FudgeCore {
   export class AnimationSequenceSampled<T extends number | Vector3 | Quaternion> extends AnimationSequence<T> {
 
     /** Evaluates the sequence at the given frame and time. */
-    public override evaluate(_time: number, _frame?: number): T {
-      return this.keys[_frame]?.functionOut.evaluate(_time);
+    public override evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T {
+      return this.keys[_frame]?.functionOut.evaluate(_time, _out);
     }
 
     protected override regenerateFunctions(_keys: AnimationKey<T>[] = this.keys): void {

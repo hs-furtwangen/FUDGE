@@ -4,7 +4,6 @@ namespace FudgeCore {
     LINEAR,
     CUBIC
   }
-  // type AnimationInterpolation = "constant" | "linear" | "cubic";
 
   /**
    * Holds information about continous points in time their accompanying values as well as their slopes. 
@@ -13,7 +12,7 @@ namespace FudgeCore {
    * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
    * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export class AnimationKey<T extends number | Vector3 | Quaternion> extends Mutable implements Serializable {
+  export class AnimationKey<T extends AnimationReturnType> extends Mutable implements Serializable {
     /**Don't modify this unless you know what you're doing.*/
     public functionOut: AnimationFunction<T>;
 
@@ -45,7 +44,7 @@ namespace FudgeCore {
      * @param _b the animation key to check against
      * @returns >0 if a>b, 0 if a=b, <0 if a<b
      */
-    public static compare<T extends number | Vector3 | Quaternion, K extends AnimationKey<T>>(_a: K, _b: K): number {
+    public static compare<T extends AnimationReturnType, K extends AnimationKey<T>>(_a: K, _b: K): number {
       return _a.time - _b.time;
     }
 

@@ -360,7 +360,7 @@ namespace FudgeCore {
      */
     public applyAnimation(_mutator: Mutator): void {
       if (_mutator.components)
-        for (const componentType in _mutator.components) {
+        for (const componentType of Object.keys(_mutator.components)) {
           let componentsOfType: Component[] = this.components[componentType];
           let mutatorsForType: Mutator[] = _mutator.components[componentType];
           for (let i: number = 0; i < componentsOfType.length; i++)
@@ -368,7 +368,7 @@ namespace FudgeCore {
         }
 
       if (_mutator.children)
-        for (const childName in _mutator.children)
+        for (const childName of Object.keys(_mutator.children))
           this.getChildByName(childName).applyAnimation(_mutator.children[childName]);
     }
     // #endregion

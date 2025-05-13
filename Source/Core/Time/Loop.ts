@@ -146,7 +146,6 @@ namespace FudgeCore {
     }
 
     private static loop(): void {
-      PerformanceMonitor.startFrame();
       let time: number;
       time = performance.now();
       Loop.ƒTimeFrameReal = time - Loop.ƒTimeFrameStartReal;
@@ -164,7 +163,6 @@ namespace FudgeCore {
       const event: RecyclableEvent = RecyclableEvent.get(EVENT.LOOP_FRAME);
       Loop.dispatchEvent(event);
       RecyclableEvent.store(event);
-      PerformanceMonitor.endFrame();
     }
 
     private static loopFrame(): void {

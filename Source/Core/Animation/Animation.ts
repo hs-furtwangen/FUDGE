@@ -4,7 +4,7 @@ namespace FudgeCore {
    * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
    */
   export interface AnimationStructure {
-    [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | Vector3 | Quaternion>;
+    [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | MutatorVector3 | MutatorQuaternion>;
   }
 
   /**
@@ -73,7 +73,7 @@ namespace FudgeCore {
    * Describes and controls and animation by yielding mutators 
    * according to the stored {@link AnimationStructure} and {@link AnimationSequenceNumber}s
    * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
-   * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
+   * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
    */
   @SerializableResource.register
   export class Animation extends Mutable implements SerializableResource {
@@ -185,22 +185,11 @@ namespace FudgeCore {
      * Generates and returns a {@link Mutator} with the information to apply to the {@link Node} to animate
      * in the state the animation is in at the given time, direction and quantization
      */
-    public getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION): Mutator {
-      let m: Mutator = {};
-      let animationStructure: ANIMATION_STRUCTURE_TYPE;
-
-      if (_quantization == ANIMATION_QUANTIZATION.CONTINOUS)
-        if (this.sampled)
-          animationStructure = ANIMATION_STRUCTURE_TYPE.SAMPLED;
-        else
-          animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
-      else
-        animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE : ANIMATION_STRUCTURE_TYPE.RASTERED;
-
+    public getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION, _mutatorOut: Mutator = {}): Mutator {
       let frame: number = this.sampled ? Math.floor(_time * this.framesPerSecond / 1000) : undefined;
-      m = this.traverseStructureForMutator(this.getProcessedAnimationStructure(animationStructure), _time, frame);
+      _mutatorOut = this.traverseStructureForMutator(this.getAnimationStructure(_direction, _quantization), _time, frame, _mutatorOut);
 
-      return m;
+      return _mutatorOut;
     }
 
     /**
@@ -208,8 +197,8 @@ namespace FudgeCore {
      * @param _direction The direction the animation is supposed to run in. >0 == forward, 0 == stop, <0 == backwards
      * @returns a list of strings with the names of the custom events to fire.
      */
-    public getEventsToFire(_min: number, _max: number, _quantization: ANIMATION_QUANTIZATION, _direction: number): string[] {
-      let eventList: string[] = [];
+    public getEventsToFire(_min: number, _max: number, _quantization: ANIMATION_QUANTIZATION, _direction: number): string[] | null {
+      let events: string[] = [];
       let minSection: number = Math.floor(_min / this.totalTime);
       let maxSection: number = Math.floor(_max / this.totalTime);
       _min = _min % this.totalTime;
@@ -218,15 +207,15 @@ namespace FudgeCore {
       while (minSection <= maxSection) {
         let eventTriggers: AnimationEventTrigger = this.getCorrectEventList(_direction, _quantization);
         if (minSection == maxSection) {
-          eventList = eventList.concat(this.checkEventsBetween(eventTriggers, _min, _max));
+          this.addEventsBetween(eventTriggers, _min, _max, events);
         } else {
-          eventList = eventList.concat(this.checkEventsBetween(eventTriggers, _min, this.totalTime));
+          this.addEventsBetween(eventTriggers, _min, _max, events);
           _min = 0;
         }
         minSection++;
       }
 
-      return eventList;
+      return events;
     }
 
     /**
@@ -410,21 +399,18 @@ namespace FudgeCore {
     }
 
     /**
-     * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time
+     * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time.
      */
-    private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _frame?: number): Mutator {
-      let newMutator: Mutator = {};
-      for (let n in _structure) {
-        if (_structure[n] instanceof AnimationSequence) {
-          // PerformanceMonitor.startMeasure("evaluateSequence");
-          newMutator[n] = (<AnimationSequence<General>>_structure[n]).evaluate(_time, _frame);
-          // PerformanceMonitor.endMeasure("evaluateSequence");
+    private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _frame?: number, _mutatorOut: Mutator = {}): Mutator {
+      for (let n of Object.keys(_structure)) {
+        if (_structure[n] instanceof AnimationSequence) { // TODO: implement fast check!!
+          _mutatorOut[n] = (<AnimationSequence<General>>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
         } else {
-          newMutator[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame);
+          _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
         }
       }
 
-      return newMutator;
+      return _mutatorOut;
     }
 
     /**
@@ -445,37 +431,54 @@ namespace FudgeCore {
       }
     }
 
+    private getAnimationStructure(_direction: number, _quantization: ANIMATION_QUANTIZATION): AnimationStructure {
+      let animationStructure: ANIMATION_STRUCTURE_TYPE;
+
+      if (_quantization == ANIMATION_QUANTIZATION.CONTINOUS)
+        if (this.sampled)
+          animationStructure = ANIMATION_STRUCTURE_TYPE.SAMPLED;
+        else
+          animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
+      else
+        animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE : ANIMATION_STRUCTURE_TYPE.RASTERED;
+
+      return this.getProcessedAnimationStructure(animationStructure);
+    }
+
     /**
-     * Ensures the existance of the requested {@link AnimationStrcuture} and returns it.
+     * Ensures the existance of the requested {@link AnimationStructure} and returns it.
      * @param _type the type of the structure to get
      * @returns the requested [[@link AnimationStructure]]
      */
     private getProcessedAnimationStructure(_type: ANIMATION_STRUCTURE_TYPE): AnimationStructure {
-      if (!this.#animationStructuresProcessed.has(_type)) {
-        this.calculateTotalTime();
-        let ae: AnimationStructure = {};
-        switch (_type) {
-          case ANIMATION_STRUCTURE_TYPE.NORMAL:
-            ae = this.animationStructure;
-            break;
-          case ANIMATION_STRUCTURE_TYPE.REVERSE:
-            ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateReverseSequence.bind(this));
-            break;
-          case ANIMATION_STRUCTURE_TYPE.RASTERED:
-            ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateRasteredSequence.bind(this));
-            break;
-          case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
-            ae = this.traverseStructureForNewStructure(this.getProcessedAnimationStructure(ANIMATION_STRUCTURE_TYPE.REVERSE), this.calculateRasteredSequence.bind(this));
-            break;
-          case ANIMATION_STRUCTURE_TYPE.SAMPLED:
-            ae = this.traverseStructureForNewStructure(this.animationStructure, this.calculateSampledSequence.bind(this));
-            break;
-          default:
-            return {};
-        }
-        this.#animationStructuresProcessed.set(_type, ae);
+      let processed: AnimationStructure = this.#animationStructuresProcessed.get(_type);
+      if (processed)
+        return processed;
+
+      this.calculateTotalTime();
+      processed = {};
+      switch (_type) {
+        case ANIMATION_STRUCTURE_TYPE.NORMAL:
+          processed = this.animationStructure;
+          break;
+        case ANIMATION_STRUCTURE_TYPE.REVERSE:
+          processed = this.traverseStructureForNewStructure(this.animationStructure, this.calculateReverseSequence.bind(this));
+          break;
+        case ANIMATION_STRUCTURE_TYPE.RASTERED:
+          processed = this.traverseStructureForNewStructure(this.animationStructure, this.calculateRasteredSequence.bind(this));
+          break;
+        case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
+          processed = this.traverseStructureForNewStructure(this.getProcessedAnimationStructure(ANIMATION_STRUCTURE_TYPE.REVERSE), this.calculateRasteredSequence.bind(this));
+          break;
+        case ANIMATION_STRUCTURE_TYPE.SAMPLED:
+          processed = this.traverseStructureForNewStructure(this.animationStructure, this.calculateSampledSequence.bind(this));
+          break;
+        default:
+          return undefined;
       }
-      return this.#animationStructuresProcessed.get(_type);
+
+      this.#animationStructuresProcessed.set(_type, processed);
+      return processed;
     }
 
     /**
@@ -484,28 +487,32 @@ namespace FudgeCore {
      * @returns the requested {@link AnimationEventTrigger}
      */
     private getProcessedEventTrigger(_type: ANIMATION_STRUCTURE_TYPE): AnimationEventTrigger {
-      if (!this.eventsProcessed.has(_type)) {
-        this.calculateTotalTime();
-        let ev: AnimationEventTrigger = {};
-        switch (_type) {
-          case ANIMATION_STRUCTURE_TYPE.NORMAL:
-            ev = this.events;
-            break;
-          case ANIMATION_STRUCTURE_TYPE.REVERSE:
-            ev = this.calculateReverseEventTriggers(this.events);
-            break;
-          case ANIMATION_STRUCTURE_TYPE.RASTERED:
-            ev = this.calculateRasteredEventTriggers(this.events);
-            break;
-          case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
-            ev = this.calculateRasteredEventTriggers(this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.REVERSE));
-            break;
-          default:
-            return {};
-        }
-        this.eventsProcessed.set(_type, ev);
+      let processed: AnimationEventTrigger = this.eventsProcessed.get(_type);
+      if (processed)
+        return processed;
+
+      this.calculateTotalTime();
+      processed = {};
+      switch (_type) {
+        case ANIMATION_STRUCTURE_TYPE.NORMAL:
+          processed = this.events;
+          break;
+        case ANIMATION_STRUCTURE_TYPE.REVERSE:
+          processed = this.calculateReverseEventTriggers(this.events);
+          break;
+        case ANIMATION_STRUCTURE_TYPE.RASTERED:
+          processed = this.calculateRasteredEventTriggers(this.events);
+          break;
+        case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
+          processed = this.calculateRasteredEventTriggers(this.getProcessedEventTrigger(ANIMATION_STRUCTURE_TYPE.REVERSE));
+          break;
+        default:
+          return undefined;
       }
-      return this.eventsProcessed.get(_type);
+
+      this.eventsProcessed.set(_type, processed);
+
+      return processed;
     }
 
     /**
@@ -548,9 +555,9 @@ namespace FudgeCore {
     private calculateRasteredSequence<T extends number | Vector3 | Quaternion>(_sequence: AnimationSequence<T>): AnimationSequence<T> {
       let keys: AnimationKey<T>[] = [];
       let frameTime: number = 1000 / this.framesPerSecond;
-      for (let i: number = 0; i < this.totalTime; i += frameTime) 
+      for (let i: number = 0; i < this.totalTime; i += frameTime)
         keys.push(new AnimationKey(i, _sequence.evaluate(i), ANIMATION_INTERPOLATION.CONSTANT));
-      
+
       return new AnimationSequence<T>(keys, _sequence.valueType);
     }
 
@@ -603,19 +610,19 @@ namespace FudgeCore {
 
     /**
      * Checks which events lay between two given times and returns the names of the ones that do.
-     * @param _eventTriggers The event object to check the events inside of
-     * @param _min the minimum of the range to check between (inclusive)
-     * @param _max the maximum of the range to check between (exclusive)
-     * @returns an array of the names of the events in the given range. 
+     * @param _eventTriggers The event object to check the events inside of.
+     * @param _min the minimum of the range to check between (inclusive).
+     * @param _max the maximum of the range to check between (exclusive).
+     * @param _events the array to add the names of the events to.
+     * @returns an given array of the events appended with the events in the given range. 
      */
-    private checkEventsBetween(_eventTriggers: AnimationEventTrigger, _min: number, _max: number): string[] {
-      let eventsToTrigger: string[] = [];
+    private addEventsBetween(_eventTriggers: AnimationEventTrigger, _min: number, _max: number, _events: string[]): string[] {
       for (let name in _eventTriggers) {
         if (_min <= _eventTriggers[name] && _eventTriggers[name] < _max) {
-          eventsToTrigger.push(name);
+          _events.push(name);
         }
       }
-      return eventsToTrigger;
+      return _events;
     }
   }
 }

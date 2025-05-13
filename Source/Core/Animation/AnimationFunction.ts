@@ -1,12 +1,25 @@
 namespace FudgeCore {
 
+  export interface MutatorVector3 {
+    x?: number;
+    y?: number;
+    z?: number;
+  }
+
+  export interface MutatorQuaternion {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  }
+
   /**
    * Calculates the values between {@link AnimationKeyNumber}s.
    * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`). 
    * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
-   * @author Lukas Scheuerle, HFU, 2019
+   * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export abstract class AnimationFunction<T extends number | Vector3 | Quaternion> {
+  export abstract class AnimationFunction<T extends AnimationReturnType> {
     protected a: T;
     protected b: T;
     protected c: T;
@@ -14,7 +27,7 @@ namespace FudgeCore {
 
     // TODO: think about removing these as in most cases changes to any key entail a recalculation of the whole sequence i.e. all functions have to be recreated
     // or maybe merge function and key into one class?
-    protected keyIn: AnimationKey<T>; 
+    protected keyIn: AnimationKey<T>;
     protected keyOut: AnimationKey<T>;
 
     public constructor(_keyIn: AnimationKey<T>, _keyOut: AnimationKey<T> = null) {
@@ -36,7 +49,7 @@ namespace FudgeCore {
      * @param _time the point in time at which to evaluate the function in milliseconds. Will be corrected for offset internally.
      * @returns the value at the given time
      */
-    public abstract evaluate(_time: number): T;
+    public abstract evaluate(_time: number, _mutatorOut: AnimationReturnType): T;
 
     /**
      * (Re-)Calculates the parameters of the cubic function.
@@ -57,12 +70,12 @@ namespace FudgeCore {
     public calculate(): void {
       this.d = this.c = this.b = this.a = 0;
 
-      if (!this.keyIn) 
+      if (!this.keyIn)
         return;
 
       this.d = this.keyIn.value;
-      
-      if (!this.keyOut || this.keyIn.interpolation == ANIMATION_INTERPOLATION.CONSTANT) 
+
+      if (!this.keyOut || this.keyIn.interpolation == ANIMATION_INTERPOLATION.CONSTANT)
         return;
 
       let x1: number = this.keyOut.time - this.keyIn.time;
@@ -78,35 +91,34 @@ namespace FudgeCore {
     }
   }
 
-  export class AnimationFunctionVector3 extends AnimationFunction<Vector3> {
-    public evaluate(_time: number): Vector3 {
+  export class AnimationFunctionVector3 extends AnimationFunction<MutatorVector3> {
+    public override evaluate(_time: number, _out: MutatorVector3 = {}): MutatorVector3 {
       _time -= this.keyIn.time;
       let time2: number = _time * _time;
       let time3: number = time2 * _time;
 
-      let result: Vector3 = <General>{};
-      result.x = this.a.x * time3 + this.b.x * time2 + this.c.x * _time + this.d.x;
-      result.y = this.a.y * time3 + this.b.y * time2 + this.c.y * _time + this.d.y;
-      result.z = this.a.z * time3 + this.b.z * time2 + this.c.z * _time + this.d.z;
-      return result;
+      _out.x = this.a.x * time3 + this.b.x * time2 + this.c.x * _time + this.d.x;
+      _out.y = this.a.y * time3 + this.b.y * time2 + this.c.y * _time + this.d.y;
+      _out.z = this.a.z * time3 + this.b.z * time2 + this.c.z * _time + this.d.z;
+      return _out;
     }
 
     public calculate(): void {
-      this.a = new Vector3(0, 0, 0);
-      this.b = new Vector3(0, 0, 0);
-      this.c = new Vector3(0, 0, 0);
-      this.d = new Vector3(0, 0, 0);
+      this.a = { x: 0, y: 0, z: 0 };
+      this.b = { x: 0, y: 0, z: 0 };
+      this.c = { x: 0, y: 0, z: 0 };
+      this.d = { x: 0, y: 0, z: 0 };
 
-      if (!this.keyIn) 
+      if (!this.keyIn)
         return;
 
-      this.d.copy(this.keyIn.value);
-      
+      Object.assign(this.d, this.keyIn.value);
+
       if (!this.keyOut || this.keyIn.interpolation == ANIMATION_INTERPOLATION.CONSTANT)
         return;
-  
+
       let x1: number = this.keyOut.time - this.keyIn.time;
-      
+
       if (this.keyIn.interpolation == ANIMATION_INTERPOLATION.LINEAR) {
         this.c.x = (this.keyOut.value.x - this.keyIn.value.x) / x1;
         this.c.y = (this.keyOut.value.y - this.keyIn.value.y) / x1;
@@ -115,7 +127,7 @@ namespace FudgeCore {
         return;
       }
 
-      this.c.copy(this.keyIn.slopeOut);
+      Object.assign(this.c, this.keyIn.slopeOut);
 
       this.a.x = (-x1 * (this.keyIn.slopeOut.x + this.keyOut.slopeIn.x) - 2 * this.keyIn.value.x + 2 * this.keyOut.value.x) / -Math.pow(x1, 3);
       this.a.y = (-x1 * (this.keyIn.slopeOut.y + this.keyOut.slopeIn.y) - 2 * this.keyIn.value.y + 2 * this.keyOut.value.y) / -Math.pow(x1, 3);
@@ -127,36 +139,35 @@ namespace FudgeCore {
     }
   }
 
-  export class AnimationFunctionQuaternion extends AnimationFunction<Quaternion> {
-    public evaluate(_time: number): Quaternion {
+  export class AnimationFunctionQuaternion extends AnimationFunction<MutatorQuaternion> {
+    public evaluate(_time: number, _out: MutatorQuaternion = <MutatorQuaternion>{}): MutatorQuaternion {
       _time -= this.keyIn.time;
       let time2: number = _time * _time;
       let time3: number = time2 * _time;
 
-      let result: Quaternion = <General>{};
-      result.x = this.a.x * time3 + this.b.x * time2 + this.c.x * _time + this.d.x;
-      result.y = this.a.y * time3 + this.b.y * time2 + this.c.y * _time + this.d.y;
-      result.z = this.a.z * time3 + this.b.z * time2 + this.c.z * _time + this.d.z;
-      result.w = this.a.w * time3 + this.b.w * time2 + this.c.w * _time + this.d.w;
-      return result;
+      _out.x = this.a.x * time3 + this.b.x * time2 + this.c.x * _time + this.d.x;
+      _out.y = this.a.y * time3 + this.b.y * time2 + this.c.y * _time + this.d.y;
+      _out.z = this.a.z * time3 + this.b.z * time2 + this.c.z * _time + this.d.z;
+      _out.w = this.a.w * time3 + this.b.w * time2 + this.c.w * _time + this.d.w;
+      return _out;
     }
 
     public calculate(): void {
-      this.a = new Quaternion(0, 0, 0, 0);
-      this.b = new Quaternion(0, 0, 0, 0);
-      this.c = new Quaternion(0, 0, 0, 0);
-      this.d = new Quaternion(0, 0, 0, 0);
+      this.a = { x: 0, y: 0, z: 0, w: 0 };
+      this.b = { x: 0, y: 0, z: 0, w: 0 };
+      this.c = { x: 0, y: 0, z: 0, w: 0 };
+      this.d = { x: 0, y: 0, z: 0, w: 0 };
 
-      if (!this.keyIn) 
+      if (!this.keyIn)
         return;
 
-      this.d.copy(this.keyIn.value);
-      
-      if (!this.keyOut || this.keyIn.interpolation == ANIMATION_INTERPOLATION.CONSTANT) 
+      Object.assign(this.d, this.keyIn.value);
+
+      if (!this.keyOut || this.keyIn.interpolation == ANIMATION_INTERPOLATION.CONSTANT)
         return;
 
       let x1: number = this.keyOut.time - this.keyIn.time;
-      
+
       if (this.keyIn.interpolation == ANIMATION_INTERPOLATION.LINEAR) {
         this.c.x = (this.keyOut.value.x - this.keyIn.value.x) / x1;
         this.c.y = (this.keyOut.value.y - this.keyIn.value.y) / x1;
@@ -166,7 +177,7 @@ namespace FudgeCore {
         return;
       }
 
-      this.c.copy(this.keyIn.slopeOut);
+      Object.assign(this.c, this.keyIn.slopeOut);
 
       this.a.x = (-x1 * (this.keyIn.slopeOut.x + this.keyOut.slopeIn.x) - 2 * this.keyIn.value.x + 2 * this.keyOut.value.x) / -Math.pow(x1, 3);
       this.a.y = (-x1 * (this.keyIn.slopeOut.y + this.keyOut.slopeIn.y) - 2 * this.keyIn.value.y + 2 * this.keyOut.value.y) / -Math.pow(x1, 3);

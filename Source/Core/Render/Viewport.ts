@@ -195,7 +195,7 @@ namespace FudgeCore {
       RecyclableEvent.store(eventRenderEnd);
 
       // this.#crc2.clearRect(0, 0, this.#rectCanvas.width, this.#rectCanvas.height); // for now don't clear to allow mulltiple viewport draw on same canvas
-      this.#crc2.drawImage(
+      this.#crc2.drawImage( // <- costs a lot of performance in firefox
         Render.getCanvas(),
         this.rectSource.x, this.rectSource.y, this.rectSource.width, this.rectSource.height,
         this.rectDestination.x, this.rectDestination.y, this.rectDestination.width, this.rectDestination.height
