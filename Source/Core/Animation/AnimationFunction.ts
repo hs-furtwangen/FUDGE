@@ -1,25 +1,12 @@
 namespace FudgeCore {
 
-  export interface MutatorVector3 {
-    x?: number;
-    y?: number;
-    z?: number;
-  }
-
-  export interface MutatorQuaternion {
-    x: number;
-    y: number;
-    z: number;
-    w: number;
-  }
-
   /**
    * Calculates the values between {@link AnimationKeyNumber}s.
    * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`). 
    * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
    * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export abstract class AnimationFunction<T extends AnimationReturnType> {
+  export abstract class AnimationFunction<T extends AnimationReturnType = AnimationReturnType> {
     protected a: T;
     protected b: T;
     protected c: T;

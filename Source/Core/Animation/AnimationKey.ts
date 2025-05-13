@@ -12,7 +12,7 @@ namespace FudgeCore {
    * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
    * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export class AnimationKey<T extends AnimationReturnType> extends Mutable implements Serializable {
+  export class AnimationKey<T extends AnimationReturnType = AnimationReturnType> extends Mutable implements Serializable {
     /**Don't modify this unless you know what you're doing.*/
     public functionOut: AnimationFunction<T>;
 
@@ -29,9 +29,13 @@ namespace FudgeCore {
       this.#interpolation = _interpolation;
       this.#slopeIn = _slopeIn;
       this.#slopeOut = _slopeOut;
-      if (typeof this.#value == "object") { // TODO: test
-        this.#slopeIn ??= <T>Reflect.construct(this.#value.constructor, [0, 0, 0, 0]);
-        this.#slopeOut ??= <T>Reflect.construct(this.#value.constructor, [0, 0, 0, 0]);
+      if (typeof this.#value == "object") {
+        this.#slopeIn ??= <T>{};
+        this.#slopeOut ??= <T>{};
+        for (const key of Object.keys(this.#value)) {
+          Reflect.set(<object>this.#slopeIn, key, 0);
+          Reflect.set(<object>this.#slopeOut, key, 0);
+        }
       } else if (typeof this.#value == "number") {
         this.#slopeIn ??= <T>0;
         this.#slopeOut ??= <T>0;

@@ -4,7 +4,7 @@ namespace FudgeCore {
    * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
    */
   export interface AnimationStructure {
-    [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | MutatorVector3 | MutatorQuaternion>;
+    [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence;
   }
 
   /**
@@ -369,8 +369,8 @@ namespace FudgeCore {
       let structure: AnimationStructure = {};
       for (let n in _serialization) {
         if (_serialization[n].animationSequence) {
-          let animSeq: AnimationSequence<General> = new AnimationSequence([], null);
-          structure[n] = <AnimationSequence<General>>(await animSeq.deserialize(_serialization[n]));
+          let animSeq: AnimationSequence = new AnimationSequence([], null);
+          structure[n] = <AnimationSequence>(await animSeq.deserialize(_serialization[n]));
         } else {
           structure[n] = await this.traverseStructureForDeserialization(_serialization[n]);
         }
@@ -403,13 +403,11 @@ namespace FudgeCore {
      */
     private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _frame?: number, _mutatorOut: Mutator = {}): Mutator {
       for (let n of Object.keys(_structure)) {
-        if (_structure[n] instanceof AnimationSequence) { // TODO: implement fast check!!
-          _mutatorOut[n] = (<AnimationSequence<General>>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
-        } else {
+        if (_structure[n] instanceof AnimationSequence)
+          _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
+        else
           _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
-        }
       }
-
       return _mutatorOut;
     }
 
@@ -420,7 +418,7 @@ namespace FudgeCore {
     private traverseStructureForTime(_structure: AnimationStructure): void {
       for (let n in _structure) {
         if (_structure[n] instanceof AnimationSequence) {
-          let sequence: AnimationSequence<General> = <AnimationSequence<General>>_structure[n];
+          let sequence: AnimationSequence = <AnimationSequence>_structure[n];
           if (sequence.length > 0) {
             let sequenceTime: number = sequence.getKey(sequence.length - 1).time;
             this.totalTime = Math.max(sequenceTime, this.totalTime);
@@ -538,13 +536,13 @@ namespace FudgeCore {
      * @param _sequence The sequence to calculate the new sequence out of
      * @returns The reversed Sequence
      */
-    private calculateReverseSequence<T extends number | Vector3 | Quaternion>(_sequence: AnimationSequence<T>): AnimationSequence<T> {
-      let keys: AnimationKey<T>[] = new Array(_sequence.length);
+    private calculateReverseSequence(_sequence: AnimationSequence): AnimationSequence {
+      let keys: AnimationKey[] = new Array(_sequence.length);
       for (let i: number = 0; i < _sequence.length; i++) {
-        let oldKey: AnimationKey<T> = _sequence.getKey(i);
+        let oldKey: AnimationKey = _sequence.getKey(i);
         keys[i] = new AnimationKey(this.totalTime - oldKey.time, oldKey.value, oldKey.interpolation, oldKey.slopeOut, oldKey.slopeIn);
       }
-      return new AnimationSequence<T>(keys, _sequence.valueType);
+      return new AnimationSequence(keys, _sequence.classType);
     }
 
     /**
@@ -552,24 +550,24 @@ namespace FudgeCore {
      * @param _sequence The sequence to calculate the new sequence out of
      * @returns the rastered sequence.
      */
-    private calculateRasteredSequence<T extends number | Vector3 | Quaternion>(_sequence: AnimationSequence<T>): AnimationSequence<T> {
-      let keys: AnimationKey<T>[] = [];
+    private calculateRasteredSequence(_sequence: AnimationSequence): AnimationSequence {
+      let keys: AnimationKey[] = [];
       let frameTime: number = 1000 / this.framesPerSecond;
       for (let i: number = 0; i < this.totalTime; i += frameTime)
         keys.push(new AnimationKey(i, _sequence.evaluate(i), ANIMATION_INTERPOLATION.CONSTANT));
 
-      return new AnimationSequence<T>(keys, _sequence.valueType);
+      return new AnimationSequence(keys, _sequence.classType);
     }
 
     /**
      * Creates a {@link AnimationSequenceSampled} out of a given sequence.
      */
-    private calculateSampledSequence(_sequence: AnimationSequence<number>): AnimationSequenceSampled<number> {
+    private calculateSampledSequence(_sequence: AnimationSequence): AnimationSequenceSampled {
       const frameTime: number = 1000 / this.framesPerSecond;
       const nFrames: number = Math.ceil(this.totalTime / frameTime);
 
-      let keysOriginal: AnimationKey<number>[] = _sequence.getKeys();
-      let keysSampled: AnimationKey<number>[] = new Array(nFrames + 1);
+      let keysOriginal: AnimationKey[] = _sequence.getKeys();
+      let keysSampled: AnimationKey[] = new Array(nFrames + 1);
 
       for (let iSampled: number = 0, iOriginal: number = 0, time: number = 0; iSampled <= nFrames; iSampled++, time += frameTime) {
         while (iOriginal < keysOriginal.length - 1 && keysOriginal[iOriginal + 1].time <= time + 1e-3)
@@ -578,7 +576,7 @@ namespace FudgeCore {
         keysSampled[iSampled] = keysOriginal[iOriginal];
       }
 
-      return new AnimationSequenceSampled(keysSampled, _sequence.valueType);;
+      return new AnimationSequenceSampled(keysSampled, _sequence.classType);;
     }
 
     /**

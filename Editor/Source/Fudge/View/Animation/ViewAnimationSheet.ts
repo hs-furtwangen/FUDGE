@@ -543,7 +543,7 @@ namespace Fudge {
           });
       }
 
-      function getBezierPoints(_animationFunction: ƒ.AnimationFunctionNumber, _keyStart: ƒ.AnimationKey<number>, _keyEnd: ƒ.AnimationKey<number>): ƒ.Vector2[] {
+      function getBezierPoints(_animationFunction: ƒ.AnimationFunction<number>, _keyStart: ƒ.AnimationKey<number>, _keyEnd: ƒ.AnimationKey<number>): ƒ.Vector2[] {
         let parameters: { a: number; b: number; c: number; d: number } = _animationFunction.getParameters();
         const polarForm: (u: number, v: number, w: number) => number = (_u, _v, _w) => {
           return (

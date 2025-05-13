@@ -452,7 +452,7 @@ namespace FudgeCore {
       for (const valueName in _animNode) if (valueName == "dX" || valueName == "dY" || valueName == "dZ") {
         const value: FBX.AnimCurve | number = _animNode[valueName];
         if (typeof value != "number") {
-          const sequence: AnimationSequence<number> = new AnimationSequence([], Number);
+          const sequence: AnimationSequence = new AnimationSequence<number>([], Number);
           for (let i: number = 0; i < value.KeyTime.length; ++i) {
             // According to the reference time is defined as a signed int64, unit being 1/46186158000 seconds
             // ref: https://archive.blender.org/wiki/index.php/User:Mont29/Foundation/FBX_File_Structure/#Some_Specific_Property_Types

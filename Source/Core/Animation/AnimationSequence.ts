@@ -1,11 +1,24 @@
 namespace FudgeCore {
 
+  export interface MutatorVector3 {
+    x?: number;
+    y?: number;
+    z?: number;
+  }
+
+  export interface MutatorQuaternion {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  }
+
   export type AnimationReturnType = number | MutatorVector3 | MutatorQuaternion;
 
-  export type AnimationValueType<T extends AnimationReturnType> =
+  export type AnimationClassType<T extends AnimationReturnType = AnimationReturnType> =
     T extends number ? NumberConstructor :
-    T extends MutatorVector3 ? typeof Vector3 :
     T extends MutatorQuaternion ? typeof Quaternion :
+    T extends MutatorVector3 ? typeof Vector3 :
     never;
 
   /**
@@ -13,16 +26,16 @@ namespace FudgeCore {
    * Provides functions to modify said keys
    * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022-2025
    */
-  export class AnimationSequence<T extends AnimationReturnType> extends Mutable implements Serializable {
+  export class AnimationSequence<T extends AnimationReturnType = AnimationReturnType, C extends AnimationClassType<T> = AnimationClassType<T>> extends Mutable implements Serializable {
     protected keys: AnimationKey<T>[];
 
-    #valueType: AnimationValueType<T>;
+    #classType: C;
 
-    public constructor(_keys: AnimationKey<T>[] = [], _functionType: AnimationValueType<T>) {
+    public constructor(_keys: AnimationKey<T>[] = [], _valueType: C) {
       super();
       this.keys = _keys;
       this.keys.sort(AnimationKey.compare);
-      this.valueType = _functionType;
+      this.classType = _valueType;
       this.regenerateFunctions();
     }
 
@@ -30,12 +43,12 @@ namespace FudgeCore {
       return this.keys.length;
     }
 
-    public get valueType(): AnimationValueType<T> {
-      return this.#valueType;
+    public get classType(): C {
+      return this.#classType;
     }
 
-    private set valueType(_type: AnimationValueType<T>) {
-      this.#valueType = _type;
+    private set classType(_type: C) {
+      this.#classType = _type;
     }
 
     /**
@@ -156,7 +169,7 @@ namespace FudgeCore {
     public serialize(): Serialization {
       let s: Serialization = {
         keys: [],
-        functionType: this.valueType.name,
+        classType: this.classType.name,
         animationSequence: true
       };
       for (let i: number = 0; i < this.keys.length; i++) {
@@ -166,10 +179,10 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      if (_serialization.keyType != null)
-        this.valueType = <AnimationValueType<T>>Reflect.get(FudgeCore, _serialization.keyType);
+      if (_serialization.classType != null)
+        this.classType = <C>Reflect.get(FudgeCore, _serialization.classType);
 
-      this.valueType ??= <AnimationValueType<T>>Number;
+      this.classType ??= <C><unknown>Number;
       for (let i: number = 0; i < _serialization.keys.length; i++) {
         // this.keys.push(<AnimationKey>Serializer.deserialize(_serialization.keys[i]));
         let k: AnimationKey<General> = new AnimationKey();
@@ -188,10 +201,10 @@ namespace FudgeCore {
       if (_keys.length == 0)
         return;
 
-      if (!this.valueType)
+      if (!this.classType)
         throw new Error(`${this.constructor.name}: No key type specified. Cannot generate animation functions.`);
 
-      const functionType: new (..._args: ConstructorParameters<typeof AnimationFunction>) => AnimationFunction<T> = Reflect.get(FudgeCore, AnimationFunction.name + this.valueType.name);
+      const functionType: new (..._args: ConstructorParameters<typeof AnimationFunction>) => AnimationFunction<T> = Reflect.get(FudgeCore, AnimationFunction.name + this.classType.name);
 
       for (let i: number = 0; i < _keys.length; i++) {
         const key: AnimationKey<T> = _keys[i];
@@ -208,14 +221,14 @@ namespace FudgeCore {
    * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame. 
    * @authors Jonas Plotzky, HFU, 2025
    */
-  export class AnimationSequenceSampled<T extends number | Vector3 | Quaternion> extends AnimationSequence<T> {
+  export class AnimationSequenceSampled extends AnimationSequence {
 
     /** Evaluates the sequence at the given frame and time. */
-    public override evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T {
+    public override evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): AnimationReturnType {
       return this.keys[_frame]?.functionOut.evaluate(_time, _out);
     }
 
-    protected override regenerateFunctions(_keys: AnimationKey<T>[] = this.keys): void {
+    protected override regenerateFunctions(_keys: AnimationKey[] = this.keys): void {
       super.regenerateFunctions([...new Set(_keys)]); // remove duplicates, as sampled sequences may contain the same key repeated times
     }
   }

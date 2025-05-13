@@ -1066,7 +1066,7 @@ namespace FudgeCore {
       return this.#buffers[_iBuffer];
     }
 
-    private async getAnimationSequence(_sampler: GLTF.AnimationSampler, _transformationType: GLTF.AnimationChannelTarget["path"]): Promise<AnimationSequence<Vector3 | Quaternion>> {
+    private async getAnimationSequence(_sampler: GLTF.AnimationSampler, _transformationType: GLTF.AnimationChannelTarget["path"]): Promise<AnimationSequence<Quaternion | Vector3>> {
       const input: Float32Array = await this.getFloat32Array(_sampler.input);
       const output: Float32Array = await this.getFloat32Array(_sampler.output);
 
@@ -1081,7 +1081,7 @@ namespace FudgeCore {
       let lastRotation: Quaternion;
       let nextRotation: Quaternion;
 
-      const sequence: AnimationKey<General>[] = [];
+      const sequence: AnimationKey<Quaternion | Vector3>[] = [];
 
       if (isRotation) {
         lastRotation = Recycler.get(Quaternion);
