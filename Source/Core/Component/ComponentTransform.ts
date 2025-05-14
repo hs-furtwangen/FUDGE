@@ -92,14 +92,14 @@ namespace FudgeCore {
     }
 
     public override mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate: boolean = true): void {
-      super.mutateSync(_mutator, _dispatchMutate);
-      // inline mutation for animation performance
-      // if (_mutator.active != undefined) 
-      //   this.activate(_mutator.active);
-      // if (_mutator.mtxLocal != undefined)
-      //   this.mtxLocal.mutate(_mutator.mtxLocal);
-      // if (_dispatchMutate)
-      //   this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
+      // super.mutateSync(_mutator, _dispatchMutate);
+      // inline mutation for animation performance, slightly faster than calling super.mutate
+      if (_mutator.active != undefined) 
+        this.activate(_mutator.active);
+      if (_mutator.mtxLocal != undefined)
+        this.mtxLocal.mutate(_mutator.mtxLocal);
+      if (_dispatchMutate)
+        this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }
 
     protected reduceMutator(_mutator: Mutator): void {

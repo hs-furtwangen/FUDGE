@@ -359,16 +359,17 @@ namespace FudgeCore {
      * Applies a Mutator from {@link Animation} to all its components and transfers it to its children.
      */
     public applyAnimation(_mutator: Mutator): void {
-      if (_mutator.components)
-        for (const componentType of Object.keys(_mutator.components)) {
+      if (_mutator.components) {
+        for (const componentType in _mutator.components) {
           let componentsOfType: Component[] = this.components[componentType];
           let mutatorsForType: Mutator[] = _mutator.components[componentType];
           for (let i: number = 0; i < componentsOfType.length; i++)
             componentsOfType[i].mutate(mutatorsForType[i], null, false);
         }
+      }
 
       if (_mutator.children)
-        for (const childName of Object.keys(_mutator.children))
+        for (const childName in _mutator.children)
           this.getChildByName(childName).applyAnimation(_mutator.children[childName]);
     }
     // #endregion

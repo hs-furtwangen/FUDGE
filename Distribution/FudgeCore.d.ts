@@ -378,7 +378,7 @@ declare namespace FudgeCore {
      * Association of an attribute with its specified type (constructor).
      * @see {@link Metadata}.
      */
-    type MetaAttributeTypes = Record<string | symbol, Function | Object>;
+    type MetaAttributeTypes = Record<PropertyKey, Function | Object>;
     /**
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
@@ -388,7 +388,7 @@ declare namespace FudgeCore {
          * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
          */
         attributeTypes?: MetaAttributeTypes;
-        enumerateKeys?: string[];
+        enumerateKeys?: PropertyKey[];
         /**
          * Map of property names to the type of serialization that should be used for that property.
          */
@@ -2391,7 +2391,7 @@ declare namespace FudgeCore {
      * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
      */
     interface AnimationStructure {
-        [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence<number | MutatorVector3 | MutatorQuaternion>;
+        [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence;
     }
     /**
     * An associative array mapping names of lables to timestamps.
@@ -2600,24 +2600,13 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    interface MutatorVector3 {
-        x?: number;
-        y?: number;
-        z?: number;
-    }
-    interface MutatorQuaternion {
-        x: number;
-        y: number;
-        z: number;
-        w: number;
-    }
     /**
      * Calculates the values between {@link AnimationKeyNumber}s.
      * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`).
      * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    abstract class AnimationFunction<T extends AnimationReturnType> {
+    abstract class AnimationFunction<T extends AnimationReturnType = AnimationReturnType> {
         protected a: T;
         protected b: T;
         protected c: T;
@@ -2687,7 +2676,7 @@ declare namespace FudgeCore {
      * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    class AnimationKey<T extends AnimationReturnType> extends Mutable implements Serializable {
+    class AnimationKey<T extends AnimationReturnType = AnimationReturnType> extends Mutable implements Serializable {
         #private;
         /**Don't modify this unless you know what you're doing.*/
         functionOut: AnimationFunction<T>;
@@ -2874,20 +2863,31 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    interface MutatorVector3 {
+        x?: number;
+        y?: number;
+        z?: number;
+    }
+    interface MutatorQuaternion {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+    }
     type AnimationReturnType = number | MutatorVector3 | MutatorQuaternion;
-    type AnimationValueType<T extends AnimationReturnType> = T extends number ? NumberConstructor : T extends MutatorVector3 ? typeof Vector3 : T extends MutatorQuaternion ? typeof Quaternion : never;
+    type AnimationClassType<T extends AnimationReturnType = AnimationReturnType> = T extends number ? NumberConstructor : T extends MutatorQuaternion ? typeof Quaternion : T extends MutatorVector3 ? typeof Vector3 : never;
     /**
      * A sequence of {@link AnimationKey}s that is mapped to an attribute of a {@link Node} or its {@link Component}s inside the {@link Animation}.
      * Provides functions to modify said keys
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2022-2025
      */
-    class AnimationSequence<T extends AnimationReturnType> extends Mutable implements Serializable {
+    class AnimationSequence<T extends AnimationReturnType = AnimationReturnType, C extends AnimationClassType<T> = AnimationClassType<T>> extends Mutable implements Serializable {
         #private;
         protected keys: AnimationKey<T>[];
-        constructor(_keys: AnimationKey<T>[], _functionType: AnimationValueType<T>);
+        constructor(_keys: AnimationKey<T>[], _valueType: C);
         get length(): number;
-        get valueType(): AnimationValueType<T>;
-        private set valueType(value);
+        get classType(): C;
+        private set classType(value);
         /**
          * Evaluates the sequence at the given point in time.
          * @param _time the point in time at which to evaluate the sequence in milliseconds.
@@ -2943,10 +2943,10 @@ declare namespace FudgeCore {
      * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame.
      * @authors Jonas Plotzky, HFU, 2025
      */
-    class AnimationSequenceSampled<T extends number | Vector3 | Quaternion> extends AnimationSequence<T> {
+    class AnimationSequenceSampled extends AnimationSequence {
         /** Evaluates the sequence at the given frame and time. */
-        evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T;
-        protected regenerateFunctions(_keys?: AnimationKey<T>[]): void;
+        evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): AnimationReturnType;
+        protected regenerateFunctions(_keys?: AnimationKey[]): void;
     }
 }
 declare namespace FudgeCore {

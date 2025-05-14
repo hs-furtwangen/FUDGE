@@ -189,14 +189,11 @@ namespace FudgeCore {
         this.#previous = time;
         time = time % this.animation.totalTime;
 
-        // if (this.#mutator)
-        //   this.animation.updateState(time, direction, this.quantization, this.#mutator);
-        // else
         this.#mutator = this.animation.getState(time, direction, this.quantization, this.#mutator);
-
-        if (this.node)
+        
+        if (this.node) 
           this.node.applyAnimation(this.#mutator);
-
+        
         return this.#mutator;
       }
       return null;

@@ -187,9 +187,7 @@ namespace FudgeCore {
      */
     public getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION, _mutatorOut: Mutator = {}): Mutator {
       let frame: number = this.sampled ? Math.floor(_time * this.framesPerSecond / 1000) : undefined;
-      _mutatorOut = this.traverseStructureForMutator(this.getAnimationStructure(_direction, _quantization), _time, frame, _mutatorOut);
-
-      return _mutatorOut;
+      return this.traverseStructureForMutator(this.getAnimationStructure(_direction, _quantization), _time, frame, _mutatorOut);
     }
 
     /**
@@ -402,12 +400,21 @@ namespace FudgeCore {
      * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time.
      */
     private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _frame?: number, _mutatorOut: Mutator = {}): Mutator {
-      for (let n of Object.keys(_structure)) {
-        if (_structure[n] instanceof AnimationSequence)
-          _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
-        else
-          _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
-      }
+      if (Array.isArray(_structure))
+        for (let n: number = 0; n < _structure.length; n++) {
+          if (_structure[n] instanceof AnimationSequence)
+            _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
+          else
+            _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
+        }
+      else
+        for (let n in _structure) {
+          if (_structure[n] instanceof AnimationSequence)
+            _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
+          else
+            _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
+        }
+
       return _mutatorOut;
     }
 
