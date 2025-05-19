@@ -359,6 +359,18 @@ namespace FudgeCore {
     }
 
     /**
+     * Sets the components of this quaternion to the given array starting at the given offset.
+     * @returns A reference to this quaternion.
+     */
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Quaternion {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      this.z = _array[_offset + 2];
+      this.w = _array[_offset + 3];
+      return this;
+    }
+
+    /**
      * Returns true if this quaternion is equal to the given quaternion within the given tolerance.
      */
     public equals(_compare: Quaternion, _tolerance: number = Number.EPSILON): boolean {
@@ -443,6 +455,18 @@ namespace FudgeCore {
      */
     public toString(): string {
       return `ƒ.Quaternion(x: ${this.x}, y: ${this.y}, z: ${this.z}, w: ${this.w})`;
+    }
+
+    /**
+     * Copys the components of this quaternion into the given array starting at the given offset.
+     * @returns A reference to the given array.
+     */
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
+      _out[_offset] = this.x;
+      _out[_offset + 1] = this.y;
+      _out[_offset + 2] = this.z;
+      _out[_offset + 3] = this.w;
+      return _out;
     }
 
     // currently quaternions are never serialized, so this is not needed. But maybe it will be in the future.

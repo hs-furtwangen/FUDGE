@@ -218,6 +218,16 @@ namespace FudgeCore {
       return this;
     }
 
+    /**
+     * Sets the components of this vector to the given array starting at the given offset.
+     * @returns A reference to this vector.
+     */
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Vector2 {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      return this;
+    }
+
     public recycle(): void {
       this.set(0, 0);
     }
@@ -357,7 +367,6 @@ namespace FudgeCore {
     public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
       _out[_offset] = this.x;
       _out[_offset + 1] = this.y;
-
       return _out;
     }
 

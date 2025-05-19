@@ -225,6 +225,17 @@ namespace FudgeCore {
       return this;
     }
 
+    /**
+     * Sets the color channels of this color to the given array starting at the given offset.
+     * @returns A reference to this color.
+     */
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Color {
+      this.r = _array[_offset];
+      this.g = _array[_offset + 1];
+      this.b = _array[_offset + 2];
+      this.a = _array[_offset + 3];
+      return this;
+    }
 
     public recycle(): void {
       this.r = 1; this.g = 1; this.b = 1; this.a = 1;
@@ -392,7 +403,6 @@ namespace FudgeCore {
       _out[_offset + 1] = this.g;
       _out[_offset + 2] = this.b;
       _out[_offset + 3] = this.a;
-
       return _out;
     }
 

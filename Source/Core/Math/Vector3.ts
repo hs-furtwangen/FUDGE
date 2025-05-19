@@ -354,6 +354,17 @@ namespace FudgeCore {
       return this;
     }
 
+    /**
+     * Sets the components of this vector to the given array starting at the given offset.
+     * @returns A reference to this vector.
+     */
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Vector3 {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      this.z = _array[_offset + 2];
+      return this;
+    }
+
     public recycle(): void {
       this.set(0, 0, 0);
     }
@@ -561,14 +572,13 @@ namespace FudgeCore {
     }
 
     /**
-     * Copys the elements of this vector into the given array starting at the given offset.
+     * Copys the components of this vector into the given array starting at the given offset.
      * @returns A reference to the given array.
      */
     public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
       _out[_offset] = this.x;
       _out[_offset + 1] = this.y;
       _out[_offset + 2] = this.z;
-
       return _out;
     }
 

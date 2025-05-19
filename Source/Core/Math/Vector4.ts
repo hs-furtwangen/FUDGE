@@ -107,6 +107,18 @@ namespace FudgeCore {
     }
 
     /**
+     * Sets the components of this vector to the given array starting at the given offset.
+     * @returns A reference to this vector.
+     */
+    public setArray(_array: ArrayLike<number>, _offset: number = 0): Vector4 {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      this.z = _array[_offset + 2];
+      this.w = _array[_offset + 3];
+      return this;
+    }
+
+    /**
      * Returns an array of the components of this vector. // TODO: remove this
      */
     public get(): [number, number, number, number] {
@@ -245,7 +257,6 @@ namespace FudgeCore {
       _out[_offset + 1] = this.y;
       _out[_offset + 2] = this.z;
       _out[_offset + 3] = this.w;
-
       return _out;
     }
 
