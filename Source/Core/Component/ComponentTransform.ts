@@ -76,6 +76,11 @@ namespace FudgeCore {
     }
     //#endregion
 
+    public override onAnimate(): void {
+      const mtxLocal: Matrix4x4 = this.mtxLocal;
+      mtxLocal.compose(mtxLocal.translation, mtxLocal.quaternion, mtxLocal.scaling);
+    }
+
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = {

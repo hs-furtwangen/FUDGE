@@ -244,6 +244,23 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns the first descendant with the supplied name. Depth first search.
+     */
+    public getDescendantByName(_name: string): Node {
+      for (let i: number = 0; i < this.children.length; i++) { // no garbage creation
+        let child: Node = this.children[i];
+        if (child.name == _name)
+          return child;
+        
+        let descendant: Node = child.getDescendantByName(_name);
+        if (descendant)
+          return descendant;
+      }
+
+      return null;
+    }
+
+    /**
      * Simply calls {@link addChild}. This reference is here solely because appendChild is the equivalent method in DOM.
      * See and preferably use {@link addChild}
      */
