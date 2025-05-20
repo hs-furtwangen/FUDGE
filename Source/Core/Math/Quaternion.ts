@@ -214,29 +214,129 @@ namespace FudgeCore {
      */
     public static SLERP(_a: Quaternion, _b: Quaternion, _t: number, _out: Quaternion = Recycler.reuse(Quaternion)): Quaternion {
       // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-      let cosHalfTheta: number = _a.w * _b.w + _a.x * _b.x + _a.y * _b.y + _a.z * _b.z;
-      if (Math.abs(cosHalfTheta) >= 1)
+      if (_t == 0)
         return _out.copy(_a);
 
-      let halfTheta: number = Math.acos(cosHalfTheta);
-      let sinHalfTheta: number = Math.sqrt(1 - cosHalfTheta * cosHalfTheta);
-      if (Math.abs(sinHalfTheta) < 1e-3) {
-        return _out.set(
-          (_a.x * 0.5 + _b.x * 0.5),
-          (_a.y * 0.5 + _b.y * 0.5),
-          (_a.z * 0.5 + _b.z * 0.5),
-          (_a.w * 0.5 + _b.w * 0.5)
-        );
+      if (_t == 1)
+        return _out.copy(_b);
+
+      const ax: number = _a.x;
+      const ay: number = _a.y;
+      const az: number = _a.z;
+      const aw: number = _a.w;
+
+      let bx: number = _b.x;
+      let by: number = _b.y;
+      let bz: number = _b.z;
+      let bw: number = _b.w;
+
+      let cosHalfTheta: number = aw * bw + ax * bx + ay * by + az * bz;
+
+      if (cosHalfTheta < 0) {
+        bx = -bx;
+        by = -by;
+        bz = -bz;
+        bw = -bw;
+
+        cosHalfTheta = -cosHalfTheta;
       }
 
-      let ratioA: number = Math.sin((1 - _t) * halfTheta) / sinHalfTheta;
-      let ratioB: number = Math.sin(_t * halfTheta) / sinHalfTheta;
-      return _out.set(
-        (_a.x * ratioA + _b.x * ratioB),
-        (_a.y * ratioA + _b.y * ratioB),
-        (_a.z * ratioA + _b.z * ratioB),
-        (_a.w * ratioA + _b.w * ratioB)
-      );
+      if (cosHalfTheta >= 1)
+        return _out.copy(_a);
+
+      let sqrSinHalfTheta: number = 1 - cosHalfTheta * cosHalfTheta;
+      if (sqrSinHalfTheta <= Number.EPSILON) {
+        const s: number = 1 - _t;
+        return _out.set(ax * s + bx * _t, ay * s + by * _t, az * s + bz * _t, aw * s + bw * _t).normalize();;
+      }
+
+      const halfTheta: number = Math.acos(cosHalfTheta);
+      const sinHalfTheta: number = Math.sqrt(sqrSinHalfTheta);
+      const s: number = Math.sin((1 - _t) * halfTheta) / sinHalfTheta;
+      const t: number = Math.sin(_t * halfTheta) / sinHalfTheta;
+      return _out.set(ax * s + bx * t, ay * s + by * t, az * s + bz * t, aw * s + bw * t);
+    }
+
+    /**
+     * Returns the spherical linear interpolation between two quaternions. When t is 0 the result is a, when t is 1 the result is b. 
+     * @param _out Optional quaternion to store the result in.
+     */
+    public static SLERP_ARRAY<T extends { [n: number]: number }>(_a: T, _aOffset: number, _b: T, _bOffset: number, _t: number, _out: T, _outOffset: number): T {
+      // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
+      const ax: number = _a[_aOffset];
+      const ay: number = _a[_aOffset + 1];
+      const az: number = _a[_aOffset + 2];
+      const aw: number = _a[_aOffset + 3];
+
+      if (_t == 0) {
+        _out[_outOffset] = ax;
+        _out[_outOffset + 1] = ay;
+        _out[_outOffset + 2] = az;
+        _out[_outOffset + 3] = aw;
+        return _out;
+      }
+
+      let bx: number = _b[_bOffset];
+      let by: number = _b[_bOffset + 1];
+      let bz: number = _b[_bOffset + 2];
+      let bw: number = _b[_bOffset + 3];
+
+      if (_t == 1) {
+        _out[_outOffset] = bx;
+        _out[_outOffset + 1] = by;
+        _out[_outOffset + 2] = bz;
+        _out[_outOffset + 3] = bw;
+        return _out;
+      }
+
+      let cosHalfTheta: number = aw * bw + ax * bx + ay * by + az * bz;
+
+      // If the dot product is negative, the quaternions are more than 90 degrees apart. Negate one to take the shorter path.
+      if (cosHalfTheta < 0) {
+        bx = -bx;
+        by = -by;
+        bz = -bz;
+        bw = -bw;
+        cosHalfTheta = -cosHalfTheta;
+      }
+
+      // If qa = qb or qa = -qb then theta = 0 and the result is qa.
+      if (cosHalfTheta >= 1) {
+        _out[_outOffset] = ax;
+        _out[_outOffset + 1] = ay;
+        _out[_outOffset + 2] = az;
+        _out[_outOffset + 3] = aw;
+        return _out;
+      }
+
+      // If angle is very small (sinHalfTheta is close to 0), use LERP and normalize for numerical stability.
+      let sqrSinHalfTheta: number = 1 - cosHalfTheta * cosHalfTheta;
+      if (sqrSinHalfTheta <= Number.EPSILON) {
+        // LERP
+        const s: number = 1 - _t;
+        bx = ax * s + bx * _t;
+        by = ay * s + by * _t;
+        bz = az * s + bz * _t;
+        bw = aw * s + bw * _t;
+
+        // Normalize
+        const f: number = 1 / Math.sqrt(bx * bx + by * by + bz * bz + bw * bw);
+        _out[_outOffset] = bx * f;
+        _out[_outOffset + 1] = by * f;
+        _out[_outOffset + 2] = bz * f;
+        _out[_outOffset + 3] = bw * f;
+        return _out;
+      }
+
+      const halfTheta: number = Math.acos(cosHalfTheta);
+      const sinHalfTheta: number = Math.sqrt(sqrSinHalfTheta);
+      const s: number = Math.sin((1 - _t) * halfTheta) / sinHalfTheta;
+      const t: number = Math.sin(_t * halfTheta) / sinHalfTheta;
+      _out[_outOffset] = ax * s + bx * t;
+      _out[_outOffset + 1] = ay * s + by * t;
+      _out[_outOffset + 2] = az * s + bz * t;
+      _out[_outOffset + 3] = aw * s + bw * t;
+      return _out;
     }
 
     /**
