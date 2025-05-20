@@ -49,7 +49,7 @@ namespace FudgeCore {
         for (let i: number = 0; i < stride; i++) 
           result[i] = values[offset + i];
 
-        return this.result;
+        return result;
       }
     }
 
@@ -68,7 +68,26 @@ namespace FudgeCore {
           result[i] = vStart + (vEnd - vStart) * _t;
         }
 
-        return this.result;
+        return result;
+      }
+    }
+
+    export class AnimationInterpolantSphericalLinear extends AnimationInterpolant {
+      public override interpolate(_i: number, _t: number): Float32Array {
+        const stride: number = this.valueSize;
+        const values: Float32Array = this.values;
+        const result: Float32Array = this.result;
+        const offset1: number = _i * stride;
+        const offset0: number = offset1 - stride;
+
+        return Quaternion.SLERP_ARRAY(values, offset0, values, offset1, _t, result, 0);
+      }
+    }
+
+    export class AnimationInterpolantCubic extends AnimationInterpolant {
+      public override interpolate(_i: number, _t: number): Float32Array {
+        // TODO: implement cubic interpolation
+        throw new Error("Not implemented yet");
       }
     }
   }

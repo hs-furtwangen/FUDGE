@@ -43,7 +43,7 @@ namespace FudgeCore {
           binding.bind();
           binding.get(valuesOriginal.get(path), 0);
 
-          if (binding.component)
+          if (binding.component.onAnimate)
             components.add(binding.component);
         }
       };
@@ -76,7 +76,7 @@ namespace FudgeCore {
         }
 
         for (const component of this.#components) 
-          component.onAnimate?.();
+          component.onAnimate();
       };
 
       private onComponentAdd = (): void => {
