@@ -14,7 +14,7 @@ namespace FudgeCore {
      */
     export class AnimationTrack {
       public path: string;
-      public values: Float32Array;
+      public values: Float32Array; // TODO: could use an array of arrays for simplicity e.g. [[x, y, z], [x, y, z], ...] instead of [x, y, z, x, y, z, ...], but flat array is faster...
       public times: Float32Array;
       public type: ANIMATION_TRACK_TYPE;
       public interpolation: ANIMATION_INTERPOLATION;
@@ -37,11 +37,14 @@ namespace FudgeCore {
             return new AnimationInterpolantConstant(this.times, this.values, this.getValueSize());
           case ANIMATION_INTERPOLATION.LINEAR:
             if (this.type === ANIMATION_TRACK_TYPE.QUATERNION)
-              return new AnimationInterpolantSphericalLinear(this.times, this.values, this.getValueSize());
+              return new AnimationInterpolantQuaternionLinear(this.times, this.values, this.getValueSize());
             else
               return new AnimationInterpolantLinear(this.times, this.values, this.getValueSize());
           case ANIMATION_INTERPOLATION.CUBIC:
-            return new AnimationInterpolantCubic(this.times, this.values, this.getValueSize() / 3);
+            if (this.type === ANIMATION_TRACK_TYPE.QUATERNION)
+              return new AnimationInterpolantQuaternionCubic(this.times, this.values, this.getValueSize() / 3);
+            else
+              return new AnimationInterpolantCubic(this.times, this.values, this.getValueSize() / 3);
           default:
             throw new Error(`${AnimationTrack.name}: Interpolation ${this.interpolation} not supported`);
         }

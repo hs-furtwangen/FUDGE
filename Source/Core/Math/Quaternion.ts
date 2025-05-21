@@ -267,13 +267,16 @@ namespace FudgeCore {
     /**
      * Performs a spherical linear interpolation between two quaternion arrays.
      * @param a - the first operand.
+     * @param aOffset - the offset into the first operand.
      * @param b - the second operand.
+     * @param bOffset - the offset into the second operand.
      * @param t - interpolation amount, in the range [0-1], between the two inputs.
      * @param out - the receiving quaternion array.
+     * @param outOffset - the offset into the receiving quaternion array.
      * @returns `out`
      * @source https://github.com/toji/gl-matrix
      */
-    public static SLERP_ARRAY<T extends { [n: number]: number }>(_a: Readonly<T>, _aOffset: number, _b: Readonly<T>, _bOffset: number, _t: number, _out: T): T {
+    public static SLERP_ARRAY<T extends { [n: number]: number }>(_a: Readonly<T>, _aOffset: number, _b: Readonly<T>, _bOffset: number, _t: number, _out: T, _outOffset: number): T {
       const ax: number = _a[0],
         ay: number = _a[_aOffset + 1],
         az: number = _a[_aOffset + 2],
@@ -311,32 +314,34 @@ namespace FudgeCore {
       }
       // calculate final values
       _out[0] = scale0 * ax + scale1 * bx;
-      _out[1] = scale0 * ay + scale1 * by;
-      _out[2] = scale0 * az + scale1 * bz;
-      _out[3] = scale0 * aw + scale1 * bw;
+      _out[_outOffset + 1] = scale0 * ay + scale1 * by;
+      _out[_outOffset + 2] = scale0 * az + scale1 * bz;
+      _out[_outOffset + 3] = scale0 * aw + scale1 * bw;
 
       return _out;
     }
 
     /**
      * Normalize a quaternion array.
-     * @param _a - quaternion to normalize.
+     * @param _a - quaternion array to normalize.
+     * @param _aOffset - the offset into the quaternion array.
      * @param _out - the receiving quaternion array.
+     * @param _outOffset - the offset into the receiving quaternion array.
      * @returns `out`
      * @source https://github.com/toji/gl-matrix
      */
-    public static NORMALIZE_ARRAY<T extends { [n: number]: number }>(_a: Readonly<T>, _out: T): T {
+    public static NORMALIZE_ARRAY<T extends { [n: number]: number }>(_a: Readonly<T>, _aOffset: number, _out: T, _outOffset: number): T {
       const x: number = _a[0];
-      const y: number = _a[1];
-      const z: number = _a[2];
-      const w: number = _a[3];
+      const y: number = _a[_aOffset + 1];
+      const z: number = _a[_aOffset + 2];
+      const w: number = _a[_aOffset + 3];
       let len: number = x * x + y * y + z * z + w * w;
       if (len > 0) 
         len = 1 / Math.sqrt(len);
       _out[0] = x * len;
-      _out[1] = y * len;
-      _out[2] = z * len;
-      _out[3] = w * len;
+      _out[_outOffset + 1] = y * len;
+      _out[_outOffset + 2] = z * len;
+      _out[_outOffset + 3] = w * len;
       return _out;
     }
 

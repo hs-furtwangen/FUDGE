@@ -69,11 +69,8 @@ namespace FudgeCore {
         const values: Map<string, Float32Array> = root.values;
         const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;
 
-        for (const path of values.keys()) {
-          const binding: AnimationPropertyBinding = bindings.get(path);
-          const value: Float32Array = values.get(path);
-          binding.set(value, 0);
-        }
+        for (const path of values.keys()) 
+          bindings.get(path).set(values.get(path), 0);
 
         for (const component of this.#components) 
           component.onAnimate();

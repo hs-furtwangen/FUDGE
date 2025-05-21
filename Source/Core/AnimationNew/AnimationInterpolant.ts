@@ -16,6 +16,9 @@ namespace FudgeCore {
         this.result ??= new Float32Array(this.valueSize);
       }
 
+      /**
+       * Evaluates the interpolant at a given time.
+       */
       public evaluate(_t: number): Float32Array {
         let i: number = 0, iRight: number = this.times.length - 1, iMid: number;
 
@@ -35,7 +38,10 @@ namespace FudgeCore {
         return this.interpolate(i, t);
       }
 
-      public abstract interpolate(_i1: number, _t: number): Float32Array;
+      /**
+       * Interpolates between keyframe[i-1] and keyframe[i] using the given t value in the range [0, 1].
+       */
+      public abstract interpolate(_i: number, _t: number): Float32Array;
     }
 
     export class AnimationInterpolantConstant extends AnimationInterpolant {
@@ -72,7 +78,7 @@ namespace FudgeCore {
       }
     }
 
-    export class AnimationInterpolantSphericalLinear extends AnimationInterpolant {
+    export class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
       public override interpolate(_i: number, _t: number): Float32Array {
         const stride: number = this.valueSize;
         const values: Float32Array = this.values;
@@ -80,7 +86,7 @@ namespace FudgeCore {
         const offset1: number = _i * stride;
         const offset0: number = offset1 - stride;
 
-        return Quaternion.SLERP_ARRAY(values, offset0, values, offset1, _t, result);
+        return Quaternion.SLERP_ARRAY(values, offset0, values, offset1, _t, result, 0);
       }
     }
 
@@ -90,7 +96,7 @@ namespace FudgeCore {
       #c: Float32Array;
       #d: Float32Array;
 
-      // values are stored as inTangent0, value0, outTangent0, inTangent1 ...
+      // values are in format [inTangent0, value0, outTangent0, inTangent1, ...]
       public constructor(_times: Float32Array, _values: Float32Array, _sampleSize: number) {
         super(_times, _values, _sampleSize);
 
@@ -158,27 +164,11 @@ namespace FudgeCore {
       }
     }
 
-    // export class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
-
-    //   public override interpolate(_i: number, _t: number): Float32Array {
-    //     super.interpolate(_i, _t);
-    //     // normalize result quaternion
-    //     const result: Float32Array = this.result;
-    //     const x: number = result[0];
-    //     const y: number = result[1];
-    //     const z: number = result[2];
-    //     const w: number = result[3];
-    //     const length: number = Math.sqrt(x * x + y * y + z * z + w * w);
-    //     if (length > 0) {
-    //       const invLength: number = 1 / length;
-    //       result[0] = x * invLength;
-    //       result[1] = y * invLength;
-    //       result[2] = z * invLength;
-    //       result[3] = w * invLength;
-    //     }
-
-    //     return result;
-    //   }
-    // }
+    export class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
+      public override interpolate(_i: number, _t: number): Float32Array {
+        const result: Float32Array = super.interpolate(_i, _t);
+        return Quaternion.NORMALIZE_ARRAY(result, 0, result, 0);
+      }
+    }
   }
 }
