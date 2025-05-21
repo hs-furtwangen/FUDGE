@@ -40,10 +40,12 @@ namespace FudgeCore {
               return new AnimationInterpolantSphericalLinear(this.times, this.values, this.getValueSize());
             else
               return new AnimationInterpolantLinear(this.times, this.values, this.getValueSize());
-          //TODO: implement cubic interpolation
+          case ANIMATION_INTERPOLATION.CUBIC:
+            return new AnimationInterpolantCubic(this.times, this.values, this.getValueSize() / 3);
+          default:
+            throw new Error(`${AnimationTrack.name}: Interpolation ${this.interpolation} not supported`);
         }
 
-        throw new Error(`${AnimationTrack.name}: Interpolation ${this.interpolation} not supported`);
       }
     }
   }

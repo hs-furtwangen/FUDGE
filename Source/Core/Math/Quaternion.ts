@@ -258,92 +258,86 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the spherical linear interpolation between two quaternions. When t is 0 the result is a, when t is 1 the result is b. 
-     * @param _out Optional quaternion to store the result in.
-     */
-    public static SLERP_ARRAY<T extends { [n: number]: number }>(_a: T, _aOffset: number, _b: T, _bOffset: number, _t: number, _out: T, _outOffset: number): T {
-      // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-      const ax: number = _a[_aOffset];
-      const ay: number = _a[_aOffset + 1];
-      const az: number = _a[_aOffset + 2];
-      const aw: number = _a[_aOffset + 3];
-
-      if (_t == 0) {
-        _out[_outOffset] = ax;
-        _out[_outOffset + 1] = ay;
-        _out[_outOffset + 2] = az;
-        _out[_outOffset + 3] = aw;
-        return _out;
-      }
-
-      let bx: number = _b[_bOffset];
-      let by: number = _b[_bOffset + 1];
-      let bz: number = _b[_bOffset + 2];
-      let bw: number = _b[_bOffset + 3];
-
-      if (_t == 1) {
-        _out[_outOffset] = bx;
-        _out[_outOffset + 1] = by;
-        _out[_outOffset + 2] = bz;
-        _out[_outOffset + 3] = bw;
-        return _out;
-      }
-
-      let cosHalfTheta: number = aw * bw + ax * bx + ay * by + az * bz;
-
-      // If the dot product is negative, the quaternions are more than 90 degrees apart. Negate one to take the shorter path.
-      if (cosHalfTheta < 0) {
-        bx = -bx;
-        by = -by;
-        bz = -bz;
-        bw = -bw;
-        cosHalfTheta = -cosHalfTheta;
-      }
-
-      // If qa = qb or qa = -qb then theta = 0 and the result is qa.
-      if (cosHalfTheta >= 1) {
-        _out[_outOffset] = ax;
-        _out[_outOffset + 1] = ay;
-        _out[_outOffset + 2] = az;
-        _out[_outOffset + 3] = aw;
-        return _out;
-      }
-
-      // If angle is very small (sinHalfTheta is close to 0), use LERP and normalize for numerical stability.
-      let sqrSinHalfTheta: number = 1 - cosHalfTheta * cosHalfTheta;
-      if (sqrSinHalfTheta <= Number.EPSILON) {
-        // LERP
-        const s: number = 1 - _t;
-        bx = ax * s + bx * _t;
-        by = ay * s + by * _t;
-        bz = az * s + bz * _t;
-        bw = aw * s + bw * _t;
-
-        // Normalize
-        const f: number = 1 / Math.sqrt(bx * bx + by * by + bz * bz + bw * bw);
-        _out[_outOffset] = bx * f;
-        _out[_outOffset + 1] = by * f;
-        _out[_outOffset + 2] = bz * f;
-        _out[_outOffset + 3] = bw * f;
-        return _out;
-      }
-
-      const halfTheta: number = Math.acos(cosHalfTheta);
-      const sinHalfTheta: number = Math.sqrt(sqrSinHalfTheta);
-      const s: number = Math.sin((1 - _t) * halfTheta) / sinHalfTheta;
-      const t: number = Math.sin(_t * halfTheta) / sinHalfTheta;
-      _out[_outOffset] = ax * s + bx * t;
-      _out[_outOffset + 1] = ay * s + by * t;
-      _out[_outOffset + 2] = az * s + bz * t;
-      _out[_outOffset + 3] = aw * s + bw * t;
-      return _out;
-    }
-
-    /**
      * Return the angle in degrees between the two given quaternions.
      */
     public static ANGLE(_from: Quaternion, _to: Quaternion): number {
       return 2 * Math.acos(Math.abs(Calc.clamp(Quaternion.DOT(_from, _to), -1, 1))) * Calc.rad2deg;
+    }
+
+    /**
+     * Performs a spherical linear interpolation between two quaternion arrays.
+     * @param a - the first operand.
+     * @param b - the second operand.
+     * @param t - interpolation amount, in the range [0-1], between the two inputs.
+     * @param out - the receiving quaternion array.
+     * @returns `out`
+     * @source https://github.com/toji/gl-matrix
+     */
+    public static SLERP_ARRAY<T extends { [n: number]: number }>(_a: Readonly<T>, _aOffset: number, _b: Readonly<T>, _bOffset: number, _t: number, _out: T): T {
+      const ax: number = _a[0],
+        ay: number = _a[_aOffset + 1],
+        az: number = _a[_aOffset + 2],
+        aw: number = _a[_aOffset + 3];
+      let bx: number = _b[0],
+        by: number = _b[_bOffset +1],
+        bz: number = _b[_bOffset +2],
+        bw: number = _b[_bOffset +3];
+
+      let scale0: number;
+      let scale1: number;
+
+      // calc cosine
+      let cosom: number = ax * bx + ay * by + az * bz + aw * bw;
+      // adjust signs (if necessary)
+      if (cosom < 0.0) {
+        cosom = -cosom;
+        bx = -bx;
+        by = -by;
+        bz = -bz;
+        bw = -bw;
+      }
+      // calculate coefficients
+      if (1.0 - cosom > Number.EPSILON) {
+        // standard case (slerp)
+        const omega: number = Math.acos(cosom);
+        const sinom: number = Math.sin(omega);
+        scale0 = Math.sin((1.0 - _t) * omega) / sinom;
+        scale1 = Math.sin(_t * omega) / sinom;
+      } else {
+        // "from" and "to" quaternions are very close
+        //  ... so we can do a linear interpolation
+        scale0 = 1.0 - _t;
+        scale1 = _t;
+      }
+      // calculate final values
+      _out[0] = scale0 * ax + scale1 * bx;
+      _out[1] = scale0 * ay + scale1 * by;
+      _out[2] = scale0 * az + scale1 * bz;
+      _out[3] = scale0 * aw + scale1 * bw;
+
+      return _out;
+    }
+
+    /**
+     * Normalize a quaternion array.
+     * @param _a - quaternion to normalize.
+     * @param _out - the receiving quaternion array.
+     * @returns `out`
+     * @source https://github.com/toji/gl-matrix
+     */
+    public static NORMALIZE_ARRAY<T extends { [n: number]: number }>(_a: Readonly<T>, _out: T): T {
+      const x: number = _a[0];
+      const y: number = _a[1];
+      const z: number = _a[2];
+      const w: number = _a[3];
+      let len: number = x * x + y * y + z * z + w * w;
+      if (len > 0) 
+        len = 1 / Math.sqrt(len);
+      _out[0] = x * len;
+      _out[1] = y * len;
+      _out[2] = z * len;
+      _out[3] = w * len;
+      return _out;
     }
 
     /**

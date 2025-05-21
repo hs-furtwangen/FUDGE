@@ -182,6 +182,7 @@ namespace FudgeCore {
           const valuesNode: Map<string, Float32Array> = node.values;
 
           switch (node.blending) {
+            // TODO: slerp for quaternion?
             case ANIMATION_BLENDING.ADDITIVE:
               for (const path of valuesNode.keys()) {
                 const valueBlended: Float32Array = valuesBlended.get(path);
