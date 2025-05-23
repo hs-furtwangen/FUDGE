@@ -106,26 +106,24 @@ namespace FudgeCore {
         this.#c = new Float32Array(length * _sampleSize);
         this.#d = new Float32Array(length * _sampleSize);
 
+        const segmentSize: number = _sampleSize * 3;
+
         for (let iTime: number = 0; iTime < length - 1; iTime++) {
-          const iValue: number = iTime * _sampleSize + _sampleSize;
+          const iValue: number = iTime * segmentSize + _sampleSize;
           const iOutTangent: number = iValue + _sampleSize;
           const iInTangentNext: number = iOutTangent + _sampleSize;
           const iValueNext: number = iInTangentNext + _sampleSize;
 
-          const time: number = _times[iTime];
-          const timeNext: number = _times[iTime + 1];
-          const x1: number = (timeNext - time) / timeNext;
+          for (let i: number = 0; i < segmentSize; i++) {
+            const p0: number = _values[iValue + i];
+            const t0: number = _values[iOutTangent + i];
+            const t1: number = _values[iInTangentNext + i];
+            const p1: number = _values[iValueNext + i];
 
-          for (let i: number = 0; i < _sampleSize; i++) {
-            const v0: number = _values[iValue + i];
-            const v1: number = _values[iOutTangent + i];
-            const v2: number = _values[iInTangentNext + i];
-            const v3: number = _values[iValueNext + i];
-
-            const a: number = (-x1 * (v1 + v2) - 2 * v0 + 2 * v3) / -Math.pow(x1, 3);
-            const b: number = (v2 - v1 - 3 * a * Math.pow(x1, 2)) / (2 * x1);
-            const c: number = v1;
-            const d: number = v0;
+            const a: number = 2 * p0 - 2 * p1 + t0 + t1;
+            const b: number = -3 * p0 + 3 * p1 - 2 * t0 - t1;
+            const c: number = t0;
+            const d: number = p0;
 
             const iCoefficient: number = iTime * _sampleSize + i;
             this.#a[iCoefficient] = a;

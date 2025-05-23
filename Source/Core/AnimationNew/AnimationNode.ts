@@ -14,7 +14,6 @@ namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2024-2025
      */
     export abstract class AnimationNode {
-      public paths: Set<string>;
       public values: Map<string, Float32Array>;
 
       /** The playback speed */
@@ -60,8 +59,6 @@ namespace FudgeCore {
         this.time = 0;
         this.offset = _offset;
 
-        this.paths = new Set(_animation.tracks.map((_track: AnimationTrack) => _track.path));
-
         const tracks: AnimationTrack[] = this.animation.tracks;
         const nTracks: number = tracks.length;
         this.interpolants = new Array(nTracks);
@@ -80,7 +77,8 @@ namespace FudgeCore {
         this.time = (this.time += _deltaTime) % this.animation.duration;
 
         const interpolants: AnimationInterpolant[] = this.interpolants;
-        for (let i: number = 0; i < interpolants.length; i++) 
+        const length: number = interpolants.length;
+        for (let i: number = 0; i < length; i++)
           interpolants[i].evaluate(this.time);
       }
     }
@@ -143,17 +141,16 @@ namespace FudgeCore {
         super(_speed, _weight, _blending);
         this.nodes = _nodes;
 
-        const paths: Set<string> = new Set<string>();
+
         const values: Map<string, Float32Array> = new Map<string, Float32Array>();
         for (const node of _nodes) {
           for (const path of node.values.keys()) {
             if (!values.has(path))
               values.set(path, new Float32Array(node.values.get(path).length));
-            paths.add(path);
           }
         }
 
-        this.paths = paths;
+
         this.values = values;
       }
 
@@ -163,9 +160,6 @@ namespace FudgeCore {
       }
 
       public update(_deltaTime: number, _values: Map<string, Float32Array>): void {
-        if (this.weight == 0 || this.nodes.length == 0)
-          return;
-
         _deltaTime *= this.speed;
 
         const valuesBlended: Map<string, Float32Array> = this.values;
@@ -178,7 +172,7 @@ namespace FudgeCore {
         for (let i: number = 0; i < this.nodes.length; i++) {
           const node: AnimationNode = this.nodes[i];
           node.update(_deltaTime, valuesBlended);
-          
+
           const valuesNode: Map<string, Float32Array> = node.values;
 
           switch (node.blending) {
@@ -188,6 +182,9 @@ namespace FudgeCore {
                 const valueBlended: Float32Array = valuesBlended.get(path);
                 const valueNode: Float32Array = valuesNode.get(path);
                 const t: number = node.weight;
+                if (t == 0)
+                  continue;
+
                 for (let j: number = 0; j < valueBlended.length; j++)
                   valueBlended[j] += valueNode[j] * t;
               }
@@ -197,6 +194,9 @@ namespace FudgeCore {
                 const valueBlended: Float32Array = valuesBlended.get(path);
                 const valueNode: Float32Array = valuesNode.get(path);
                 const t: number = node.weight;
+                if (t == 0)
+                  continue;
+
                 const s: number = 1 - t;
                 for (let j: number = 0; j < valueBlended.length; j++)
                   valueBlended[j] = valueBlended[j] * s + valueNode[j] * t;
@@ -236,66 +236,119 @@ namespace FudgeCore {
        */
       public nodes: AnimationNode[];
 
-      public from: AnimationNode;
-      public to: AnimationNode;
+      public current: AnimationNode;
+      public target: AnimationNode;
 
+      public canceled: boolean;
+
+      public transition: boolean;
       public duration: number;
       public time: number;
+
+      #valuesCached: Map<string, Float32Array>;
 
       public constructor(_nodes: AnimationNode[], _animation: AnimationNode, _speed: number = 1, _weight: number = 1, _blending: ANIMATION_BLENDING = ANIMATION_BLENDING.OVERRIDE) {
         super(_speed, _weight, _blending);
         this.nodes = _nodes;
-        this.from = _animation;
+        this.current = _animation;
 
-        const paths: Set<string> = new Set<string>();
         const values: Map<string, Float32Array> = new Map<string, Float32Array>();
+        const valuesCached: Map<string, Float32Array> = new Map<string, Float32Array>();
         for (const node of _nodes) {
           for (const path of node.values.keys()) {
             if (!values.has(path))
               values.set(path, new Float32Array(node.values.get(path).length));
-            paths.add(path);
+
+            if (!valuesCached.has(path))
+              valuesCached.set(path, new Float32Array(node.values.get(path).length));
           }
         }
 
-        this.paths = paths;
         this.values = values;
+        this.#valuesCached = valuesCached;
       }
 
       public reset(): void {
-        this.from.reset();
-        this.to?.reset();
+        this.current.reset();
+        this.target?.reset();
       }
 
-      /** Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}. */
-      public transit(_to: AnimationNode, _duration: number): void {
-        _to.reset();
-        this.from.weight = 1;
-        // if (this.to)
-        //   this.from = new AnimationNodeAnimation(this.mutator);
-        this.to = _to;
+      /** 
+       * Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}. 
+       */
+      public transit(_target: AnimationNode, _duration: number): void {
+        _target?.reset();
+        if (this.transition) {
+          const valuesCurrent: Map<string, Float32Array> = this.values;
+          const valuesCached: Map<string, Float32Array> = this.#valuesCached;
+          for (const path of valuesCurrent.keys())
+            valuesCached.get(path).set(valuesCurrent.get(path));
+
+          this.canceled = true;
+        }
+        this.target = _target;
         this.duration = _duration;
         this.time = 0;
+        this.transition = true;
       }
 
       public update(_deltaTime: number, _values: Map<string, Float32Array>): void {
         _deltaTime *= this.speed;
 
-        this.time += _deltaTime;
+        const current: AnimationNode = this.current;
+        const target: AnimationNode = this.target;
+        const valuesOut: Map<string, Float32Array> = this.values;
 
-        this.from.update(_deltaTime, _values);
+        let valuesFrom: Map<string, Float32Array>;
+        let valuesTo: Map<string, Float32Array>;
 
-        let progress: number = Math.min(this.time / this.duration, 1);
-
-        if (this.to) {
-          this.to.weight = 1 - progress;
-          this.to.update(_deltaTime, _values);
+        if (this.canceled) {
+          valuesFrom = this.#valuesCached;
+        } else if (current) {
+          current.update(_deltaTime, _values);
+          valuesFrom = current.values;
+        } else {
+          valuesFrom = _values;
         }
 
-        if (progress >= 1 && this.to) {
-          this.from = this.to;
-          this.to = null;
+        if (target) {
+          target.update(_deltaTime, _values);
+          valuesTo = target.values;
+        } else {
+          valuesTo = _values;
+        }
+
+        if (!this.transition) {
+          for (const path of valuesFrom.keys())
+            valuesOut.get(path).set(valuesFrom.get(path));
+          return;
+        }
+
+        this.time += _deltaTime;
+        let progress: number = Math.min(this.time / this.duration, 1);
+        for (const path of valuesTo.keys()) {
+          const valueFrom: Float32Array = valuesFrom.get(path);
+          const valueTo: Float32Array = valuesTo.get(path);
+          const valueOut: Float32Array = valuesOut.get(path);
+          // Debug.log(current.time, valueFrom);
+          if (valueOut.length == 4) {
+            Quaternion.SLERP_ARRAY(valueFrom, 0, valueTo, 0, progress, valueOut, 0);
+            continue;
+          }
+          const t: number = progress;
+          const s: number = 1 - t;
+          for (let j: number = 0; j < valueFrom.length; j++)
+            valueOut[j] = valueFrom[j] * s + valueTo[j] * t;
+        }
+
+
+        if (progress >= 1) {
+          this.current = this.target;
+          this.target = null;
           this.duration = null;
           this.time = null;
+          this.canceled = false;
+          this.transition = false;
         }
       }
     }

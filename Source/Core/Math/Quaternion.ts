@@ -282,9 +282,9 @@ namespace FudgeCore {
         az: number = _a[_aOffset + 2],
         aw: number = _a[_aOffset + 3];
       let bx: number = _b[0],
-        by: number = _b[_bOffset +1],
-        bz: number = _b[_bOffset +2],
-        bw: number = _b[_bOffset +3];
+        by: number = _b[_bOffset + 1],
+        bz: number = _b[_bOffset + 2],
+        bw: number = _b[_bOffset + 3];
 
       let scale0: number;
       let scale1: number;
@@ -336,7 +336,7 @@ namespace FudgeCore {
       const z: number = _a[_aOffset + 2];
       const w: number = _a[_aOffset + 3];
       let len: number = x * x + y * y + z * z + w * w;
-      if (len > 0) 
+      if (len > 0)
         len = 1 / Math.sqrt(len);
       _out[0] = x * len;
       _out[_outOffset + 1] = y * len;
