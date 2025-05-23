@@ -2,6 +2,16 @@ namespace FudgeCore {
   export namespace AnimationSystem {
     Serializer.registerNamespace(AnimationSystem);
 
+    export class AnimationEventTrack {
+      public times: number[];
+      public events: string[][];
+
+      public constructor(_times: number[] = [], _events: string[][] = []) {
+        this.times = _times;
+        this.events = _events;
+      }
+    }
+
     /**
      * Represents an animation consisting of multiple tracks. Each track targets a specific property within a node hierarchy and contains keyframes that define the animation's behavior over time.
      */
@@ -11,12 +21,14 @@ namespace FudgeCore {
       public name: string;
       public duration: number;
       public tracks: AnimationTrack[];
+      public eventTrack: AnimationEventTrack;
 
-      public constructor(_name: string = Animation.name, _duration: number = -1, _tracks: AnimationTrack[] = []) {
+      public constructor(_name: string = Animation.name, _duration: number = -1, _tracks: AnimationTrack[] = [], _eventTrack: AnimationEventTrack = new AnimationEventTrack()) {
         super();
         this.name = _name;
         this.duration = _duration;
         this.tracks = _tracks;
+        this.eventTrack = _eventTrack;
         Project.register(this);
       }
 

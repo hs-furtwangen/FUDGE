@@ -10,6 +10,8 @@ namespace FudgeCore {
       readonly #bindings: Map<string, AnimationPropertyBinding>;
       readonly #components: Set<Component>;
 
+      readonly #dispatchEvent: (_event: EventUnified) => boolean = this.dispatchEvent.bind(this);
+
       public constructor(_root?: AnimationNode) {
         super();
         this.root = _root;
@@ -64,7 +66,7 @@ namespace FudgeCore {
           return;
 
         const root: AnimationNode = this.root;
-        root.update(Loop.timeFrameGame, this.#valuesOriginal);
+        root.update(Loop.timeFrameGame, this.#valuesOriginal, this.#dispatchEvent);
 
         const values: Map<string, Float32Array> = root.values;
         const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;

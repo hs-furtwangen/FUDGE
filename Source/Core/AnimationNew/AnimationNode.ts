@@ -35,7 +35,7 @@ namespace FudgeCore {
       public abstract reset(): void;
 
       /** Updates the animation according the given delta time */
-      public abstract update(_deltaTime: number, _values: Map<string, Float32Array>): void;
+      public abstract update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
     }
 
     /** 
@@ -51,6 +51,8 @@ namespace FudgeCore {
       public time: number;
       public offset: number;
 
+      #previousTime: number;
+
       public constructor(_animation: Animation, _playmode: ANIMATION_PLAYMODE = ANIMATION_PLAYMODE.LOOP, _speed?: number, _offset: number = 0, _weight?: number, _blending?: ANIMATION_BLENDING) {
         super(_speed, _weight, _blending);
 
@@ -58,6 +60,7 @@ namespace FudgeCore {
         this.playmode = _playmode;
         this.time = 0;
         this.offset = _offset;
+        this.#previousTime = 0;
 
         const tracks: AnimationTrack[] = this.animation.tracks;
         const nTracks: number = tracks.length;
@@ -69,17 +72,52 @@ namespace FudgeCore {
         }
       }
 
-      public reset(): void {
+      public override reset(): void {
         this.time = this.offset;
       }
 
-      public update(_deltaTime: number): void {
-        this.time = (this.time += _deltaTime) % this.animation.duration;
-
+      public override update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
+        const duration: number = this.animation.duration;
+        const time: number = (this.time += _deltaTime * this.speed) % duration;
         const interpolants: AnimationInterpolant[] = this.interpolants;
         const length: number = interpolants.length;
+
         for (let i: number = 0; i < length; i++)
-          interpolants[i].evaluate(this.time);
+          interpolants[i].evaluate(time);
+
+        const eventTrack: AnimationEventTrack = this.animation.eventTrack;
+        const eventTrackTimes: number[] = eventTrack.times;
+        if (eventTrackTimes.length == 0)
+          return;
+
+        let min: number = this.#previousTime;
+        let max: number = time;
+        let minSection: number = Math.floor(min / duration);
+        let maxSection: number = Math.floor(max / duration);
+        min = min % duration;
+        max = max % duration;
+
+        const eventTrackEvents: string[][] = eventTrack.events;
+        while (minSection <= maxSection) {
+          for (let i: number = 0; i < eventTrackTimes.length; i++) {
+            const time: number = eventTrackTimes[i];
+            if (min <= time && time < max) {
+              const events: string[] = eventTrackEvents[i];
+              for (let j: number = 0; j < events.length; j++) {
+                const event: RecyclableEvent = RecyclableEvent.get(events[j]);
+                _dispatchEvent(event);
+                RecyclableEvent.store(event);
+              }
+            }
+          }
+
+          if (minSection != maxSection)
+            min = 0;
+
+          minSection++;
+        }
+
+        this.#previousTime = time;
       }
     }
 
@@ -154,12 +192,12 @@ namespace FudgeCore {
         this.values = values;
       }
 
-      public reset(): void {
+      public override reset(): void {
         for (const node of this.nodes)
           node.reset();
       }
 
-      public update(_deltaTime: number, _values: Map<string, Float32Array>): void {
+      public override update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
         _deltaTime *= this.speed;
 
         const valuesBlended: Map<string, Float32Array> = this.values;
@@ -171,7 +209,7 @@ namespace FudgeCore {
 
         for (let i: number = 0; i < this.nodes.length; i++) {
           const node: AnimationNode = this.nodes[i];
-          node.update(_deltaTime, valuesBlended);
+          node.update(_deltaTime, valuesBlended, _dispatchEvent);
 
           const valuesNode: Map<string, Float32Array> = node.values;
 
@@ -268,7 +306,7 @@ namespace FudgeCore {
         this.#valuesCached = valuesCached;
       }
 
-      public reset(): void {
+      public override reset(): void {
         this.current.reset();
         this.target?.reset();
       }
@@ -292,7 +330,7 @@ namespace FudgeCore {
         this.transition = true;
       }
 
-      public update(_deltaTime: number, _values: Map<string, Float32Array>): void {
+      public update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
         _deltaTime *= this.speed;
 
         const current: AnimationNode = this.current;
@@ -305,14 +343,14 @@ namespace FudgeCore {
         if (this.canceled) {
           valuesFrom = this.#valuesCached;
         } else if (current) {
-          current.update(_deltaTime, _values);
+          current.update(_deltaTime, _values, _dispatchEvent);
           valuesFrom = current.values;
         } else {
           valuesFrom = _values;
         }
 
         if (target) {
-          target.update(_deltaTime, _values);
+          target.update(_deltaTime, _values, _dispatchEvent);
           valuesTo = target.values;
         } else {
           valuesTo = _values;

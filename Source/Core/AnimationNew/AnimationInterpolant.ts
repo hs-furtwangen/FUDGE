@@ -20,9 +20,9 @@ namespace FudgeCore {
        * Evaluates the interpolant at a given time.
        */
       public evaluate(_t: number): Float32Array {
-        let i: number = 0, iRight: number = this.times.length - 1, iMid: number;
-
         const times: Float32Array = this.times;
+        let i: number = 0, iRight: number = times.length - 1, iMid: number;
+
         while (i < iRight) {
           iMid = (i + iRight) >>> 1;
           if (_t < times[iMid])
