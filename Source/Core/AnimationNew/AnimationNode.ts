@@ -62,13 +62,13 @@ namespace FudgeCore {
         this.offset = _offset;
         this.#previousTime = 0;
 
-        const tracks: AnimationTrack[] = this.animation.tracks;
-        const nTracks: number = tracks.length;
-        this.interpolants = new Array(nTracks);
+        const channels: AnimationChannel[] = this.animation.channels;
+        const nChannels: number = channels.length;
+        this.interpolants = new Array(nChannels);
         this.values = new Map<string, Float32Array>();
-        for (let i: number = 0; i < nTracks; i++) {
-          this.interpolants[i] = tracks[i].createInterpolant();
-          this.values.set(tracks[i].path, this.interpolants[i].result);
+        for (let i: number = 0; i < nChannels; i++) {
+          this.interpolants[i] = channels[i].createInterpolant();
+          this.values.set(channels[i].path, this.interpolants[i].result);
         }
       }
 

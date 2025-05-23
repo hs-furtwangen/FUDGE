@@ -1,77 +1,81 @@
 namespace FudgeCore {
   export namespace AnimationSystem {
+
     /**
      * Handles evaluation and interpolation of animation values between keyframes.
      */
     export abstract class AnimationInterpolant {
-      public times: Float32Array;
-      public values: Float32Array;
-      public valueSize: number;
+      public input: Float32Array;
+      public output: Float32Array;
       public result: Float32Array;
+      public elementSize: number;
 
-      public constructor(_times: Float32Array, _values: Float32Array, _valueSize: number) {
-        this.times = _times;
-        this.values = _values;
-        this.valueSize = _valueSize;
-        this.result ??= new Float32Array(this.valueSize);
+      public constructor(_input: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array) {
+        this.input = _input;
+        this.output = _output;
+        this.elementSize = _elementSize;
+        this.result = _result ?? new Float32Array(this.elementSize);
       }
 
       /**
        * Evaluates the interpolant at a given time.
        */
-      public evaluate(_t: number): Float32Array {
-        const times: Float32Array = this.times;
-        let i: number = 0, iRight: number = times.length - 1, iMid: number;
+      public evaluate(_time: number): Float32Array {
+        const times: Float32Array = this.input;
+        let iEnd: number = 0;
+        let iRight: number = times.length - 1;
+        let iMid: number;
 
-        while (i < iRight) {
-          iMid = (i + iRight) >>> 1;
-          if (_t < times[iMid])
+        // Binary search for the correct time interval
+        while (iEnd < iRight) {
+          iMid = (iEnd + iRight) >>> 1;
+          if (_time < times[iMid])
             iRight = iMid;
           else
-            i = iMid + 1;
+            iEnd = iMid + 1;
         }
 
-        const t0: number = times[i - 1];
-        const t1: number = times[i];
-        const t: number = (_t - t0) / (t1 - t0);
+        const timeStart: number = times[iEnd - 1];
+        const timeEnd: number = times[iEnd];
+        const t: number = (_time - timeStart) / (timeEnd - timeStart);
 
-        return this.interpolate(i, t);
+        return this.interpolate(iEnd, t);
       }
 
       /**
        * Interpolates between keyframe[i-1] and keyframe[i] using the given t value in the range [0, 1].
        */
-      public abstract interpolate(_i: number, _t: number): Float32Array;
+      public abstract interpolate(_iEnd: number, _t: number): Float32Array;
     }
 
     export class AnimationInterpolantConstant extends AnimationInterpolant {
-      public override interpolate(_i: number, _t: number): Float32Array {
-        const stride: number = this.valueSize;
-        const values: Float32Array = this.values;
+      public override interpolate(_iEnd: number, _t: number): Float32Array {
+        const stride: number = this.elementSize;
+        const values: Float32Array = this.output;
         const result: Float32Array = this.result;
 
-        const offset0: number = _i * stride - stride;
+        const offsetStart: number = (_iEnd - 1) * stride;
 
         for (let i: number = 0; i < stride; i++)
-          result[i] = values[offset0 + i];
+          result[i] = values[offsetStart + i];
 
         return result;
       }
     }
 
     export class AnimationInterpolantLinear extends AnimationInterpolant {
-      public override interpolate(_i: number, _t: number): Float32Array {
-        const stride: number = this.valueSize;
-        const values: Float32Array = this.values;
+      public override interpolate(_iEnd: number, _t: number): Float32Array {
+        const stride: number = this.elementSize;
+        const values: Float32Array = this.output;
         const result: Float32Array = this.result;
 
-        const offset1: number = _i * stride;
+        const offset1: number = _iEnd * stride;
         const offset0: number = offset1 - stride;
 
         for (let i: number = 0; i < stride; i++) {
-          const vStart: number = values[offset0 + i];
-          const vEnd: number = values[offset1 + i];
-          result[i] = vStart + (vEnd - vStart) * _t;
+          const v0: number = values[offset0 + i];
+          const v1: number = values[offset1 + i];
+          result[i] = v0 + (v1 - v0) * _t;
         }
 
         return result;
@@ -79,11 +83,11 @@ namespace FudgeCore {
     }
 
     export class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
-      public override interpolate(_i: number, _t: number): Float32Array {
-        const stride: number = this.valueSize;
-        const values: Float32Array = this.values;
+      public override interpolate(_iEnd: number, _t: number): Float32Array {
+        const stride: number = this.elementSize;
+        const values: Float32Array = this.output;
         const result: Float32Array = this.result;
-        const offset1: number = _i * stride;
+        const offset1: number = _iEnd * stride;
         const offset0: number = offset1 - stride;
 
         return Quaternion.SLERP_ARRAY(values, offset0, values, offset1, _t, result, 0);
@@ -97,74 +101,62 @@ namespace FudgeCore {
       #d: Float32Array;
 
       // values are in format [inTangent0, value0, outTangent0, inTangent1, ...]
-      public constructor(_times: Float32Array, _values: Float32Array, _sampleSize: number) {
-        super(_times, _values, _sampleSize);
+      public constructor(_times: Float32Array, _values: Float32Array, _elementSize: number) {
+        super(_times, _values, _elementSize);
 
-        const length: number = _times.length;
-        this.#a = new Float32Array(length * _sampleSize);
-        this.#b = new Float32Array(length * _sampleSize);
-        this.#c = new Float32Array(length * _sampleSize);
-        this.#d = new Float32Array(length * _sampleSize);
+        const nKeyframes: number = _times.length;
+        this.#a = new Float32Array(nKeyframes * _elementSize);
+        this.#b = new Float32Array(nKeyframes * _elementSize);
+        this.#c = new Float32Array(nKeyframes * _elementSize);
+        this.#d = new Float32Array(nKeyframes * _elementSize);
 
-        const segmentSize: number = _sampleSize * 3;
+        const segmentSize: number = _elementSize * 3;
 
-        for (let iTime: number = 0; iTime < length - 1; iTime++) {
-          const iValue: number = iTime * segmentSize + _sampleSize;
-          const iOutTangent: number = iValue + _sampleSize;
-          const iInTangentNext: number = iOutTangent + _sampleSize;
-          const iValueNext: number = iInTangentNext + _sampleSize;
+        for (let iTime: number = 0; iTime < nKeyframes - 1; iTime++) {
+          const iValue0: number = iTime * segmentSize + _elementSize;
+          const iTangent0: number = iValue0 + _elementSize;
+          const iTangent1: number = iTangent0 + _elementSize;
+          const iValue1: number = iTangent1 + _elementSize;
 
-          for (let i: number = 0; i < segmentSize; i++) {
-            const p0: number = _values[iValue + i];
-            const t0: number = _values[iOutTangent + i];
-            const t1: number = _values[iInTangentNext + i];
-            const p1: number = _values[iValueNext + i];
+          for (let iComponent: number = 0; iComponent < _elementSize; iComponent++) {
+            const v0: number = _values[iValue0 + iComponent];
+            const v1: number = _values[iValue1 + iComponent];
+            const m0: number = _values[iTangent0 + iComponent];
+            const m1: number = _values[iTangent1 + iComponent];
 
-            const a: number = 2 * p0 - 2 * p1 + t0 + t1;
-            const b: number = -3 * p0 + 3 * p1 - 2 * t0 - t1;
-            const c: number = t0;
-            const d: number = p0;
-
-            const iCoefficient: number = iTime * _sampleSize + i;
-            this.#a[iCoefficient] = a;
-            this.#b[iCoefficient] = b;
-            this.#c[iCoefficient] = c;
-            this.#d[iCoefficient] = d;
+            // Hermite interpolation coefficients
+            const iCoefficient: number = iTime * _elementSize + iComponent;
+            this.#a[iCoefficient] = 2 * v0 - 2 * v1 + m0 + m1;
+            this.#b[iCoefficient] = -3 * v0 + 3 * v1 - 2 * m0 - m1;
+            this.#c[iCoefficient] = m0;
+            this.#d[iCoefficient] = v0;
           }
         }
 
-        // set last keyframe
-        const iCoefficient: number = (length - 1) * _sampleSize;
-        const iValueLast: number = iCoefficient + _sampleSize * 3;
-        for (let i: number = 0; i < _sampleSize; i++)
-          this.#d[iCoefficient + i] = _values[iValueLast + i];
+        // Set last keyframe (constant extrapolation)
+        const iCoefficient: number = (nKeyframes - 1) * _elementSize;
+        const iValue: number = (nKeyframes - 1) * segmentSize + _elementSize;
+        for (let i: number = 0; i < _elementSize; i++)
+          this.#d[iCoefficient + i] = _values[iValue + i];
       }
 
-      public override interpolate(_i: number, _t: number): Float32Array {
-        const stride: number = this.valueSize;
+      public override interpolate(_iEnd: number, _t: number): Float32Array {
+        const stride: number = this.elementSize;
         const result: Float32Array = this.result;
-        const offset0: number = _i * stride - stride;
 
         const t2: number = _t * _t;
         const t3: number = t2 * _t;
 
-        const a: Float32Array = this.#a;
-        const b: Float32Array = this.#b;
-        const c: Float32Array = this.#c;
-        const d: Float32Array = this.#d;
-
-        for (let i: number = 0; i < stride; i++) {
-          const offset: number = offset0 + i;
-          result[i] = a[offset] * t3 + b[offset] * t2 + c[offset] * _t + d[offset];
-        }
+        for (let iResult: number = 0, iCoefficient: number = (_iEnd - 1) * stride; iResult < stride; iResult++, iCoefficient++)
+          result[iResult] = this.#a[iCoefficient] * t3 + this.#b[iCoefficient] * t2 + this.#c[iCoefficient] * _t + this.#d[iCoefficient];
 
         return result;
       }
     }
 
     export class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
-      public override interpolate(_i: number, _t: number): Float32Array {
-        const result: Float32Array = super.interpolate(_i, _t);
+      public override interpolate(_iEnd: number, _t: number): Float32Array {
+        const result: Float32Array = super.interpolate(_iEnd, _t);
         return Quaternion.NORMALIZE_ARRAY(result, 0, result, 0);
       }
     }
