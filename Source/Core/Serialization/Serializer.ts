@@ -11,6 +11,11 @@ namespace FudgeCore {
   }
 
   /**
+   * Generic type for a {@link Serialization} of a specific {@link Serializable} object.
+   */
+  export type SerializationOf<T extends Serializable> = { [K in keyof T]?: General };
+
+  /**
    * Abstract class serving as a base for interface-like pure abstract classes that work with the "instanceof"-operator. 
    * 
    * **Usage**:
@@ -380,7 +385,7 @@ namespace FudgeCore {
      * Returns an Array of FUDGE-objects reconstructed from the information in the array of {@link Serialization}s given,
      * including attached components, children, superclass-objects
      */
-    public static async deserializeArray(_serialization: Serialization): Promise<Serializable[]> {
+    public static async deserializeArray<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]> {
       let serializables: Serializable[] = [];
       let construct: new () => Serializable;
       let serializations: Serialization[] = [];
@@ -401,7 +406,7 @@ namespace FudgeCore {
         serializables.push(serializable);
       }
 
-      return serializables;
+      return <T[]>serializables;
     }
 
     //TODO: implement prettifier to make JSON-Stringification of serializations more readable, e.g. placing x, y and z in one line

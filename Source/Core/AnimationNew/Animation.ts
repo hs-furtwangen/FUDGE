@@ -32,12 +32,30 @@ namespace FudgeCore {
         Project.register(this);
       }
 
-      public serialize(): Serialization {
-        throw new Error("Method not implemented.");
+      public serialize(): SerializationOf<Animation> {
+        const serialization: SerializationOf<Animation> = {
+          idResource: this.idResource,
+          name: this.name,
+          duration: this.duration,
+          channels: Serializer.serializeArray(AnimationChannel, this.channels),
+          eventTrack: {
+            times: this.eventTrack.times,
+            events: this.eventTrack.events
+          }
+        };
+
+        return serialization;
       }
 
-      public deserialize(_serialization: Serialization): Promise<Serializable> {
-        throw new Error("Method not implemented.");
+      public async deserialize(_serialization: Serialization): Promise<Animation> {
+        this.idResource = _serialization.idResource;
+        this.name = _serialization.name;
+        this.duration = _serialization.duration;
+        this.channels = await Serializer.deserializeArray(_serialization.channels);
+        this.eventTrack.times = _serialization.eventTrack.times;
+        this.eventTrack.events = _serialization.eventTrack.events;
+
+        return this;
       }
 
       protected reduceMutator(_mutator: Mutator): void {
