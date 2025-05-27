@@ -9,7 +9,7 @@ namespace FudgeCore {
      * Binds a specific property within a node hierarchy (via a path) and allows direct access to it.
      */
     export class AnimationPropertyBinding {
-      static #regex: RegExp = /^((?:children\/[^/]*?\/)*)?components\/([^/]+)\/(\d+)(?:\/)(.*)$/;
+      static #regex: RegExp = /^((?:[^/]*?\/)*)?components\/([^/]+)\/(\d+)(?:\/)(.*)$/;
 
       public root: Node;
 
@@ -29,7 +29,7 @@ namespace FudgeCore {
       }
 
       /**
-       * @example "children/childName/children/childName/components/ComponentTransform/0/mtxLocal/translation"
+       * @example "childName/childName/childName/components/ComponentTransform/0/mtxLocal/translation"
        * @example "components/ComponentTransform/0"
        */
       public static parsePath(_path: string): AnimationPropertyBinding["pathParsed"] {
@@ -37,7 +37,7 @@ namespace FudgeCore {
         if (!match)
           throw new Error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.parsePath.name}: Invalid path: ${_path}`);
 
-        const nodePath: string[] = match[1]?.slice(0, -1).split("/").filter((_part: string) => _part != "children");
+        const nodePath: string[] = match[1]?.slice(0, -1).split("/");
         const componentType: string = match[2];
         const componentIndex: string = match[3];
         const targetPath: string[] = match[4].split("/");
