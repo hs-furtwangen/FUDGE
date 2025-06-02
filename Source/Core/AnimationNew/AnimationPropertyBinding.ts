@@ -18,9 +18,9 @@ namespace FudgeCore {
 
       public node: Node;
       public component: Component;
-      public mutable: Mutable;
-      public property: unknown & ArrayConvertible;
+      public target: Mutable;
       public key: PropertyKey;
+      public property: unknown & ArrayConvertible;
 
       public constructor(_root: Node, _path: string) {
         this.root = _root;
@@ -78,15 +78,15 @@ namespace FudgeCore {
         if (!this.component)
           Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Component not found: ${this.pathParsed.componentType} at index ${this.pathParsed.componentIndex}`);
 
-        this.mutable = AnimationPropertyBinding.findTarget(this.component, this.pathParsed.targetPath);
-        if (!this.mutable)
+        this.target = AnimationPropertyBinding.findTarget(this.component, this.pathParsed.targetPath);
+        if (!this.target)
           Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Target not found: ${this.pathParsed.targetPath}`);
 
         this.key = this.pathParsed.targetPath[this.pathParsed.targetPath.length - 1];
-        if (!(this.key in this.mutable))
+        if (!(this.key in this.target))
           Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Key not found: ${this.key}`);
 
-        this.property = Reflect.get(this.mutable, this.key);
+        this.property = Reflect.get(this.target, this.key);
         if (this.property == undefined)
           Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Property is undefined: ${this.key}`);
 
@@ -117,11 +117,11 @@ namespace FudgeCore {
       #setUnbound(_source: Float32Array, _offset: number): void { /** */ }
 
       #getDirect(_target: Float32Array, _offset: number): void {
-        _target[_offset] = Reflect.get(this.mutable, this.key);
+        _target[_offset] = Reflect.get(this.target, this.key);
       }
 
       #setDirect(_source: Float32Array, _offset: number): void {
-        Reflect.set(this.mutable, this.key, _source[_offset]);
+        Reflect.set(this.target, this.key, _source[_offset]);
       }
 
       #getToArray(_target: Float32Array, _offset: number): void {

@@ -35,7 +35,7 @@ namespace FudgeCore {
       public abstract reset(): void;
 
       /** Updates the animation according the given delta time */
-      public abstract update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+      public abstract update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
     }
 
     /** 
@@ -76,7 +76,7 @@ namespace FudgeCore {
         this.time = this.offset;
       }
 
-      public override update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
+      public override update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
         const duration: number = this.animation.duration;
         const time: number = (this.time += _deltaTime * this.speed) % duration;
         const interpolants: AnimationInterpolant[] = this.interpolants;
@@ -179,7 +179,6 @@ namespace FudgeCore {
         super(_speed, _weight, _blending);
         this.nodes = _nodes;
 
-
         const values: Map<string, Float32Array> = new Map<string, Float32Array>();
         for (const node of _nodes) {
           for (const path of node.values.keys()) {
@@ -187,7 +186,6 @@ namespace FudgeCore {
               values.set(path, new Float32Array(node.values.get(path).length));
           }
         }
-
 
         this.values = values;
       }
@@ -197,21 +195,25 @@ namespace FudgeCore {
           node.reset();
       }
 
-      public override update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
+      public override update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
         _deltaTime *= this.speed;
 
         const valuesBlended: Map<string, Float32Array> = this.values;
         for (const path of valuesBlended.keys()) {
-          const valueIn: Float32Array = _values.get(path);
+          const valueOriginal: Float32Array = _valuesOriginal.get(path);
           const valueBlended: Float32Array = valuesBlended.get(path);
-          valueBlended.set(valueIn);
+          valueBlended.set(valueOriginal);
         }
 
         for (let i: number = 0; i < this.nodes.length; i++) {
           const node: AnimationNode = this.nodes[i];
-          node.update(_deltaTime, valuesBlended, _dispatchEvent);
+          node.update(_deltaTime, valuesBlended, _valuesOriginal, _dispatchEvent);
 
           const valuesNode: Map<string, Float32Array> = node.values;
+
+          const t: number = node.weight;
+          if (t == 0)
+            continue;
 
           switch (node.blending) {
             // TODO: slerp for quaternion?
@@ -219,9 +221,6 @@ namespace FudgeCore {
               for (const path of valuesNode.keys()) {
                 const valueBlended: Float32Array = valuesBlended.get(path);
                 const valueNode: Float32Array = valuesNode.get(path);
-                const t: number = node.weight;
-                if (t == 0)
-                  continue;
 
                 for (let j: number = 0; j < valueBlended.length; j++)
                   valueBlended[j] += valueNode[j] * t;
@@ -231,9 +230,6 @@ namespace FudgeCore {
               for (const path of valuesNode.keys()) {
                 const valueBlended: Float32Array = valuesBlended.get(path);
                 const valueNode: Float32Array = valuesNode.get(path);
-                const t: number = node.weight;
-                if (t == 0)
-                  continue;
 
                 const s: number = 1 - t;
                 for (let j: number = 0; j < valueBlended.length; j++)
@@ -330,7 +326,7 @@ namespace FudgeCore {
         this.transition = true;
       }
 
-      public update(_deltaTime: number, _values: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
+      public update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
         _deltaTime *= this.speed;
 
         const current: AnimationNode = this.current;
@@ -343,17 +339,17 @@ namespace FudgeCore {
         if (this.canceled) {
           valuesFrom = this.#valuesCached;
         } else if (current) {
-          current.update(_deltaTime, _values, _dispatchEvent);
+          current.update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent);
           valuesFrom = current.values;
         } else {
-          valuesFrom = _values;
+          valuesFrom = _valuesCurrent;
         }
 
         if (target) {
-          target.update(_deltaTime, _values, _dispatchEvent);
+          target.update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent);
           valuesTo = target.values;
         } else {
-          valuesTo = _values;
+          valuesTo = _valuesCurrent;
         }
 
         if (!this.transition) {

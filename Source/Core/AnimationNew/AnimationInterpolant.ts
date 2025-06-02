@@ -22,54 +22,54 @@ namespace FudgeCore {
        */
       public evaluate(_time: number): Float32Array {
         const times: Float32Array = this.input;
-        let iEnd: number = 0;
+        let i1: number = 0;
         let iRight: number = times.length - 1;
         let iMid: number;
 
         // Binary search for the correct time interval
-        while (iEnd < iRight) {
-          iMid = (iEnd + iRight) >>> 1;
+        while (i1 < iRight) {
+          iMid = (i1 + iRight) >>> 1;
           if (_time < times[iMid])
             iRight = iMid;
           else
-            iEnd = iMid + 1;
+            i1 = iMid + 1;
         }
 
-        const timeStart: number = times[iEnd - 1];
-        const timeEnd: number = times[iEnd];
+        const timeStart: number = times[i1 - 1];
+        const timeEnd: number = times[i1];
         const t: number = (_time - timeStart) / (timeEnd - timeStart);
 
-        return this.interpolate(iEnd, t);
+        return this.interpolate(i1, t);
       }
 
       /**
        * Interpolates between keyframe[i-1] and keyframe[i] using the given t value in the range [0, 1].
        */
-      public abstract interpolate(_iEnd: number, _t: number): Float32Array;
+      public abstract interpolate(_i1: number, _t: number): Float32Array;
     }
 
     export class AnimationInterpolantConstant extends AnimationInterpolant {
-      public override interpolate(_iEnd: number, _t: number): Float32Array {
+      public override interpolate(_i1: number, _t: number): Float32Array {
         const stride: number = this.elementSize;
         const values: Float32Array = this.output;
         const result: Float32Array = this.result;
 
-        const offsetStart: number = (_iEnd - 1) * stride;
+        const offset0: number = (_i1 - 1) * stride;
 
         for (let i: number = 0; i < stride; i++)
-          result[i] = values[offsetStart + i];
+          result[i] = values[offset0 + i];
 
         return result;
       }
     }
 
     export class AnimationInterpolantLinear extends AnimationInterpolant {
-      public override interpolate(_iEnd: number, _t: number): Float32Array {
+      public override interpolate(_i1: number, _t: number): Float32Array {
         const stride: number = this.elementSize;
         const values: Float32Array = this.output;
         const result: Float32Array = this.result;
 
-        const offset1: number = _iEnd * stride;
+        const offset1: number = _i1 * stride;
         const offset0: number = offset1 - stride;
 
         for (let i: number = 0; i < stride; i++) {
@@ -83,11 +83,11 @@ namespace FudgeCore {
     }
 
     export class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
-      public override interpolate(_iEnd: number, _t: number): Float32Array {
+      public override interpolate(_i1: number, _t: number): Float32Array {
         const stride: number = this.elementSize;
         const values: Float32Array = this.output;
         const result: Float32Array = this.result;
-        const offset1: number = _iEnd * stride;
+        const offset1: number = _i1 * stride;
         const offset0: number = offset1 - stride;
 
         return Quaternion.SLERP_ARRAY(values, offset0, values, offset1, _t, result, 0);
@@ -140,14 +140,14 @@ namespace FudgeCore {
           this.#d[iCoefficient + i] = _values[iValue + i];
       }
 
-      public override interpolate(_iEnd: number, _t: number): Float32Array {
+      public override interpolate(_i1: number, _t: number): Float32Array {
         const stride: number = this.elementSize;
         const result: Float32Array = this.result;
 
         const t2: number = _t * _t;
         const t3: number = t2 * _t;
 
-        for (let iResult: number = 0, iCoefficient: number = (_iEnd - 1) * stride; iResult < stride; iResult++, iCoefficient++)
+        for (let iResult: number = 0, iCoefficient: number = (_i1 - 1) * stride; iResult < stride; iResult++, iCoefficient++)
           result[iResult] = this.#a[iCoefficient] * t3 + this.#b[iCoefficient] * t2 + this.#c[iCoefficient] * _t + this.#d[iCoefficient];
 
         return result;
@@ -155,8 +155,8 @@ namespace FudgeCore {
     }
 
     export class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
-      public override interpolate(_iEnd: number, _t: number): Float32Array {
-        const result: Float32Array = super.interpolate(_iEnd, _t);
+      public override interpolate(_i1: number, _t: number): Float32Array { // TODO: take short path
+        const result: Float32Array = super.interpolate(_i1, _t);
         return Quaternion.NORMALIZE_ARRAY(result, 0, result, 0);
       }
     }

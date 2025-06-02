@@ -66,7 +66,7 @@ namespace FudgeCore {
           return;
 
         const root: AnimationNode = this.root;
-        root.update(Loop.timeFrameGame, this.#valuesOriginal, this.#dispatchEvent);
+        root.update(Loop.timeFrameGame, this.#valuesOriginal, this.#valuesOriginal, this.#dispatchEvent);
 
         const values: Map<string, Float32Array> = root.values;
         const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;
