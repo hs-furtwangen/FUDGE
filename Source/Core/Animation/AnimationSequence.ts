@@ -56,33 +56,30 @@ namespace FudgeCore {
      * @param _time the point in time at which to evaluate the sequence in milliseconds.
      * @returns the value of the sequence at the given time. undefined if there are no keys.
      */
-    public evaluate(_time: number, _out?: AnimationReturnType): T {
-      let iLeft: number = 0, iRight: number = this.keys.length - 1, iMid: number;
-      while (iLeft <= iRight) {
-        iMid = Math.floor((iLeft + iRight) / 2);
-        if (this.keys[iMid].time < _time)
-          iLeft = iMid + 1;
-        else
-          iRight = iMid - 1;
-      }
-      const key: AnimationKey<T> = this.keys[iRight] ?? this.keys[iLeft];
-      return key?.functionOut.evaluate(_time, _out);
-
+    public evaluate<T extends AnimationReturnType>(_time: number, _out?: T): T {
+      const keys: AnimationKey[] = this.keys;
 
       // if (this.keys.length == 0)
       //   return undefined; //TODO: shouldn't return 0 but something indicating no change, like null. probably needs to be changed in Node as well to ignore non-numeric values in the applyAnimation function
       // if (this.keys.length == 1 || this.keys[0].time >= _time)
       //   return this.keys[0].value;
 
+      if (keys.length == 1)
+        return <T>keys[0].functionOut.evaluate(_time, _out);
 
-      // for (let i: number = 0; i < this.keys.length - 1; i++) {
-      //   if (this.keys[i].time <= _time && _time < this.keys[i + 1].time) {
-      //     return this.keys[i].functionOut.evaluate(_time);
-      //   }
-      //   // if (this.keys[i].time == _time)
-      //   //   return this.keys[i].value;
-      // }
-      // return this.keys[this.keys.length - 1].value;
+      // Binary search
+      let iNext: number = 0, iRight: number = keys.length - 1, iMid: number;
+
+      while (iNext < iRight) {
+        iMid = (iNext + iRight) >>> 1;
+        if (_time < keys[iMid].time)
+          iRight = iMid;
+        else
+          iNext = iMid + 1;
+      }
+
+      const key: AnimationKey = keys[iNext - 1];
+      return <T>key.functionOut.evaluate(_time, _out);
     }
 
     /**

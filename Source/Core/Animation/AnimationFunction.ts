@@ -128,15 +128,30 @@ namespace FudgeCore {
 
   export class AnimationFunctionQuaternion extends AnimationFunction<MutatorQuaternion> {
     public evaluate(_time: number, _out: MutatorQuaternion = <MutatorQuaternion>{}): MutatorQuaternion {
-      _time -= this.keyIn.time;
-      let time2: number = _time * _time;
-      let time3: number = time2 * _time;
+      const keyIn: AnimationKey<MutatorQuaternion> = this.keyIn;
 
-      _out.x = this.a.x * time3 + this.b.x * time2 + this.c.x * _time + this.d.x;
-      _out.y = this.a.y * time3 + this.b.y * time2 + this.c.y * _time + this.d.y;
-      _out.z = this.a.z * time3 + this.b.z * time2 + this.c.z * _time + this.d.z;
-      _out.w = this.a.w * time3 + this.b.w * time2 + this.c.w * _time + this.d.w;
-      return _out;
+      switch (keyIn.interpolation) {
+        case ANIMATION_INTERPOLATION.CONSTANT:
+          Object.assign(_out, keyIn.value);
+          
+          return _out;
+        case ANIMATION_INTERPOLATION.LINEAR:
+          const keyOut: AnimationKey<MutatorQuaternion> = this.keyOut;
+          const timeStart: number = keyIn.time;
+          _time = (_time - timeStart) / (keyOut.time - timeStart);
+
+          return Quaternion.SLERP_QUATERNIONLIKE(keyIn.value, keyOut.value, _time, _out);
+        case ANIMATION_INTERPOLATION.CUBIC:
+          _time -= keyIn.time;
+          const time2: number = _time * _time;
+          const time3: number = time2 * _time;
+
+          _out.x = this.a.x * time3 + this.b.x * time2 + this.c.x * _time + this.d.x;
+          _out.y = this.a.y * time3 + this.b.y * time2 + this.c.y * _time + this.d.y;
+          _out.z = this.a.z * time3 + this.b.z * time2 + this.c.z * _time + this.d.z;
+          _out.w = this.a.w * time3 + this.b.w * time2 + this.c.w * _time + this.d.w;
+          return _out;
+      }
     }
 
     public calculate(): void {
