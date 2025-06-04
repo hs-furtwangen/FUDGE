@@ -56,7 +56,7 @@ namespace FudgeCore {
      * @param _time the point in time at which to evaluate the sequence in milliseconds.
      * @returns the value of the sequence at the given time. undefined if there are no keys.
      */
-    public evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T {
+    public evaluate(_time: number, _out?: AnimationReturnType): T {
       let iLeft: number = 0, iRight: number = this.keys.length - 1, iMid: number;
       while (iLeft <= iRight) {
         iMid = Math.floor((iLeft + iRight) / 2);
@@ -214,22 +214,5 @@ namespace FudgeCore {
     }
 
     protected reduceMutator(_mutator: Mutator): void { /* */ }
-  }
-
-  /**
-   * A sequence of {@link AnimationKeyNumber}s sampled from an original sequence. In a sampled sequence, the keys are stored at indices corresponding to discrete frames in accordance with the {@link Animation}'s frames per second.
-   * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame. 
-   * @authors Jonas Plotzky, HFU, 2025
-   */
-  export class AnimationSequenceSampled extends AnimationSequence {
-
-    /** Evaluates the sequence at the given frame and time. */
-    public override evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): AnimationReturnType {
-      return this.keys[_frame]?.functionOut.evaluate(_time, _out);
-    }
-
-    protected override regenerateFunctions(_keys: AnimationKey[] = this.keys): void {
-      super.regenerateFunctions([...new Set(_keys)]); // remove duplicates, as sampled sequences may contain the same key repeated times
-    }
   }
 }

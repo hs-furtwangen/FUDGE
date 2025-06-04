@@ -36,9 +36,7 @@ namespace FudgeCore {
     /**forward, rastered */
     RASTERED,
     /**backward, rastered */
-    RASTEREDREVERSE,
-    /** forward, sampled at discrete frame times */
-    SAMPLED
+    RASTEREDREVERSE
   }
 
   /**
@@ -86,7 +84,6 @@ namespace FudgeCore {
     public name: string;
     public totalTime: number = 0; // Why isn't this called duration or length?
     public labels: AnimationLabel = {}; // a label marks a specific time to conveniently jump to using a text identifier
-    public sampled: boolean = false; // TODO: if set the cache needs to be adjusted (animationStructuresProcessed)
     public animationStructure: AnimationStructure; // TODO: if set the cache needs to be adjusted (animationStructuresProcessed)
     public events: AnimationEventTrigger = {};
     protected framesPerSecond: number = 60; // TODO: change this and its accessors to #framesPerSecond?
@@ -186,8 +183,7 @@ namespace FudgeCore {
      * in the state the animation is in at the given time, direction and quantization
      */
     public getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION, _mutatorOut: Mutator = {}): Mutator {
-      let frame: number = this.sampled ? Math.floor(_time * this.framesPerSecond / 1000) : undefined;
-      return this.traverseStructureForMutator(this.getAnimationStructure(_direction, _quantization), _time, frame, _mutatorOut);
+      return this.traverseStructureForMutator(this.getAnimationStructure(_direction, _quantization), _time, _mutatorOut);
     }
 
     /**
@@ -297,7 +293,6 @@ namespace FudgeCore {
         name: this.name,
         labels: {},
         events: {},
-        sampled: this.sampled,
         framesPerSecond: this.framesPerSecond
         // sps: this.stepsPerSecond
       };
@@ -314,7 +309,6 @@ namespace FudgeCore {
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
       this.name = _serialization.name;
-      this.sampled = _serialization.sampled;
       this.framesPerSecond = _serialization.framesPerSecond;
       // this.stepsPerSecond = _serialization.sps;
       this.labels = {};
@@ -399,20 +393,20 @@ namespace FudgeCore {
     /**
      * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time.
      */
-    private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _frame?: number, _mutatorOut: Mutator = {}): Mutator {
+    private traverseStructureForMutator(_structure: AnimationStructure, _time: number, _mutatorOut: Mutator = {}): Mutator {
       if (Array.isArray(_structure))
         for (let n: number = 0; n < _structure.length; n++) {
           if (_structure[n] instanceof AnimationSequence)
-            _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
+            _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _mutatorOut[n]);
           else
-            _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
+            _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _mutatorOut[n]);
         }
       else
         for (let n in _structure) {
           if (_structure[n] instanceof AnimationSequence)
-            _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _frame, _mutatorOut[n]);
+            _mutatorOut[n] = (<AnimationSequence>_structure[n]).evaluate(_time, _mutatorOut[n]);
           else
-            _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _frame, _mutatorOut[n]);
+            _mutatorOut[n] = this.traverseStructureForMutator(<AnimationStructure>_structure[n], _time, _mutatorOut[n]);
         }
 
       return _mutatorOut;
@@ -440,10 +434,7 @@ namespace FudgeCore {
       let animationStructure: ANIMATION_STRUCTURE_TYPE;
 
       if (_quantization == ANIMATION_QUANTIZATION.CONTINOUS)
-        if (this.sampled)
-          animationStructure = ANIMATION_STRUCTURE_TYPE.SAMPLED;
-        else
-          animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
+        animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.REVERSE : ANIMATION_STRUCTURE_TYPE.NORMAL;
       else
         animationStructure = _direction < 0 ? ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE : ANIMATION_STRUCTURE_TYPE.RASTERED;
 
@@ -474,9 +465,6 @@ namespace FudgeCore {
           break;
         case ANIMATION_STRUCTURE_TYPE.RASTEREDREVERSE:
           processed = this.traverseStructureForNewStructure(this.getProcessedAnimationStructure(ANIMATION_STRUCTURE_TYPE.REVERSE), this.calculateRasteredSequence.bind(this));
-          break;
-        case ANIMATION_STRUCTURE_TYPE.SAMPLED:
-          processed = this.traverseStructureForNewStructure(this.animationStructure, this.calculateSampledSequence.bind(this));
           break;
         default:
           return undefined;
@@ -564,26 +552,6 @@ namespace FudgeCore {
         keys.push(new AnimationKey(i, _sequence.evaluate(i), ANIMATION_INTERPOLATION.CONSTANT));
 
       return new AnimationSequence(keys, _sequence.classType);
-    }
-
-    /**
-     * Creates a {@link AnimationSequenceSampled} out of a given sequence.
-     */
-    private calculateSampledSequence(_sequence: AnimationSequence): AnimationSequenceSampled {
-      const frameTime: number = 1000 / this.framesPerSecond;
-      const nFrames: number = Math.ceil(this.totalTime / frameTime);
-
-      let keysOriginal: AnimationKey[] = _sequence.getKeys();
-      let keysSampled: AnimationKey[] = new Array(nFrames + 1);
-
-      for (let iSampled: number = 0, iOriginal: number = 0, time: number = 0; iSampled <= nFrames; iSampled++, time += frameTime) {
-        while (iOriginal < keysOriginal.length - 1 && keysOriginal[iOriginal + 1].time <= time + 1e-3)
-          iOriginal++;
-
-        keysSampled[iSampled] = keysOriginal[iOriginal];
-      }
-
-      return new AnimationSequenceSampled(keysSampled, _sequence.classType);;
     }
 
     /**
