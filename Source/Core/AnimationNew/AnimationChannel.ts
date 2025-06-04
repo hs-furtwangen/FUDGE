@@ -1,12 +1,11 @@
 namespace FudgeCore {
   export namespace AnimationSystem {
     export enum ANIMATION_PROPERTY_TYPE {
-      BOOLEAN = "boolean",
-      NUMBER = "number",
-      STRING = "string",
-      VECTOR = "vector",
-      QUATERNION = "quaternion",
-      COLOR = "color"
+      BOOLEAN,
+      NUMBER,
+      STRING,
+      VECTOR,
+      QUATERNION
     }
 
     /**

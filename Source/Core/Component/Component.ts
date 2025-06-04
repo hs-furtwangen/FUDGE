@@ -80,11 +80,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Called by a {@link AnimationSystem.ComponentAnimation} after animating this components properties. Override to implement custom animation behavior.
-     */
-    public onAnimate?(): void;
-
-    /**
      * Override this to draw visual aids for this component inside the editors render view. Use {@link Gizmos} inside the override to draw stuff.
      */
     public drawGizmos?(_cmpCamera?: ComponentCamera): void;

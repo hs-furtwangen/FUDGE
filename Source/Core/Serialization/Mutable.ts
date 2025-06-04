@@ -316,6 +316,11 @@ namespace FudgeCore {
     }
 
     /**
+     * Called by a {@link AnimationSystem.ComponentAnimation} after animating this mutables properties. Override to implement custom animation behavior.
+     */
+    public onAnimate?(): void;
+
+    /**
      * Synchronous implementation of {@link mutate}.
      * Override {@link mutate} with a sync implementation and call this method from it to mutate synchronously.
      */

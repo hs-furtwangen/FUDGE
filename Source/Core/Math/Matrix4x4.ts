@@ -1292,6 +1292,10 @@ namespace FudgeCore {
       return mutator;
     }
 
+    public override onAnimate(): void {
+      this.compose(this.translation, this.quaternion, this.scaling);
+    }
+
     public override mutate(_mutator: Mutator): void {
       this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
     }

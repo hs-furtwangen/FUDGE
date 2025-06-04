@@ -8,7 +8,7 @@ namespace FudgeCore {
 
       readonly #valuesOriginal: Map<string, Float32Array>;
       readonly #bindings: Map<string, AnimationPropertyBinding>;
-      readonly #components: Set<Component>;
+      readonly #targets: Set<Mutable>;
 
       readonly #dispatchEvent: (_event: EventUnified) => boolean = this.dispatchEvent.bind(this);
 
@@ -17,7 +17,7 @@ namespace FudgeCore {
         this.root = _root;
         this.#valuesOriginal = new Map<string, Float32Array>();
         this.#bindings = new Map<string, AnimationPropertyBinding>();
-        this.#components = new Set<Component>();
+        this.#targets = new Set<Component>();
 
         if (Project.mode == MODE.EDITOR)
           return;
@@ -38,15 +38,15 @@ namespace FudgeCore {
       public bind(): void {
         const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;
         const valuesOriginal: Map<string, Float32Array> = this.#valuesOriginal;
-        const components: Set<Component> = this.#components;
+        const targets: Set<Mutable> = this.#targets;
         for (const path of this.#bindings.keys()) {
           const binding: AnimationPropertyBinding = bindings.get(path);
           binding.root = this.node;
           binding.bind();
           binding.get(valuesOriginal.get(path), 0);
 
-          if (binding.component.onAnimate)
-            components.add(binding.component);
+          if (binding.target.onAnimate) 
+            targets.add(binding.target);
         }
       };
 
@@ -58,7 +58,7 @@ namespace FudgeCore {
         }
         this.#valuesOriginal.clear();
         this.#bindings.clear();
-        this.#components.clear();
+        this.#targets.clear();
       }
 
       private update = (): void => {
@@ -74,8 +74,8 @@ namespace FudgeCore {
         for (const path of values.keys())
           bindings.get(path).set(values.get(path), 0);
 
-        for (const component of this.#components)
-          component.onAnimate();
+        for (const target of this.#targets)
+          target.onAnimate();
       };
 
       private onComponentAdd = (): void => {
