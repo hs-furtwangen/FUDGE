@@ -22,9 +22,12 @@ namespace FudgeCore {
       public key: PropertyKey;
       public property: unknown & ArrayConvertible;
 
-      public constructor(_root: Node, _path: string) {
+      public input: Float32Array;
+
+      public constructor(_root: Node, _path: string, _input: Float32Array) {
         this.root = _root;
         this.path = _path;
+        this.input = _input;
         this.pathParsed = AnimationPropertyBinding.parsePath(_path);
       }
 
@@ -106,6 +109,10 @@ namespace FudgeCore {
       public unbind(): void {
         // TODO: Implement method
         throw new Error("Not implemented");
+      }
+
+      public apply(): void {
+        this.set(this.input, 0);
       }
 
       public set(_source: Float32Array, _offset: number): void { /** */ }

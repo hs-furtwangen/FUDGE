@@ -7,7 +7,7 @@ namespace FudgeCore {
       public root: AnimationNode;
 
       readonly #valuesOriginal: Map<string, Float32Array>;
-      readonly #bindings: Map<string, AnimationPropertyBinding>;
+      readonly #bindings: AnimationPropertyBinding[];
       readonly #targets: Set<Mutable>;
 
       readonly #dispatchEvent: (_event: EventUnified) => boolean = this.dispatchEvent.bind(this);
@@ -16,7 +16,7 @@ namespace FudgeCore {
         super();
         this.root = _root;
         this.#valuesOriginal = new Map<string, Float32Array>();
-        this.#bindings = new Map<string, AnimationPropertyBinding>();
+        this.#bindings = [];
         this.#targets = new Set<Component>();
 
         if (Project.mode == MODE.EDITOR)
@@ -24,70 +24,67 @@ namespace FudgeCore {
 
         this.addEventListener(EVENT.COMPONENT_ADD, this.onComponentAdd);
         this.addEventListener(EVENT.COMPONENT_REMOVE, this.onComponentRemove);
-
-        if (!this.root)
-          return;
-
-        const valuesRoot: Map<string, Float32Array> = this.root.values;
-        for (const path of valuesRoot.keys()) {
-          this.#bindings.set(path, new AnimationPropertyBinding(null, path));
-          this.#valuesOriginal.set(path, new Float32Array(valuesRoot.get(path).length));
-        }
       }
 
       public bind(): void {
-        const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;
-        const valuesOriginal: Map<string, Float32Array> = this.#valuesOriginal;
-        const targets: Set<Mutable> = this.#targets;
-        for (const path of this.#bindings.keys()) {
-          const binding: AnimationPropertyBinding = bindings.get(path);
-          binding.root = this.node;
-          binding.bind();
-          binding.get(valuesOriginal.get(path), 0);
+        if (!this.node || !this.root)
+          return;
 
-          if (binding.target.onAnimate) 
+        const valuesRoot: Map<string, Float32Array> = this.root.values;
+        const valuesOriginal: Map<string, Float32Array> = this.#valuesOriginal;
+        const propertyBindings: AnimationPropertyBinding[] = this.#bindings;
+        const targets: Set<Mutable> = this.#targets;
+
+        for (const path of valuesRoot.keys()) {
+          const binding: AnimationPropertyBinding = new AnimationPropertyBinding(this.node, path, valuesRoot.get(path));
+          binding.bind();
+          propertyBindings.push(binding);
+          valuesOriginal.set(path, new Float32Array(valuesRoot.get(path).length));
+
+          if (binding.target.onAnimate)
             targets.add(binding.target);
         }
       };
 
       public unbind(): void {
-        const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;
-        for (const path of this.#bindings.keys()) {
-          const binding: AnimationPropertyBinding = bindings.get(path);
-          binding.unbind();
-        }
+        const bindings: AnimationPropertyBinding[] = this.#bindings;
+        for (let i: number = 0; i < bindings.length; i++)
+          bindings[i].unbind();
+
         this.#valuesOriginal.clear();
-        this.#bindings.clear();
+        this.#bindings.length = 0;
         this.#targets.clear();
       }
 
-      private update = (): void => {
+      public update(_deltaTime: number): void {
         if (!this.root || !this.node || !this.active)
           return;
 
         const root: AnimationNode = this.root;
         root.update(Loop.timeFrameGame, this.#valuesOriginal, this.#valuesOriginal, this.#dispatchEvent);
 
-        const values: Map<string, Float32Array> = root.values;
-        const bindings: Map<string, AnimationPropertyBinding> = this.#bindings;
-
-        for (const path of values.keys())
-          bindings.get(path).set(values.get(path), 0);
+        const propertyBindings: AnimationPropertyBinding[] = this.#bindings;
+        for (let i: number = 0; i < propertyBindings.length; i++)
+          propertyBindings[i].apply();
 
         for (const target of this.#targets)
           target.onAnimate();
+      }
+
+      private hndRenderPrepare = (): void => {
+        this.update(Loop.timeFrameGame);
       };
 
       private onComponentAdd = (): void => {
-        this.node.addEventListener(EVENT.RENDER_PREPARE, this.update);
+        this.node.addEventListener(EVENT.RENDER_PREPARE, this.hndRenderPrepare);
         this.bind();
       };
 
       private onComponentRemove = (): void => {
-        this.node.removeEventListener(EVENT.RENDER_PREPARE, this.update);
+        this.node.removeEventListener(EVENT.RENDER_PREPARE, this.hndRenderPrepare);
         this.unbind();
         this.#valuesOriginal.clear();
-        this.#bindings.clear();
+        this.#bindings.length = 0;
       };
     }
   }
