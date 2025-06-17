@@ -64,12 +64,18 @@ namespace FudgeCore {
 
         const channels: AnimationChannel[] = this.animation.channels;
         const nChannels: number = channels.length;
-        this.interpolants = new Array(nChannels);
-        this.values = new Map<string, Float32Array>();
+        const values: Map<string, Float32Array> = new Map();
+        const interpolants: AnimationInterpolant[] = new Array(nChannels);
+
         for (let i: number = 0; i < nChannels; i++) {
-          this.interpolants[i] = channels[i].createInterpolant();
-          this.values.set(channels[i].path, this.interpolants[i].result);
+          const channel: AnimationChannel = channels[i];
+          const interpolant: AnimationInterpolant = channel.createInterpolant();
+          interpolants[i] = interpolant;
+          values.set(channel.path, interpolant.result);
         }
+
+        this.values = values;
+        this.interpolants = interpolants;
       }
 
       public override reset(): void {
@@ -77,15 +83,16 @@ namespace FudgeCore {
       }
 
       public override update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void {
-        const duration: number = this.animation.duration;
+        const animation: Animation = this.animation;
+        const duration: number = animation.duration;
         const time: number = (this.time += _deltaTime * this.speed) % duration;
         const interpolants: AnimationInterpolant[] = this.interpolants;
         const length: number = interpolants.length;
 
-        for (let i: number = 0; i < length; i++)
+        for (let i: number = 0; i < length; i++) 
           interpolants[i].evaluate(time);
 
-        const eventTrack: AnimationEventTrack = this.animation.eventTrack;
+        const eventTrack: AnimationEventTrack = animation.eventTrack;
         const eventTrackTimes: number[] = eventTrack.times;
         if (eventTrackTimes.length == 0)
           return;
