@@ -1,4 +1,11 @@
 namespace FudgeCore {
+  export interface QuaternionLike {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  }
+
   /**
     * Storing and manipulating rotations in the form of quaternions.
     * Constructed out of the 4 components: (x, y, z, w). Mathematical notation: w + xi + yj + zk.
@@ -28,11 +35,27 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a copy of the given quaternion scaled to length 1 (a unit quaternion) making it a valid rotation representation.
-     * @param _out Optional quaternion to store the result in.
+     * Normalize a quaternion making it a valid rotation representation.
+     * @param _q - quaternion to normalize
+     * @param _out - (optional) the receiving quaternion.
+     * @returns `_out` or a new quaternion if none is provided.
      */
-    public static NORMALIZATION(_quaternion: Quaternion, _out: Quaternion = Recycler.reuse(Quaternion)): Quaternion {
-      return _out.copy(_quaternion).normalize();
+    public static NORMALIZATION(_q: Readonly<Quaternion>, _out?: Quaternion): Quaternion;
+    public static NORMALIZATION<T extends QuaternionLike>(_q: Readonly<T>, _out: T): T;
+    public static NORMALIZATION<T extends QuaternionLike>(_q: Readonly<T>, _out: T = <T><unknown>Recycler.reuse(Quaternion)): T {
+      const x: number = _q.x;
+      const y: number = _q.y;
+      const z: number = _q.z;
+      const w: number = _q.w;
+      let length: number = x * x + y * y + z * z + w * w;
+      if (length > 0)
+        length = 1 / Math.sqrt(length);
+
+      _out.x = x * length;
+      _out.y = y * length;
+      _out.z = z * length;
+      _out.w = w * length;
+      return _out;
     }
 
     /**
@@ -195,66 +218,82 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the normalized linear interpolation between two quaternions. When t is 0 the result is a, when t is 1 the result is b. Clamps t between 0 and 1.
-     * @param _out Optional quaternion to store the result in.
+     * Performs a linear interpolation between two quaternions. Result should be normalized afterwards to represent a valid rotation.
+     * @param _a - the first operand.
+     * @param _b - the second operand.
+     * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+     * @param _out - (optional) the receiving quaternion.
+     * @returns `_out` or a new quaternion if none is provided.
+     * @source https://github.com/toji/gl-matrix
      */
-    public static LERP(_a: Quaternion, _b: Quaternion, _t: number, _out: Quaternion = Recycler.reuse(Quaternion)): Quaternion {
-      _t = Calc.clamp(_t, 0, 1);
-      return _out.set(
-        (_a.x + _t * (_b.x - _a.x)),
-        (_a.y + _t * (_b.y - _a.y)),
-        (_a.z + _t * (_b.z - _a.z)),
-        (_a.w + _t * (_b.w - _a.w))
-      ).normalize();
-    }
-
-    /**
-     * Returns the spherical linear interpolation between two quaternions. When t is 0 the result is a, when t is 1 the result is b. 
-     * @param _out Optional quaternion to store the result in.
-     */
-    public static SLERP(_a: Quaternion, _b: Quaternion, _t: number, _out: Quaternion = Recycler.reuse(Quaternion)): Quaternion {
-      // From: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-      if (_t == 0)
-        return _out.copy(_a);
-
-      if (_t == 1)
-        return _out.copy(_b);
-
+    public static LERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
+    public static LERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+    public static LERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T = <T><unknown>Recycler.reuse(Quaternion)): T {
       const ax: number = _a.x;
       const ay: number = _a.y;
       const az: number = _a.z;
       const aw: number = _a.w;
+      _out.x = ax + _t * (_b.x - ax);
+      _out.y = ay + _t * (_b.y - ay);
+      _out.z = az + _t * (_b.z - az);
+      _out.w = aw + _t * (_b.w - aw);
+      return _out;
+    }
 
-      let bx: number = _b.x;
-      let by: number = _b.y;
-      let bz: number = _b.z;
-      let bw: number = _b.w;
+    /**
+     * Performs a spherical linear interpolation between two quaternions.
+     * @param _a - the first operand.
+     * @param _b - the second operand.
+     * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+     * @param _out - (optional) the receiving quaternion.
+     * @returns `_out` or a new quaternion if none is provided.
+     * @source https://github.com/toji/gl-matrix
+     */
+    public static SLERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
+    public static SLERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+    public static SLERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T = <T><unknown>Recycler.reuse(Quaternion)): T {
+      const ax: number = _a.x,
+        ay: number = _a.y,
+        az: number = _a.z,
+        aw: number = _a.w;
+      let bx: number = _b.x,
+        by: number = _b.y,
+        bz: number = _b.z,
+        bw: number = _b.w;
 
-      let cosHalfTheta: number = aw * bw + ax * bx + ay * by + az * bz;
+      let scale0: number;
+      let scale1: number;
 
-      if (cosHalfTheta < 0) {
+      // calc cosine
+      let cosom: number = ax * bx + ay * by + az * bz + aw * bw;
+      // adjust signs (if necessary)
+      if (cosom < 0.0) {
+        cosom = -cosom;
         bx = -bx;
         by = -by;
         bz = -bz;
         bw = -bw;
-
-        cosHalfTheta = -cosHalfTheta;
       }
-
-      if (cosHalfTheta >= 1)
-        return _out.copy(_a);
-
-      let sqrSinHalfTheta: number = 1 - cosHalfTheta * cosHalfTheta;
-      if (sqrSinHalfTheta <= Number.EPSILON) {
-        const s: number = 1 - _t;
-        return _out.set(ax * s + bx * _t, ay * s + by * _t, az * s + bz * _t, aw * s + bw * _t).normalize();;
+      // calculate coefficients
+      if (1.0 - cosom > Number.EPSILON) {
+        // standard case (slerp)
+        const omega: number = Math.acos(cosom);
+        const sinom: number = Math.sin(omega);
+        scale0 = Math.sin((1.0 - _t) * omega) / sinom;
+        scale1 = Math.sin(_t * omega) / sinom;
+      } else {
+        // "from" and "to" quaternions are very close
+        //  ... so we can do a linear interpolation
+        scale0 = 1.0 - _t;
+        scale1 = _t;
       }
+      // calculate final values
+      _out.x = scale0 * ax + scale1 * bx;
+      _out.y = scale0 * ay + scale1 * by;
+      _out.z = scale0 * az + scale1 * bz;
+      _out.w = scale0 * aw + scale1 * bw;
 
-      const halfTheta: number = Math.acos(cosHalfTheta);
-      const sinHalfTheta: number = Math.sqrt(sqrSinHalfTheta);
-      const s: number = Math.sin((1 - _t) * halfTheta) / sinHalfTheta;
-      const t: number = Math.sin(_t * halfTheta) / sinHalfTheta;
-      return _out.set(ax * s + bx * t, ay * s + by * t, az * s + bz * t, aw * s + bw * t);
+      return _out;
     }
 
     /**

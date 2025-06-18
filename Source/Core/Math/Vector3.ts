@@ -1,4 +1,10 @@
 namespace FudgeCore {
+  export interface Vector3Like {
+    x: number;
+    y: number;
+    z: number;
+  }
+
   /**
    * Stores and manipulates a threedimensional vector comprised of the components x, y and z
    * ```text
@@ -161,7 +167,7 @@ namespace FudgeCore {
     /**
      * Computes the dotproduct of 2 vectors.
      */
-    public static DOT(_a: Vector3, _b: Vector3): number {
+    public static DOT(_a: Readonly<Vector3Like>, _b: Readonly<Vector3Like>): number {
       return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z;
     }
 
@@ -210,17 +216,50 @@ namespace FudgeCore {
       return _out.copy(_a).project(_b);
     }
 
+
     /**
-     * Returns the linear interpolation between two vectors. When t is 0 the result is a, when t is 1 the result is b. Clamps t between 0 and 1.
-     * @param _out Optional vector to store the result in.
+     * Performs a linear interpolation between between two vectors. When t is 0 the result is a, when t is 1 the result is b.
+     * @param _a - the first operand.
+     * @param _b - the second operand.
+     * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+     * @param _out - (optional) the receiving vector.
+     * @returns `_out` or a new vector if none is provided.
+     * @source https://github.com/toji/gl-matrix
      */
-    public static LERP(_a: Vector3, _b: Vector3, _t: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      _t = Calc.clamp(_t, 0, 1);
-      return _out.set(
-        _a.x + _t * (_b.x - _a.x),
-        _a.y + _t * (_b.y - _a.y),
-        _a.z + _t * (_b.z - _a.z)
-      );
+    public static LERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
+    public static LERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+    public static LERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T = <T><unknown>Recycler.reuse(Vector3)): T {
+      const ax: number = _a.x;
+      const ay: number = _a.y;
+      const az: number = _a.z;
+      _out.x = ax + _t * (_b.x - ax);
+      _out.y = ay + _t * (_b.y - ay);
+      _out.z = az + _t * (_b.z - az);
+      return _out;
+    }
+
+    /**
+     * Performs a spherical linear interpolation between two vectors.
+     * @param _a - the first operand.
+     * @param _b - the second operand.
+     * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+     * @param _out - (optional) the receiving vector.
+     * @returns `_out` or a new vector if none is provided.
+     * @source https://github.com/toji/gl-matrix
+     */
+    public static SLERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
+    public static SLERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+    public static SLERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T = <T><unknown>Recycler.reuse(Vector3)): T {
+      const angle: number = Math.acos(Math.min(Math.max(Vector3.DOT(_a, _b), -1), 1));
+      const sinTotal: number = Math.sin(angle);
+
+      const ratioA: number = Math.sin((1 - _t) * angle) / sinTotal;
+      const ratioB: number = Math.sin(_t * angle) / sinTotal;
+      _out.x = ratioA * _a.x + ratioB * _b.x;
+      _out.y = ratioA * _a.y + ratioB * _b.y;
+      _out.z = ratioA * _a.z + ratioB * _b.z;
+
+      return _out;
     }
 
     /**
