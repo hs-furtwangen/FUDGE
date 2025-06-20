@@ -99,8 +99,8 @@ namespace FudgeCore {
        */
       public elementStride: number;
 
-      public constructor(_times: Float32Array, _output: Float32Array, _elementSize: number) {
-        super(_times, _output, _elementSize);
+      public constructor(_times: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array) {
+        super(_times, _output, _elementSize, _result);
         this.elementStride = _elementSize * 3;
       }
 

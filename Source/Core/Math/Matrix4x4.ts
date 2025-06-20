@@ -1068,6 +1068,89 @@ namespace FudgeCore {
       return this;
     }
 
+    public override animate(_mutator: { translation?: Float32Array; rotation?: Float32Array; quaternion?: Float32Array; scaling?: Float32Array }): Matrix4x4 {
+      // TODO: this is almost a copy of mutate + compose, maybe refactor to a common method, cool soultion would be to have Vector3 and Quaternion to extend Float32Array 🤩
+      const m: Float32Array = this.data;
+      const translationArray: Float32Array = _mutator.translation;
+      const rotationArray: Float32Array = _mutator.quaternion ?? _mutator.rotation;
+      const scalingArray: Float32Array = _mutator.scaling;
+
+      if (translationArray) {
+        const translation: Vector3 = this.translation;
+        translation.setArray(translationArray);
+        m[12] = translation.x;
+        m[13] = translation.y;
+        m[14] = translation.z;
+        this.#translationDirty = false;
+      }
+
+      if (rotationArray || scalingArray) {
+        const isQuaternion: boolean = rotationArray?.length == 4;
+
+        const rotation: Quaternion | Vector3 = isQuaternion ? this.quaternion : this.rotation;
+        if (rotationArray)
+          rotation.setArray(rotationArray);
+
+        const scaling: Vector3 = this.scaling;
+        if (scalingArray)
+          scaling.setArray(scalingArray);
+
+        const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
+        if (isQuaternion) {
+          // fast algorithm from three.js
+          const x: number = rotation.x, y: number = rotation.y, z: number = rotation.z, w: number = (<Quaternion>rotation).w;
+          const x2: number = x + x, y2: number = y + y, z2: number = z + z;
+          const xx: number = x * x2, xy: number = x * y2, xz: number = x * z2;
+          const yy: number = y * y2, yz: number = y * z2, zz: number = z * z2;
+          const wx: number = w * x2, wy: number = w * y2, wz: number = w * z2;
+
+          m[0] = (1 - (yy + zz)) * sx;
+          m[1] = (xy + wz) * sx;
+          m[2] = (xz - wy) * sx;
+
+          m[4] = (xy - wz) * sy;
+          m[5] = (1 - (xx + zz)) * sy;
+          m[6] = (yz + wx) * sy;
+
+          m[8] = (xz + wy) * sz;
+          m[9] = (yz - wx) * sz;
+          m[10] = (1 - (xx + yy)) * sz;
+        } else {
+          const radX: number = rotation.x * Calc.deg2rad;
+          const radY: number = rotation.y * Calc.deg2rad;
+          const radZ: number = rotation.z * Calc.deg2rad;
+
+          const sinX: number = Math.sin(radX);
+          const cosX: number = Math.cos(radX);
+          const sinY: number = Math.sin(radY);
+          const cosY: number = Math.cos(radY);
+          const sinZ: number = Math.sin(radZ);
+          const cosZ: number = Math.cos(radZ);
+
+          m[0] = (cosZ * cosY) * sx;
+          m[1] = (sinZ * cosY) * sx;
+          m[2] = -sinY * sx;
+
+          m[4] = (cosZ * sinY * sinX - sinZ * cosX) * sy;
+          m[5] = (sinZ * sinY * sinX + cosZ * cosX) * sy;
+          m[6] = (cosY * sinX) * sy;
+
+          m[8] = (cosZ * sinY * cosX + sinZ * sinX) * sz;
+          m[9] = (sinZ * sinY * cosX - cosZ * sinX) * sz;
+          m[10] = (cosY * cosX) * sz;
+        }
+
+        this.#rotationDirty = isQuaternion;
+        this.#quaternionDirty = !isQuaternion;
+        this.#scalingDirty = false;
+      }
+
+      this.mutator = null;
+      this.modified = true;
+
+      return this;
+    }
+
     /**
      * Sets the elements of this matrix to the given array starting at the given offset.
      * @returns A reference to this matrix.
@@ -1292,12 +1375,8 @@ namespace FudgeCore {
       return mutator;
     }
 
-    public override onAnimate(): void {
-      this.compose(this.translation, this.quaternion, this.scaling);
-    }
-
     public override mutate(_mutator: Mutator): void {
-      this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
+      this.compose(_mutator.translation, _mutator.rotation ?? _mutator.quaternion, _mutator.scaling);
     }
 
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {

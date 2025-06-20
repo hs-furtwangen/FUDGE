@@ -37,12 +37,15 @@ namespace FudgeCore {
           idResource: this.idResource,
           name: this.name,
           duration: this.duration,
-          channels: Serializer.serializeArray(AnimationChannel, this.channels),
           eventTrack: {
             times: this.eventTrack.times,
             events: this.eventTrack.events
           }
         };
+
+        const channelType: new () => Serializable = <new () => Serializable>this.channels[0]?.constructor;
+        if (channelType)
+          serialization.channels = Serializer.serializeArray(channelType, this.channels);
 
         return serialization;
       }

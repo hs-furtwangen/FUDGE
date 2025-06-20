@@ -19,15 +19,16 @@ namespace FudgeCore {
       public node: Node;
       public component: Component;
       public target: Mutable;
-      public key: PropertyKey;
+      public key: string;
       public property: unknown & ArrayConvertible;
 
-      public input: Float32Array;
+      /** The animated value to be applied to the property */
+      public output: Float32Array;
 
-      public constructor(_root: Node, _path: string, _input: Float32Array) {
+      public constructor(_root: Node, _path: string, _output: Float32Array) {
         this.root = _root;
         this.path = _path;
-        this.input = _input;
+        this.output = _output;
         this.pathParsed = AnimationPropertyBinding.parsePath(_path);
       }
 
@@ -96,23 +97,26 @@ namespace FudgeCore {
         if (typeof this.property == "string" || typeof this.property == "number" || typeof this.property == "boolean") {
           this.get = this.#getDirect;
           this.set = this.#setDirect;
-          return;
-        }
-
-        if ((<ArrayConvertible>this.property).toArray && (<ArrayConvertible>this.property).setArray) {
+        } else if ((<ArrayConvertible>this.property).toArray && (<ArrayConvertible>this.property).setArray) {
           this.get = this.#getToArray;
           this.set = this.#setFromArray;
-          return;
         }
       }
 
       public unbind(): void {
-        // TODO: Implement method
-        throw new Error("Not implemented");
+        this.root = null;
+        this.path = null;
+        this.pathParsed = null;
+        this.node = null;
+        this.component = null;
+        this.target = null;
+        this.key = null;
+        this.property = null;
+        this.output = null;
       }
 
       public apply(): void {
-        this.set(this.input, 0);
+        this.set(this.output, 0);
       }
 
       public set(_source: Float32Array, _offset: number): void { /** */ }

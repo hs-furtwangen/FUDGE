@@ -10,7 +10,7 @@ namespace FudgeCore {
 
     /** 
      * Base class for all animation nodes. Animation nodes form an animation graph enabling hierachical animation blending and animation transitions. 
-     * Can be attached to a {@link Node} via {@link ComponentAnimation}. 
+     * Can be attached to a {@link Node} via {@link ComponentAnimationGraph}. 
      * @author Jonas Plotzky, HFU, 2024-2025
      */
     export abstract class AnimationNode {
@@ -69,9 +69,9 @@ namespace FudgeCore {
 
         for (let i: number = 0; i < nChannels; i++) {
           const channel: AnimationChannel = channels[i];
-          const interpolant: AnimationInterpolant = channel.createInterpolant();
-          interpolants[i] = interpolant;
-          values.set(channel.path, interpolant.result);
+          const value: Float32Array = new Float32Array(channel.getElementSize());
+          values.set(channel.targetPath, value);
+          interpolants[i] = channel.createInterpolant(value);
         }
 
         this.values = values;

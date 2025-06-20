@@ -12,6 +12,14 @@ namespace FudgeCore {
     [attribute: string]: General;
   }
 
+  /**
+   * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
+   * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
+   */
+  export interface AnimationMutator {
+    [attribute: string]: Float32Array;
+  }
+
   /*
    * Interfaces dedicated for each purpose. Extra attribute necessary for compiletime type checking, not existent at runtime
    */
@@ -316,9 +324,17 @@ namespace FudgeCore {
     }
 
     /**
-     * Called by a {@link AnimationSystem.ComponentAnimation} after animating this mutables properties. Override to implement custom animation behavior.
+     * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
      */
-    public onAnimate?(): void;
+    public animate(_mutator: AnimationMutator): void {
+      for (let key in _mutator) { // AnimationPropertyBindings have already checked the existence of the keys
+        const valueArray: Float32Array = _mutator[key];
+        if (valueArray.length == 1)
+          (<General>this)[key] = valueArray[0];
+        else 
+          (<General>this)[key].setArray(valueArray);
+      }
+    }
 
     /**
      * Synchronous implementation of {@link mutate}.
