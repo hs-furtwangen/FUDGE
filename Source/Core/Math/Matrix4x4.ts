@@ -55,44 +55,63 @@ namespace FudgeCore {
     }
 
     /**
-     * Computes and returns the product of two passed matrices.
-     * @param _mtxOut Optional matrix to store the result in.
+     * Multiplies two matrices.
+     * @param a - the first operand.
+     * @param b - the second operand.
+     * @param _out - (optional) the receiving matrix.
+     * @returns `_out` or a new matrix if none is provided.
+     * @source https://github.com/toji/gl-matrix
      */
-    public static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
-      const left: Float32Array = _mtxLeft.data;
-      const right: Float32Array = _mtxRight.data;
-      const out: Float32Array = _mtxOut.data;
+    public static PRODUCT(_a: Matrix4x4, _b: Matrix4x4, _out: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
+      const a: Float32Array = _a.data;
+      const b: Float32Array = _b.data;
+      const out: Float32Array = _out.data;
 
-      const a00: number = left[0], a01: number = left[1], a02: number = left[2], a03: number = left[3];
-      const a10: number = left[4], a11: number = left[5], a12: number = left[6], a13: number = left[7];
-      const a20: number = left[8], a21: number = left[9], a22: number = left[10], a23: number = left[11];
-      const a30: number = left[12], a31: number = left[13], a32: number = left[14], a33: number = left[15];
+      const a00: number = a[0], a01: number = a[1], a02: number = a[2], a03: number = a[3];
+      const a10: number = a[4], a11: number = a[5], a12: number = a[6], a13: number = a[7];
+      const a20: number = a[8], a21: number = a[9], a22: number = a[10], a23: number = a[11];
+      const a30: number = a[12], a31: number = a[13], a32: number = a[14], a33: number = a[15];
 
-      const b00: number = right[0], b01: number = right[1], b02: number = right[2], b03: number = right[3];
-      const b10: number = right[4], b11: number = right[5], b12: number = right[6], b13: number = right[7];
-      const b20: number = right[8], b21: number = right[9], b22: number = right[10], b23: number = right[11];
-      const b30: number = right[12], b31: number = right[13], b32: number = right[14], b33: number = right[15];
+      // Cache only the current line of the second matrix
+      let b0: number = b[0];
+      let b1: number = b[1];
+      let b2: number = b[2];
+      let b3: number = b[3];
+      out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+      out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+      out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+      out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-      out[0] = b00 * a00 + b01 * a10 + b02 * a20 + b03 * a30;
-      out[1] = b00 * a01 + b01 * a11 + b02 * a21 + b03 * a31;
-      out[2] = b00 * a02 + b01 * a12 + b02 * a22 + b03 * a32;
-      out[3] = b00 * a03 + b01 * a13 + b02 * a23 + b03 * a33;
-      out[4] = b10 * a00 + b11 * a10 + b12 * a20 + b13 * a30;
-      out[5] = b10 * a01 + b11 * a11 + b12 * a21 + b13 * a31;
-      out[6] = b10 * a02 + b11 * a12 + b12 * a22 + b13 * a32;
-      out[7] = b10 * a03 + b11 * a13 + b12 * a23 + b13 * a33;
-      out[8] = b20 * a00 + b21 * a10 + b22 * a20 + b23 * a30;
-      out[9] = b20 * a01 + b21 * a11 + b22 * a21 + b23 * a31;
-      out[10] = b20 * a02 + b21 * a12 + b22 * a22 + b23 * a32;
-      out[11] = b20 * a03 + b21 * a13 + b22 * a23 + b23 * a33;
-      out[12] = b30 * a00 + b31 * a10 + b32 * a20 + b33 * a30;
-      out[13] = b30 * a01 + b31 * a11 + b32 * a21 + b33 * a31;
-      out[14] = b30 * a02 + b31 * a12 + b32 * a22 + b33 * a32;
-      out[15] = b30 * a03 + b31 * a13 + b32 * a23 + b33 * a33;
+      b0 = b[4];
+      b1 = b[5];
+      b2 = b[6];
+      b3 = b[7];
+      out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+      out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+      out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+      out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-      _mtxOut.resetCache();
+      b0 = b[8];
+      b1 = b[9];
+      b2 = b[10];
+      b3 = b[11];
+      out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+      out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+      out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+      out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-      return _mtxOut;
+      b0 = b[12];
+      b1 = b[13];
+      b2 = b[14];
+      b3 = b[15];
+      out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+      out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+      out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+      out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+
+      _out.resetCache();
+
+      return _out;
     }
 
     /**
