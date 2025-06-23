@@ -32,7 +32,7 @@ namespace FudgeCore {
     #colors: Float32Array;
     /** vertex tangents for normal mapping, based on the vertex normals and the UV coordinates */
     #tangents: Float32Array;
-    
+
     #bones: Uint8Array;
     #weights: Float32Array;
 
@@ -41,11 +41,16 @@ namespace FudgeCore {
     }
 
     public get positions(): Float32Array {
-      return this.#positions || ( // return cache or ...
-        // ... flatten all vertex positions from cloud into a typed array
-        this.#positions = new Float32Array(this.mesh.vertices.flatMap((_vertex: Vertex, _index: number) => {
-          return [...this.mesh.vertices.position(_index).get()];
-        })));
+      if (this.#positions == null) {
+        const vertices: Vertices = this.mesh.vertices;
+        const positions: Float32Array = new Float32Array(vertices.length * 3);
+        for (let i: number = 0; i < vertices.length; i++)
+          vertices.position(i).toArray(positions, i * 3);
+
+        this.#positions = positions;
+      }
+
+      return this.#positions;
     }
     public set positions(_vertices: Float32Array) {
       this.#positions = _vertices;
@@ -63,28 +68,29 @@ namespace FudgeCore {
 
     public get normals(): Float32Array {
       if (this.#normals == null) {
+        const vertices: Vertices = this.mesh.vertices;
 
         // TODO: implement a check similiar to the one for tangents below, to see if normals are already present in the vertices
 
         // sum up all unscaled normals of faces connected to one vertex, weighted by the angle between the two neighbour vertices...
-        this.mesh.vertices.forEach(_vertex => _vertex.normal.set(0, 0, 0));
+        vertices.forEach(_vertex => _vertex.normal.set(0, 0, 0));
 
         for (let face of this.mesh.faces)
           face.indices.forEach((_iVertex, _iFaceVertex) => {
-            this.mesh.vertices.normal(_iVertex).add(Vector3.SCALE(face.normalUnscaled, face.angles[_iFaceVertex]));
+            vertices.normal(_iVertex).add(Vector3.SCALE(face.normalUnscaled, face.angles[_iFaceVertex]));
           });
         // ... and normalize them
-        this.mesh.vertices.forEach(_vertex => {
+        vertices.forEach(_vertex => {
           // some vertices might be unused and yield a zero-normal...
           if (_vertex.normal.magnitudeSquared > 0)
             _vertex.normal.normalize();
         });
 
         // this.ƒnormalsVertex = new Float32Array(normalsVertex.flatMap((_normal: Vector3) => [..._normal.get()]));
-
-        this.#normals = new Float32Array(
-          this.mesh.vertices.flatMap((_vertex, _index) => [...this.mesh.vertices.normal(_index).get()])
-        );
+        const normals: Float32Array = new Float32Array(vertices.length * 3);
+        for (let i: number = 0; i < vertices.length; i++)
+          vertices.normal(i).toArray(normals, i * 3);
+        this.#normals = normals;
       }
 
       return this.#normals;

@@ -618,7 +618,8 @@ namespace FudgeCore {
 
     /**
      * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
-     * @param _out Optional vector to store the result in.
+     * @param _out - (optional) the receiving vector.
+     * @returns `_out` or a new vector if none is provided.
      */
     public map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
       _out.x = _function(this.x, 0, "x", this);
@@ -636,13 +637,6 @@ namespace FudgeCore {
       this.y = _function(this.y, 1, "y", this);
       this.z = _function(this.z, 2, "z", this);
       return this;
-    }
-
-    /**
-     * Returns an array of the components of this vector.
-     */
-    public get(): Float32Array { // TODO: rename to toArray, allow passing of an array into this method to avoid allocation
-      return new Float32Array([this.x, this.y, this.z]);
     }
 
     /**

@@ -237,10 +237,11 @@ namespace FudgeCore {
       const shader: ShaderInterface = Gizmos.#picking ? ShaderPick : ShaderGizmo;
       shader.useProgram();
 
+      // TODO: cache linedata somehow, so we don't have to create a new Float32Array every time
       const lineData: Float32Array = new Float32Array(_vertices.length * 3);
       for (let i: number = 0; i < _vertices.length; i++) {
         const point: Vector3 = _vertices[i];
-        lineData.set(point.get(), i * 3);
+        point.toArray(lineData, i * 3);
       }
 
       crc3.bindVertexArray(null);
@@ -282,6 +283,8 @@ namespace FudgeCore {
         wireBuffers.indices = RenderWebGL.assert(RenderWebGL.getRenderingContext().createBuffer());
         wireBuffers.positions = renderBuffers.positions;
         wireBuffers.nIndices = indices.length;
+
+        Gizmos.#mapMeshToWireBuffers.set(_mesh, wireBuffers);
 
         crc3.bindVertexArray(wireBuffers.vao);
         crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, wireBuffers.indices);

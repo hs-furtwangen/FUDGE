@@ -174,15 +174,15 @@ namespace FudgeCore {
             ShaderPhong,
           materialFBX.DiffuseColor && !(materialFBX.DiffuseColor instanceof Vector3) ?
             new CoatRemissiveTextured(
-              new Color(...materialFBX.Diffuse.get()),
+              new Color(...materialFBX.Diffuse.toArray([])),
               await this.getTexture(this.fbx.objects.textures.indexOf(materialFBX.DiffuseColor)),
               materialFBX.DiffuseFactor ?? 1,
-              materialFBX.SpecularFactor ?? average(materialFBX.Specular?.get()) ?? 0
+              materialFBX.SpecularFactor ?? average(materialFBX.Specular?.toArray(new Float32Array(3))) ?? 0
             ) :
             new CoatRemissive(
-              new Color(...(materialFBX.DiffuseColor as Vector3 ?? materialFBX.Diffuse).get()),
+              new Color(...(materialFBX.DiffuseColor as Vector3 ?? materialFBX.Diffuse).toArray(new Float32Array(3))),
               materialFBX.DiffuseFactor ?? 1,
-              materialFBX.SpecularFactor ?? average(materialFBX.Specular?.get()) ?? 0
+              materialFBX.SpecularFactor ?? average(materialFBX.Specular?.toArray(new Float32Array(3))) ?? 0
             )
         );
       }
@@ -513,7 +513,7 @@ namespace FudgeCore {
       if (!_modelFBX.EulerOrder)
         return _rotation;
 
-      const data: Float32Array = _rotation.get();
+      const data: Float32Array = _rotation.toArray(new Float32Array(3));
       const result: Vector3 = Recycler.get(Vector3);
       result.set(
         data[_modelFBX.EulerOrder.indexOf("Z")],
