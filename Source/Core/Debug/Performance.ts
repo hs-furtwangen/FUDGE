@@ -12,14 +12,40 @@ namespace FudgeCore {
   }
 
   export class PerformanceMonitor {
-    public static display: HTMLPreElement;
-    static {
-      window.addEventListener("load", () => PerformanceMonitor.display = document.body.appendChild(new PerformanceDisplay()));
-    }
+    public static canvas: HTMLCanvasElement;
+    public static context: CanvasRenderingContext2D;
 
     public static measurements: { [key: string]: PerformanceMeasurement } = {};
 
-    private static readonly framesToAverage: number = 60;
+    static #width: number = 100;
+    static #longestString: number = 0;
+    static #height: number = 0;
+    static #framesToAverage: number = 60;
+
+    static {
+      window.addEventListener("load", () => {
+        const display: HTMLCanvasElement = document.createElement("canvas");
+        display.width = this.#width;
+        display.height = this.#height;
+        display.style.cssText = `font-family: Consolas, "Courier New", monospace;
+        font-weight: bold;
+        color: yellow;
+        text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;
+        margin: 0;
+        background: rgba(0, 0, 0, 0.7);
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        pointer-events: none;`;
+        const context: CanvasRenderingContext2D = display.getContext("2d");
+
+        Reflect.set(context, "text", "context");
+        PerformanceMonitor.canvas = display;
+        PerformanceMonitor.context = context;
+        document.body.appendChild(display);
+      });
+    }
 
     public static startMeasure(_label: string): void {
       if (!this.measurements[_label]) {
@@ -32,6 +58,8 @@ namespace FudgeCore {
           time: 0,
           calls: 0
         };
+
+        this.resize(this.#width, this.#height + 15);
       }
       this.measurements[_label].start = performance.now();
     }
@@ -63,43 +91,37 @@ namespace FudgeCore {
           const frameTotal: number = measurement.time;
           measurement.frameTimeMin = Math.min(measurement.frameTimeMin, frameTotal);
           measurement.frameTimeMax = Math.max(measurement.frameTimeMax, frameTotal);
-          measurement.frameTimeAvg = ((this.framesToAverage - 1) * measurement.frameTimeAvg + frameTotal) / this.framesToAverage;
+          measurement.frameTimeAvg = ((this.#framesToAverage - 1) * measurement.frameTimeAvg + frameTotal) / this.#framesToAverage;
           measurement.callsPerFrame = measurement.calls;
         }
       }
-      let longestString: number = Object.keys(PerformanceMonitor.measurements).reduce((_a, _b) => _a.length > _b.length ? _a : _b).length;
 
-      let text: string = `${"Performance Monitor".padEnd(longestString)} |  time  |  calls\n`;
+      const context: CanvasRenderingContext2D = PerformanceMonitor.context;
+      context.clearRect(0, 0, this.#width, this.#height);
+
+      let x: number = 5;
+      let y: number = 14;
       for (let key in PerformanceMonitor.measurements) {
+        const length: number = key.length;
+        if (length > PerformanceMonitor.#longestString) {
+          PerformanceMonitor.#longestString = length;
+          PerformanceMonitor.resize(length * 8 + 45, PerformanceMonitor.#height);
+        }
+
         let measurement: PerformanceMeasurement = PerformanceMonitor.measurements[key];
-        let avg: string = measurement.frameTimeAvg.toFixed(2).padStart(4);
-        let calls: string = measurement.callsPerFrame.toString().padStart(3);
-        text += `${key.padEnd(longestString)} | ${avg}ms | ${calls}cpf\n`;
+        context.fillText(key, x, y);
+        context.fillText(measurement.frameTimeAvg.toFixed(3), x + PerformanceMonitor.#longestString * 8, y);
+        y += 14;
       }
+    }
 
-      this.display.textContent = text;
+    private static resize(_width: number, _height: number): void {
+      this.#width = _width;
+      this.#height = _height;
+      this.canvas.width = _width;
+      this.canvas.height = _height;
+      this.context.fillStyle = "Yellow";
+      this.context.font = "14px Consolas, 'Courier New', monospace";
     }
   }
-
-  export class PerformanceDisplay extends HTMLPreElement {
-    public constructor() {
-      super();
-      this.style.cssText = `
-      font-family: Consolas, "Courier New", monospace;
-      font-weight: bold;
-      color: yellow;
-      text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;
-      padding: 0.2rem;
-      margin: 0;
-      background: rgba(0, 0, 0, 0.7);
-      width: min-content;
-      position: absolute;
-      left: 0;
-      top: 0;
-      z-index: 1000;
-      pointer-events: none;`;
-    }
-  }
-
-  customElements.define("ui-performance", PerformanceDisplay, { extends: "pre" });
 }
