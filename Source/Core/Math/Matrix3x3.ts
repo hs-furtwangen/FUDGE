@@ -3,7 +3,7 @@ namespace FudgeCore {
    * Simple class for 3x3 matrix operations
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020 | Jonas Plotzky, HFU, 2025
    */
-  export class Matrix3x3 extends Mutable implements Serializable, Recycable {
+  export class Matrix3x3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
     private data: Float32Array = new Float32Array(9); // The data of the matrix.
     private mutator: Mutator = null; // prepared for optimization, keep mutator to reduce redundant calculation and for comparison. Set to null when data changes!
 
@@ -20,7 +20,7 @@ namespace FudgeCore {
       this.recycle();
     }
 
-
+    //#region Static
     //TODO: figure out what this is used for
     /** TODO: describe! */
     public static PROJECTION(_width: number, _height: number, _mtxOut: Matrix3x3 = Recycler.reuse(Matrix3x3)): Matrix3x3 {
@@ -144,6 +144,12 @@ namespace FudgeCore {
         d * (m00 * m11 - m10 * m01)
       );
     }
+    //#endregion
+
+    //#region Accessors
+    public get isArrayConvertible(): true {
+      return true;
+    }
 
     /** 
      * - get: return a vector representation of the translation {@link Vector2}.  
@@ -221,6 +227,7 @@ namespace FudgeCore {
     public get clone(): Matrix3x3 {
       return Recycler.reuse(Matrix3x3).copy(this);
     }
+    //#endregion
 
     /**
      * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
@@ -239,7 +246,7 @@ namespace FudgeCore {
     public reset(): void {
       this.recycle();
     }
-
+    //#region Instance
     //#region Translation
     /**
      * Adds a translation by the given {@link Vector2} to this matrix.
@@ -387,16 +394,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the elements of this matrix to the given array starting at the given offset.
-     * @returns A reference to this matrix.
-     */
-    public setArray(_array: ArrayLike<number>, _offset: number = 0): Matrix3x3 {
-      this.data.set(_array, _offset);
-      this.resetCache();
-      return this;
-    }
-
-    /**
      * Sets the elements of this matrix to the given values.
      * @returns A reference to this matrix.
      */
@@ -437,14 +434,13 @@ namespace FudgeCore {
       return `ƒ.Matrix3x3(translation: ${this.translation.toString()}, rotation: ${this.rotation.toString()}, scaling: ${this.scaling.toString()}`;
     }
 
-    /**
-     * Copys the elements of this matrix into the given array starting at the given offset.
-     * @param _out - (optional) the receiving array.
-     * @returns `_out` or a new array if none is provided.
-     */
-    public toArray(_out?: number[], _offset?: number): number[];
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
-    public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(9), _offset: number = 0): T {
+    public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
+      this.data.set(_array, _offset);
+      this.resetCache();
+      return this;
+    }
+
+    public toArray<T extends { [n: number]: number } = number[]>(_out: T = <T><unknown>new Array(9), _offset: number = 0): T {
       const m: Float32Array = this.data;
       _out[_offset + 0] = m[0]; _out[_offset + 1] = m[1]; _out[_offset + 2] = m[2];
       _out[_offset + 3] = m[3]; _out[_offset + 4] = m[4]; _out[_offset + 5] = m[5];
@@ -515,6 +511,7 @@ namespace FudgeCore {
       this.#scalingDirty = true;
       this.mutator = null;
     }
+    //#endregion
+    //#endregion
   }
-  //#endregion
 }

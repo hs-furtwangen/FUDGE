@@ -7,7 +7,7 @@ namespace FudgeCore {
    * ```
    * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export class Vector2 extends Mutable implements Serializable, Recycable {
+  export class Vector2 extends Mutable implements Serializable, Recycable, ArrayConvertible {
     public x: number;
     public y: number;
 
@@ -154,6 +154,10 @@ namespace FudgeCore {
     //#endregion
 
     //#region Accessors
+    public get isArrayConvertible(): true { 
+      return true; 
+    }
+
     /**
      * Returns the length of the vector
      */
@@ -198,6 +202,7 @@ namespace FudgeCore {
     }
     //#endregion
 
+    //#region Instance
     /**
      * Copies the components of the given vector into this vector.
      * @returns A reference to this vector.
@@ -215,16 +220,6 @@ namespace FudgeCore {
     public set(_x: number = 0, _y: number = 0): Vector2 {
       this.x = _x;
       this.y = _y;
-      return this;
-    }
-
-    /**
-     * Sets the components of this vector to the given array starting at the given offset.
-     * @returns A reference to this vector.
-     */
-    public setArray(_array: ArrayLike<number>, _offset: number = 0): Vector2 {
-      this.x = _array[_offset];
-      this.y = _array[_offset + 1];
       return this;
     }
 
@@ -360,14 +355,13 @@ namespace FudgeCore {
       return new Float32Array([this.x, this.y]);
     }
 
-    /**
-     * Copys the components of this vector into the given array starting at the given offset.
-     * @param _out - (optional) the receiving array.
-     * @returns `_out` or a new array if none is provided.
-     */
-    public toArray(_out?: number[], _offset?: number): number[];
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
-    public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(2), _offset: number = 0): T {
+    public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      return this;
+    }
+
+    public toArray<T extends { [n: number]: number } = number[]>(_out: T = <T><unknown>new Array(2), _offset: number = 0): T {
       _out[_offset] = this.x;
       _out[_offset + 1] = this.y;
       return _out;
@@ -420,6 +414,7 @@ namespace FudgeCore {
     }
 
     protected reduceMutator(_mutator: Mutator): void {/** */ }
+    //#endregion
     //#endregion
   }
 }

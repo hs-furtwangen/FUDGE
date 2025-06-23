@@ -10,7 +10,7 @@ namespace FudgeCore {
    * ```
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2023-2025
    */
-  export class Matrix4x4 extends Mutable implements Serializable, Recycable {
+  export class Matrix4x4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
     /** @internal Indicates whether this matrix was modified since the last call to {@link Render.prepare}. */
     public modified: boolean;
 
@@ -38,7 +38,7 @@ namespace FudgeCore {
       this.resetCache();
     }
 
-    //#region STATICS
+    //#region Static
     /**
      * Retrieve a new identity matrix
      */
@@ -415,7 +415,7 @@ namespace FudgeCore {
     }
     //#endregion
 
-    //#region PROJECTIONS
+    //#region Projection
     /**
      * Computes and returns a matrix that applies perspective to an object, if its transform is multiplied by it.
      * @param _aspect The aspect ratio between width and height of projectionspace.(Default = canvas.clientWidth / canvas.ClientHeight)
@@ -478,7 +478,11 @@ namespace FudgeCore {
 
     //#endregion
 
-    //#region  Accessors
+    //#region Accessors
+    public get isArrayConvertible(): true {
+      return true;
+    }
+
     /** 
      * - get: return a vector representation of the translation {@link Vector3}.  
      * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
@@ -706,6 +710,7 @@ namespace FudgeCore {
     }
     //#endregion
 
+    //#region Instance
     /**
      * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
      */
@@ -1096,7 +1101,7 @@ namespace FudgeCore {
 
       if (translationArray) {
         const translation: Vector3 = this.translation;
-        translation.setArray(translationArray);
+        translation.fromArray(translationArray);
         m[12] = translation.x;
         m[13] = translation.y;
         m[14] = translation.z;
@@ -1108,11 +1113,11 @@ namespace FudgeCore {
 
         const rotation: Quaternion | Vector3 = isQuaternion ? this.quaternion : this.rotation;
         if (rotationArray)
-          rotation.setArray(rotationArray);
+          rotation.fromArray(rotationArray);
 
         const scaling: Vector3 = this.scaling;
         if (scalingArray)
-          scaling.setArray(scalingArray);
+          scaling.fromArray(scalingArray);
 
         const sx: number = scaling.x, sy: number = scaling.y, sz: number = scaling.z;
         if (isQuaternion) {
@@ -1171,16 +1176,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Sets the elements of this matrix to the given array starting at the given offset.
-     * @returns A reference to this matrix.
-     */
-    public setArray(_array: ArrayLike<number>, _offset: number = 0): Matrix4x4 {
-      this.data.set(_array, _offset);
-      this.resetCache();
-      return this;
-    }
-
-    /**
      * Sets the elements of this matrix to the given values.
      * @returns A reference to this matrix.
      */
@@ -1226,14 +1221,13 @@ namespace FudgeCore {
       return `ƒ.Matrix4x4(translation: ${this.translation.toString()}, rotation: ${this.rotation.toString()}, scaling: ${this.scaling.toString()}`;
     }
 
-    /**
-     * Copys the elements of this matrix into the given array starting at the given offset.
-     * @param _out - (optional) the receiving array.
-     * @returns `_out` or a new array if none is provided.
-     */
-    public toArray(_out?: number[], _offset?: number): number[];
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
-    public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(16), _offset: number = 0): T {
+    public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
+      this.data.set(_array, _offset);
+      this.resetCache();
+      return this;
+    }
+
+    public toArray<T extends { [n: number]: number } = number[]>(_out: T = <T><unknown>new Array(16), _offset: number = 0): T {
       const m: Float32Array = this.data;
       _out[_offset + 0] = m[0]; _out[_offset + 1] = m[1]; _out[_offset + 2] = m[2]; _out[_offset + 3] = m[3];
       _out[_offset + 4] = m[4]; _out[_offset + 5] = m[5]; _out[_offset + 6] = m[6]; _out[_offset + 7] = m[7];
@@ -1421,6 +1415,7 @@ namespace FudgeCore {
       this.modified = true;
       this.mutator = null;
     }
+    //#endregion
+    //#endregion
   }
-  //#endregion
 }

@@ -13,7 +13,7 @@ namespace FudgeCore {
     * roll: x, pitch: y, yaw: z. Note that operations are adapted to work with vectors where y is up and z is forward.
     * @authors Matthias Roming, HFU, 2023 | Marko Fehrenbach, HFU, 2020 | Jonas Plotzky, HFU, 2023
     */
-  export class Quaternion extends Mutable implements Serializable, Recycable {
+  export class Quaternion extends Mutable implements Serializable, Recycable, ArrayConvertible {
     public x: number;
     public y: number;
     public z: number;
@@ -27,6 +27,7 @@ namespace FudgeCore {
       this.set(_x, _y, _z, _w);
     }
 
+    //#region Static
     /**
      * Retrieve a new identity quaternion
      */
@@ -393,6 +394,12 @@ namespace FudgeCore {
       _q.z = -_q.z;
       _q.w = -_q.w;
     }
+    //#endregion
+
+    //#region Accessors
+    public get isArrayConvertible(): true {
+      return true;
+    }
 
     /**
      * Creates and returns a clone of this quaternion.
@@ -459,7 +466,9 @@ namespace FudgeCore {
       this.#eulerAngles.copy(_eulerAngles);
       this.#eulerAnglesDirty = false;
     }
+    //#endregion
 
+    //#region Instance
     /**
      * Copies the given quaternion.
      * @returns A reference to this quaternion.
@@ -496,17 +505,7 @@ namespace FudgeCore {
       return this;
     }
 
-    /**
-     * Sets the components of this quaternion to the given array starting at the given offset.
-     * @returns A reference to this quaternion.
-     */
-    public setArray(_array: ArrayLike<number>, _offset: number = 0): Quaternion {
-      this.x = _array[_offset];
-      this.y = _array[_offset + 1];
-      this.z = _array[_offset + 2];
-      this.w = _array[_offset + 3];
-      return this;
-    }
+
 
     /**
      * Returns true if this quaternion is equal to the given quaternion within the given tolerance.
@@ -595,14 +594,15 @@ namespace FudgeCore {
       return `ƒ.Quaternion(x: ${this.x}, y: ${this.y}, z: ${this.z}, w: ${this.w})`;
     }
 
-    /**
-     * Copys the components of this quaternion into the given array starting at the given offset.
-     * @param _out - (optional) the receiving array.
-     * @returns `_out` or a new array if none is provided.
-     */
-    public toArray(_out?: number[], _offset?: number): number[];
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
-    public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(4), _offset: number = 0): T {
+    public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      this.z = _array[_offset + 2];
+      this.w = _array[_offset + 3];
+      return this;
+    }
+
+    public toArray<T extends { [n: number]: number } = number[]>(_out: T = <T><unknown>new Array(4), _offset: number = 0): T {
       _out[_offset] = this.x;
       _out[_offset + 1] = this.y;
       _out[_offset + 2] = this.z;
@@ -642,5 +642,6 @@ namespace FudgeCore {
     private resetCache(): void {
       this.#eulerAnglesDirty = true;
     }
+    //#endregion
   }
 }

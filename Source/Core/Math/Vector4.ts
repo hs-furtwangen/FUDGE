@@ -3,7 +3,7 @@ namespace FudgeCore {
    * Stores and manipulates a fourdimensional vector comprised of the components x, y, z and w.
    * @authors Jonas Plotzky, HFU, 2023
    */
-  export class Vector4 extends Mutable implements Serializable, Recycable {
+  export class Vector4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
     public x: number;
     public y: number;
     public z: number;
@@ -14,6 +14,7 @@ namespace FudgeCore {
       this.set(_x, _y, _z, _w);
     }
 
+    //#region Static
     /**
      * Creates and returns a vector which is a copy of the given vector scaled to the given length.
      * @param _out Optional vector to store the result in.
@@ -60,6 +61,12 @@ namespace FudgeCore {
     public static DOT(_a: Vector4, _b: Vector4): number {
       return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z + _a.w * _b.w;
     }
+    //#endregion
+
+    //#region Accessors
+    public get isArrayConvertible(): true {
+      return true;
+    }
 
     /**
      * The magnitude (length) of the vector.
@@ -81,7 +88,9 @@ namespace FudgeCore {
     public get clone(): Vector4 {
       return Recycler.reuse(Vector4).copy(this);
     }
+    //#endregion
 
+    //#region Instance
     /**
      * Copies the components of the given vector into this vector.
      * @returns A reference to this vector.
@@ -103,18 +112,6 @@ namespace FudgeCore {
       this.y = _y;
       this.z = _z;
       this.w = _w;
-      return this;
-    }
-
-    /**
-     * Sets the components of this vector to the given array starting at the given offset.
-     * @returns A reference to this vector.
-     */
-    public setArray(_array: ArrayLike<number>, _offset: number = 0): Vector4 {
-      this.x = _array[_offset];
-      this.y = _array[_offset + 1];
-      this.z = _array[_offset + 2];
-      this.w = _array[_offset + 3];
       return this;
     }
 
@@ -248,13 +245,14 @@ namespace FudgeCore {
       return this;
     }
 
-    /**
-     * Copys the components of this vector into the given array starting at the given offset.
-     * @param _out - (optional) the receiving array.
-     * @returns `_out` or a new array if none is provided.
-     */
-    public toArray(_out?: number[], _offset?: number): number[];
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
+    public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
+      this.x = _array[_offset];
+      this.y = _array[_offset + 1];
+      this.z = _array[_offset + 2];
+      this.w = _array[_offset + 3];
+      return this;
+    }
+
     public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(4), _offset: number = 0): T {
       _out[_offset] = this.x;
       _out[_offset + 1] = this.y;
@@ -308,5 +306,6 @@ namespace FudgeCore {
     }
 
     protected reduceMutator(_mutator: Mutator): void { /** */ };
+    //#endregion
   }
 }

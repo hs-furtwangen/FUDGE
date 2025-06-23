@@ -2,7 +2,7 @@ namespace FudgeCore {
   /**
    * Defines a color as values in the range of 0 to 1 for the four channels red, green, blue and alpha (for opacity)
    */
-  export class Color extends Mutable implements Serializable, Recycable {
+  export class Color extends Mutable implements Serializable, Recycable, ArrayConvertible {
     // crc2 only used for converting colors from strings predefined by CSS
     public static crc2: CanvasRenderingContext2D = (() => {
       const canvas: HTMLCanvasElement = document.createElement("canvas");
@@ -23,6 +23,7 @@ namespace FudgeCore {
       this.set(_r, _g, _b, _a);
     }
 
+    //#region Static
     /**
      * Converts the given HSL values to RGB and returns the result in the given object.
      * @param _hue Hue as an angle in degrees in range [0, 360].
@@ -87,7 +88,7 @@ namespace FudgeCore {
       _out.h = hue;
       _out.s = saturation;
       _out.l = lightness;
-      
+
       return _out;
     }
 
@@ -196,6 +197,12 @@ namespace FudgeCore {
       let a: number = _saturation * Math.min(_light, 1 - _light);
       return _light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
     }
+    //#endregion
+
+    //#region Accessors
+    public get isArrayConvertible(): true {
+      return true;
+    }
 
     /**
      * Creates and returns a clone of this color.
@@ -203,7 +210,9 @@ namespace FudgeCore {
     public get clone(): Color {
       return Recycler.reuse(Color).copy(this);
     }
+    //#endregion
 
+    //#region Instance
     /**
      * Copies the color channels of the given color into this color and returns it.
      * @returns A reference to this color.
@@ -222,18 +231,6 @@ namespace FudgeCore {
      */
     public set(_r: number, _g: number, _b: number, _a: number): Color {
       this.r = _r; this.g = _g; this.b = _b; this.a = _a;
-      return this;
-    }
-
-    /**
-     * Sets the color channels of this color to the given array starting at the given offset.
-     * @returns A reference to this color.
-     */
-    public setArray(_array: ArrayLike<number>, _offset: number = 0): Color {
-      this.r = _array[_offset];
-      this.g = _array[_offset + 1];
-      this.b = _array[_offset + 2];
-      this.a = _array[_offset + 3];
       return this;
     }
 
@@ -394,11 +391,15 @@ namespace FudgeCore {
       return this;
     }
 
-    /**
-     * Copies the channels of this color into the given array starting at the given offset.
-     * @returns A reference to the given array.
-     */
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
+    public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
+      this.r = _array[_offset];
+      this.g = _array[_offset + 1];
+      this.b = _array[_offset + 2];
+      this.a = _array[_offset + 3];
+      return this;
+    }
+
+    public toArray<T extends { [n: number]: number } = number[]>(_out: T = <T><unknown>new Array(4), _offset: number = 0): T {
       _out[_offset] = this.r;
       _out[_offset + 1] = this.g;
       _out[_offset + 2] = this.b;
@@ -455,5 +456,7 @@ namespace FudgeCore {
     }
 
     protected reduceMutator(_mutator: Mutator): void {/** */ }
+    //#endregion
+    //#endregion
   }
 }

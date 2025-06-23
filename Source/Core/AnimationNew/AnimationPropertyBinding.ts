@@ -1,10 +1,5 @@
 namespace FudgeCore {
   export namespace AnimationSystem {
-    interface ArrayConvertible {
-      toArray: (_array: ArrayLike<unknown>, _offset?: number) => unknown;
-      setArray: (_out: unknown, _offset?: number) => unknown;
-    }
-
     /**
      * Binds a specific property within a node hierarchy (via a path) and allows direct access to it.
      */
@@ -20,7 +15,7 @@ namespace FudgeCore {
       public component: Component;
       public target: Mutable;
       public key: string;
-      public property: unknown & ArrayConvertible;
+      public property: unknown | ArrayConvertible;
 
       /** The animated value to be applied to the property */
       public output: Float32Array;
@@ -97,7 +92,7 @@ namespace FudgeCore {
         if (typeof this.property == "string" || typeof this.property == "number" || typeof this.property == "boolean") {
           this.get = this.#getDirect;
           this.set = this.#setDirect;
-        } else if ((<ArrayConvertible>this.property).toArray && (<ArrayConvertible>this.property).setArray) {
+        } else if (((<ArrayConvertible>this.property).isArrayConvertible)) {
           this.get = this.#getToArray;
           this.set = this.#setFromArray;
         }
@@ -136,11 +131,11 @@ namespace FudgeCore {
       }
 
       #getToArray(_target: Float32Array, _offset: number): void {
-        this.property.toArray(_target, _offset);
+        (<ArrayConvertible>this.property).toArray(_target, _offset);
       }
 
       #setFromArray(_source: Float32Array, _offset: number): void {
-        this.property.setArray(_source, _offset);
+        (<ArrayConvertible>this.property).fromArray(_source, _offset);
       }
 
     }
