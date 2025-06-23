@@ -140,7 +140,7 @@ namespace FudgeCore {
           const timeStart: number = keyIn.time;
           _time = (_time - timeStart) / (keyOut.time - timeStart);
 
-          return Quaternion.SLERP_QUATERNIONLIKE(keyIn.value, keyOut.value, _time, _out);
+          return Quaternion.SLERP(keyIn.value, keyOut.value, _time, _out);
         case ANIMATION_INTERPOLATION.CUBIC:
           _time -= keyIn.time;
           const time2: number = _time * _time;

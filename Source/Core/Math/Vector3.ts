@@ -13,7 +13,7 @@ namespace FudgeCore {
    *            /
    *          +z   
    * ```
-   * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
+   * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023-2025
    */
   export class Vector3 extends Mutable implements Serializable, Recycable {
     /** 
@@ -117,7 +117,10 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static SUM(_a: Vector3, _b: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      return _out.set(_a.x + _b.x, _a.y + _b.y, _a.z + _b.z);
+      _out.x = _a.x + _b.x;
+      _out.y = _a.y + _b.y;
+      _out.z = _a.z + _b.z;
+      return _out;
     }
 
     /**
@@ -125,7 +128,10 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      return _out.set(_minuend.x - _subtrahend.x, _minuend.y - _subtrahend.y, _minuend.z - _subtrahend.z);
+      _out.x = _minuend.x - _subtrahend.x;
+      _out.y = _minuend.y - _subtrahend.y;
+      _out.z = _minuend.z - _subtrahend.z;
+      return _out;
     }
 
     /**
@@ -133,7 +139,10 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static SCALE(_vector: Vector3, _scaling: number, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      return _out.set(_vector.x * _scaling, _vector.y * _scaling, _vector.z * _scaling);
+      _out.x = _vector.x * _scaling;
+      _out.y = _vector.y * _scaling;
+      _out.z = _vector.z * _scaling;
+      return _out;
     }
 
     /**
@@ -141,7 +150,10 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static NEGATION(_vector: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      return _out.set(-_vector.x, -_vector.y, -_vector.z);
+      _out.x = -_vector.x;
+      _out.y = -_vector.y;
+      _out.z = -_vector.z;
+      return _out;
     }
 
     /**
@@ -149,7 +161,10 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static RATIO(_dividend: Vector3, _divisor: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      return _out.set(_dividend.x / _divisor.x, _dividend.y / _divisor.y, _dividend.z / _divisor.z);
+      _out.x = _dividend.x / _divisor.x;
+      _out.y = _dividend.y / _divisor.y;
+      _out.z = _dividend.z / _divisor.z;
+      return _out;
     }
 
     /**
@@ -157,11 +172,17 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public static CROSS(_a: Vector3, _b: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      return _out.set(
-        _a.y * _b.z - _a.z * _b.y,
-        _a.z * _b.x - _a.x * _b.z,
-        _a.x * _b.y - _a.y * _b.x
-      );
+      const ax: number = _a.x;
+      const ay: number = _a.y;
+      const az: number = _a.z;
+      const bx: number = _b.x;
+      const by: number = _b.y;
+      const bz: number = _b.z;
+
+      _out.x = ay * bz - az * by;
+      _out.y = az * bx - ax * bz;
+      _out.z = ax * by - ay * bx;
+      return _out;
     }
 
     /**
@@ -204,8 +225,15 @@ namespace FudgeCore {
      * Return the angle in degrees between the two given vectors.
      */
     public static ANGLE(_from: Vector3, _to: Vector3): number {
-      let angle: number = Math.acos(Calc.clamp(Vector3.DOT(_from, _to) / (_from.magnitude * _to.magnitude), -1, 1)); // clamp because of floating point errors when from == to
-      return angle * Calc.rad2deg;
+      const ax: number = _from.x;
+      const ay: number = _from.y;
+      const az: number = _from.z;
+      const bx: number = _to.x;
+      const by: number = _to.y;
+      const bz: number = _to.z;
+      const mag: number = Math.sqrt((ax * ax + ay * ay + az * az) * (bx * bx + by * by + bz * bz));
+      const cosine: number = mag && Vector3.DOT(_from, _to) / mag;
+      return Math.acos(Math.min(Math.max(cosine, -1), 1)) * Calc.rad2deg;
     }
 
     /**
@@ -327,14 +355,20 @@ namespace FudgeCore {
      * Returns the length of the vector
      */
     public get magnitude(): number {
-      return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+      const x: number = this.x;
+      const y: number = this.y;
+      const z: number = this.z;
+      return Math.sqrt(x * x + y * y + z * z);
     }
 
     /**
      * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
      */
     public get magnitudeSquared(): number {
-      return this.x * this.x + this.y * this.y + this.z * this.z;
+      const x: number = this.x;
+      const y: number = this.y;
+      const z: number = this.z;
+      return x * x + y * y + z * z;
     }
 
     /**
@@ -451,9 +485,10 @@ namespace FudgeCore {
      * Returns the distance bewtween this vector and the given vector.
      */
     public getDistance(_to: Vector3): number {
-      let difference: Vector3 = Vector3.DIFFERENCE(this, _to);
-      Recycler.store(difference);
-      return difference.magnitude;
+      const x: number = _to.x - this.x;
+      const y: number = _to.y - this.y;
+      const z: number = _to.z - this.z;
+      return Math.sqrt(x * x + y * y + z * z);
     }
 
     /**
