@@ -1228,11 +1228,17 @@ namespace FudgeCore {
 
     /**
      * Copys the elements of this matrix into the given array starting at the given offset.
-     * @returns A reference to the given array.
+     * @param _out - (optional) the receiving array.
+     * @returns `_out` or a new array if none is provided.
      */
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
-      for (let i: number = 0; i < 16; i++)
-        _out[_offset + i] = this.data[i];
+    public toArray(_out?: number[], _offset?: number): number[];
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
+    public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(16), _offset: number = 0): T {
+      const m: Float32Array = this.data;
+      _out[_offset + 0] = m[0]; _out[_offset + 1] = m[1]; _out[_offset + 2] = m[2]; _out[_offset + 3] = m[3];
+      _out[_offset + 4] = m[4]; _out[_offset + 5] = m[5]; _out[_offset + 6] = m[6]; _out[_offset + 7] = m[7];
+      _out[_offset + 8] = m[8]; _out[_offset + 9] = m[9]; _out[_offset + 10] = m[10]; _out[_offset + 11] = m[11];
+      _out[_offset + 12] = m[12]; _out[_offset + 13] = m[13]; _out[_offset + 14] = m[14]; _out[_offset + 15] = m[15];
 
       return _out;
     }

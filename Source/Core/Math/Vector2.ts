@@ -361,10 +361,13 @@ namespace FudgeCore {
     }
 
     /**
-     * Copys the elements of this vector into the given array starting at the given offset.
-     * @returns A reference to the given array.
+     * Copys the components of this vector into the given array starting at the given offset.
+     * @param _out - (optional) the receiving array.
+     * @returns `_out` or a new array if none is provided.
      */
-    public toArray<T extends { [n: number]: number }>(_out: T, _offset: number = 0): T {
+    public toArray(_out?: number[], _offset?: number): number[];
+    public toArray<T extends { [n: number]: number }>(_out: T, _offset?: number): T;
+    public toArray<T extends { [n: number]: number }>(_out: T = <T><unknown>new Array(2), _offset: number = 0): T {
       _out[_offset] = this.x;
       _out[_offset + 1] = this.y;
       return _out;
