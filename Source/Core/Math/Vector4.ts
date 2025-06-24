@@ -115,13 +115,6 @@ namespace FudgeCore {
       return this;
     }
 
-    /**
-     * Returns an array of the components of this vector. // TODO: remove this
-     */
-    public get(): [number, number, number, number] {
-      return [this.x, this.y, this.z, this.w];
-    }
-
     public recycle(): void {
       this.set(0, 0, 0, 0);
     }

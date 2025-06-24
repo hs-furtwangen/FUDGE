@@ -101,22 +101,22 @@ namespace FudgeCore {
     }
 
     public get tangents(): Float32Array {
+      const vertices: Vertices = this.mesh.vertices;
+
       if (this.#tangents == null) {
 
-        if (this.mesh.vertices.some(_vertex => !_vertex.uv)) { // assume all vertices have texture coordinates or none
+        if (vertices.some(_vertex => !_vertex.uv)) { // assume all vertices have texture coordinates or none
           this.#tangents = new Float32Array(); // no texture coordinates, no tangents
           return this.#tangents;
         }
 
-        if (this.mesh.vertices.some(_vertex => !_vertex.tangent)) { // assume all vertices have tangents or none
-          const tangents: Vector3[] = new Array(this.mesh.vertices.length);
-          const bitangents: Vector3[] = new Array(this.mesh.vertices.length);
+        if (vertices.some(_vertex => !_vertex.tangent)) { // assume all vertices have tangents or none
+          const tangents: Vector3[] = new Array(vertices.length);
+          const bitangents: Vector3[] = new Array(vertices.length);
           for (let i: number = 0; i < tangents.length; i++) {
             tangents[i] = Vector3.ZERO();
             bitangents[i] = Vector3.ZERO();
           }
-
-          // this.mesh.vertices.forEach(_vertex => _vertex.tangent.set(0, 0, 0));
 
           for (let face of this.mesh.faces) {
             let i0: number = face.indices[0];
@@ -124,14 +124,14 @@ namespace FudgeCore {
             let i2: number = face.indices[2];
 
             //vertices surrounding one triangle
-            let v0: Vector3 = this.mesh.vertices.position(i0);
-            let v1: Vector3 = this.mesh.vertices.position(i1);
-            let v2: Vector3 = this.mesh.vertices.position(i2);
+            let v0: Vector3 = vertices.position(i0);
+            let v1: Vector3 = vertices.position(i1);
+            let v2: Vector3 = vertices.position(i2);
 
             //their UVs
-            let uv0: Vector2 = this.mesh.vertices.uv(i0);
-            let uv1: Vector2 = this.mesh.vertices.uv(i1);
-            let uv2: Vector2 = this.mesh.vertices.uv(i2);
+            let uv0: Vector2 = vertices.uv(i0);
+            let uv1: Vector2 = vertices.uv(i1);
+            let uv2: Vector2 = vertices.uv(i2);
 
             //We compute the edges of the triangle...
             let deltaPos0: Vector3 = Vector3.DIFFERENCE(v1, v0);
@@ -155,8 +155,8 @@ namespace FudgeCore {
             bitangents[i2].add(Vector3.SCALE(faceBitangent, face.angles[2]));
           }
 
-          this.mesh.vertices.forEach((_vertex, _index) => {
-            let normal: Vector3 = this.mesh.vertices.normal(_index);
+          vertices.forEach((_vertex, _index) => {
+            let normal: Vector3 = vertices.normal(_index);
             let tangent: Vector3 = tangents[_index];
             let bitangent: Vector3 = bitangents[_index];
 
@@ -171,9 +171,10 @@ namespace FudgeCore {
           });
         }
 
-        this.#tangents = new Float32Array(
-          this.mesh.vertices.flatMap(_vertex => _vertex.tangent.get())
-        );
+        const tangents: Float32Array = new Float32Array(vertices.length * 4);
+        for (let i: number = 0; i < vertices.length; i++)
+          vertices.tangent(i).toArray(tangents, i * 4);
+        this.#tangents = tangents;
       }
 
       return this.#tangents;
