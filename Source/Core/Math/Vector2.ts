@@ -348,13 +348,6 @@ namespace FudgeCore {
       return this;
     }
 
-    /**
-     * Returns an array of the components of this vector.
-     */
-    public get(): Float32Array { // TODO: rename to getArray, allow passing of an array into this method to avoid allocation
-      return new Float32Array([this.x, this.y]);
-    }
-
     public fromArray(_array: ArrayLike<number>, _offset: number = 0): this {
       this.x = _array[_offset];
       this.y = _array[_offset + 1];

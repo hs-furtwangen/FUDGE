@@ -20,6 +20,7 @@ namespace FudgeCore {
     public buffers: RenderBuffers;
     public mesh: Mesh;
 
+    // TODO: technically the CPU buffers could be released after the mesh has been buffered to the GPU to free memory? Currently three copys of the same data are stored: in the mesh as vertex objects, in the render mesh as cpu buffers and in the GPU as gpu buffers.
     /** indices to create faces from the vertices, rotation determines direction of face-normal */
     #indices: Uint16Array;
     /** vertices of the actual point cloud, some points might be in the same location in order to refer to different texels */
@@ -182,12 +183,22 @@ namespace FudgeCore {
     }
 
     public get textureUVs(): Float32Array {
-      return this.#textureUVs || ( // return cache or ...
-        // ... flatten all uvs from the clous into a typed array
-        this.#textureUVs = new Float32Array(this.mesh.vertices
-          .filter(_vertex => _vertex.uv)
-          .flatMap((_vertex: Vertex) => [..._vertex.uv.get()])
-        ));
+      if (this.#textureUVs == null) {
+        const vertices: Vertices = this.mesh.vertices;
+
+        if (vertices.some(_vertex => !_vertex.uv)) { // assume all vertices have texture coordinates or none
+          this.#textureUVs = new Float32Array();
+          return this.#textureUVs;
+        }
+
+        const textureUVs: Float32Array = new Float32Array(vertices.length * 2);
+        for (let i: number = 0; i < vertices.length; i++)
+          vertices.uv(i).toArray(textureUVs, i * 2);
+
+        this.#textureUVs = textureUVs;
+      }
+
+      return this.#textureUVs;
     }
     public set textureUVs(_textureUVs: Float32Array) {
       this.#textureUVs = _textureUVs;
