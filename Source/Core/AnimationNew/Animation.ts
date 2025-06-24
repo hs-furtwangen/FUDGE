@@ -15,7 +15,6 @@ namespace FudgeCore {
     /**
      * Represents an animation consisting of multiple channels. Each channel targets a specific property within a node hierarchy and contains keyframes that define the animation's behavior over time.
      */
-    @SerializableResource.register
     export class Animation extends Mutable implements SerializableResource {
       public idResource: string;
       public name: string;
@@ -30,6 +29,10 @@ namespace FudgeCore {
         this.channels = _channels;
         this.eventTrack = _eventTrack;
         Project.register(this);
+      }
+
+      public get isSerializableResource(): true {
+        return true;
       }
 
       public serialize(): SerializationOf<Animation> {

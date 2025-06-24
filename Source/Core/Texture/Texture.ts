@@ -21,7 +21,6 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
   @RenderInjectorTexture.decorate
-  @SerializableResource.register
   export abstract class Texture extends Mutable implements SerializableResource {
     public name: string;
     public idResource: string = undefined;
@@ -38,6 +37,10 @@ namespace FudgeCore {
     public constructor(_name: string = "Texture") {
       super();
       this.name = _name;
+    }
+
+    public get isSerializableResource(): true {
+      return true;
     }
 
     public set mipmap(_mipmap: MIPMAP) {

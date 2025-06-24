@@ -8,8 +8,8 @@ namespace FudgeCore {
   }
 
   /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
-  export abstract class SerializableResource extends Implementable {} // allow check with instanceof 
   export interface SerializableResource extends Serializable {
+    readonly isSerializableResource: true; 
     name: string;
     idResource: string;
     readonly type: string;

@@ -5,7 +5,6 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
   @enumerate
-  @SerializableResource.register
   export class Material extends Mutable implements SerializableResource {
     /** The name to call the Material by. */
     public name: string;
@@ -27,6 +26,10 @@ namespace FudgeCore {
           this.coat = this.createCoatMatchingShader();
       }
       Project.register(this);
+    }
+
+    public get isSerializableResource(): true {
+      return true;
     }
 
     /**

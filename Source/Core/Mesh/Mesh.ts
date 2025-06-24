@@ -6,7 +6,6 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019/22
    */
   @RenderInjectorMesh.decorate
-  @SerializableResource.register
   export abstract class Mesh extends Mutable implements SerializableResource {
     /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
     public static readonly baseClass: typeof Mesh = Mesh;
@@ -37,6 +36,10 @@ namespace FudgeCore {
     }
 
     protected static registerSubclass(_subClass: typeof Mesh): number { return Mesh.subclasses.push(_subClass) - 1; }
+
+    public get isSerializableResource(): true {
+      return true;
+    }
 
     public get renderMesh(): RenderMesh {
       if (this.#renderMesh == null)
@@ -83,7 +86,7 @@ namespace FudgeCore {
     public clear(): void {
       this.ƒbox = undefined;
       this.ƒradius = undefined;
-      
+
       this.deleteRenderBuffers(this.renderMesh.buffers);
       this.renderMesh.clear();
     }

@@ -121,6 +121,7 @@ namespace FudgeCore {
           if (value == null)
             continue;
 
+          // TODO: use a functional approach similiar to AnimationPropertyBindings?
           switch (serializables[key]) {
             case "primitive":
               serialization[key] = value;
@@ -200,7 +201,7 @@ namespace FudgeCore {
         type = "primitive";
       else if (_constructor == Node)
         type = "node";
-      else if ((<Function>_constructor).prototype instanceof SerializableResource)
+      else if ((<SerializableResource>_constructor.prototype).isSerializableResource)
         type = "resource";
       else if ((<Function>_constructor).prototype.serialize && (<Function>_constructor).prototype.deserialize)
         type = "serializable";
