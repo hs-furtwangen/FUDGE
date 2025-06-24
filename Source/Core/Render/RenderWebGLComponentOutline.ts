@@ -14,11 +14,17 @@ namespace FudgeCore {
     public static fboOut: WebGLFramebuffer;
     public static texOut: WebGLTexture;
 
+    static #dataColor: Float32Array;
+    static #dataColorOccluded: Float32Array;
+
     /** 
      * Initialize framebuffers and render attachments.
      */
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
+
+      RenderWebGLComponentOutline.#dataColor = new Float32Array(4);
+      RenderWebGLComponentOutline.#dataColorOccluded = new Float32Array(4);
 
       RenderWebGLComponentOutline.texDepthStencil = _renderWebGL.createTexture(WebGL2RenderingContext.NEAREST, WebGL2RenderingContext.CLAMP_TO_EDGE);
       RenderWebGLComponentOutline.fboDepthPass = _renderWebGL.assert<WebGLFramebuffer>(crc3.createFramebuffer());
@@ -57,8 +63,8 @@ namespace FudgeCore {
       RenderWebGL.bindTexture(ShaderOutline, RenderWebGLComponentOutline.texDepthStencil, WebGL2RenderingContext.TEXTURE0, "u_texDepthOutline");
       RenderWebGL.bindTexture(ShaderOutline, RenderWebGL.texDepthStencil, WebGL2RenderingContext.TEXTURE1, "u_texDepthScene");
 
-      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.get());
-      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.get());
+      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.toArray(RenderWebGLComponentOutline.#dataColor));
+      crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.toArray(RenderWebGLComponentOutline.#dataColorOccluded));
 
       const rectCanvas: Rectangle = RenderWebGL.getCanvasRectangle();
       crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(rectCanvas.width), 1 / Math.round(rectCanvas.height)); // half texel size

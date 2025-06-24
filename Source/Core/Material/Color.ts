@@ -301,13 +301,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns an array of the color channels of this color.
-     */
-    public get(): Float32Array { // TODO: remove this
-      return new Float32Array([this.r, this.g, this.b, this.a]);
-    }
-
-    /**
      * Returns the css color keyword representing this color.
      * @deprecated Use {@link toCSS} instead.
      */

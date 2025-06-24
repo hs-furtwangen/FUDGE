@@ -457,7 +457,7 @@ namespace FudgeCore {
 
       uniform = _shader.uniforms["u_vctColor"];
       if (uniform && _color)
-        crc3.uniform4fv(uniform, _color.get());
+        crc3.uniform4fv(uniform, _color.toArray(new Float32Array(4)));
 
       uniform = _shader.uniforms["u_id"];
       if (uniform)

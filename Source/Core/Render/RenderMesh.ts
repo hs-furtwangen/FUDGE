@@ -206,11 +206,19 @@ namespace FudgeCore {
     }
 
     public get colors(): Float32Array {
-      return this.#colors || (
-        this.#colors = new Float32Array(this.mesh.vertices
-          .filter(_vertex => _vertex.color)
-          .flatMap(_vertex => [..._vertex.color.get()])
-        ));
+      if (this.#colors == null) {
+        const vertices: Vertices = this.mesh.vertices;
+        const colors: Float32Array = new Float32Array(vertices.length * 4);
+
+        if (vertices.some(_vertex => !_vertex.color))  // assume all vertices have colors or none
+          colors.fill(1); // no colors, fill with opaque white
+        else for (let i: number = 0; i < vertices.length; i++)
+          vertices.color(i).toArray(colors, i * 4);
+
+        this.#colors = colors;
+      }
+
+      return this.#colors;
     }
     public set colors(_colors: Float32Array) {
       this.#colors = _colors;

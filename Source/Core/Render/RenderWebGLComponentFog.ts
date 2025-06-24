@@ -34,7 +34,7 @@ namespace FudgeCore {
       if (_cmpFog) {
         data[1] = _cmpFog.near;
         data[2] = _cmpFog.far;
-        data.set(_cmpFog.color.get(), 4);
+        _cmpFog.color.toArray(data, 4);
       }
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#buffer);

@@ -36,6 +36,8 @@ namespace FudgeCore {
     static #meshes: { [key: string]: Mesh } = {};
     static #mapMeshToWireBuffers: WeakMap<Mesh, RenderBuffers> = new WeakMap();
 
+    static #colorData: Float32Array = new Float32Array(4);
+
     // TODO: think about drawing these on the fly instead of caching them. Then we could accept a position, radius etc. parameter and draw them independent from the mtxWorld
     private static get wireCircle(): Vector3[] {
       const radius: number = 0.5;
@@ -422,7 +424,7 @@ namespace FudgeCore {
     }
 
     private static bufferColor(_shader: ShaderInterface, _color: Color): void {
-      RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.get());
+      RenderWebGL.getRenderingContext().uniform4fv(_shader.uniforms["u_vctColor"], _color.toArray(Gizmos.#colorData));
     }
 
     private static bufferMatrix(_shader: ShaderInterface, _mtxWorld: Matrix4x4): void {
