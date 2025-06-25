@@ -43,8 +43,8 @@ namespace FudgeCore {
       crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGLComponentLight.#buffer);
     }
 
-    /** Replaces the decorated method with the manager’s implementation of the same name. */
-    public static decorate<M extends (this: typeof ComponentLight, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof ComponentLight, M>): M {
+    /** Replaces the decorated method with the injector's implementation of the same name. */
+    public static decorate<M extends (this: typeof ComponentLight, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext): M {
       return Reflect.get(this, _context.name);
     }
 

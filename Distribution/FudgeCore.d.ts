@@ -2296,15 +2296,15 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Holds an array of bones ({@link Node}s within a {@link Graph}). Referenced from a {@link ComponentMesh} it can be associated with a {@link Mesh} and enable skinning for the mesh.
-     * @authors Matthias Roming, HFU, 2022-2023 | Jonas Plotzky, HFU, 2023
+     * @authors Matthias Roming, HFU, 2022-2023 | Jonas Plotzky, HFU, 2023-2025
      */
     class ComponentSkeleton extends Component {
         /** The bones used for skinning */
         bones: Node[];
         /** When applied to vertices, it moves them from object/model space to bone-local space as if the bone were at its initial pose */
         mtxBindInverses: Matrix4x4[];
-        protected renderBuffer: unknown;
         protected singleton: boolean;
+        protected renderBuffer: unknown;
         /** Contains the bone transformations applicable to the vertices of a {@link Mesh} */
         protected mtxBones: Matrix4x4[];
         protected mtxBonesData: Float32Array;

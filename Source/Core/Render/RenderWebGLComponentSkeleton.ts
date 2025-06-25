@@ -1,20 +1,14 @@
 namespace FudgeCore {
-
   /**
    * Buffers the bone data from the {@link ComponentSkeleton} into a WebGL Buffer
    * @internal
    */
-  export class RenderInjectorComponentSkeleton {
+  export class RenderWebGLComponentSkeleton {
     public static decorate(_constructor: typeof ComponentSkeleton, _context: ClassDecoratorContext): void {
-      Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderBuffer.name, {
-        value: RenderInjectorComponentSkeleton.useRenderBuffer
-      });
-      Object.defineProperty(_constructor.prototype, _constructor.prototype.updateRenderBuffer.name, {
-        value: RenderInjectorComponentSkeleton.updateRenderBuffer
-      });
-      Object.defineProperty(_constructor.prototype, _constructor.prototype.deleteRenderBuffer.name, {
-        value: RenderInjectorComponentSkeleton.deleteRenderBuffer
-      });
+      const prototype: ComponentSkeleton = _constructor.prototype;
+      prototype.useRenderBuffer = RenderWebGLComponentSkeleton.useRenderBuffer;
+      prototype.updateRenderBuffer = RenderWebGLComponentSkeleton.updateRenderBuffer;
+      prototype.deleteRenderBuffer = RenderWebGLComponentSkeleton.deleteRenderBuffer;
     }
 
     protected static useRenderBuffer(this: ComponentSkeleton): void {

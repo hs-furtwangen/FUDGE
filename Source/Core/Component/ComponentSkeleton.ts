@@ -1,19 +1,22 @@
-///<reference path="./../Render/RenderInjectorComponentSkeleton.ts"/>
+///<reference path="../Render/RenderWebGLComponentSkeleton.ts"/>
 namespace FudgeCore {
 
   /**
    * Holds an array of bones ({@link Node}s within a {@link Graph}). Referenced from a {@link ComponentMesh} it can be associated with a {@link Mesh} and enable skinning for the mesh.
-   * @authors Matthias Roming, HFU, 2022-2023 | Jonas Plotzky, HFU, 2023
+   * @authors Matthias Roming, HFU, 2022-2023 | Jonas Plotzky, HFU, 2023-2025
    */
-  @RenderInjectorComponentSkeleton.decorate
+  @RenderWebGLComponentSkeleton.decorate
   export class ComponentSkeleton extends Component {
     /** The bones used for skinning */
     public bones: Node[];
     /** When applied to vertices, it moves them from object/model space to bone-local space as if the bone were at its initial pose */
     public mtxBindInverses: Matrix4x4[]; // TODO: think about serializing this separately to make it shareable between skeleton serializations
 
-    protected renderBuffer: unknown;
     protected singleton: boolean = false;
+    
+    // TODO: this pattern of having class properties that are only used by the render system is not ideal as it mixes the concerns of the component and the render system. This undermines the whole point of the render injector being replaceable for different render systems (e.g. WebGL, WebGPU, etc.). 
+    // Consider refactoring this to a more modular approach where the render system can handle its own state without relying on the component to provide it. Could use symbol keyed properties or weak maps to store render-specific data without cluttering the component class.
+    protected renderBuffer: unknown;
     /** Contains the bone transformations applicable to the vertices of a {@link Mesh} */
     protected mtxBones: Matrix4x4[];
     protected mtxBonesData: Float32Array;
@@ -30,24 +33,14 @@ namespace FudgeCore {
       }
     }
 
-    /**
-     * Injected by {@link RenderInjectorComponentSkeleton}.
-     * Used by the render system.
-     * @internal
-     */
-    public useRenderBuffer(): void { /* injected by RenderInjector*/ };
-    /**
-     * Injected by {@link RenderInjectorComponentSkeleton}.
-     * Used by the render system.
-     * @internal
-     */
-    public updateRenderBuffer(): void { /* injected by RenderInjector*/ }
-    /**
-     * Injected by {@link RenderInjectorComponentSkeleton}.
-     * Used by the render system.
-     * @internal
-     */
-    public deleteRenderBuffer(): void {/* injected by RenderInjector*/ }
+    /** @internal Injected by {@link RenderWebGLComponentSkeleton}. */
+    public useRenderBuffer(): void { /**/ };
+
+    /** @internal Injected by {@link RenderWebGLComponentSkeleton}. */
+    public updateRenderBuffer(): void { /**/ }
+
+    /** @internal Injected by {@link RenderWebGLComponentSkeleton}. */
+    public deleteRenderBuffer(): void { /**/ }
 
     /**
      * Adds a node as a bone with its bind inverse matrix
