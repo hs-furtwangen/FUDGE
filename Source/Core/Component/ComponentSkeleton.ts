@@ -17,6 +17,7 @@ namespace FudgeCore {
     /** Contains the bone transformations applicable to the vertices of a {@link Mesh} */
     protected mtxBones: Matrix4x4[];
     protected mtxBonesData: Float32Array;
+    protected bonesDirty: boolean = true;
 
     public constructor(_bones: Node[] = [], _mtxBoneInverses: Matrix4x4[] = []) {
       super();
@@ -55,7 +56,7 @@ namespace FudgeCore {
       this.bones.push(_bone);
       this.mtxBindInverses.push(_mtxBindInverse);
 
-      this.mtxBonesData = null;
+      this.bonesDirty = true;
     }
 
     /**
