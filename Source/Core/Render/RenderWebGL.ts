@@ -468,23 +468,24 @@ namespace FudgeCore {
      * Draw a mesh buffer using the given infos and the complete projection matrix
     */
     public static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
-      let cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
-      let cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
-      let cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
+      const cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
+      const cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
+      const cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
       if (cmpParticleSystem?.isActive) {
         RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
         return;
       }
 
-      let cmpText: ComponentText = _node.getComponent(ComponentText);
-      let cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
+      const cmpText: ComponentText = _node.getComponent(ComponentText);
+      const cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
 
       const material: Material = cmpMaterial.material;
       material.getShader().useProgram();
       material.coat.useRenderData();
 
-      if (cmpMesh.skeleton?.isActive)
-        cmpMesh.skeleton.useRenderBuffer();
+      const cmpSkeleton: ComponentSkeleton = cmpMesh.skeleton;
+      if (cmpSkeleton?.isActive)
+        cmpSkeleton.useRenderBuffer();
 
       let mtxWorldOverride: Matrix4x4;
 

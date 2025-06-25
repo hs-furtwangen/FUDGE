@@ -43,9 +43,9 @@ namespace FudgeCore {
       Render.componentsPick.reset();
       Render.componentsSkeleton.reset();
 
-      for (const cmpLights of Render.lights.values()) 
+      for (const cmpLights of Render.lights.values())
         cmpLights.reset();
-      
+
       Node.resetRenderData();
       Coat.resetRenderData();
 
@@ -83,7 +83,7 @@ namespace FudgeCore {
       if (Render.nodesAlpha.length > 0) { // TODO: avoid object and function creation in loop
         for (let node of Render.nodesAlpha)
           Reflect.set(node, "zCamera", _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z);
-  
+
         nodesAlpha = Render.nodesAlpha.getSorted((_a: Node, _b: Node) => Reflect.get(_b, "zCamera") - Reflect.get(_a, "zCamera"));
       }
 
@@ -96,12 +96,8 @@ namespace FudgeCore {
 
       _branch.nNodesInBranch = 1;
       _branch.radius = 0;
-
-      // PerformanceMonitor.startMeasure("Render.prepareBranch dispatch prepare");
-      _branch.dispatchEventToTargetOnly(Render.#eventPrepare);
-      // PerformanceMonitor.endMeasure("Render.prepareBranch dispatch prepare");
-
       _branch.timestampUpdate = Render.timestampUpdate;
+      _branch.dispatchEventToTargetOnly(Render.#eventPrepare); // TODO: try to handle more component logic via events
 
       const mtxWorldParent: Matrix4x4 = _parent.mtxWorld;
       const mtxWorldBranch: Matrix4x4 = _branch.mtxWorld;
@@ -112,39 +108,31 @@ namespace FudgeCore {
         _recalculate = true;
       }
 
-      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpTransform");
       const cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
       if (cmpTransform?.isActive) {
-        if ((_recalculate ||= cmpTransform.mtxLocal.modified)) {
-          Matrix4x4.PRODUCT(mtxWorldParent, cmpTransform.mtxLocal, mtxWorldBranch);
-          cmpTransform.mtxLocal.modified = false;
+        const mtxLocal: Matrix4x4 = cmpTransform.mtxLocal;
+        if ((_recalculate ||= mtxLocal.modified)) {
+          Matrix4x4.PRODUCT(mtxWorldParent, mtxLocal, mtxWorldBranch);
+          mtxLocal.modified = false;
         }
       } else
         mtxWorldBranch.copy(mtxWorldParent); // overwrite readonly mtxWorld of the current node
-      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpTransform");
 
-      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpRigidbody");
       const cmpRigidbody: ComponentRigidbody = _branch.getComponent(ComponentRigidbody);
       if (cmpRigidbody?.isActive) { //TODO: support de-/activation throughout
         Render.nodesPhysics.push(_branch); // add this node to physics list
         if (!_options?.ignorePhysics)
           this.transformByPhysics(_branch, cmpRigidbody);
       }
-      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpRigidbody");
 
-      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpPick");
       const cmpPick: ComponentPick = _branch.getComponent(ComponentPick);
       if (cmpPick?.isActive) {
         Render.componentsPick.push(cmpPick); // add this component to pick list
       }
-      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpPick");
 
-      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpLight");
       const cmpLights: readonly ComponentLight[] = _branch.getComponents(ComponentLight);
       Render.addLights(cmpLights);
-      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpLight");
 
-      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpMesh cmpMaterial");
       const cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
       const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
       if (cmpMesh?.isActive && cmpMaterial?.isActive) {
@@ -153,8 +141,8 @@ namespace FudgeCore {
           cmpMesh.mtxPivot.modified = false;
         }
 
-        let cmpFaceCamera: ComponentFaceCamera = _branch.getComponent(ComponentFaceCamera);
-        let cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
+        const cmpFaceCamera: ComponentFaceCamera = _branch.getComponent(ComponentFaceCamera);
+        const cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
         _branch.updateRenderData(cmpMesh, cmpMaterial, cmpFaceCamera, cmpParticleSystem);
 
         _branch.radius = cmpMesh.radius;
@@ -163,13 +151,12 @@ namespace FudgeCore {
         else
           Render.nodesSimple.push(_branch); // add this node to render list
 
-        let material: Material = cmpMaterial.material;
+        const material: Material = cmpMaterial.material;
         if (material?.timestampUpdate < Render.timestampUpdate) {
           material.timestampUpdate = Render.timestampUpdate;
           material.coat.updateRenderData();
         }
       }
-      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpMesh cmpMaterial");
 
       const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera) ?? _branch.getComponent(ComponentVRDevice); // checking for both of these is rather slow, maybe only update used cameras after all?
       if (cmpCamera && cmpCamera.isActive && (cmpCamera.mtxPivot.modified || _recalculate)) {
@@ -177,19 +164,17 @@ namespace FudgeCore {
         cmpCamera.mtxPivot.modified = false;
       }
 
-      // PerformanceMonitor.startMeasure("Render.prepareBranch cmpSkeleton");
       const cmpSkeletons: readonly ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
       for (let cmpSkeleton of cmpSkeletons)
         if (cmpSkeleton?.isActive)
           Render.componentsSkeleton.push(cmpSkeleton);
-      // PerformanceMonitor.endMeasure("Render.prepareBranch cmpSkeleton");
 
       for (let child of _branch.getChildren()) {
         Render.prepareBranch(child, _options, _branch, _recalculate);
 
         _branch.nNodesInBranch += child.nNodesInBranch;
         _branch.radius = Math.max(
-          _branch.radius, 
+          _branch.radius,
           (child.getComponent(ComponentMesh)?.mtxWorld.translation ?? child.mtxWorld.translation).getDistance(mtxWorldBranch.translation) + child.radius
         );
       }
