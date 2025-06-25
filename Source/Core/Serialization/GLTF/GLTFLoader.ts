@@ -401,6 +401,62 @@ namespace FudgeCore {
       return animation;
     }
 
+    public async getAnimationNew(_iAnimation: number | string, _animationOut?: AnimationSystem.Animation): Promise<AnimationSystem.Animation> {
+      _iAnimation = this.getIndex(_iAnimation, this.#gltf.animations);
+
+      if (_iAnimation == -1)
+        return null;
+
+      const id: string = `${Animation.name}|${_iAnimation}`;
+
+      if (!_animationOut && this.#resources[id])
+        return <AnimationSystem.Animation>this.#resources[id];
+
+      const gltfAnimation: GLTF.Animation = this.#gltf.animations?.[_iAnimation];
+
+      if (!gltfAnimation)
+        throw new Error(`${this}: Couldn't find animation with index ${_iAnimation}.`);
+
+      const gltfChannels: GLTF.AnimationChannel[] = gltfAnimation.channels;
+      const channels: AnimationSystem.AnimationChannel[] = new Array<AnimationSystem.AnimationChannel>(gltfChannels.length);
+      let duration: number = 0;
+      for (let i: number = 0; i < gltfChannels.length; i++) {
+        const gltfChannel: GLTF.AnimationChannel = gltfChannels[i];
+        const gltfTarget: GLTF.AnimationChannelTarget = gltfChannel.target;
+        const gltfPath: GLTF.AnimationChannelTarget["path"] = gltfTarget.path;
+        if (gltfPath == "weights") {
+          Debug.warn(`${this}: Animation with index ${_iAnimation} has a target path of 'weights'. FUDGE does not support morph targets.`);
+          continue;
+        }
+
+        const gltfNode: GLTF.Node = this.#gltf.nodes[gltfTarget.node];
+        if (!gltfNode)
+          continue;
+
+        const path: string = `${gltfNode.path.map((_iNode: number) => `${this.#gltf.nodes[_iNode].name}`).join("/")}/components/ComponentTransform/0/mtxLocal/${toInternTransformationNew[gltfPath]}`;
+        const sampler: GLTF.AnimationSampler = gltfAnimation.samplers[gltfChannel.sampler];
+        const interpolation: ANIMATION_INTERPOLATION = this.toInternInterpolation(sampler.interpolation);
+
+        const input: Float32Array = (await this.getFloat32Array(sampler.input)).map((_time: number) => _time * 1000);
+        duration = Math.max(duration, input[input.length - 1]);
+
+        const output: Float32Array = await this.getFloat32Array(sampler.output);
+        if (gltfPath == "rotation")
+          channels[i] = new AnimationSystem.AnimationChannelQuaternion(path, input, output, interpolation);
+        else
+          channels[i] = new AnimationSystem.AnimationChannelVector(path, input, output, interpolation);
+      }
+
+      const animation: AnimationSystem.Animation = new AnimationSystem.Animation();
+      animation.name = gltfAnimation.name;
+      animation.channels = channels;
+      animation.duration = duration;
+
+      return animation;
+    }
+
+
+
     /**
      * Returns the first {@link MeshGLTF} with the given name.
      */
@@ -502,26 +558,16 @@ namespace FudgeCore {
           mesh.vertices.push(
             new Vertex(
               new Vector3(positions[iVector3 + 0], positions[iVector3 + 1], positions[iVector3 + 2]),
-              textureUVs ?
-                new Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]) :
-                undefined,
-              normals ?
-                new Vector3(normals[iVector3 + 0], normals[iVector3 + 1], normals[iVector3 + 2]) :
-                undefined,
-              tangents ?
-                new Vector4(tangents[iVector4 + 0], tangents[iVector4 + 1], tangents[iVector4 + 2], tangents[iVector4 + 3]) :
-                undefined,
-              colors ?
-                new Color(colors[iVector4 + 0], colors[iVector4 + 1], colors[iVector4 + 2], colors[iVector4 + 3]) :
-                undefined,
-              bones && weights ?
-                [
-                  { index: bones[iVector4 + 0], weight: weights[iVector4 + 0] },
-                  { index: bones[iVector4 + 1], weight: weights[iVector4 + 1] },
-                  { index: bones[iVector4 + 2], weight: weights[iVector4 + 2] },
-                  { index: bones[iVector4 + 3], weight: weights[iVector4 + 3] }
-                ] :
-                undefined
+              textureUVs && new Vector2(textureUVs[iVector2 + 0], textureUVs[iVector2 + 1]),
+              normals && new Vector3(normals[iVector3 + 0], normals[iVector3 + 1], normals[iVector3 + 2]),
+              tangents && new Vector4(tangents[iVector4 + 0], tangents[iVector4 + 1], tangents[iVector4 + 2], tangents[iVector4 + 3]),
+              colors && new Color(colors[iVector4 + 0], colors[iVector4 + 1], colors[iVector4 + 2], colors[iVector4 + 3]),
+              bones && weights && [
+                { index: bones[iVector4 + 0], weight: weights[iVector4 + 0] },
+                { index: bones[iVector4 + 1], weight: weights[iVector4 + 1] },
+                { index: bones[iVector4 + 2], weight: weights[iVector4 + 2] },
+                { index: bones[iVector4 + 3], weight: weights[iVector4 + 3] }
+              ]
             )
           );
         }
@@ -749,23 +795,23 @@ namespace FudgeCore {
         if (gltfNode.matrix || gltfNode.rotation || gltfNode.scale || gltfNode.translation || gltfNode.isAnimated) {
           node.addComponent(new ComponentTransform());
           if (gltfNode.matrix) {
-            node.mtxLocal.setArray(gltfNode.matrix);
+            node.mtxLocal.fromArray(gltfNode.matrix);
           } else {
             if (gltfNode.translation) {
               const translation: Vector3 = Recycler.get(Vector3);
-              translation.set(gltfNode.translation[0], gltfNode.translation[1], gltfNode.translation[2]);
+              translation.fromArray(gltfNode.translation);
               node.mtxLocal.translation = translation;
               Recycler.store(translation);
             }
             if (gltfNode.rotation) {
               const rotation: Quaternion = Recycler.get(Quaternion);
-              rotation.set(gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2], gltfNode.rotation[3]);
+              rotation.fromArray(gltfNode.rotation);
               node.mtxLocal.rotation = rotation;
               Recycler.store(rotation);
             }
             if (gltfNode.scale) {
               const scale: Vector3 = Recycler.get(Vector3);
-              scale.set(gltfNode.scale[0], gltfNode.scale[1], gltfNode.scale[2]);
+              scale.fromArray(gltfNode.scale);
               node.mtxLocal.scaling = scale;
               Recycler.store(scale);
             }
@@ -1073,59 +1119,28 @@ namespace FudgeCore {
       const millisPerSecond: number = 1000;
       const isRotation: boolean = _transformationType == "rotation";
       const vectorLength: number = isRotation ? 4 : 3; // rotation is stored as quaternion
+      const propertyType: typeof Vector3 | typeof Quaternion = isRotation ? Quaternion : Vector3;
       const interpolation: ANIMATION_INTERPOLATION = this.toInternInterpolation(_sampler.interpolation);
       const isCubic: boolean = interpolation == ANIMATION_INTERPOLATION.CUBIC;
       const vectorsPerInput: number = isCubic ? 3 : 1; // cubic interpolation uses 3 values per input: in-tangent, property value and out-tangent. https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#interpolation-cubic
-
-      // used only for rotation interpolation
-      let lastRotation: Quaternion;
-      let nextRotation: Quaternion;
-
       const sequence: AnimationKey<Quaternion | Vector3>[] = [];
-
-      if (isRotation) {
-        lastRotation = Recycler.get(Quaternion);
-        nextRotation = Recycler.get(Quaternion);
-      }
 
       for (let iInput: number = 0; iInput < input.length; iInput++) {
         const iOutput: number = iInput * vectorsPerInput * vectorLength + (isCubic ? vectorLength : 0);
-        const iOutputSlopeIn: number = iOutput - vectorLength;
-        const iOutputSlopeOut: number = iOutput + vectorLength;
+        const iOutputInTangent: number = iOutput - vectorLength;
+        const iOutputOutTangent: number = iOutput + vectorLength;
         const time: number = millisPerSecond * input[iInput];
 
-        let value: Vector3 | Quaternion;
+        let value: Vector3 | Quaternion = new propertyType(output[iOutput + 0], output[iOutput + 1], output[iOutput + 2], output[iOutput + 3]);
         let slopeIn: Vector3 | Quaternion;
         let slopeOut: Vector3 | Quaternion;
 
-        if (isRotation) {
-          // Take the shortest path between two rotations, i.e. if the dot product is negative then the next quaternion needs to be negated.
-          // q and -q represent the same rotation but interpolation will take either the long way or the short way around the sphere depending on which we use.
-          nextRotation.set(output[iOutput + 0], output[iOutput + 1], output[iOutput + 2], output[iOutput + 3]);
-          if (Quaternion.DOT(lastRotation, nextRotation) < 0)
-            nextRotation.negate();
-
-          lastRotation.set(nextRotation.x, nextRotation.y, nextRotation.z, nextRotation.w);
-          value = nextRotation.clone;
-          if (isCubic) {
-            slopeIn = new Quaternion(output[iOutputSlopeIn + 0], output[iOutputSlopeIn + 1], output[iOutputSlopeIn + 2], output[iOutputSlopeIn + 3]);
-            slopeOut = new Quaternion(output[iOutputSlopeOut + 0], output[iOutputSlopeOut + 1], output[iOutputSlopeOut + 2], output[iOutputSlopeOut + 3]);
-          }
-        } else {
-          value = new Vector3(output[iOutput + 0], output[iOutput + 1], output[iOutput + 2]);
-
-          if (isCubic) {
-            slopeIn = new Vector3(output[iOutputSlopeIn + 0], output[iOutputSlopeIn + 1], output[iOutputSlopeIn + 2]);
-            slopeOut = new Vector3(output[iOutputSlopeOut + 0], output[iOutputSlopeOut + 1], output[iOutputSlopeOut + 2]);
-          }
+        if (isCubic) {
+          slopeIn = new propertyType(output[iOutputInTangent + 0], output[iOutputInTangent + 1], output[iOutputInTangent + 2], output[iOutputInTangent + 3]);
+          slopeOut = new propertyType(output[iOutputOutTangent + 0], output[iOutputOutTangent + 1], output[iOutputOutTangent + 2], output[iOutputOutTangent + 3]);
         }
 
         sequence.push(new AnimationKey(time, value, interpolation, slopeIn, slopeOut));
-      }
-
-      if (isRotation) {
-        Recycler.store(lastRotation);
-        Recycler.store(nextRotation);
       }
 
       return new AnimationSequence(sequence, isRotation ? Quaternion : Vector3);
@@ -1159,6 +1174,13 @@ namespace FudgeCore {
     "rotation": "rotation",
     "scale": "scaling"
   };
+
+  const toInternTransformationNew: Record<Exclude<GLTF.AnimationChannelTarget["path"], "weights">, "translation" | "quaternion" | "scaling"> = {
+    "translation": "translation",
+    "rotation": "quaternion",
+    "scale": "scaling"
+  };
+
 
   // number of components defined by 'type'
   const toAccessorTypeLength: Record<GLTF.ACCESSOR_TYPE, number> = {
