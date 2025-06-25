@@ -5,6 +5,7 @@
 /// <reference path="Math/ArrayConvertible.ts"/>
 /// <reference path="Event/Event.ts"/>
 /// <reference path="Recycle/RecyclableEvent.ts"/>
+/// <reference path="Serialization/Metadata.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
 /// <reference path="Serialization/Serializer.ts"/> 
 /// <reference path="Render/RenderWebGL.ts"/>
