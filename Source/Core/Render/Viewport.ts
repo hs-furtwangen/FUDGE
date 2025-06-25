@@ -172,7 +172,6 @@ namespace FudgeCore {
      * Draw this viewport displaying its branch. By default, the transforms in the branch are recalculated first.
      * Pass `false` if calculation was already done for this frame 
      */
-    // @PerformanceMonitor.measure("Viewport.draw")
     public draw(_prepareBranch: boolean = true): void {
       this.prepare(_prepareBranch);
 
@@ -205,17 +204,14 @@ namespace FudgeCore {
     /**
     * Adjusts all frames and the camera to fit the current size of the canvas. Prepares the branch for rendering.
     */
-    // @PerformanceMonitor.measure("Viewport.prepare")
     public prepare(_prepareBranch: boolean = true): void {
       if (!this.#branch)
         return;
       if (!this.camera.isActive)
         return;
 
-      // PerformanceMonitor.startMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
       if (!this.camera.node) //TODO: find an elegant way to handle cameras that are either attached to a node or not...
         this.camera.mtxWorld.copy(this.camera.mtxPivot);
-      // PerformanceMonitor.endMeasure("Viewport.prepare cmpCamera.mtxWorld * cmpCamera.mtxPivot");
 
       if (this.adjustingFrames)
         this.adjustFrames();
@@ -228,7 +224,6 @@ namespace FudgeCore {
     /**
      * Prepares all nodes in the branch for rendering by updating their world transforms and supplying the gpu renderbuffers with the neccessary node and component data to draw a frame.
      */
-    // @PerformanceMonitor.measure("Viewport.prepareBranch")
     public prepareBranch(): void {
       const eventPrepareStart: RecyclableEvent = RecyclableEvent.get(EVENT.RENDER_PREPARE_START);
       this.dispatchEvent(eventPrepareStart);

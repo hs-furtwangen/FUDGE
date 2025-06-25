@@ -20,21 +20,12 @@ namespace FudgeCore {
 
 
     private update = (): void => {
-      PerformanceMonitor.startMeasure("ComponentAnimationGraph.update");
       if (!this.root || !this.node || !this.active)
         return;
 
-      PerformanceMonitor.startMeasure("ComponentAnimationGraph.update compute");
       this.root.update(Loop.timeFrameGame);
       this.root.events?.forEach(_event => this.dispatchEvent(new Event(_event)));
-      PerformanceMonitor.endMeasure("ComponentAnimationGraph.update compute");
-
-
-      PerformanceMonitor.startMeasure("ComponentAnimationGraph.update apply");
       this.node.applyAnimation(this.root.mutator);
-      PerformanceMonitor.endMeasure("ComponentAnimationGraph.update apply");
-
-      PerformanceMonitor.endMeasure("ComponentAnimationGraph.update");
     };
   }
 }

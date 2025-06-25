@@ -75,15 +75,12 @@ namespace FudgeCore {
         if (!this.root || !this.node || !this.active)
           return;
 
-        PerformanceMonitor.startMeasure("ComponentAnimation.update");
         const root: AnimationNode = this.root;
         root.update(Loop.timeFrameGame, this.#valuesOriginal, this.#valuesOriginal, this.#dispatchEvent);
 
         const targetBindings: AnimationTargetBinding[] = this.#targetBindings;
         for (let i: number = 0; i < targetBindings.length; i++)
           targetBindings[i].apply();
-
-        PerformanceMonitor.endMeasure("ComponentAnimation.update");
       }
 
       private hndRenderPrepare = (): void => {
