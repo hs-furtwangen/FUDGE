@@ -42,10 +42,8 @@ namespace FudgeCore {
       const bones: Node[] = this.bones;
       const mtxBones: Matrix4x4[] = this.mtxBones;
       const mtxBindInverses: Matrix4x4[] = this.mtxBindInverses;
-      PerformanceMonitor.startMeasure("Compute Bone Matrices");
       for (let i: number = 0; i < this.bones.length; i++)
         Matrix4x4.PRODUCT(bones[i].mtxWorld, mtxBindInverses[i], mtxBones[i]);
-      PerformanceMonitor.endMeasure("Compute Bone Matrices");
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.renderBuffer);
       crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.mtxBonesData);
