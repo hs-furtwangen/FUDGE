@@ -1,8 +1,7 @@
 namespace FudgeCore {
   /**
    * Holds data to feed into a {@link Shader} to describe the surface of {@link Mesh}.  
-   * {@link Material}s reference {@link Coat} and {@link Shader}.   
-   * The method useRenderData will be injected by {@link RenderInjector} at runtime, extending the functionality of this class to deal with the renderer.
+   * {@link Material}s reference {@link Coat} and {@link Shader}.
    */
   export class Coat extends Mutable implements Serializable { // TODO: refactor into composition based structure
     // public name: string = "Coat";

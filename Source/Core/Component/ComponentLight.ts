@@ -3,7 +3,6 @@ namespace FudgeCore {
   /**
    * Defines identifiers for the various types of light this component can provide.  
    */
-  // export let LIGHT_TYPE: { [type: string]: string } = {
   export enum LIGHT_TYPE {
     AMBIENT = "LightAmbient",
     DIRECTIONAL = "LightDirectional",
@@ -11,9 +10,9 @@ namespace FudgeCore {
     SPOT = "LightSpot"
   }
   /**
-    * Attaches a {@link Light} to the node
-    * The pivot matrix has different effects depending on the type of the {@link Light}. See there for details.
-    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+    * Attaches a light to the node.
+    * The pivot matrix has different effects depending on the {@link LIGHT_TYPE}. See there for details.
+    * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
     */
   export class ComponentLight extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentLight);

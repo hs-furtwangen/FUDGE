@@ -1,7 +1,7 @@
 namespace FudgeCore {
   /**
    * Holds information about the AnimationStructure that the Animation uses to map the Sequences to the Attributes.
-   * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
+   * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequence}s.
    */
   export interface AnimationStructure {
     [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence;
@@ -69,7 +69,7 @@ namespace FudgeCore {
 
   /**
    * Describes and controls and animation by yielding mutators 
-   * according to the stored {@link AnimationStructure} and {@link AnimationSequenceNumber}s
+   * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
    * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
    */
@@ -544,7 +544,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Creates a rastered {@link AnimationSequenceNumber} out of a given sequence.
+     * Creates a rastered {@link AnimationSequence} out of a given sequence.
      * @param _sequence The sequence to calculate the new sequence out of
      * @returns the rastered sequence.
      */

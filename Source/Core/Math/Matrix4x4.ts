@@ -56,8 +56,8 @@ namespace FudgeCore {
 
     /**
      * Multiplies two matrices.
-     * @param a - the first operand.
-     * @param b - the second operand.
+     * @param _a - the first operand.
+     * @param _b - the second operand.
      * @param _out - (optional) the receiving matrix.
      * @returns `_out` or a new matrix if none is provided.
      * @source https://github.com/toji/gl-matrix

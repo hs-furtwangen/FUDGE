@@ -306,13 +306,13 @@ namespace FudgeCore {
 
     /**
      * Performs a spherical linear interpolation between two quaternion arrays.
-     * @param a - the first operand.
-     * @param aOffset - the offset into the first operand.
-     * @param b - the second operand.
-     * @param bOffset - the offset into the second operand.
-     * @param t - interpolation amount, in the range [0-1], between the two inputs.
-     * @param out - the receiving quaternion array.
-     * @param outOffset - the offset into the receiving quaternion array.
+     * @param _a - the first operand.
+     * @param _aOffset - the offset into the first operand.
+     * @param _b - the second operand.
+     * @param _bOffset - the offset into the second operand.
+     * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+     * @param _out - the receiving quaternion array.
+     * @param _outOffset - the offset into the receiving quaternion array.
      * @returns `out`
      * @source https://github.com/toji/gl-matrix
      */

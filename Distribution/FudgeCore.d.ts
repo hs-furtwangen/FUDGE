@@ -11,18 +11,17 @@ declare namespace FudgeCore {
         calls: number;
     }
     class PerformanceMonitor {
-        static display: HTMLPreElement;
+        #private;
+        static canvas: HTMLCanvasElement;
+        static context: CanvasRenderingContext2D;
         static measurements: {
             [key: string]: PerformanceMeasurement;
         };
-        private static readonly framesToAverage;
         static startMeasure(_label: string): void;
         static endMeasure(_label: string): number;
         static startFrame(): void;
         static endFrame(): void;
-    }
-    class PerformanceDisplay extends HTMLPreElement {
-        constructor();
+        private static resize;
     }
 }
 declare namespace FudgeCore {
@@ -160,6 +159,27 @@ declare namespace FudgeCore {
          * setup routing to standard console
          */
         private static setupConsole;
+    }
+}
+declare namespace FudgeCore {
+    interface ArrayConvertible {
+        readonly isArrayConvertible: true;
+        /**
+         * Set the values of this object from the given array starting at the given offset.
+         * @param _array - The array to read the values from.
+         * @param _offset - (optional) The offset to start reading from.
+         * @returns A reference to this instance.
+         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        /**
+         * Copy the values of this object into the given array starting at the given offset. Creates a new array if none is provided.
+         * @param _out - (optional) The receiving array.
+         * @param _offset - (optional) The offset to start writing to.
+         * @returns `_out` or a new array if none is provided.
+         */
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
     }
 }
 declare namespace FudgeCore {
@@ -364,6 +384,13 @@ declare namespace FudgeCore {
     interface Mutator {
         [attribute: string]: General;
     }
+    /**
+     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
+     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
+     */
+    interface AnimationMutator {
+        [attribute: string]: Float32Array;
+    }
     interface MutatorForAnimation extends Mutator {
         readonly forAnimation: null;
     }
@@ -501,6 +528,10 @@ declare namespace FudgeCore {
          */
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>;
         /**
+         * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
+         */
+        animate(_mutator: AnimationMutator): void;
+        /**
          * Synchronous implementation of {@link mutate}.
          * Override {@link mutate} with a sync implementation and call this method from it to mutate synchronously.
          */
@@ -526,38 +557,11 @@ declare namespace FudgeCore {
         [type: string]: General;
     }
     /**
-     * Abstract class serving as a base for interface-like pure abstract classes that work with the "instanceof"-operator.
-     *
-     * **Usage**:
-     * * Create a pure abstract class that extends {@link Implementable} that will serve as your interface. Specify the required attributes and methods within it as abstract.
-     * * Use your abstract class via the `implements` keyword exactly how you would use a regular `interface`.
-     * * Decorate the class that implements your abstract class using the static `YOUR_ABSTRACT_CLASS`.{@link register} method.
-     * * Now you can use the `instanceof`-operator with your abstract class.
-     *
-     * **Example**:
-     * ```typescript
-     * import ƒ = FudgeCore;
-     *
-     * abstract class MyInterface extends ƒ.Implementable {
-     *   public abstract myAttribute: string;
-     *   public abstract myMethod(): void;
-     * }
-     *
-     * @MyInterface.register
-     * class MyClass implements MyInterface {
-     *   public myAttribute: string;
-     *   public myMethod(): void {}
-     * }
-     *
-     * let myInstance: MyInterface = new MyClass();
-     * console.log(myInstance instanceof MyInterface); // true
-     * console.log(MyClass.prototype instanceof MyInterface); // true
-     * ```
+     * Generic type for a {@link Serialization} of a specific {@link Serializable} object.
      */
-    abstract class Implementable {
-        static register<T extends typeof Implementable>(this: T, _class: abstract new (...args: General[]) => InstanceType<T>, _context: ClassDecoratorContext): void;
-        static [Symbol.hasInstance](_instance: unknown): boolean;
-    }
+    type SerializationOf<T extends Serializable> = {
+        [K in keyof T]?: General;
+    };
     interface Serializable {
         /**
          * Returns a {@link Serialization} of this object.
@@ -568,66 +572,6 @@ declare namespace FudgeCore {
          */
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
-    /**
-     * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
-     *
-     * **Editor Configuration:**
-     * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-     * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
-     * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-     * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
-     *
-     * **Serialization:**
-     * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-     * - Primitives and enums will be serialized as is.
-     * - {@link Serializable}s will be serialized nested.
-     * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-     * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
-     *
-     * **Example:**
-     * ```typescript
-     * import ƒ = FudgeCore;
-     *
-     * @ƒ.serialize
-     * export class MyScript extends ƒ.ComponentScript {
-     *   #size: number = 1;
-     *
-     *   @ƒ.serialize(String) // display a string in the editor
-     *   public info: string;
-     *
-     *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
-     *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
-     *
-     *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
-     *   public resource: ƒ.Material;
-     *
-     *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
-     *   public reference: ƒ.Node
-     *
-     *   @ƒ.serialize(Number) // display a number in the editor
-     *   public get size(): number {
-     *     return this.#size;
-     *   }
-     *
-     *   // define a setter to allow writing to size, or omit it to leave the property read-only
-     *   public set size(_size: number) {
-     *     this.#size = _size;
-     *   }
-     * }
-     * ```
-     *
-     * **Side effects:**
-     * * Attributes with a specified type will always be included in the {@link Mutator base-mutator}
-     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
-     * will be displayed via their {@link toString} method in the editor.
-     * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
-     *
-     * @author Jonas Plotzky, HFU, 2024-2025
-     */
-    function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
-    function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -681,7 +625,7 @@ declare namespace FudgeCore {
          * Returns an Array of FUDGE-objects reconstructed from the information in the array of {@link Serialization}s given,
          * including attached components, children, superclass-objects
          */
-        static deserializeArray(_serialization: Serialization): Promise<Serializable[]>;
+        static deserializeArray<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]>;
         /**
          * Prettify a JSON-String, to make it more readable.
          * not implemented yet
@@ -826,7 +770,7 @@ declare namespace FudgeCore {
      * ```
      * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    class Vector2 extends Mutable implements Serializable, Recycable {
+    class Vector2 extends Mutable implements Serializable, Recycable, ArrayConvertible {
         x: number;
         y: number;
         constructor(_x?: number, _y?: number);
@@ -907,6 +851,7 @@ declare namespace FudgeCore {
          * @param _out Optional vector to store the result in.
          */
         static GEO(_angle?: number, _magnitude?: number, _out?: Vector2): Vector2;
+        get isArrayConvertible(): true;
         /**
          * Returns the length of the vector
          */
@@ -996,17 +941,10 @@ declare namespace FudgeCore {
          * @returns A reference to this vector.
          */
         apply(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2;
-        /**
-         * Returns an array of the components of this vector.
-         */
-        get(): Float32Array;
-        /**
-         * Copys the elements of this vector into the given array starting at the given offset.
-         * @returns A reference to the given array.
-         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
         toArray<T extends {
             [n: number]: number;
-        }>(_out: T, _offset?: number): T;
+        } = number[]>(_out?: T, _offset?: number): T;
         /**
          * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3.
          * @param _out Optional vector to store the result in.
@@ -1453,6 +1391,10 @@ declare namespace FudgeCore {
          * Returns an array of references to childnodes with the supplied name.
          */
         getChildrenByName(_name: string): Node[];
+        /**
+         * Returns the first descendant with the supplied name. Depth first search.
+         */
+        getDescendantByName(_name: string): Node;
         /**
          * Simply calls {@link addChild}. This reference is here solely because appendChild is the equivalent method in DOM.
          * See and preferably use {@link addChild}
@@ -1940,9 +1882,8 @@ declare namespace FudgeCore {
         ERROR = 2
     }
     /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
-    export abstract class SerializableResource extends Implementable {
-    }
     export interface SerializableResource extends Serializable {
+        readonly isSerializableResource: true;
         name: string;
         idResource: string;
         readonly type: string;
@@ -2106,6 +2047,7 @@ declare namespace FudgeCore {
         protected mipmapDirty: boolean;
         protected wrapDirty: boolean;
         constructor(_name?: string);
+        get isSerializableResource(): true;
         set mipmap(_mipmap: MIPMAP);
         get mipmap(): MIPMAP;
         set wrap(_wrap: WRAP);
@@ -2215,6 +2157,7 @@ declare namespace FudgeCore {
         protected ƒradius: number;
         constructor(_name?: string);
         protected static registerSubclass(_subClass: typeof Mesh): number;
+        get isSerializableResource(): true;
         get renderMesh(): RenderMesh;
         get boundingBox(): Box;
         get radius(): number;
@@ -2242,6 +2185,7 @@ declare namespace FudgeCore {
         timestampUpdate: number;
         private shaderType;
         constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
+        get isSerializableResource(): true;
         /**
          * Returns the currently referenced {@link Coat} instance
          */
@@ -2339,6 +2283,7 @@ declare namespace FudgeCore {
         name: string;
         idResource: string;
         constructor(_name?: string, _data?: ParticleData.System);
+        get isSerializableResource(): true;
         get data(): ParticleData.System;
         set data(_data: ParticleData.System);
         serialize(): Serialization;
@@ -2363,6 +2308,7 @@ declare namespace FudgeCore {
         /** Contains the bone transformations applicable to the vertices of a {@link Mesh} */
         protected mtxBones: Matrix4x4[];
         protected mtxBonesData: Float32Array;
+        protected bonesDirty: boolean;
         constructor(_bones?: Node[], _mtxBoneInverses?: Matrix4x4[]);
         /**
          * Adds a node as a bone with its bind inverse matrix
@@ -2388,7 +2334,7 @@ declare function ifNumber(_check: number, _default: number): number;
 declare namespace FudgeCore {
     /**
      * Holds information about the AnimationStructure that the Animation uses to map the Sequences to the Attributes.
-     * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequenceNumber}s.
+     * Built out of a {@link Node}'s serialsation, it swaps the values with {@link AnimationSequence}s.
      */
     interface AnimationStructure {
         [attribute: string]: AnimationStructure[] | AnimationStructure | AnimationSequence;
@@ -2434,7 +2380,7 @@ declare namespace FudgeCore {
     }
     /**
      * Describes and controls and animation by yielding mutators
-     * according to the stored {@link AnimationStructure} and {@link AnimationSequenceNumber}s
+     * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
      * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
      * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
      */
@@ -2446,7 +2392,6 @@ declare namespace FudgeCore {
         name: string;
         totalTime: number;
         labels: AnimationLabel;
-        sampled: boolean;
         animationStructure: AnimationStructure;
         events: AnimationEventTrigger;
         protected framesPerSecond: number;
@@ -2469,6 +2414,7 @@ declare namespace FudgeCore {
          */
         static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number, _intersect?: boolean): Mutator;
         protected static registerSubclass(_subClass: typeof Animation): number;
+        get isSerializableResource(): true;
         get getLabels(): Enumerator;
         get fps(): number;
         set fps(_fps: number);
@@ -2567,15 +2513,11 @@ declare namespace FudgeCore {
          */
         private calculateReverseSequence;
         /**
-         * Creates a rastered {@link AnimationSequenceNumber} out of a given sequence.
+         * Creates a rastered {@link AnimationSequence} out of a given sequence.
          * @param _sequence The sequence to calculate the new sequence out of
          * @returns the rastered sequence.
          */
         private calculateRasteredSequence;
-        /**
-         * Creates a {@link AnimationSequenceSampled} out of a given sequence.
-         */
-        private calculateSampledSequence;
         /**
          * Creates a new reversed {@link AnimationEventTrigger} object based on the given one.
          * @param _events the event object to calculate the new one out of
@@ -2601,7 +2543,7 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Calculates the values between {@link AnimationKeyNumber}s.
+     * Calculates the values between {@link AnimationKey}s.
      * Represented internally by a cubic function (`f(x) = ax³ + bx² + cx + d`).
      * Only needs to be recalculated when the keys change, so at runtime it should only be calculated once.
      * @authors Lukas Scheuerle, HFU, 2019 | Jonas Plotzky, HFU, 2025
@@ -2893,7 +2835,7 @@ declare namespace FudgeCore {
          * @param _time the point in time at which to evaluate the sequence in milliseconds.
          * @returns the value of the sequence at the given time. undefined if there are no keys.
          */
-        evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): T;
+        evaluate<T extends AnimationReturnType>(_time: number, _out?: T): T;
         /**
          * Adds a new key to the sequence.
          * @param _key the key to add
@@ -2938,16 +2880,6 @@ declare namespace FudgeCore {
         protected regenerateFunctions(_keys?: AnimationKey<T>[]): void;
         protected reduceMutator(_mutator: Mutator): void;
     }
-    /**
-     * A sequence of {@link AnimationKeyNumber}s sampled from an original sequence. In a sampled sequence, the keys are stored at indices corresponding to discrete frames in accordance with the {@link Animation}'s frames per second.
-     * Keys from the original sequence may be referenced repeated times in a sampled sequence. Sampled sequences allow O(1) access to keys based on the desired frame.
-     * @authors Jonas Plotzky, HFU, 2025
-     */
-    class AnimationSequenceSampled extends AnimationSequence {
-        /** Evaluates the sequence at the given frame and time. */
-        evaluate(_time: number, _frame?: number, _out?: AnimationReturnType): AnimationReturnType;
-        protected regenerateFunctions(_keys?: AnimationKey[]): void;
-    }
 }
 declare namespace FudgeCore {
     class AnimationSprite extends Animation {
@@ -2987,6 +2919,347 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /**
+         * A track of events trigerred at specific times during an animation.
+         */
+        class AnimationEventTrack {
+            times: number[];
+            events: string[][];
+            constructor(_times?: number[], _events?: string[][]);
+        }
+        /**
+         * Represents an animation consisting of multiple channels. Each channel targets a specific property within a node hierarchy and contains keyframes that define the animation's behavior over time.
+         */
+        class Animation extends Mutable implements SerializableResource {
+            idResource: string;
+            name: string;
+            duration: number;
+            channels: AnimationChannel[];
+            eventTrack: AnimationEventTrack;
+            constructor(_name?: string, _duration?: number, _channels?: AnimationChannel[], _eventTrack?: AnimationEventTrack);
+            get isSerializableResource(): true;
+            serialize(): SerializationOf<Animation>;
+            deserialize(_serialization: Serialization): Promise<Animation>;
+            protected reduceMutator(_mutator: Mutator): void;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /**
+         * Stores the path and keyframe data to animate a single property within a node hierarchy.
+         * The keyframes are stored in an input/output buffer pair: a set of scalar values representing the timestamps; and a set of elements (scalar, vector, quaternion etc.) representing the animated property.
+         * Interpolation between keyframes is defined by the set {@link ANIMATION_INTERPOLATION}. When used with {@link ANIMATION_INTERPOLATION.CUBIC cubic} interpolation, for each timestamp there must be three associated keyframe elements: in-tangent, property value, and out-tangent.
+         *
+         * **Example vector3-input-output:**
+         *
+         * `input: [t0, t1, ...]`
+         *
+         * `output: [e0x, e0y, e0z, e1x, e1y, e1z, ...]`
+         *
+         * **Example vector2-input-cubic-output:** in and out tangents (`a`, `b`) and elements (`e`) must be grouped within keyframes.
+         *
+         * `input: [t0, t1, ...]`
+         *
+         * `output: [a0x, a0y, e0x, e0y, b0x, b0y, a1x, a1y, e1x, e1y, b1x, b1y, ...]`
+         */
+        abstract class AnimationChannel implements Serializable {
+            targetPath: string;
+            input: Float32Array;
+            output: Float32Array;
+            interpolation: ANIMATION_INTERPOLATION;
+            constructor(_targetPath?: string, _input?: Float32Array, _output?: Float32Array, _interpolation?: ANIMATION_INTERPOLATION);
+            /**
+             * Returns the size of a single element in the output buffer, which is the number of values per element. e.g. 3 for a vector3, 4 for a quaternion, 1 for a scalar.
+             */
+            getElementSize(): number;
+            createInterpolant(_result?: Float32Array): AnimationInterpolant;
+            serialize(): SerializationOf<AnimationChannel>;
+            deserialize(_serialization: SerializationOf<AnimationChannel>): Promise<AnimationChannel>;
+            /**
+             * Interpolates between keyframe[i-1] and keyframe[i] using the given t value in the range [0, 1].
+             */
+            interpolate(_i1: number, _t: number, _out: Float32Array): void;
+            protected createInterpolantConstant(_result?: Float32Array): AnimationInterpolant;
+            protected createInterpolantLinear(_result?: Float32Array): AnimationInterpolant;
+            protected createInterpolantCubic(_result?: Float32Array): AnimationInterpolant;
+        }
+        class AnimationChannelNumber extends AnimationChannel {
+        }
+        class AnimationChannelVector extends AnimationChannel {
+        }
+        class AnimationChannelColor extends AnimationChannel {
+        }
+        class AnimationChannelQuaternion extends AnimationChannel {
+            protected createInterpolantLinear(_result?: Float32Array): AnimationInterpolant;
+            protected createInterpolantCubic(_result?: Float32Array): AnimationInterpolant;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /**
+         * Handles evaluation and interpolation of animation keyframe data.
+         */
+        abstract class AnimationInterpolant {
+            input: Float32Array;
+            output: Float32Array;
+            result: Float32Array;
+            elementSize: number;
+            constructor(_input: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array);
+            /**
+             * Evaluates the interpolant at a given time.
+             */
+            evaluate(_t: number): Float32Array;
+            /**
+             * Interpolates between the input/output buffer segment `[_i1 - 1, _i1]`.
+             * @param _i1 - The index of the right-hand keyframe.
+             * @param _t0 - The left-hand input value. input[_i1 - 1]
+             * @param _t - The value to interpolate at. Between _t0 and _t1.
+             * @param _t1 - The right-hand input value. input[_i1]
+             */
+            abstract interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantConstant extends AnimationInterpolant {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantLinear extends AnimationInterpolant {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantCubic extends AnimationInterpolant {
+            /**
+             * The stride of the elements in the output array, which is the size of one element multiplied by 3 (inTangent, element, outTangent).
+             */
+            elementStride: number;
+            constructor(_times: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array);
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /** Blending modes used in {@link AnimationNodeBlend}. */
+        enum ANIMATION_BLENDING {
+            /** Adds this animation to the previous animations. */
+            ADDITIVE = "Additive",
+            /** Overrides the previous animations using linear interpolation. */
+            OVERRIDE = "Override"
+        }
+        /**
+         * Base class for all animation nodes. Animation nodes form an animation graph enabling hierachical animation blending and animation transitions.
+         * Can be attached to a {@link Node} via {@link ComponentAnimationGraph}.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         */
+        abstract class AnimationNode {
+            values: Map<string, Float32Array>;
+            /** The playback speed */
+            speed: number;
+            /** The weight used for blending this node with others in an {@link AnimationNodeBlend}. Default: 1.*/
+            weight: number;
+            /** The mode used for blending this node with others in an {@link AnimationNodeBlend}. Default: {@link ANIMATION_BLENDING.OVERRIDE}. */
+            blending: ANIMATION_BLENDING;
+            constructor(_speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            /** Resets the time. */
+            abstract reset(): void;
+            /** Updates the animation according the given delta time */
+            abstract update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+        /**
+         * Evaluates a single {@link Animation}.
+         * Used as an input for other {@link AnimationNode}s.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         */
+        class AnimationNodeAnimation extends AnimationNode {
+            #private;
+            animation: Animation;
+            playmode: ANIMATION_PLAYMODE;
+            interpolants: AnimationInterpolant[];
+            time: number;
+            offset: number;
+            constructor(_animation: Animation, _playmode?: ANIMATION_PLAYMODE, _speed?: number, _offset?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            reset(): void;
+            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+        /**
+         * Blends multiple input {@link AnimationNode}s.
+         * Each child node must specify its own blend {@link weight} and {@link blending}. Processes nodes sequentially, each node blends with the accumulated result.
+         * When combined with {@link AnimationNodeTransition}s as children, transitions from/into an empty state will blend from/into the accumulated result of this node.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         *
+         * **Example walk-run-blend:**
+         * ```typescript
+         * import ƒ = FudgeCore;
+         * // initialization
+         * const walk: ƒ.Animation = new ƒ.Animation();
+         * const run: ƒ.Animation = new ƒ.Animation();
+         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+         * const nodeRun: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(run, { speed: run.totalTime / walk.totalTime }) // slow down the playback speed of run to synchronize the motion with walk.
+         * const nodeMove: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWalk, nodeRun]);
+         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+         * cmpAnimationGraph.root = nodeMove;
+         *
+         * // during the game
+         * nodeRun.weight = 0.5; // adjust the weight: 0 is walking, 1 is running.
+         * nodeMove.speed = 1 + nodeRun.weight * nodeRun.speed; // adjust the playback speed of the blend to account for the slowed down run animation.
+         * ```
+         * **Example transition-empty-state:**
+         * ```typescript
+         * import ƒ = FudgeCore;
+         * // initialization
+         * const idle: ƒ.Animation = new ƒ.Animation();
+         * const walk: ƒ.Animation = new ƒ.Animation();
+         * const draw: ƒ.Animation = new ƒ.Animation();
+         * const sheathe: ƒ.Animation = new ƒ.Animation();
+         *
+         * const nodeEmpty: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation();
+         * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+         * const nodeDraw: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(draw, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+         * const nodeSheathe: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(sheathe, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+         *
+         * const nodeWholeBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+         * const nodeUpperBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeEmpty);
+         * const nodeRoot: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWholeBody, nodeUpperBody]);
+         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+         * cmpAnimationGraph.root = nodeRoot;
+         *
+         * // during the game
+         * nodeWholeBody.transit(nodeWalk, 300); // transit whole body into walk.
+         * // in parallel to the whole body, the upper body can transit from empty to draw/sheath and back to empty.
+         * nodeUpperBody.transit(nodeDraw, 300); // transit upper body from empty into draw.
+         * nodeUpperBody.transit(nodeSheathe, 300); // transit upper body from draw into sheathe.
+         * nodeUpperBody.transit(nodeEmpty, 300); // transit upper body from sheathe into empty.
+         * ```
+         */
+        class AnimationNodeBlend extends AnimationNode {
+            nodes: AnimationNode[];
+            constructor(_nodes: AnimationNode[], _speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            reset(): void;
+            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+        /**
+         * Allows to transition from one {@link AnimationNode} to another over a specified time.
+         * If nested inside an {@link AnimationNodeBlend}, transit from/into an empty state to blend from/into the accumulated result of the container blend node.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         *
+         * **Example:**
+         * ```typescript
+         * import ƒ = FudgeCore;
+         * // initialization
+         * const idle: ƒ.Animation = new ƒ.Animation();
+         * const walk: ƒ.Animation = new ƒ.Animation();
+         * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+         * const nodeTransition: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+         * cmpAnimationGraph.root = nodeTransition;
+         *
+         * // during the game
+         * nodeTransition.transit(nodeWalk, 300); // transit to the walk animation in 300ms.
+         * nodeTransition.transit(nodeIdle, 300); // transit back to the idle animation.
+         * ```
+         */
+        class AnimationNodeTransition extends AnimationNode {
+            #private;
+            /**
+             * All nodes that can be transitioned to/from.
+             */
+            nodes: AnimationNode[];
+            current: AnimationNode;
+            target: AnimationNode;
+            canceled: boolean;
+            transition: boolean;
+            duration: number;
+            time: number;
+            constructor(_nodes: AnimationNode[], _animation: AnimationNode, _speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            reset(): void;
+            /**
+             * Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}.
+             */
+            transit(_target: AnimationNode, _duration: number): void;
+            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /**
+         * Binds a specific property within a node hierarchy (via a path) and allows direct access to it.
+         */
+        class AnimationPropertyBinding {
+            #private;
+            root: Node;
+            path: string;
+            pathParsed: {
+                nodePath: string[];
+                componentType: string;
+                componentIndex: string;
+                targetPath: string[];
+            };
+            node: Node;
+            component: Component;
+            target: Mutable;
+            key: string;
+            property: unknown | ArrayConvertible;
+            /** The animated value to be applied to the property */
+            output: Float32Array;
+            constructor(_root: Node, _path: string, _output: Float32Array);
+            /**
+             * @example "childName/childName/childName/components/ComponentTransform/0/mtxLocal/translation"
+             * @example "components/ComponentTransform/0"
+             */
+            static parsePath(_path: string): AnimationPropertyBinding["pathParsed"];
+            static findNode(_rootNode: Node, _parsedPath: string[]): Node;
+            static findTarget(_component: Component, _parsedPath: string[]): Mutable;
+            bind(): void;
+            unbind(): void;
+            apply(): void;
+            set(_source: Float32Array, _offset: number): void;
+            get(_target: Float32Array, _offset: number): void;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /**
+         * Binds a specific {@link Mutable} animation target within a node graph and allows {@link Mutable.animate animation} of it.
+         */
+        class AnimationTargetBinding {
+            target: Mutable;
+            animationMutator: AnimationMutator;
+            mutator: AnimationMutator;
+            propertyBindings: AnimationPropertyBinding[];
+            constructor(_target: Mutable, _propertyBindings: AnimationPropertyBinding[]);
+            apply(): void;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace AnimationSystem {
+        /**
+         * Attaches a {@link AnimationNode} to a {@link Node} and updates the node's properties according to the animation graph.
+         */
+        class ComponentAnimationGraph extends Component {
+            #private;
+            root: AnimationNode;
+            constructor(_root?: AnimationNode);
+            bind(): void;
+            unbind(): void;
+            update(_deltaTime: number): void;
+            private hndRenderPrepare;
+            private onComponentAdd;
+            private onComponentRemove;
+        }
+    }
+}
+declare namespace FudgeCore {
     /**
      * Extension of AudioBuffer with a load method that creates a buffer in the {@link AudioManager}.default to be used with {@link ComponentAudio}
      * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
@@ -2999,6 +3272,7 @@ declare namespace FudgeCore {
         private url;
         private ready;
         constructor(_url?: RequestInfo);
+        get isSerializableResource(): true;
         get isReady(): boolean;
         /**
          * Asynchronously loads the audio (mp3) from the given url
@@ -3515,9 +3789,9 @@ declare namespace FudgeCore {
         SPOT = "LightSpot"
     }
     /**
-      * Attaches a {@link Light} to the node
-      * The pivot matrix has different effects depending on the type of the {@link Light}. See there for details.
-      * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+      * Attaches a light to the node.
+      * The pivot matrix has different effects depending on the {@link LIGHT_TYPE}. See there for details.
+      * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
       */
     class ComponentLight extends Component {
         static readonly iSubclass: number;
@@ -4230,6 +4504,7 @@ declare namespace FudgeCore {
     class Graph extends Node implements SerializableResource {
         idResource: string;
         constructor(_name?: string);
+        get isSerializableResource(): true;
         get type(): string;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
@@ -4301,7 +4576,6 @@ declare namespace FudgeCore {
     /**
      * Holds data to feed into a {@link Shader} to describe the surface of {@link Mesh}.
      * {@link Material}s reference {@link Coat} and {@link Shader}.
-     * The method useRenderData will be injected by {@link RenderInjector} at runtime, extending the functionality of this class to deal with the renderer.
      */
     class Coat extends Mutable implements Serializable {
         /**
@@ -4409,7 +4683,7 @@ declare namespace FudgeCore {
     /**
      * Defines a color as values in the range of 0 to 1 for the four channels red, green, blue and alpha (for opacity)
      */
-    class Color extends Mutable implements Serializable, Recycable {
+    class Color extends Mutable implements Serializable, Recycable, ArrayConvertible {
         #private;
         static crc2: CanvasRenderingContext2D;
         r: number;
@@ -4485,6 +4759,7 @@ declare namespace FudgeCore {
          * @param _out Optional color to store the result in.
          */
         static SCALE(_vector: Color, _scaling: number, _out?: Color): Color;
+        get isArrayConvertible(): true;
         /**
          * Creates and returns a clone of this color.
          */
@@ -4529,10 +4804,6 @@ declare namespace FudgeCore {
          */
         setHex(_hex: string): Color;
         /**
-         * Returns an array of the color channels of this color.
-         */
-        get(): Float32Array;
-        /**
          * Returns the css color keyword representing this color.
          * @deprecated Use {@link toCSS} instead.
          */
@@ -4568,13 +4839,10 @@ declare namespace FudgeCore {
          * @returns A reference to this color.
          */
         apply(_function: (_value: number, _index: number, _channel: "r" | "g" | "b" | "a", _color: Color) => number): Color;
-        /**
-         * Copies the channels of this color into the given array starting at the given offset.
-         * @returns A reference to the given array.
-         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
         toArray<T extends {
             [n: number]: number;
-        }>(_out: T, _offset?: number): T;
+        } = number[]>(_out?: T, _offset?: number): T;
         /**
          * Returns a formatted string representation of this color
          */
@@ -4764,7 +5032,7 @@ declare namespace FudgeCore {
      * Simple class for 3x3 matrix operations
      * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020 | Jonas Plotzky, HFU, 2025
      */
-    class Matrix3x3 extends Mutable implements Serializable, Recycable {
+    class Matrix3x3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
         #private;
         private data;
         private mutator;
@@ -4807,6 +5075,7 @@ declare namespace FudgeCore {
          * @param _mtxOut Optional matrix to store the result in.
          */
         static INVERSE(_mtx: Matrix3x3, _mtxOut?: Matrix3x3): Matrix3x3;
+        get isArrayConvertible(): true;
         /**
          * - get: return a vector representation of the translation {@link Vector2}.
          * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
@@ -4891,11 +5160,6 @@ declare namespace FudgeCore {
          */
         compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): Matrix3x3;
         /**
-         * Sets the elements of this matrix to the given array starting at the given offset.
-         * @returns A reference to this matrix.
-         */
-        setArray(_array: ArrayLike<number>, _offset?: number): Matrix3x3;
-        /**
          * Sets the elements of this matrix to the given values.
          * @returns A reference to this matrix.
          */
@@ -4909,13 +5173,10 @@ declare namespace FudgeCore {
          * Returns a formatted string representation of this matrix
          */
         toString(): string;
-        /**
-         * Copys the elements of this matrix into the given array starting at the given offset.
-         * @returns A reference to the given array.
-         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
         toArray<T extends {
             [n: number]: number;
-        }>(_out: T, _offset?: number): T;
+        } = number[]>(_out?: T, _offset?: number): T;
         /**
          * Returns the array of the elements of this matrix.
          * @returns A readonly view of the internal array.
@@ -4942,7 +5203,7 @@ declare namespace FudgeCore {
      * ```
      * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2023-2025
      */
-    class Matrix4x4 extends Mutable implements Serializable, Recycable {
+    class Matrix4x4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
         #private;
         private data;
         private mutator;
@@ -4957,10 +5218,14 @@ declare namespace FudgeCore {
          */
         static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
         /**
-         * Computes and returns the product of two passed matrices.
-         * @param _mtxOut Optional matrix to store the result in.
+         * Multiplies two matrices.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _out - (optional) the receiving matrix.
+         * @returns `_out` or a new matrix if none is provided.
+         * @source https://github.com/toji/gl-matrix
          */
-        static PRODUCT(_mtxLeft: Matrix4x4, _mtxRight: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
+        static PRODUCT(_a: Matrix4x4, _b: Matrix4x4, _out?: Matrix4x4): Matrix4x4;
         /**
          * Computes and returns the transpose of a passed matrix.
          * @param _mtxOut Optional matrix to store the result in.
@@ -5053,6 +5318,7 @@ declare namespace FudgeCore {
          * @param _mtxOut Optional matrix to store the result in.
          */
         static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near?: number, _far?: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        get isArrayConvertible(): true;
         /**
          * - get: return a vector representation of the translation {@link Vector3}.
          * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
@@ -5221,11 +5487,12 @@ declare namespace FudgeCore {
          * @returns A reference to this matrix.
          */
         compose(_translation?: Partial<Vector3>, _rotation?: Partial<Vector3> | Partial<Quaternion>, _scaling?: Partial<Vector3>): Matrix4x4;
-        /**
-         * Sets the elements of this matrix to the given array starting at the given offset.
-         * @returns A reference to this matrix.
-         */
-        setArray(_array: ArrayLike<number>, _offset?: number): Matrix4x4;
+        animate(_mutator: {
+            translation?: Float32Array;
+            rotation?: Float32Array;
+            quaternion?: Float32Array;
+            scaling?: Float32Array;
+        }): Matrix4x4;
         /**
          * Sets the elements of this matrix to the given values.
          * @returns A reference to this matrix.
@@ -5240,13 +5507,10 @@ declare namespace FudgeCore {
          * Returns a formatted string representation of this matrix
          */
         toString(): string;
-        /**
-         * Copys the elements of this matrix into the given array starting at the given offset.
-         * @returns A reference to the given array.
-         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
         toArray<T extends {
             [n: number]: number;
-        }>(_out: T, _offset?: number): T;
+        } = number[]>(_out?: T, _offset?: number): T;
         /**
          * Returns the array of the elements of this matrix.
          * @returns A readonly view of the internal array.
@@ -5392,6 +5656,12 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    interface QuaternionLike {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+    }
     /**
       * Storing and manipulating rotations in the form of quaternions.
       * Constructed out of the 4 components: (x, y, z, w). Mathematical notation: w + xi + yj + zk.
@@ -5399,7 +5669,7 @@ declare namespace FudgeCore {
       * roll: x, pitch: y, yaw: z. Note that operations are adapted to work with vectors where y is up and z is forward.
       * @authors Matthias Roming, HFU, 2023 | Marko Fehrenbach, HFU, 2020 | Jonas Plotzky, HFU, 2023
       */
-    class Quaternion extends Mutable implements Serializable, Recycable {
+    class Quaternion extends Mutable implements Serializable, Recycable, ArrayConvertible {
         #private;
         x: number;
         y: number;
@@ -5411,10 +5681,13 @@ declare namespace FudgeCore {
          */
         static IDENTITY(): Quaternion;
         /**
-         * Returns a copy of the given quaternion scaled to length 1 (a unit quaternion) making it a valid rotation representation.
-         * @param _out Optional quaternion to store the result in.
+         * Normalize a quaternion making it a valid rotation representation.
+         * @param _q - quaternion to normalize
+         * @param _out - (optional) the receiving quaternion.
+         * @returns `_out` or a new quaternion if none is provided.
          */
-        static NORMALIZATION(_quaternion: Quaternion, _out?: Quaternion): Quaternion;
+        static NORMALIZATION(_q: Readonly<Quaternion>, _out?: Quaternion): Quaternion;
+        static NORMALIZATION<T extends QuaternionLike>(_q: Readonly<T>, _out: T): T;
         /**
          * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
          * Rotation occurs around the axis in the order Z-Y-X.
@@ -5479,23 +5752,63 @@ declare namespace FudgeCore {
          */
         static DOT(_a: Quaternion, _b: Quaternion): number;
         /**
-         * Returns the normalized linear interpolation between two quaternions. When t is 0 the result is a, when t is 1 the result is b. Clamps t between 0 and 1.
-         * @param _out Optional quaternion to store the result in.
+         * Performs a linear interpolation between two quaternions. Result should be normalized afterwards to represent a valid rotation.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving quaternion.
+         * @returns `_out` or a new quaternion if none is provided.
+         * @source https://github.com/toji/gl-matrix
          */
-        static LERP(_a: Quaternion, _b: Quaternion, _t: number, _out?: Quaternion): Quaternion;
+        static LERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
+        static LERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
         /**
-         * Returns the spherical linear interpolation between two quaternions. When t is 0 the result is a, when t is 1 the result is b.
-         * @param _out Optional quaternion to store the result in.
+         * Performs a spherical linear interpolation between two quaternions.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving quaternion.
+         * @returns `_out` or a new quaternion if none is provided.
+         * @source https://github.com/toji/gl-matrix
          */
-        static SLERP(_a: Quaternion, _b: Quaternion, _t: number, _out?: Quaternion): Quaternion;
+        static SLERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
+        static SLERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
         /**
          * Return the angle in degrees between the two given quaternions.
          */
         static ANGLE(_from: Quaternion, _to: Quaternion): number;
         /**
+         * Performs a spherical linear interpolation between two quaternion arrays.
+         * @param _a - the first operand.
+         * @param _aOffset - the offset into the first operand.
+         * @param _b - the second operand.
+         * @param _bOffset - the offset into the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - the receiving quaternion array.
+         * @param _outOffset - the offset into the receiving quaternion array.
+         * @returns `out`
+         * @source https://github.com/toji/gl-matrix
+         */
+        static SLERP_ARRAY<T extends {
+            [n: number]: number;
+        }>(_a: Readonly<T>, _aOffset: number, _b: Readonly<T>, _bOffset: number, _t: number, _out: T, _outOffset: number): T;
+        /**
+         * Normalize a quaternion array.
+         * @param _a - quaternion array to normalize.
+         * @param _aOffset - the offset into the quaternion array.
+         * @param _out - the receiving quaternion array.
+         * @param _outOffset - the offset into the receiving quaternion array.
+         * @returns `out`
+         * @source https://github.com/toji/gl-matrix
+         */
+        static NORMALIZE_ARRAY<T extends {
+            [n: number]: number;
+        }>(_a: Readonly<T>, _aOffset: number, _out: T, _outOffset: number): T;
+        /**
          * Negates the given quaternion.
          */
         static negate(_q: Quaternion): void;
+        get isArrayConvertible(): true;
         /**
          * Creates and returns a clone of this quaternion.
          */
@@ -5560,6 +5873,10 @@ declare namespace FudgeCore {
          * Returns a formatted string representation of this quaternion
          */
         toString(): string;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Quaternion>;
         mutate(_mutator: Mutator): void;
@@ -5646,6 +5963,11 @@ declare namespace FudgeCore {
     const random: Random;
 }
 declare namespace FudgeCore {
+    interface Vector3Like {
+        x: number;
+        y: number;
+        z: number;
+    }
     /**
      * Stores and manipulates a threedimensional vector comprised of the components x, y and z
      * ```text
@@ -5654,9 +5976,9 @@ declare namespace FudgeCore {
      *            /
      *          +z
      * ```
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023-2025
      */
-    class Vector3 extends Mutable implements Serializable, Recycable {
+    class Vector3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
         /**
          * Array of the keys of a vector. Allows to translate an index (0, 1, 2) to a key ("x", "y", "z") or to iterate over a vector.
          */
@@ -5728,7 +6050,7 @@ declare namespace FudgeCore {
         /**
          * Computes the dotproduct of 2 vectors.
          */
-        static DOT(_a: Vector3, _b: Vector3): number;
+        static DOT(_a: Readonly<Vector3Like>, _b: Readonly<Vector3Like>): number;
         /**
          * Calculates and returns the reflection of the incoming vector at the given normal vector. The length of normal should be 1.
          * ```text
@@ -5756,10 +6078,27 @@ declare namespace FudgeCore {
          */
         static PROJECTION(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
         /**
-         * Returns the linear interpolation between two vectors. When t is 0 the result is a, when t is 1 the result is b. Clamps t between 0 and 1.
-         * @param _out Optional vector to store the result in.
+         * Performs a linear interpolation between between two vectors. When t is 0 the result is a, when t is 1 the result is b.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving vector.
+         * @returns `_out` or a new vector if none is provided.
+         * @source https://github.com/toji/gl-matrix
          */
-        static LERP(_a: Vector3, _b: Vector3, _t: number, _out?: Vector3): Vector3;
+        static LERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
+        static LERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+        /**
+         * Performs a spherical linear interpolation between two vectors.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving vector.
+         * @returns `_out` or a new vector if none is provided.
+         * @source https://github.com/toji/gl-matrix
+         */
+        static SLERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
+        static SLERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
         /**
          * Smoothly interpolates between two vectors based on a critically damped spring model.
          * Allows to smooth toward a moving target with an ease-in/ease-out motion maintaining a continuous velocity.
@@ -5774,6 +6113,7 @@ declare namespace FudgeCore {
          * @source from Andrew Kirmse, Game Programming Gems 4, Chapter 1.10
          */
         static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed?: number, _out?: Vector3): Vector3;
+        get isArrayConvertible(): true;
         /**
          * Returns the length of the vector
          */
@@ -5879,7 +6219,8 @@ declare namespace FudgeCore {
         max(_compare: Vector3): Vector3;
         /**
          * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
-         * @param _out Optional vector to store the result in.
+         * @param _out - (optional) the receiving vector.
+         * @returns `_out` or a new vector if none is provided.
          */
         map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number, _out?: Vector3): Vector3;
         /**
@@ -5887,17 +6228,10 @@ declare namespace FudgeCore {
          * @returns A reference to this vector.
          */
         apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3;
-        /**
-         * Returns an array of the components of this vector.
-         */
-        get(): Float32Array;
-        /**
-         * Copys the elements of this vector into the given array starting at the given offset.
-         * @returns A reference to the given array.
-         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
         toArray<T extends {
             [n: number]: number;
-        }>(_out: T, _offset?: number): T;
+        } = number[]>(_out?: T, _offset?: number): T;
         /**
          * Drops the z-component and returns a Vector2 consisting of the x- and y-components.
          * @param _out Optional vector to store the result in.
@@ -5919,7 +6253,7 @@ declare namespace FudgeCore {
      * Stores and manipulates a fourdimensional vector comprised of the components x, y, z and w.
      * @authors Jonas Plotzky, HFU, 2023
      */
-    class Vector4 extends Mutable implements Serializable, Recycable {
+    class Vector4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
         x: number;
         y: number;
         z: number;
@@ -5954,6 +6288,7 @@ declare namespace FudgeCore {
          * Computes the dotproduct of 2 vectors.
          */
         static DOT(_a: Vector4, _b: Vector4): number;
+        get isArrayConvertible(): true;
         /**
          * The magnitude (length) of the vector.
          */
@@ -5976,10 +6311,6 @@ declare namespace FudgeCore {
          * @returns A reference to this vector.
          */
         set(_x: number, _y: number, _z: number, _w: number): Vector4;
-        /**
-         * Returns an array of the components of this vector. // TODO: remove this
-         */
-        get(): [number, number, number, number];
         recycle(): void;
         /**
          * Returns true if this vector is equal to the given vector within the given tolerance.
@@ -6030,13 +6361,10 @@ declare namespace FudgeCore {
          * @returns A reference to this vector.
          */
         apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z" | "w", _vector: Vector4) => number): Vector4;
-        /**
-         * Copys the elements of this vector into the given array starting at the given offset.
-         * @returns A reference to the given array.
-         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
         toArray<T extends {
             [n: number]: number;
-        }>(_out: T, _offset?: number): T;
+        }>(_out?: T, _offset?: number): T;
         /**
          * Drops the z-component and w-component and returns a Vector2 consisting of the x- and y-components.
          * @param _out Optional vector to store the result in.
@@ -6454,7 +6782,7 @@ declare namespace FudgeCore {
         position: Vector3;
         uv: Vector2 | null;
         normal: Vector3;
-        color: Color;
+        color: Color | null;
         tangent: Vector4 | null;
         referTo: number;
         bones: Bone[];
@@ -8094,6 +8422,68 @@ declare namespace FudgeCore {
         updateMutator(_mutator: Mutator): void;
     }
 }
+declare namespace FudgeCore {
+    /**
+       * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
+       *
+       * **Editor Configuration:**
+       * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
+       * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
+       * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+       * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
+       *
+       * **Serialization:**
+       * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+       * - Primitives and enums will be serialized as is.
+       * - {@link Serializable}s will be serialized nested.
+       * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+       * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
+       *
+       * **Example:**
+       * ```typescript
+       * import ƒ = FudgeCore;
+       *
+       * @ƒ.serialize
+       * export class MyScript extends ƒ.ComponentScript {
+       *   #size: number = 1;
+       *
+       *   @ƒ.serialize(String) // display a string in the editor
+       *   public info: string;
+       *
+       *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+       *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+       *
+       *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+       *   public resource: ƒ.Material;
+       *
+       *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+       *   public reference: ƒ.Node
+       *
+       *   @ƒ.serialize(Number) // display a number in the editor
+       *   public get size(): number {
+       *     return this.#size;
+       *   }
+       *
+       *   // define a setter to allow writing to size, or omit it to leave the property read-only
+       *   public set size(_size: number) {
+       *     this.#size = _size;
+       *   }
+       * }
+       * ```
+       *
+       * **Side effects:**
+       * * Attributes with a specified type will always be included in the {@link Mutator base-mutator}
+       * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
+       * will be displayed via their {@link toString} method in the editor.
+       * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
+       *
+       * @author Jonas Plotzky, HFU, 2024-2025
+       */
+    function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
+    function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+}
 declare namespace FBX {
     /**
      * Reader to read data from an array buffer more conveniently.
@@ -9140,6 +9530,7 @@ declare namespace FudgeCore {
          * Returns the {@link Animation} for the given animation index.
          */
         getAnimation(_iAnimation: number): Promise<Animation>;
+        getAnimationNew(_iAnimation: number | string, _animationOut?: AnimationSystem.Animation): Promise<AnimationSystem.Animation>;
         /**
          * Returns the first {@link MeshGLTF} with the given name.
          */

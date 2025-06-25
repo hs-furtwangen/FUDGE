@@ -1,7 +1,10 @@
 namespace FudgeCore {
   export namespace AnimationSystem {
     Serializer.registerNamespace(AnimationSystem);
-
+ 
+    /**
+     * A track of events trigerred at specific times during an animation.
+     */
     export class AnimationEventTrack {
       public times: number[];
       public events: string[][];
