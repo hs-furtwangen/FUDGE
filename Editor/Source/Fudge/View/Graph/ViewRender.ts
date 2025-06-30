@@ -320,7 +320,7 @@ namespace Fudge {
             this.viewport.camera = this.cmrOrbit.cmpCamera;
           break;
         case EVENT_EDITOR.MODIFY:
-          if (this.node?.getParent() && this.node instanceof ƒ.Graph) 
+          if (this.node?.getParent() || this.node instanceof ƒ.Graph) 
             break;
 
           this.node = null; // deselect disconnected nodes
