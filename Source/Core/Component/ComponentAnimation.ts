@@ -1,23 +1,19 @@
-// / <reference path="../Time/Loop.ts"/>
-// / <reference path="../Animation/Animation.ts"/>
-
 namespace FudgeCore {
 
   /**
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022-2025
    */
-  @enumerate
   export class ComponentAnimation extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
+
+    @type(Animation)
+    public animation: Animation;
 
     public playmode: ANIMATION_PLAYMODE;
     public quantization: ANIMATION_QUANTIZATION;
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
-
-    #animation: Animation;
-    #mutator: Mutator | undefined;
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -28,27 +24,17 @@ namespace FudgeCore {
       this.playmode = _playmode;
       this.quantization = _quantization;
 
-      this.#animation = _animation;
+      this.animation = _animation;
       this.#timeLocal = new Time();
 
       //TODO: update animation total time when loading a different animation?
-      this.#animation?.calculateTotalTime();
+      this.animation?.calculateTotalTime();
 
       this.addEventListener(EVENT.COMPONENT_REMOVE, () => this.activate(false));
       this.addEventListener(EVENT.COMPONENT_ADD, () => {
         this.node.addEventListener(EVENT.CHILD_REMOVE, () => this.activate(false));
         this.activate(true);
       });
-    }
-
-    @enumerate @type(Animation)
-    public get animation(): Animation {
-      return this.#animation;
-    }
-
-    public set animation(_animation: Animation) {
-      this.#animation = _animation;
-      this.#mutator = undefined;
     }
 
     public set scale(_scale: number) {
@@ -189,12 +175,12 @@ namespace FudgeCore {
         this.#previous = time;
         time = time % this.animation.totalTime;
 
-        this.#mutator = this.animation.getState(time, direction, this.quantization, this.#mutator);
+        const mutator: Mutator = this.animation.getState(time, direction, this.quantization);
         
         if (this.node) 
-          this.node.applyAnimation(this.#mutator);
+          this.node.applyAnimation(mutator);
         
-        return this.#mutator;
+        return mutator;
       }
       return null;
     };

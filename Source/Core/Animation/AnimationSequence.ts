@@ -59,12 +59,10 @@ namespace FudgeCore {
     public evaluate<T extends AnimationReturnType>(_time: number, _out?: T): T {
       const keys: AnimationKey[] = this.keys;
 
-      // if (this.keys.length == 0)
-      //   return undefined; //TODO: shouldn't return 0 but something indicating no change, like null. probably needs to be changed in Node as well to ignore non-numeric values in the applyAnimation function
-      // if (this.keys.length == 1 || this.keys[0].time >= _time)
-      //   return this.keys[0].value;
+      if (keys.length == 0)
+        return undefined; //TODO: shouldn't return 0 but something indicating no change, like null. probably needs to be changed in Node as well to ignore non-numeric values in the applyAnimation function
 
-      if (keys.length == 1)
+      if (keys.length == 1 || keys[0].time >= _time)
         return <T>keys[0].functionOut.evaluate(_time, _out);
 
       // Binary search

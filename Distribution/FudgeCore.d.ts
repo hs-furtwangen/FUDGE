@@ -373,35 +373,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Interface describing the datatypes of the attributes a mutator as strings
-     */
-    interface MutatorAttributeTypes {
-        [attribute: string]: string | Object;
-    }
-    /**
-     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
-     */
-    interface Mutator {
-        [attribute: string]: General;
-    }
-    /**
-     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
-     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
-     */
-    interface AnimationMutator {
-        [attribute: string]: Float32Array;
-    }
-    interface MutatorForAnimation extends Mutator {
-        readonly forAnimation: null;
-    }
-    interface MutatorForUserInterface extends Mutator {
-        readonly forUserInterface: null;
-    }
-    /**
-     * Collect applicable attributes of the instance and copies of their values in a Mutator-object
-     */
-    function getMutatorOfArbitrary(_object: Object): Mutator;
-    /**
      * Association of an attribute with its specified type (constructor).
      * @see {@link Metadata}.
      */
@@ -463,6 +434,37 @@ declare namespace FudgeCore {
      */
     function enumerate(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
     function enumerate(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
+}
+declare namespace FudgeCore {
+    /**
+     * Interface describing the datatypes of the attributes a mutator as strings
+     */
+    interface MutatorAttributeTypes {
+        [attribute: string]: string | Object;
+    }
+    /**
+     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
+     */
+    interface Mutator {
+        [attribute: string]: General;
+    }
+    /**
+     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
+     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
+     */
+    interface AnimationMutator {
+        [attribute: string]: Float32Array;
+    }
+    interface MutatorForAnimation extends Mutator {
+        readonly forAnimation: null;
+    }
+    interface MutatorForUserInterface extends Mutator {
+        readonly forUserInterface: null;
+    }
+    /**
+     * Collect applicable attributes of the instance and copies of their values in a Mutator-object
+     */
+    function getMutatorOfArbitrary(_object: Object): Mutator;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -3364,13 +3366,12 @@ declare namespace FudgeCore {
     class ComponentAnimation extends Component {
         #private;
         static readonly iSubclass: number;
+        animation: Animation;
         playmode: ANIMATION_PLAYMODE;
         quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
         animateInEditor: boolean;
         constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
-        get animation(): Animation;
-        set animation(_animation: Animation);
         set scale(_scale: number);
         get scale(): number;
         /**

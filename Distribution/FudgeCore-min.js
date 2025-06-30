@@ -414,18 +414,6 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    function getMutatorOfArbitrary(_object) {
-        let mutator = {};
-        let attributes = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
-        for (let attribute of attributes) {
-            let value = Reflect.get(_object, attribute);
-            if (value instanceof Function)
-                continue;
-            mutator[attribute.toString()] = value;
-        }
-        return mutator;
-    }
-    FudgeCore.getMutatorOfArbitrary = getMutatorOfArbitrary;
     Symbol.metadata ??= Symbol("Symbol.metadata");
     function type(_constructor) {
         return (_value, _context) => {
@@ -456,6 +444,21 @@ var FudgeCore;
         }
     }
     FudgeCore.enumerate = enumerate;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    function getMutatorOfArbitrary(_object) {
+        let mutator = {};
+        let attributes = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
+        for (let attribute of attributes) {
+            let value = Reflect.get(_object, attribute);
+            if (value instanceof Function)
+                continue;
+            mutator[attribute.toString()] = value;
+        }
+        return mutator;
+    }
+    FudgeCore.getMutatorOfArbitrary = getMutatorOfArbitrary;
     class Mutable extends FudgeCore.EventTargetUnified {
         static getMutatorFromPath(_mutator, _path) {
             let key = _path[0];
@@ -4494,17 +4497,12 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class RenderInjectorComponentSkeleton {
+    class RenderWebGLComponentSkeleton {
         static decorate(_constructor, _context) {
-            Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderBuffer.name, {
-                value: RenderInjectorComponentSkeleton.useRenderBuffer
-            });
-            Object.defineProperty(_constructor.prototype, _constructor.prototype.updateRenderBuffer.name, {
-                value: RenderInjectorComponentSkeleton.updateRenderBuffer
-            });
-            Object.defineProperty(_constructor.prototype, _constructor.prototype.deleteRenderBuffer.name, {
-                value: RenderInjectorComponentSkeleton.deleteRenderBuffer
-            });
+            const prototype = _constructor.prototype;
+            prototype.useRenderBuffer = RenderWebGLComponentSkeleton.useRenderBuffer;
+            prototype.updateRenderBuffer = RenderWebGLComponentSkeleton.updateRenderBuffer;
+            prototype.deleteRenderBuffer = RenderWebGLComponentSkeleton.deleteRenderBuffer;
         }
         static useRenderBuffer() {
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
@@ -4530,10 +4528,8 @@ var FudgeCore;
             const bones = this.bones;
             const mtxBones = this.mtxBones;
             const mtxBindInverses = this.mtxBindInverses;
-            FudgeCore.PerformanceMonitor.startMeasure("Compute Bone Matrices");
             for (let i = 0; i < this.bones.length; i++)
                 FudgeCore.Matrix4x4.PRODUCT(bones[i].mtxWorld, mtxBindInverses[i], mtxBones[i]);
-            FudgeCore.PerformanceMonitor.endMeasure("Compute Bone Matrices");
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.renderBuffer);
             crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.mtxBonesData);
         }
@@ -4542,13 +4538,13 @@ var FudgeCore;
             crc3.deleteBuffer(this.renderBuffer);
         }
     }
-    FudgeCore.RenderInjectorComponentSkeleton = RenderInjectorComponentSkeleton;
+    FudgeCore.RenderWebGLComponentSkeleton = RenderWebGLComponentSkeleton;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
     let ComponentSkeleton = (() => {
         var _a;
-        let _classDecorators = [(_a = FudgeCore.RenderInjectorComponentSkeleton).decorate.bind(_a)];
+        let _classDecorators = [(_a = FudgeCore.RenderWebGLComponentSkeleton).decorate.bind(_a)];
         let _classDescriptor;
         let _classExtraInitializers = [];
         let _classThis;
@@ -5400,7 +5396,9 @@ var FudgeCore;
         }
         evaluate(_time, _out) {
             const keys = this.keys;
-            if (keys.length == 1)
+            if (keys.length == 0)
+                return undefined;
+            if (keys.length == 1 || keys[0].time >= _time)
                 return keys[0].functionOut.evaluate(_time, _out);
             let iNext = 0, iRight = keys.length - 1, iMid;
             while (iNext < iRight) {
@@ -6298,13 +6296,11 @@ var FudgeCore;
             update(_deltaTime) {
                 if (!this.root || !this.node || !this.active)
                     return;
-                FudgeCore.PerformanceMonitor.startMeasure("ComponentAnimation.update");
                 const root = this.root;
                 root.update(FudgeCore.Loop.timeFrameGame, this.#valuesOriginal, this.#valuesOriginal, this.#dispatchEvent);
                 const targetBindings = this.#targetBindings;
                 for (let i = 0; i < targetBindings.length; i++)
                     targetBindings[i].apply();
-                FudgeCore.PerformanceMonitor.endMeasure("ComponentAnimation.update");
             }
         }
         AnimationSystem.ComponentAnimationGraph = ComponentAnimationGraph;
@@ -6453,33 +6449,26 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     let ComponentAnimation = (() => {
-        let _classDecorators = [FudgeCore.enumerate];
-        let _classDescriptor;
-        let _classExtraInitializers = [];
-        let _classThis;
         let _classSuper = FudgeCore.Component;
-        let _instanceExtraInitializers = [];
-        let _get_animation_decorators;
-        var ComponentAnimation = class extends _classSuper {
-            static { _classThis = this; }
+        let _animation_decorators;
+        let _animation_initializers = [];
+        let _animation_extraInitializers = [];
+        return class ComponentAnimation extends _classSuper {
             static {
                 const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _get_animation_decorators = [FudgeCore.enumerate, FudgeCore.type(FudgeCore.Animation)];
-                __esDecorate(this, null, _get_animation_decorators, { kind: "getter", name: "animation", static: false, private: false, access: { has: obj => "animation" in obj, get: obj => obj.animation }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-                ComponentAnimation = _classThis = _classDescriptor.value;
+                _animation_decorators = [FudgeCore.type(FudgeCore.Animation)];
+                __esDecorate(null, null, _animation_decorators, { kind: "field", name: "animation", static: false, private: false, access: { has: obj => "animation" in obj, get: obj => obj.animation, set: (obj, value) => { obj.animation = value; } }, metadata: _metadata }, _animation_initializers, _animation_extraInitializers);
                 if (_metadata)
-                    Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
             }
             static { this.iSubclass = FudgeCore.Component.registerSubclass(ComponentAnimation); }
-            #animation;
-            #mutator;
             #scale;
             #timeLocal;
             #previous;
             constructor(_animation, _playmode = FudgeCore.ANIMATION_PLAYMODE.LOOP, _quantization = FudgeCore.ANIMATION_QUANTIZATION.CONTINOUS) {
                 super();
-                this.playmode = __runInitializers(this, _instanceExtraInitializers);
+                this.animation = __runInitializers(this, _animation_initializers, void 0);
+                this.playmode = __runInitializers(this, _animation_extraInitializers);
                 this.scaleWithGameTime = true;
                 this.animateInEditor = false;
                 this.#scale = 1;
@@ -6497,10 +6486,10 @@ var FudgeCore;
                     if (this.#previous != time) {
                         this.#previous = time;
                         time = time % this.animation.totalTime;
-                        this.#mutator = this.animation.getState(time, direction, this.quantization, this.#mutator);
+                        const mutator = this.animation.getState(time, direction, this.quantization);
                         if (this.node)
-                            this.node.applyAnimation(this.#mutator);
-                        return this.#mutator;
+                            this.node.applyAnimation(mutator);
+                        return mutator;
                     }
                     return null;
                 };
@@ -6512,21 +6501,14 @@ var FudgeCore;
                 };
                 this.playmode = _playmode;
                 this.quantization = _quantization;
-                this.#animation = _animation;
+                this.animation = _animation;
                 this.#timeLocal = new FudgeCore.Time();
-                this.#animation?.calculateTotalTime();
+                this.animation?.calculateTotalTime();
                 this.addEventListener("componentRemove", () => this.activate(false));
                 this.addEventListener("componentAdd", () => {
                     this.node.addEventListener("childRemove", () => this.activate(false));
                     this.activate(true);
                 });
-            }
-            get animation() {
-                return this.#animation;
-            }
-            set animation(_animation) {
-                this.#animation = _animation;
-                this.#mutator = undefined;
             }
             set scale(_scale) {
                 this.#scale = _scale;
@@ -6614,11 +6596,7 @@ var FudgeCore;
                     this.dispatchEvent(new Event(_events[i]));
                 }
             }
-            static {
-                __runInitializers(_classThis, _classExtraInitializers);
-            }
         };
-        return ComponentAnimation = _classThis;
     })();
     FudgeCore.ComponentAnimation = ComponentAnimation;
 })(FudgeCore || (FudgeCore = {}));
@@ -6629,17 +6607,11 @@ var FudgeCore;
         constructor(_root) {
             super();
             this.update = () => {
-                FudgeCore.PerformanceMonitor.startMeasure("ComponentAnimationGraph.update");
                 if (!this.root || !this.node || !this.active)
                     return;
-                FudgeCore.PerformanceMonitor.startMeasure("ComponentAnimationGraph.update compute");
                 this.root.update(FudgeCore.Loop.timeFrameGame);
                 this.root.events?.forEach(_event => this.dispatchEvent(new Event(_event)));
-                FudgeCore.PerformanceMonitor.endMeasure("ComponentAnimationGraph.update compute");
-                FudgeCore.PerformanceMonitor.startMeasure("ComponentAnimationGraph.update apply");
                 this.node.applyAnimation(this.root.mutator);
-                FudgeCore.PerformanceMonitor.endMeasure("ComponentAnimationGraph.update apply");
-                FudgeCore.PerformanceMonitor.endMeasure("ComponentAnimationGraph.update");
             };
             this.root = _root;
             if (FudgeCore.Project.mode == FudgeCore.MODE.EDITOR)
