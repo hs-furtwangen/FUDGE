@@ -100,14 +100,6 @@ namespace FudgeCore {
     @RenderManagerNode.decorate
     public static updateRenderbuffer(): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderManagerNode.updateRenderData} */
-    @RenderManagerNode.decorate
-    protected static updateRenderData(_node: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { /* injected */ };
-
-    /** @internal reroute to {@link RenderManagerNode.useRenderData} */
-    @RenderManagerNode.decorate
-    protected static useRenderData(_node: Node, _mtxWorldOverride?: Matrix4x4): void { /* injected */ };
-
     public get isActive(): boolean {
       return this.active;
     }
@@ -162,13 +154,15 @@ namespace FudgeCore {
     }
 
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+    @RenderManagerNode.decorate
     public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void {
-      Node.updateRenderData(this, _cmpMesh, _cmpMaterial, _cmpFaceCamera, _cmpParticleSystem);
+      //
     };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+    @RenderManagerNode.decorate
     public useRenderData(_mtxWorldOverride?: Matrix4x4): void {
-      Node.useRenderData(this, _mtxWorldOverride);
+      //
     };
 
     /**

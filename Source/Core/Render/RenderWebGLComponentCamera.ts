@@ -35,9 +35,9 @@ namespace FudgeCore {
       const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
       const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
 
-      data.set(mtxView.getArray(), 0);
-      data.set(mtxProjection.getArray(), 16);
-      data.set(mtxViewProjection.getArray(), 32);
+      mtxView.toArray(data, 0);
+      mtxProjection.toArray(data, 16);
+      mtxViewProjection.toArray(data, 32);
       vctPosition.toArray(data, 48);
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#buffer);

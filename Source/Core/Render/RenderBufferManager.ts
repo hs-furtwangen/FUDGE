@@ -4,7 +4,7 @@ namespace FudgeCore {
    * @internal
    * @authors Jonas Plotzky, HFU, 2025
    */
-  export abstract class RenderBufferManager {
+  export abstract class RenderbufferManager {
     protected static mapObjectToOffset: WeakMap<WeakKey, number> = new WeakMap<WeakKey, number>(); // Maps the objects to their respective byte offset in the gpu buffer
 
     /** The uniform block size (inside the shader) in bytes, includes layout std140 padding */
@@ -24,8 +24,12 @@ namespace FudgeCore {
     protected static count: number;
 
     /** @internal Replaces the decorated method with the manager’s implementation of the same name. */
-    public static decorate<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<abstract new (...args: General[]) => General, M>): M {
-      return Reflect.get(this, _context.name).bind(this);
+    public static decorate<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<General, M>): M {
+      const method: M = Reflect.get(this, _context.name);
+      if (_context.static)
+        return method.bind(this);
+      else
+        return method;
     }
 
     protected static initialize(_renderWebGL: typeof RenderWebGL, _blockBinding: number, _blockSize: number, _maxObjects: number): void {
@@ -55,24 +59,20 @@ namespace FudgeCore {
       crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, this.data, 0, this.count * this.spaceData);
     }
 
-    protected static useRenderData(_object: WeakKey): void {
+    protected static useRenderbuffer(_object: WeakKey): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.mapObjectToOffset.get(_object), this.blockSize);
     }
 
     protected static store(_object: WeakKey): number {
-      const offsetData: number = this.count * this.spaceData;
+      const offset: number = this.count * this.spaceData;
       this.mapObjectToOffset.set(_object, this.count * this.spaceBuffer); // offset in bytes
       this.count++;
-      if (offsetData + this.spaceData > this.data.length)
+      if (offset + this.spaceData > this.data.length)
         this.grow();
 
-      return offsetData;
+      return offset;
     }
-
-    protected static updateRenderData(_object: WeakKey, ..._data: General[]): void {
-      /** overriden in subclasses */
-    };
 
     private static grow(): void {
       const data: Float32Array = new Float32Array(this.data.length * 1.5);

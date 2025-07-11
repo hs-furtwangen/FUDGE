@@ -18,22 +18,16 @@ namespace FudgeCore {
     @RenderManagerCoat.decorate
     public static updateRenderbuffer(): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderManagerCoat.updateRenderData} */
-    @RenderManagerCoat.decorate
-    protected static updateRenderData(_coat: Coat): void { /* injected */ };
-
-    /** @internal reroute to {@link RenderManagerCoat.useRenderData} */
-    @RenderManagerCoat.decorate
-    protected static useRenderData(_coat: Coat): void { /* injected */ };
-
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+    @RenderManagerCoat.decorate
     public updateRenderData(): void {
-      Coat.updateRenderData(this);
+      //
     };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+    @RenderManagerCoat.decorate
     public useRenderData(): void {
-      Coat.useRenderData(this);
+      //
     };
 
     //#region Transfer
