@@ -6,7 +6,6 @@ namespace FudgeCore {
      */
     export class AnimationTargetBinding {
       public target: Mutable;
-      public animationMutator: AnimationMutator;
       public mutator: AnimationMutator;
 
       public propertyBindings: AnimationPropertyBinding[];
@@ -18,11 +17,11 @@ namespace FudgeCore {
         const animationMutator: AnimationMutator = {};
         for (const binding of _propertyBindings)
           animationMutator[binding.key] = binding.output;
-        this.animationMutator = animationMutator;
+        this.mutator = animationMutator;
       }
 
       public apply(): void {
-        this.target.animate(this.animationMutator);
+        this.target.animate(this.mutator);
       }
     }
   }
