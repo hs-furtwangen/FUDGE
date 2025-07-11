@@ -20,15 +20,11 @@ namespace FudgeCore {
 
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
     @RenderManagerCoat.decorate
-    public updateRenderData(): void {
-      //
-    };
+    public updateRenderData(): void { /* injected */ };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
     @RenderManagerCoat.decorate
-    public useRenderData(): void {
-      //
-    };
+    public useRenderData(): void { /* injected */ };
 
     //#region Transfer
     public serialize(): Serialization {

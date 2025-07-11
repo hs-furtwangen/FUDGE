@@ -155,15 +155,11 @@ namespace FudgeCore {
 
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
     @RenderManagerNode.decorate
-    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void {
-      //
-    };
+    public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { /* injected */ };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
     @RenderManagerNode.decorate
-    public useRenderData(_mtxWorldOverride?: Matrix4x4): void {
-      //
-    };
+    public useRenderData(_mtxWorldOverride?: Matrix4x4): void { /* injected */ };
 
     /**
      * De- / Activate this node. Inactive nodes will not be processed by the renderer.

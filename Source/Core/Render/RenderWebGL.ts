@@ -1,4 +1,4 @@
-///<reference path="RenderBufferManager.ts"/>
+///<reference path="RenderbufferManager.ts"/>
 ///<reference path="RenderManagerCoat.ts"/>
 ///<reference path="RenderManagerNode.ts"/>
 ///<reference path="RenderWebGLPicking.ts"/>
