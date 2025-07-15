@@ -13,7 +13,7 @@ namespace FudgeCore {
       super.initialize(_renderWebGL, UNIFORM_BLOCK.NODE.BINDING, blockSize, maxNodes);
     }
 
-    protected static updateRenderData(this: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void {
+    protected static override updateRenderData(this: Node, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera?: ComponentFaceCamera, _cmpParticleSystem?: ComponentParticleSystem): void {
       const offset: number = RenderManagerNode.store(this);
 
       const data: Float32Array = RenderManagerNode.data;
@@ -49,7 +49,7 @@ namespace FudgeCore {
       }
     }
 
-    protected static useRenderData(this: Node, _mtxWorldOverride?: Matrix4x4): void {
+    protected static override useRenderData(this: Node, _mtxWorldOverride?: Matrix4x4): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       let offset: number = RenderManagerNode.mapObjectToOffset.get(this);

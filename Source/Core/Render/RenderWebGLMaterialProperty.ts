@@ -1,0 +1,49 @@
+namespace FudgeCore {
+  export abstract class RenderWebGLMaterialProperty {
+    public static decorate(_constructor: typeof MaterialSystem.MaterialProperty, _context: ClassDecoratorContext): void {
+      _constructor.prototype.updateRenderData = this.updateRenderData;
+      _constructor.prototype.useRenderData = this.useRenderData;
+    }
+
+    public static updateRenderData(this: MaterialSystem.MaterialProperty, _data: Float32Array, _offset: number): void {
+      return; // overridden by subclasses // TODO: inspect if optional method would be faster?
+    }
+
+    public static useRenderData(this: MaterialSystem.MaterialProperty): void {
+      return; // overridden by subclasses // TODO: inspect if optional method would be faster?
+    }
+  }
+
+  export abstract class RenderWebGLMaterialPropertyColor extends RenderWebGLMaterialProperty {
+    public static updateRenderData(this: MaterialSystem.MaterialPropertyColor, _data: Float32Array, _offset: number): void {
+      this.color.toArray(_data, _offset);
+    }
+  }
+
+  export abstract class RenderWebGLMaterialPropertyRemissive extends RenderWebGLMaterialProperty {
+    public static updateRenderData(this: MaterialSystem.MaterialPropertyRemissive, _data: Float32Array, _offset: number): void {
+      _data[_offset + 4] = this.diffuse;
+      _data[_offset + 5] = this.specular;
+      _data[_offset + 6] = this.intensity;
+      _data[_offset + 7] = this.metallic;
+    }
+  }
+
+  export abstract class RenderWebGLMaterialPropertyTextureColor extends RenderWebGLMaterialProperty {
+    public static useRenderData(this: MaterialSystem.MaterialPropertyTextureColor): void {
+      this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+    }
+  }
+
+  export abstract class RenderWebGLMaterialPropertyTextureNormal extends RenderWebGLMaterialProperty {
+    public static useRenderData(this: MaterialSystem.MaterialPropertyTextureNormal): void {
+      this.texture.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+    }
+  }
+
+  export abstract class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
+    public static useRenderData(this: MaterialSystem.MaterialPropertyTextureToon): void {
+      this.texture.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+    }
+  }
+}

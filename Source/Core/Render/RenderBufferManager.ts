@@ -64,6 +64,14 @@ namespace FudgeCore {
       crc3.bindBufferRange(WebGL2RenderingContext.UNIFORM_BUFFER, this.blockBinding, this.buffer, this.mapObjectToOffset.get(_object), this.blockSize);
     }
 
+    protected static updateRenderData(..._args: unknown[]): void {
+      return;
+    }
+
+    protected static useRenderData(..._args: unknown[]): void {
+      return;
+    }
+
     protected static store(_object: WeakKey): number {
       const offset: number = this.count * this.spaceData;
       this.mapObjectToOffset.set(_object, this.count * this.spaceBuffer); // offset in bytes
