@@ -282,7 +282,7 @@ namespace FudgeCore {
       return { toJSON: () => `[${this.x}, ${this.y}, ${this.z}, ${this.w}]` };
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Vector4> {
+    public deserialize(_serialization: Serialization): Vector4 {
       [this.x, this.y, this.z, this.w] = JSON.parse(<string><unknown>_serialization);
       return this;
     }

@@ -23,7 +23,7 @@ namespace FudgeCore {
     /**
      * Recreates this instance of {@link Serializable} with the information from the given {@link Serialization}.
      */
-    deserialize(_serialization: Serialization): Promise<Serializable>;
+    deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
   }
 
   interface NamespaceRegister {

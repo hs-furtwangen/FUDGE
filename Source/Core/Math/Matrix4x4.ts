@@ -1369,11 +1369,12 @@ namespace FudgeCore {
       };
       return serialization;
     }
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+
+    public deserialize(_serialization: Serialization): Matrix4x4 {
       let mutator: Mutator = {
-        translation: await this.translation.deserialize(_serialization.translation),
-        rotation: await this.rotation.deserialize(_serialization.rotation),
-        scaling: await this.scaling.deserialize(_serialization.scaling)
+        translation: this.translation.deserialize(_serialization.translation),
+        rotation: this.rotation.deserialize(_serialization.rotation),
+        scaling: this.scaling.deserialize(_serialization.scaling)
       };
       this.mutate(mutator);
       return this;

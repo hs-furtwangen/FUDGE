@@ -20,9 +20,9 @@ namespace FudgeCore {
       return serialization;
     }
 
-    public deserialize(_serialization: Serialization): Promise<Serializable> {
+    public async deserialize(_serialization: Serialization): Promise<MeshGLTF> {
       this.iPrimitive = _serialization.iPrimitive;
-      return super.deserialize(_serialization);
+      return <Promise<MeshGLTF>>super.deserialize(_serialization);
     }
   }
 }

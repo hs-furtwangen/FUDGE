@@ -617,7 +617,7 @@ namespace FudgeCore {
       return serialization;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Quaternion> {
+    public deserialize(_serialization: Serialization): Quaternion {
       if (typeof (_serialization) == "string") {
         [this.x, this.y, this.z, this.w] = JSON.parse(<string><unknown>_serialization);
       } else

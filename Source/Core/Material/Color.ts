@@ -429,7 +429,7 @@ namespace FudgeCore {
       return serialization;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+    public deserialize(_serialization: Serialization): Color {
       if (typeof (_serialization) == "string") {
         [this.r, this.g, this.b, this.a] = JSON.parse(<string><unknown>_serialization);
       } else
