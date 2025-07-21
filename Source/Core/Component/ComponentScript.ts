@@ -15,12 +15,12 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      return this.getMutator(true);
+      return serializeDecorations(this, this.getMutator(true));
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       this.mutate(_serialization);
-      return this;
+      return deserializeDecorations(this, _serialization);
     }
   }
 }

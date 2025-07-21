@@ -185,7 +185,7 @@ namespace FudgeCore {
      * Retrieves the {@link Metadata | metadata} of this instance's class.
      */
     public getMetadata(): Metadata {
-      return this.constructor[Symbol.metadata] ??= {};
+      return getMetadata(this.constructor);
     }
 
     /**

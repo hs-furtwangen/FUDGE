@@ -7,7 +7,8 @@
 /// <reference path="Recycle/RecyclableEvent.ts"/>
 /// <reference path="Serialization/Metadata.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
-/// <reference path="Serialization/Serializer.ts"/> 
+/// <reference path="Serialization/SerializeDecorator.ts"/>
+/// <reference path="Serialization/Serializer.ts"/>
 /// <reference path="Render/RenderWebGL.ts"/>
 /// <reference path="Render/RenderInjectorTexture.ts"/>
 /// <reference path="Graph/Node.ts"/>
@@ -22,7 +23,6 @@
 /// <reference path="Material/Material.ts"/>
 /// <reference path="ParticleSystem/ParticleSystem.ts"/>
 /// <reference path="Component/ComponentSkeleton.ts"/>
-
 
 //global functions
 function ifNumber(_check: number, _default: number): number {

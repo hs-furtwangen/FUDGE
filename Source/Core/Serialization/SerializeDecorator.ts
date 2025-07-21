@@ -3,13 +3,14 @@ namespace FudgeCore {
      * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
      * 
      * **Editor Configuration:**
-     * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-     * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
+     * Specify the type of a property within a class's {@link Metadata | metadata}.
+     * This allows the intended type of the property to be known by the editor (at runtime), making it:
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-     * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
+     * - Display the appropriate input element, even if the property has not been set (`undefined`).
      * 
      * **Serialization:**
-     * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+     * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
+     * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
      * - Primitives and enums will be serialized as is.
      * - {@link Serializable}s will be serialized nested. 
      * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
@@ -60,136 +61,167 @@ namespace FudgeCore {
   // object type, check if the actual type is assignable to the given type
   export function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
   // primitive type, check if the given type (a primitive constructor) is assignable to the actual type (primitive).
-  export function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
   // enum type
   export function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  export function serialize(_constructor: Function | Object, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
-    // decorate class
-    if (_context) {
-      let meta: Metadata = _context.metadata;
+  export function serialize(_constructorOrType: Function | Object, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
+    if (_context)
+      return decorateClass(<Function>_constructorOrType, _context);
+    else
+      return decorateProperty(_constructorOrType);
+  }
 
-      const prototype: Serializable = (<Function>_constructor).prototype;
-
-      // make getters enumerable
-      if (meta.enumerateKeys) {
-        const descriptor: PropertyDescriptor = { enumerable: true };
-        for (const key of meta.enumerateKeys)
+  function decorateClass(_constructor: Function, _context?: ClassDecoratorContext): void {
+    const metadata: Metadata = _context.metadata;
+    const enumerables: Metadata["enumerables"] = metadata.enumerables;
+    const prototype: Serializable = _constructor.prototype;
+    if (enumerables) {  // make getters enumerable
+      const descriptor: PropertyDescriptor = { enumerable: true };
+      for (const key of enumerables)
+        if (Object.hasOwn(prototype, key))
           Object.defineProperty(prototype, key, descriptor);
+    }
+  }
+
+  function decorateProperty(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
+    return (_value, _context) => { // could cache the decorator function for each class
+      if (_context.static || _context.private)
+        throw new Error("@serialize decorator can only serialize public instance members.");
+
+      const key: PropertyKey = _context.name;
+      if (typeof key === "symbol")
+        throw new Error("@serialize decorator can't serialize symbol-named properties");
+
+      const metadata: Metadata = _context.metadata;
+
+      // add type to metadata
+      const attributeTypes: Metadata["attributeTypes"] = getOwnProperty(metadata, "attributeTypes") ?? (metadata.attributeTypes = { ...metadata.attributeTypes });
+      attributeTypes[key] = _type;
+
+      // determine serialization type
+      let serializationStrategy: Metadata["serializables"][string];
+
+      if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") { // primitive or enum 
+        serializationStrategy = "primitive";
+      } else if (_type == Node) {
+        serializationStrategy = "node";
+      } else if ((<SerializableResource>_type.prototype).isSerializableResource) {
+        serializationStrategy = "resource";
+      } else if ((<Serializable>_type.prototype).serialize && (<Serializable>_type.prototype).deserialize) {
+        if ((<Serializable>_type.prototype).deserialize.constructor.name == "AsyncFunction") {
+          serializationStrategy = "serializableAsync";
+        } else {
+          serializationStrategy = "serializableSync";
+        }
       }
 
-      // override serialize and deserialize methods
-      const originalSerialize: Serializable["serialize"] = prototype.serialize;
-      const originalDeserialize: Serializable["deserialize"] = prototype.deserialize;
-      const serializables: Metadata["serializables"] = meta.serializables;
-
-      prototype.serialize = function (this: Serializable): Serialization {
-        const serialization: Serialization = originalSerialize?.call(this) ?? {};
-
-        for (const key in serializables) {
-          let value: General = Reflect.get(this, key);
-          if (value == null)
-            continue;
-
-          // TODO: use a functional approach similiar to AnimationPropertyBindings?
-          switch (serializables[key]) {
-            case "primitive":
-              serialization[key] = value;
-              break;
-            case "serializable":
-              serialization[key] = value.serialize();
-              break;
-            case "resource":
-              serialization[key] = value.idResource;
-              break;
-            case "node":
-              serialization[key] = Node.PATH_FROM_TO(<Component>this, value);
-              break;
-          }
-        }
-
-        return serialization;
-      };
-
-      prototype.deserialize = async function (this: Serializable, _serialization: Serialization): Promise<Serializable> {
-        if (originalDeserialize)
-          await originalDeserialize.call(this, _serialization);
-
-        for (const key in serializables) {
-          let value: General = _serialization[key];
-          if (value == null)
-            continue;
-
-          switch (serializables[key]) {
-            case "primitive":
-              Reflect.set(this, key, value);
-              break;
-            case "serializable":
-              await Reflect.get(this, key).deserialize(value);
-              break;
-            case "resource":
-              Reflect.set(this, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
-              break;
-            case "node":
-              let instance: Component = <Component>this;
-              const hndNodeDeserialized: EventListenerUnified = () => {
-                const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
-                  Reflect.set(this, key, Node.FIND(instance, value));
-                  instance.node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-                  instance.node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-                  instance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-                };
-                instance.node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-                instance.node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-              };
-              instance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-          }
-        }
-
-        return this;
-      };
-
-      return;
-    }
-
-    // decorate property
-    return (_value, _context) => { // could cache the decorator function for each class
-      if (typeof _context.name != "string")
+      if (!serializationStrategy)
         return;
 
-      let meta: Metadata = _context.metadata;
-
-      // add attribute type to metadata
-      if (!Object.hasOwn(meta, "attributeTypes"))
-        meta.attributeTypes = { ...meta.attributeTypes };
-      meta.attributeTypes[_context.name] = _constructor;
-
-      // determine serialization type and add to metadata
-      let type: Metadata["serializables"][string];
-
-      if (_constructor == String || _constructor == Number || _constructor == Boolean || typeof _constructor == "object") // primitive or enum
-        type = "primitive";
-      else if (_constructor == Node)
-        type = "node";
-      else if ((<SerializableResource>_constructor.prototype).isSerializableResource)
-        type = "resource";
-      else if ((<Function>_constructor).prototype.serialize && (<Function>_constructor).prototype.deserialize)
-        type = "serializable";
-
-      if (!type)
-        return;
-
-      if (!Object.hasOwn(meta, "serializables"))
-        meta.serializables = { ...meta.serializables };
-      meta.serializables[_context.name] = type;
+      // add serialization type to metadata
+      const serializables: Metadata["serializables"] = getOwnProperty(metadata, "serializables") ?? (metadata.serializables = { ...metadata.serializables });
+      serializables[key] = serializationStrategy;
 
       if (_context.kind != "getter")
         return;
 
       // mark getter to be made enumerable
-      if (!Object.hasOwn(meta, "enumerateKeys"))
-        meta.enumerateKeys = [];
-
-      meta.enumerateKeys.push(_context.name);
+      const enumerables: Metadata["enumerables"] = getOwnProperty(metadata, "enumerables") ?? (metadata.enumerables = []);
+      enumerables.push(key);
     };
   }
+
+  /**
+   * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
+   */
+  export function serializeDecorations(_instance: object, _serialization: Serialization = {}): Serialization {
+    const serializables: Metadata["serializables"] = getMetadata(_instance).serializables;
+    for (const key in serializables) {
+      const value: General = Reflect.get(_instance, key);
+      if (value == null)
+        continue;
+
+      switch (serializables[key]) {
+        case "primitive":
+          _serialization[key] = value;
+          break;
+        case "serializableSync":
+        case "serializableAsync":
+          _serialization[key] = value.serialize();
+          break;
+        case "resource":
+          _serialization[key] = value.idResource;
+          break;
+        case "node":
+          _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, value);
+          break;
+      }
+    }
+
+    return _serialization;
+  };
+
+  const nodeListeners: WeakSet<Component> = new WeakSet();
+  const graphListeners: WeakSet<Component> = new WeakSet();
+
+  /**
+   * Deserialize the {@link serialize decorated properties} of an instance from a {@link Serialization} object.
+   */
+  export async function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T> {
+    const serializables: Metadata["serializables"] = getMetadata(_instance).serializables;
+    for (const key in serializables) {
+      let value: General = Reflect.get(_serialization, key);
+      if (value == null)
+        continue;
+
+      switch (serializables[key]) {
+        case "primitive":
+          Reflect.set(_instance, key, value);
+          break;
+        case "serializableSync":
+          (<Serializable>Reflect.get(_instance, key)).deserialize(value);
+          break;
+        case "serializableAsync":
+          await (<Serializable>Reflect.get(_instance, key)).deserialize(value);
+          break;
+        case "resource":
+          Reflect.set(_instance, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
+          break;
+        case "node":
+          const componentInstance: Component = <Component>_instance;
+
+          if (nodeListeners.has(componentInstance))
+            break;
+
+          nodeListeners.add(componentInstance);
+
+          const hndNodeDeserialized: EventListenerUnified = () => {
+            const node: Node = componentInstance.node;
+
+            if (graphListeners.has(componentInstance))
+              return;
+
+            graphListeners.add(componentInstance);
+
+            const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
+              Reflect.set(componentInstance, key, Node.FIND(componentInstance, value));
+
+              node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+              node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+              graphListeners.delete(componentInstance);
+            };
+
+            node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+            node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+
+            componentInstance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+            nodeListeners.delete(componentInstance);
+          };
+
+          componentInstance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+      }
+    }
+
+    return _instance;
+  };
 }
