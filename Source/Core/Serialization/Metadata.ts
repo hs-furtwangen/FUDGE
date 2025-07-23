@@ -26,7 +26,7 @@ namespace FudgeCore {
     /**
      * Map of property keys to the serialization strategy for the property, as determined by the {@link serialize} decorator.
      */
-    serializables?: Record<PropertyKey, "primitive" | "serializableSync" | "serializableAsync" | "resource" | "node">;
+    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
 
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */

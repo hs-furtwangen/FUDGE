@@ -58,17 +58,33 @@ namespace FudgeCore {
      */
   // class decorator
   export function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
-  // object type, check if the actual type is assignable to the given type
-  export function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-  // primitive type, check if the given type (a primitive constructor) is assignable to the actual type (primitive).
+
+  // property decorators
+  // primitive type
   export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  // primitive type array
+  export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+
+  // object type
+  export function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+  // object type array
+  export function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
+
+  // function type
+  export function serialize<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  // function type array
+  export function serialize<T extends Function>(_type: T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+
   // enum type
-  export function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  export function serialize(_constructorOrType: Function | Object, _context?: ClassDecoratorContext): ((_value: unknown, _context: ClassPropertyContext) => void) | void {
-    if (_context)
-      return decorateClass(<Function>_constructorOrType, _context);
+  export function serialize<T, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  // enum type array
+  export function serialize<T, E extends Record<keyof E, T>>(_type: E, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+
+  export function serialize(_constructorOrType: Function | Object, _contextOrCollection?: ClassDecoratorContext | ArrayConstructor): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
+    if (_contextOrCollection && (<ClassDecoratorContext>_contextOrCollection).kind == "class")
+      return decorateClass(<Function>_constructorOrType, <ClassDecoratorContext>_contextOrCollection);
     else
-      return decorateProperty(_constructorOrType);
+      return decorateProperty(_constructorOrType, <ArrayConstructor>_contextOrCollection);
   }
 
   function decorateClass(_constructor: Function, _context?: ClassDecoratorContext): void {
@@ -83,7 +99,7 @@ namespace FudgeCore {
     }
   }
 
-  function decorateProperty(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
+  function decorateProperty(_type: Function | Object, _collectionType?: ArrayConstructor /* | SetConstructor | MapConstructor */): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -108,12 +124,13 @@ namespace FudgeCore {
       } else if ((<SerializableResource>_type.prototype).isSerializableResource) {
         serializationStrategy = "resource";
       } else if ((<Serializable>_type.prototype).serialize && (<Serializable>_type.prototype).deserialize) {
-        if ((<Serializable>_type.prototype).deserialize.constructor.name == "AsyncFunction") {
-          serializationStrategy = "serializableAsync";
-        } else {
-          serializationStrategy = "serializableSync";
-        }
+        serializationStrategy = "serializable";
+      } else { // assume function
+        serializationStrategy = "function";
       }
+
+      if (_collectionType)
+        serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + _collectionType.name);
 
       if (!serializationStrategy)
         return;
@@ -145,8 +162,7 @@ namespace FudgeCore {
         case "primitive":
           _serialization[key] = value;
           break;
-        case "serializableSync":
-        case "serializableAsync":
+        case "serializable":
           _serialization[key] = value.serialize();
           break;
         case "resource":
@@ -155,22 +171,42 @@ namespace FudgeCore {
         case "node":
           _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, value);
           break;
+        case "function":
+          _serialization[key] = Serializer.getFunctionPath(value);
+          break;
+        case "primitiveArray":
+          _serialization[key] = Array.from(value);
+          break;
+        case "serializableArray":
+          _serialization[key] = Serializer.serializeArray(value);
+          break;
+        case "resourceArray":
+          _serialization[key] = Serializer.serializeResources(value);
+          break;
+        case "nodeArray":
+          _serialization[key] = value.map((_node: Node) => Node.PATH_FROM_TO(<Component>_instance, _node));
+          break;
+        case "functionArray":
+          _serialization[key] = Serializer.serializeFunctions(value);
+          break;
       }
     }
 
     return _serialization;
   };
 
-  const nodeListeners: WeakSet<Component> = new WeakSet();
-  const graphListeners: WeakSet<Component> = new WeakSet();
+  const nodeListeners: WeakSet<object> = new WeakSet();
+  const graphListeners: WeakSet<object> = new WeakSet();
 
   /**
    * Deserialize the {@link serialize decorated properties} of an instance from a {@link Serialization} object.
    */
   export async function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T> {
     const serializables: Metadata["serializables"] = getMetadata(_instance).serializables;
+
+    let nodePaths: Serialization;
     for (const key in serializables) {
-      let value: General = Reflect.get(_serialization, key);
+      let value: General = _serialization[key];
       if (value == null)
         continue;
 
@@ -178,50 +214,79 @@ namespace FudgeCore {
         case "primitive":
           Reflect.set(_instance, key, value);
           break;
-        case "serializableSync":
-          (<Serializable>Reflect.get(_instance, key)).deserialize(value);
-          break;
-        case "serializableAsync":
-          await (<Serializable>Reflect.get(_instance, key)).deserialize(value);
+        case "serializable":
+          const promise: Promise<Serializable> | Serializable = (<Serializable>Reflect.get(_instance, key)).deserialize(value);
+          if (promise instanceof Promise)
+            await promise;
           break;
         case "resource":
           Reflect.set(_instance, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
           break;
         case "node":
-          const componentInstance: Component = <Component>_instance;
-
-          if (nodeListeners.has(componentInstance))
-            break;
-
-          nodeListeners.add(componentInstance);
-
-          const hndNodeDeserialized: EventListenerUnified = () => {
-            const node: Node = componentInstance.node;
-
-            if (graphListeners.has(componentInstance))
-              return;
-
-            graphListeners.add(componentInstance);
-
-            const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
-              Reflect.set(componentInstance, key, Node.FIND(componentInstance, value));
-
-              node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-              node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-              graphListeners.delete(componentInstance);
-            };
-
-            node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-            node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-
-            componentInstance.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-            nodeListeners.delete(componentInstance);
-          };
-
-          componentInstance.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+          (nodePaths ??= {})[key] = value;
+          break;
+        case "function":
+          Reflect.set(_instance, key, Serializer.getFunction(value));
+          break;
+        case "primitiveArray":
+          Reflect.set(_instance, key, Array.from(value));
+          break;
+        case "serializableArray":
+          Reflect.set(_instance, key, await Serializer.deserializeArray(value));
+          break;
+        case "resourceArray":
+          Reflect.set(_instance, key, await Serializer.deserializeResources(value));
+          break;
+        case "nodeArray":
+          (nodePaths ??= {})[key] = value;
+          break;
+        case "functionArray":
+          Reflect.set(_instance, key, Serializer.deserializeFunctions(value));
+          break;
       }
     }
 
+    if (nodePaths)
+      deserializeNodes(<Component>_instance, nodePaths);
+
     return _instance;
   };
+
+  function deserializeNodes(_component: Component, _paths: Serialization): void {
+    if (nodeListeners.has(_component))
+      return;
+
+    nodeListeners.add(_component);
+
+    const hndNodeDeserialized: EventListenerUnified = () => {
+      const node: Node = _component.node;
+
+      if (graphListeners.has(_component))
+        return;
+
+      graphListeners.add(_component);
+
+      const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
+        for (const key in _paths) {
+          const pathOrPaths: string | string[] = _paths[key];
+          if (typeof pathOrPaths == "string")
+            Reflect.set(_component, key, Node.FIND(_component, pathOrPaths));
+          else
+            Reflect.set(_component, key, pathOrPaths.map((_path: string) => Node.FIND(_component, _path)));
+        }
+
+        node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+        node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+        graphListeners.delete(_component);
+      };
+
+      node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+      node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+
+      _component.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+      nodeListeners.delete(_component);
+    };
+
+    _component.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+  }
 }

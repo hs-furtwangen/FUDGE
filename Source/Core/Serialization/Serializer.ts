@@ -185,7 +185,7 @@ namespace FudgeCore {
     public static serializeFunctions(_functions: Function[]): string[] {
       const paths: string[] = new Array(_functions.length);
       for (let i: number = 0; i < _functions.length; i++)
-        paths[i] = this.getFunctionPath(_functions[i]);
+        paths[i] = Serializer.getFunctionPath(_functions[i]);
       return paths;
     }
 
