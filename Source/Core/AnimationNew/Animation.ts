@@ -1,7 +1,7 @@
 namespace FudgeCore {
   export namespace AnimationSystem {
     Serializer.registerNamespace(AnimationSystem);
- 
+
     /**
      * A track of events trigerred at specific times during an animation.
      */
@@ -43,15 +43,12 @@ namespace FudgeCore {
           idResource: this.idResource,
           name: this.name,
           duration: this.duration,
+          channels: Serializer.serializeArray(this.channels),
           eventTrack: {
             times: this.eventTrack.times,
             events: this.eventTrack.events
           }
         };
-
-        const channelType: new () => Serializable = <new () => Serializable>this.channels[0]?.constructor;
-        if (channelType)
-          serialization.channels = Serializer.serializeArray(channelType, this.channels);
 
         return serialization;
       }

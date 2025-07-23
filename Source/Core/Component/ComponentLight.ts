@@ -60,7 +60,7 @@ namespace FudgeCore {
       let light: Serialization = _serialization.light;
       if (light != undefined) {
         for (const path in light) {
-          this.lightType = <LIGHT_TYPE>Serializer.getConstructor(path).name;
+          this.lightType = <LIGHT_TYPE>Serializer.getFunction(path).name;
           light = light[path];
           if (light.color != undefined)
             await this.color.deserialize(light.color);

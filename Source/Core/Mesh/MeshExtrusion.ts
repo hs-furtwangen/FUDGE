@@ -28,7 +28,7 @@ namespace FudgeCore {
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
-      serialization.transforms = Serializer.serializeArray(Matrix4x4, this.mtxTransforms);
+      serialization.transforms = Serializer.serializeArray(this.mtxTransforms, Matrix4x4);
       return serialization;
     }
 
@@ -36,7 +36,7 @@ namespace FudgeCore {
       await super.deserialize(_serialization);
       let mtxTransforms: Matrix4x4[];
       if (_serialization.transforms)
-        mtxTransforms = <Matrix4x4[]>await Serializer.deserializeArray(_serialization.transforms);
+        mtxTransforms = await Serializer.deserializeArray(_serialization.transforms, Matrix4x4);
       this.extrude(mtxTransforms);
       return this;
     }

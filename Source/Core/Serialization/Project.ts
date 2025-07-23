@@ -9,7 +9,7 @@ namespace FudgeCore {
 
   /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
   export interface SerializableResource extends Serializable {
-    readonly isSerializableResource: true; 
+    readonly isSerializableResource: true;
     name: string;
     idResource: string;
     readonly type: string;
@@ -152,19 +152,20 @@ namespace FudgeCore {
     }
 
     /**
-     * Retrieves the resource stored with the given id
+     * Retrieves the resource stored with the given id.
      */
-    public static async getResource(_idResource: string): Promise<SerializableResource> {
-      let resource: SerializableResource = Project.resources[_idResource];
-      if (!resource) {
-        let serialization: Serialization = Project.serialization[_idResource];
-        if (!serialization) {
-          Debug.error("Resource not found", _idResource);
-          return null;
-        }
-        resource = await Project.deserializeResource(serialization);
+    public static async getResource<T extends SerializableResource>(_idResource: string): Promise<T> {
+      const resource: T | Promise<T> = <T>Project.resources[_idResource];
+      if (resource)
+        return resource;
+
+      const serialization: Serialization = Project.serialization[_idResource];
+      if (!serialization) {
+        Debug.error("Resource not found", _idResource);
+        return null;
       }
-      return resource;
+
+      return <Promise<T>>Project.deserializeResource(serialization);
     }
 
     public static async cloneResource(_resource: SerializableResource): Promise<SerializableResource> {

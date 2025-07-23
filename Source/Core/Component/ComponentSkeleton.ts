@@ -79,7 +79,7 @@ namespace FudgeCore {
       const serialization: Serialization = {};
       serialization[super.constructor.name] = super.serialize();
       serialization.bones = this.bones.map(_bone => Node.PATH_FROM_TO(this, _bone));
-      serialization.mtxBindInverses = Serializer.serializeArray(Matrix4x4, this.mtxBindInverses);
+      serialization.mtxBindInverses = Serializer.serializeArray(this.mtxBindInverses, Matrix4x4);
       return serialization;
     }
 
@@ -97,7 +97,7 @@ namespace FudgeCore {
       };
       this.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
 
-      this.mtxBindInverses = <Matrix4x4[]>await Serializer.deserializeArray(_serialization.mtxBindInverses);
+      this.mtxBindInverses = await Serializer.deserializeArray(_serialization.mtxBindInverses, Matrix4x4);
       return this;
     }
   }

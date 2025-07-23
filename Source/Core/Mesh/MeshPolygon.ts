@@ -75,13 +75,13 @@ namespace FudgeCore {
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
-      serialization.shape = Serializer.serializeArray(Vector2, this.shape);
+      serialization.shape = Serializer.serializeArray(this.shape, Vector2);
       serialization.fitTexture = this.fitTexture;
       return serialization;
     }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      let vectors: Vector2[] = <Vector2[]>await Serializer.deserializeArray(_serialization.shape);
+      let vectors: Vector2[] = await Serializer.deserializeArray(_serialization.shape, Vector2);
       this.create(vectors, _serialization.fitTexture);
       return this;
     }
