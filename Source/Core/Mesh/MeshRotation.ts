@@ -42,9 +42,10 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      let shape: Vector2[] = await Serializer.deserializeArray(_serialization.shape, Vector2);
       this.longitudes = _serialization.longitudes;
-      this.rotate(shape, this.longitudes);
+      if (_serialization.shape)
+        this.rotate(await Serializer.deserializeArray(_serialization.shape, Vector2), this.longitudes);
+
       return this;
     }
 

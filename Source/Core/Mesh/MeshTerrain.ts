@@ -163,8 +163,10 @@ namespace FudgeCore {
     }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      await this.resolution.deserialize(_serialization.resolution);
-      await this.scale.deserialize(_serialization.scale);
+      if (_serialization.resolution)
+        this.resolution.deserialize(_serialization.resolution);
+      if (_serialization.scale)
+        this.scale.deserialize(_serialization.scale);
       this.seed = _serialization.seed;
       this.create(this.resolution, this.scale, this.seed);
       return this;
