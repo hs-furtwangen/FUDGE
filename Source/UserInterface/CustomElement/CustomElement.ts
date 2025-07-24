@@ -54,11 +54,11 @@ namespace FudgeUserInterface {
     /**
      * Retrieve the element representing the given data type (if registered)
      */
-    public static get(_type: string): typeof CustomElement {
+    public static get(_type: string): (typeof CustomElement) & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement) {
       let element: string | typeof CustomElement | CustomElementConstructor = CustomElement.mapObjectToCustomElement.get(_type);
       if (typeof (element) == "string")
         element = customElements.get(element);
-      return <typeof CustomElement>element;
+      return <typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement)>element;
     }
 
     private static map(_type: string, _typeCustomElement: typeof CustomElement): void {

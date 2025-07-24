@@ -50,7 +50,7 @@ namespace FudgeUserInterface {
         }
 
         if (!element && type)
-          element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
+          element = new CustomElementReference({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` }); // new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
         if (!element) { // undefined values without a type can't be displayed
           console.warn("No interface created for", _mutable.constructor.name, key);
@@ -86,6 +86,7 @@ namespace FudgeUserInterface {
       return div;
     }
 
+
     /**
      * Create a specific CustomElement for the given data, using _key as identification
      */
@@ -100,15 +101,14 @@ namespace FudgeUserInterface {
           ƒ.Debug.fudge("MutableArray");
           // insert Array-Controller!
         } else {
-          let elementType: typeof CustomElement = CustomElement.get(_type);
-          if (!elementType)
-            return element;
-          // @ts-ignore: instantiate abstract class
-          element = new elementType({ key: _key, label: _key, value: _value?.toString() });
+          let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement = CustomElement.get(_type);
+          if (elementType)
+            element = new elementType({ key: _key, label: _key, value: _value?.toString() });
         }
       } catch (_error) {
         ƒ.Debug.fudge(_error);
       }
+
       return element;
     }
 
