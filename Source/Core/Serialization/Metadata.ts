@@ -3,10 +3,10 @@ namespace FudgeCore {
   Symbol.metadata ??= Symbol("Symbol.metadata");
 
   /**
-   * Association of an attribute with its specified type (constructor).
+   * Association of an attribute with its specified type, either a constructor or a map of possible options (for enums).
    * @see {@link Metadata}.
    */
-  export type MetaPropertyTypes = Record<PropertyKey, Function | object | string>;
+  export type MetaPropertyTypes = Record<PropertyKey, Function | Record<PropertyKey, General>>;
 
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
@@ -14,9 +14,9 @@ namespace FudgeCore {
    */
   export interface Metadata extends DecoratorMetadata {
     /**
-     * The specified types of the attributes of a class. Use the {@link type} or {@link serialize} decorator to add type information to the metadata of a class.
+     * The specified types of the properties of a class. Use the {@link type} or {@link serialize} decorator to add type information to the metadata of a class.
      */
-    attributeTypes?: MetaPropertyTypes;
+    propertyTypes?: MetaPropertyTypes;
 
     /**
      * List of property keys that will be made enumerable. Use the {@link enumerate} decorator to add keys to this list.
@@ -33,7 +33,7 @@ namespace FudgeCore {
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
   export function getMetaPropertyTypes(_from: Object): MetaPropertyTypes {
-    return getMetadata(_from).attributeTypes ??= {};
+    return getMetadata(_from).propertyTypes ??= {};
   }
 
   const emptyMetadata: Metadata = {};
@@ -96,8 +96,8 @@ namespace FudgeCore {
   export function type(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       const metadata: Metadata = _context.metadata;
-      const attributeTypes: Metadata["attributeTypes"] = getOwnProperty(metadata, "attributeTypes") ?? (metadata.attributeTypes = { ...metadata.attributeTypes });
-      attributeTypes[_context.name] = _type;
+      const propertyTypes: Metadata["propertyTypes"] = getOwnProperty(metadata, "propertyTypes") ?? (metadata.propertyTypes = { ...metadata.propertyTypes });
+      propertyTypes[_context.name] = _type;
     };
   }
   //#endregion

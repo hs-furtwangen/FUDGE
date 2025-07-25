@@ -111,8 +111,8 @@ namespace FudgeCore {
       const metadata: Metadata = _context.metadata;
 
       // add type to metadata
-      const attributeTypes: Metadata["attributeTypes"] = getOwnProperty(metadata, "attributeTypes") ?? (metadata.attributeTypes = { ...metadata.attributeTypes });
-      attributeTypes[key] = _type;
+      const propertyTypes: Metadata["propertyTypes"] = getOwnProperty(metadata, "propertyTypes") ?? (metadata.propertyTypes = { ...metadata.propertyTypes });
+      propertyTypes[key] = _collectionType ?? _type;
 
       // determine serialization type
       let serializationStrategy: Metadata["serializables"][string];
