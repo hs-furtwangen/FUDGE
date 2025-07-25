@@ -10,7 +10,10 @@ namespace FudgeCore {
     @type(Animation)
     public animation: Animation;
 
+    @type(ANIMATION_PLAYMODE)
     public playmode: ANIMATION_PLAYMODE;
+
+    @type(ANIMATION_QUANTIZATION)
     public quantization: ANIMATION_QUANTIZATION;
     public scaleWithGameTime: boolean = true;
     public animateInEditor: boolean = false;
@@ -128,15 +131,6 @@ namespace FudgeCore {
         this.updateAnimation(0);
         this.activateListeners(this.active);
       }
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.playmode)
-        types.playmode = ANIMATION_PLAYMODE;
-      if (types.quantization)
-        types.quantization = ANIMATION_QUANTIZATION;
-      return types;
     }
     //#endregion
 

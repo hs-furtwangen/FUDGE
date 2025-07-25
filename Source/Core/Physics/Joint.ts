@@ -29,7 +29,7 @@ namespace FudgeCore {
     #breakForce: number = 0;
     #breakTorque: number = 0;
 
-    #nameChildToConnect: string;
+    #nameChildToConnect: string = "";
 
     protected abstract joint: OIMO.Joint;
     protected abstract config: OIMO.JointConfig;
@@ -220,12 +220,6 @@ namespace FudgeCore {
       return mutator;
     }
 
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      types.nameChildToConnect = "String";
-      return types;
-    } 
-
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       if (typeof (_mutator.anchor) !== "undefined")
         this.anchor = new Vector3(...<number[]>(Object.values(_mutator.anchor)));
@@ -236,8 +230,6 @@ namespace FudgeCore {
       this.deleteFromMutator(_mutator, this.#getMutator());
       await super.mutate(_mutator, _selection, _dispatchMutate);
     }
-
-
 
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.springDamper;

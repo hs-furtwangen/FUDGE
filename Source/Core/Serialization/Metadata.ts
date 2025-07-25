@@ -6,7 +6,7 @@ namespace FudgeCore {
    * Association of an attribute with its specified type (constructor).
    * @see {@link Metadata}.
    */
-  export type MetaAttributeTypes = Record<PropertyKey, Function | Object>;
+  export type MetaPropertyTypes = Record<PropertyKey, Function | object | string>;
 
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
@@ -16,7 +16,7 @@ namespace FudgeCore {
     /**
      * The specified types of the attributes of a class. Use the {@link type} or {@link serialize} decorator to add type information to the metadata of a class.
      */
-    attributeTypes?: MetaAttributeTypes;
+    attributeTypes?: MetaPropertyTypes;
 
     /**
      * List of property keys that will be made enumerable. Use the {@link enumerate} decorator to add keys to this list.
@@ -32,19 +32,23 @@ namespace FudgeCore {
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
+  export function getMetaPropertyTypes(_from: Object): MetaPropertyTypes {
+    return getMetadata(_from).attributeTypes ??= {};
+  }
+
+  const emptyMetadata: Metadata = {};
 
   /**
-   * Retrieves the {@link Metadata} of a class instance or constructor.
+   * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, an empty object is returned.
    */
-  export function getMetadata(_instance: Object): Metadata;
-  export function getMetadata(_constructor: Function): Metadata;
-  export function getMetadata(_in: Function | Object): Metadata {
-    switch (typeof _in) {
-      case "function":
-        return _in[Symbol.metadata] ??= {};
-      case "object":
-        return getMetadata(_in.constructor);
-    }
+  export function getMetadata(_from: Object): Metadata {
+    if (_from == null)
+      return emptyMetadata;
+
+    if (typeof _from != "function")
+      _from = _from.constructor;
+
+    return (<Function>_from)[Symbol.metadata] ??= {};
   }
 
   /**
@@ -77,13 +81,18 @@ namespace FudgeCore {
    * will be displayed via their {@link toString} method in the editor.
    * @author Jonas Plotzky, HFU, 2024-2025
    */
-  // TODO: add support for arrays and maybe other collections?
+  // runtime-type from object property/method
+  // export function type<C, K extends keyof C, T>(_propertyKey: K): C[K] extends (() => Record<string, T>) | Record<string, T> ? (_value: unknown, _context: ClassPropertyContext<C, T>) => void : never;
+
   // object type
   export function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+  
   // primitive type
   export function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+
   // enum type
   export function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+
   export function type(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       const metadata: Metadata = _context.metadata;

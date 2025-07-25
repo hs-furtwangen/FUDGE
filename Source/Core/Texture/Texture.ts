@@ -43,22 +43,24 @@ namespace FudgeCore {
       return true;
     }
 
+    @type(MIPMAP)
+    public get mipmap(): MIPMAP {
+      return this.#mipmap;
+    }
+
     public set mipmap(_mipmap: MIPMAP) {
       this.#mipmap = _mipmap;
       this.mipmapDirty = true;
     }
 
-    public get mipmap(): MIPMAP {
-      return this.#mipmap;
+    @type(WRAP)
+    public get wrap(): WRAP {
+      return this.#wrap;
     }
 
     public set wrap(_wrap: WRAP) {
       this.#wrap = _wrap;
       this.wrapDirty = true;
-    }
-
-    public get wrap(): WRAP {
-      return this.#wrap;
     }
 
     /**
@@ -105,20 +107,12 @@ namespace FudgeCore {
       return this;
     }
 
+    // TODO: use enumerate decorator!
     public getMutator(_extendable?: boolean): Mutator {
       let mutator: Mutator = super.getMutator(true);
       mutator.mipmap = this.#mipmap;
       mutator.wrap = this.#wrap;
       return mutator;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.mipmap)
-        types.mipmap = MIPMAP;
-      if (types.wrap)
-        types.wrap = WRAP;
-      return types;
     }
 
     protected reduceMutator(_mutator: Mutator): void {

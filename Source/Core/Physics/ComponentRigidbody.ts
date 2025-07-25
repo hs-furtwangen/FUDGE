@@ -52,6 +52,7 @@ namespace FudgeCore {
     /** 
      * Automatic adjustment of the pivot when {@link Render.prepare} is called according to {@link BODY_INIT}
      */
+    @type(BODY_INIT)
     public initialization: BODY_INIT = BODY_INIT.TO_PIVOT;
     /** Marks if collider was initialized. Reset to false to initialize again e.g. after manipulation of mtxPivot */
     public isInitialized: boolean = false;
@@ -111,9 +112,11 @@ namespace FudgeCore {
     }
 
     /** Retrieve the body type. See {@link BODY_TYPE} */
+    @type(BODY_TYPE)
     public get typeBody(): BODY_TYPE {
       return this.#typeBody;
     }
+
     /** Set the body type. See {@link BODY_TYPE} */
     public set typeBody(_value: BODY_TYPE) {
       this.#typeBody = _value;
@@ -122,9 +125,11 @@ namespace FudgeCore {
     }
 
     /** The shape that represents the {@link Node} in the physical world. Default is a Cube. */
+    @type(COLLIDER_TYPE)
     public get typeCollider(): COLLIDER_TYPE {
       return this.#typeCollider;
     }
+
     public set typeCollider(_value: COLLIDER_TYPE) {
       if (_value != this.#typeCollider && this.#rigidbody != null) {
         this.#typeCollider = _value;
@@ -624,6 +629,7 @@ namespace FudgeCore {
       // this.dispatchEvent(new Event(EVENT.MUTATE));
     }
 
+    // TODO: use enumerate decorator!
     public getMutator(): Mutator {
       let mutator: Mutator = super.getMutator(true);
 
@@ -639,17 +645,6 @@ namespace FudgeCore {
 
       // Object.preventExtensions(mutator);
       return mutator;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.typeBody)
-        types.typeBody = BODY_TYPE;
-      if (types.typeCollider)
-        types.typeCollider = COLLIDER_TYPE;
-      if (types.initialization)
-        types.initialization = BODY_INIT;
-      return types;
     }
 
     protected reduceMutator(_mutator: Mutator): void {

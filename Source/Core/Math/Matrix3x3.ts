@@ -497,13 +497,6 @@ namespace FudgeCore {
       this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
     }
 
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = {};
-      if (_mutator.translation) types.translation = "Vector2";
-      if (_mutator.rotation != undefined) types.rotation = "number";
-      if (_mutator.scaling) types.scaling = "Vector2";
-      return types;
-    }
     protected reduceMutator(_mutator: Mutator): void {/** */ }
 
     private resetCache(): void {

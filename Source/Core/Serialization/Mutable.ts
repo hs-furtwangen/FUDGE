@@ -3,7 +3,7 @@ namespace FudgeCore {
    * Interface describing the datatypes of the attributes a mutator as strings 
    */
   export interface MutatorAttributeTypes {
-    [attribute: string]: string | Object;
+    [attribute: string]: string | object;
   }
   /**
    * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
@@ -42,6 +42,50 @@ namespace FudgeCore {
       mutator[attribute.toString()] = value;
     }
     return mutator;
+  }
+
+  /**
+   * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
+   * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
+   */
+  export function getMutatorAttributeTypes(_object: Record<string, General>, _mutator: Mutator, _out: MutatorAttributeTypes = {}): MutatorAttributeTypes {
+    let metaTypes: MetaPropertyTypes = getMetaPropertyTypes(_object);
+    for (let key in _mutator) {
+      let metaType: Function | object | string = metaTypes[key];
+      let type: string | object;
+      switch (typeof metaType) {
+        case "function":
+          type = metaType.name;
+          break;
+        case "object":
+          type = metaType;
+          break;
+        // case "string": // runtime type, retrieve it from an object property/method
+        //   const member: Function | object = _object[metaType];
+        //   if (typeof member == "function")
+        //     type = member.call(_object);
+        //   else
+        //     type = member;
+        //   break;
+        case "undefined":
+          let value: number | boolean | string | object | Function = _object[key];
+          if (value != undefined)
+            if (typeof value == "object")
+              type = (<General>_object)[key].constructor.name;
+            else if (typeof value == "function")
+              type = value.name;
+            else
+              type = value.constructor.name;
+          break;
+      }
+
+      _out[key] = type;
+    }
+
+    if (typeof (<Mutable>_object).addMutatorAttributeTypes == "function")
+      (<Mutable>_object).addMutatorAttributeTypes(_out);
+    
+    return _out;
   }
 
   /**
@@ -98,7 +142,7 @@ namespace FudgeCore {
         let value: Object = this[attribute];
         if (value instanceof Function)
           continue;
-        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")) && this.getMetaAttributeTypes()[attribute] == undefined)
+        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")) && getMetaPropertyTypes(this)[attribute] == undefined)
           continue;
         mutator[attribute] = value;
       }
@@ -137,56 +181,12 @@ namespace FudgeCore {
       return <MutatorForUserInterface>this.getMutator(_extendable);  // TODO: both of these (this and getMutatorForAnimation) don't really work as they don't recursively call getMutatorForUserInterface on sub-mutable objects, maybe instead implement a reduceMutatorForUserInterface???
     }
 
-    /**
-     * Collect the attributes of the instance and their values applicable for indiviualization by the component.
-     * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-     */
-    // public getMutatorForComponent(): MutatorForComponent {
-    //     return <MutatorForComponent>this.getMutator();
-    // }
-    /**
-     * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
-     * Does not recurse into objects! This will return the decorated {@link Metadata meta-type} instead of the runtime-type of the object, if available.
-     */
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = {};
-      let metaTypes: MetaAttributeTypes = this.getMetaAttributeTypes();
-      for (let attribute in _mutator) {
-        let metaType: Function | Object = metaTypes[attribute]; // constructor or enum
-        let type: string | Object;
-        if (typeof metaType == "function")
-          type = metaType.name;
-        else if (typeof metaType == "object")
-          type = metaType;
-
-        let value: number | boolean | string | object | Function = _mutator[attribute];
-
-        if (value != undefined && type == undefined)
-          if (typeof value == "object")
-            type = (<General>this)[attribute].constructor.name;
-          else if (typeof value == "function")
-            type = value.name;
-          else
-            type = value.constructor.name;
-
-        types[attribute] = type;
-      }
-      return types;
-    }
 
     /**
-     * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class.
+     * Callback to add or modify the mutator attribute types for this instance. Invoked from {@link getMutatorAttributeTypes} after the decorated and inferred types have been collected.
+     * @param _types The types of the attributes of the mutator, as collected by {@link getMutatorAttributeTypes}.
      */
-    public getMetaAttributeTypes(): MetaAttributeTypes {
-      return this.getMetadata().attributeTypes ??= {};
-    }
-
-    /** 
-     * Retrieves the {@link Metadata | metadata} of this instance's class.
-     */
-    public getMetadata(): Metadata {
-      return getMetadata(this.constructor);
-    }
+    public addMutatorAttributeTypes?(_types: MutatorAttributeTypes): void;
 
     /**
      * Updates the values of the given mutator according to the current state of the instance
@@ -222,7 +222,7 @@ namespace FudgeCore {
         const valueArray: Float32Array = _mutator[key];
         if (valueArray.length == 1)
           (<General>this)[key] = valueArray[0];
-        else 
+        else
           (<General>this)[key].setArray(valueArray);
       }
     }

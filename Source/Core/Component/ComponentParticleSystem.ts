@@ -20,8 +20,13 @@ namespace FudgeCore {
     public particleSystem: ParticleSystem;
     /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */
     public depthMask: boolean;
+
+    @type(BLEND)
     public blendMode: BLEND;
+
+    @type(PARTICLE_SYSTEM_PLAYMODE)
     public playMode: PARTICLE_SYSTEM_PLAYMODE;
+    
     public duration: number;
 
     /** @internal A texture filed with random numbers. Used by the render engine */
@@ -128,15 +133,6 @@ namespace FudgeCore {
       delete mutator.particleSystem;
       delete mutator.size;
       return mutator;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.blendMode)
-        types.blendMode = BLEND;
-      if (types.playMode)
-        types.playMode = PARTICLE_SYSTEM_PLAYMODE;
-      return types;
     }
     //#endregion
 
