@@ -13,7 +13,6 @@ namespace FudgeCore {
    * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
    * @author Jonas Plotzky, HFU, 2022
    */
-  @enumerate
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
     @type(ParticleSystem)
@@ -55,7 +54,7 @@ namespace FudgeCore {
     /**
      * Get the number of particles
      */
-    @enumerate
+    @mutate
     public get size(): number {
       return this.#size;
     }

@@ -4,7 +4,6 @@ namespace FudgeCore {
    * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
-  @enumerate
   export class Material extends Mutable implements SerializableResource {
     /** The name to call the Material by. */
     public name: string;
@@ -36,7 +35,6 @@ namespace FudgeCore {
      * Returns the currently referenced {@link Coat} instance
      */
     @type(Coat)
-    @enumerate
     public get coat(): Coat {
       return this.#coat;
     }

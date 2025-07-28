@@ -50,7 +50,7 @@ namespace FudgeUserInterface {
         }
 
         if (!element && type)
-          element = new CustomElementReference({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` }); // new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
+          element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` }); // new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
         if (!element) { // undefined values without a type can't be displayed
           console.warn("No interface created for", _mutable.constructor.name, key);

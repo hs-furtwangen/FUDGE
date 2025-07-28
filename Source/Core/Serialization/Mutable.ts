@@ -49,9 +49,9 @@ namespace FudgeCore {
    * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
    */
   export function getMutatorAttributeTypes(_object: Record<string, General>, _mutator: Mutator, _out: MutatorAttributeTypes = {}): MutatorAttributeTypes {
-    let metaTypes: MetaPropertyTypes = getMetaPropertyTypes(_object);
+    const metaTypes: MetaPropertyTypes = getMetaPropertyTypes(_object);
     for (let key in _mutator) {
-      let metaType: Function | object | string = metaTypes[key];
+      const metaType: Function | object = metaTypes[key];
       let type: string | object;
       switch (typeof metaType) {
         case "function":
@@ -84,7 +84,7 @@ namespace FudgeCore {
 
     if (typeof (<Mutable>_object).addMutatorAttributeTypes == "function")
       (<Mutable>_object).addMutatorAttributeTypes(_out);
-    
+
     return _out;
   }
 
@@ -99,6 +99,8 @@ namespace FudgeCore {
    * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
    */
   export abstract class Mutable extends EventTargetUnified {
+
+
     /**
      * Decorator allows to attach {@link Mutable} functionality to existing classes. 
      */
@@ -135,17 +137,20 @@ namespace FudgeCore {
      * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
      */
     public getMutator(_extendable: boolean = false): Mutator {
-      let mutator: Mutator = {};
+      const mutator: Mutator = {};
 
       // collect primitive and mutable attributes
       for (let attribute in this) {
         let value: Object = this[attribute];
         if (value instanceof Function)
           continue;
-        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")) && getMetaPropertyTypes(this)[attribute] == undefined)
+        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")))
           continue;
         mutator[attribute] = value;
       }
+
+      for (const key of getMetaPropertyKeys(this))  // include all decorated properties
+        mutator[key] = this[key];
 
       if (!_extendable)
         // mutator can be reduced but not extended!

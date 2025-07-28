@@ -4,7 +4,6 @@ namespace FudgeCore {
    * Generates a planar Grid and applies a Heightmap-Function to it.
    * @authors Jirka Dell'Oro-Friedl, HFU, 2021 | Moritz Beaugrand, HFU, 2020
    */
-  @enumerate
   export class MeshRelief extends MeshTerrain {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshRelief);
 
@@ -40,7 +39,6 @@ namespace FudgeCore {
      * The texture to be used as the heightmap.
      * **Caution!** Setting this causes the mesh to be recreated which can be an expensive operation.
      */
-    @enumerate
     @type(TextureImage)
     public get texture(): TextureImage {
       return this.#texture;

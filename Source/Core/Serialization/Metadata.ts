@@ -14,6 +14,11 @@ namespace FudgeCore {
    */
   export interface Metadata extends DecoratorMetadata {
     /**
+     * A list of property keys to be included in a {@link Mutator} ({@link getMutator}) of this class. Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+     */
+    propertyKeys?: string[];
+
+    /**
      * The specified types of the properties of a class. Use the {@link type} or {@link serialize} decorator to add type information to the metadata of a class.
      */
     propertyTypes?: MetaPropertyTypes;
@@ -32,23 +37,28 @@ namespace FudgeCore {
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
-  export function getMetaPropertyTypes(_from: Object): MetaPropertyTypes {
-    return getMetadata(_from).propertyTypes ??= {};
+  const emptyMetaPropertyKeys: readonly string[] = Object.freeze([]);
+  export function getMetaPropertyKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): K[] {
+    return <K[]>(getMetadata(_from).propertyKeys ?? emptyMetaPropertyKeys);
   }
 
-  const emptyMetadata: Metadata = {};
+  const emptyMetaPropertyTypes: MetaPropertyTypes = Object.freeze({});
+  export function getMetaPropertyTypes(_from: Object): MetaPropertyTypes {
+    return getMetadata(_from).propertyTypes ?? emptyMetaPropertyTypes;
+  }
 
+  const emptyMetadata: Metadata = Object.freeze({});
   /**
-   * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, an empty object is returned.
+   * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
    */
-  export function getMetadata(_from: Object): Metadata {
+  export function getMetadata(_from: Object): Readonly<Metadata> {
     if (_from == null)
       return emptyMetadata;
 
     if (typeof _from != "function")
       _from = _from.constructor;
 
-    return (<Function>_from)[Symbol.metadata] ??= {};
+    return (<Function>_from)[Symbol.metadata] ?? emptyMetadata;
   }
 
   /**
@@ -61,60 +71,18 @@ namespace FudgeCore {
     return undefined;
   }
 
+  //#region Mutate
   /**
-   * @internal Appends the metadata property while preserving inheritance.
-   */
-  export function appendMetadata<Key extends keyof Metadata>(_metadata: Metadata, _metadataKey: Key): Metadata[Key] {
-    if (!Object.hasOwn(_metadata, _metadataKey))
-      _metadata[_metadataKey] = { ...<General>_metadata[_metadataKey] };
-    return _metadata[_metadataKey];
-  }
-
-
-  //#region Type
-  /**
-   * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-   * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
+   * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
    *
-   * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator} 
-   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
-   * will be displayed via their {@link toString} method in the editor.
-   * @author Jonas Plotzky, HFU, 2024-2025
-   */
-  // runtime-type from object property/method
-  // export function type<C, K extends keyof C, T>(_propertyKey: K): C[K] extends (() => Record<string, T>) | Record<string, T> ? (_value: unknown, _context: ClassPropertyContext<C, T>) => void : never;
-
-  // object type
-  export function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-  
-  // primitive type
-  export function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-
-  // enum type
-  export function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-
-  export function type(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
-    return (_value, _context) => { // could cache the decorator function for each class
-      const metadata: Metadata = _context.metadata;
-      const propertyTypes: Metadata["propertyTypes"] = getOwnProperty(metadata, "propertyTypes") ?? (metadata.propertyTypes = { ...metadata.propertyTypes });
-      propertyTypes[_context.name] = _type;
-    };
-  }
-  //#endregion
-
-  //#region Enumerate
-  /**
-   * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
-   * 
-   * **Usage**: Apply this decorator to both the getter method and the class to make it effective.
-   * 
+   * **Usage**: Apply this decorator to a property.
+   *
    * **Example**:
    * ```typescript
-   * @ƒ.enumerate // apply the decorator to the class.
    * export class SomeScript extends ƒ.ComponentScript {
    *   #size: number = 1;
    * 
-   *   @ƒ.enumerate // apply the decorator to the getter
+   *   @ƒ.mutate // apply the decorator to the getter
    *   public get size(): number {
    *     return this.#size;
    *   }
@@ -125,28 +93,54 @@ namespace FudgeCore {
    *   }
    * }
    * ```
+   * @author Jonas Plotzky, HFU, 2025
    */
-  export function enumerate(_value: Function, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
-  export function enumerate(_value: Function, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
-  export function enumerate(_value: Function, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
-    const metadata: Metadata = _context.metadata;
-    if (_context.kind == "getter" || _context.kind == "accessor") {
-      const metadata: Metadata = _context.metadata;
-      const enumerables: Metadata["enumerables"] = getOwnProperty(metadata, "enumerables") ?? (metadata.enumerables = []);
-      enumerables.push(_context.name);
+  export function mutate(_value: unknown, _context: ClassPropertyContext): void {
+    const key: PropertyKey = _context.name;
+    if (typeof key === "symbol")
       return;
-    }
 
-    if (_context.kind == "class") {
-      const enumerables: Metadata["enumerables"] = metadata.enumerables;
-      const prototype: Object = _value.prototype;
-      if (enumerables) {
-        const descriptor: PropertyDescriptor = { enumerable: true };
-        for (const key of enumerables)
-          Object.defineProperty(prototype, key, descriptor);
-      }
-      return;
-    }
+    const metadata: Metadata = _context.metadata;
+    const propertyKeys: Metadata["propertyKeys"] = getOwnProperty(metadata, "propertyKeys") ?? (metadata.propertyKeys = metadata.propertyKeys ? [...metadata.propertyKeys] : []);
+    propertyKeys.push(key);
+  }
+  //#endregion
+
+  //#region Type
+  /**
+   * Decorator to specify a type for a property within a class's {@link Metadata | metadata}.
+   * This allows the intended type of a property to be known at runtime, making it a valid drop target in the editor.
+   *
+   * **Note:** Properties with a specified meta-type will always be included in the {@link Mutator base-mutator} 
+   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
+   * will be displayed via their {@link toString} method in the editor.
+   * @author Jonas Plotzky, HFU, 2024-2025
+   */
+  // runtime-type from object property/method
+  // export function type<C, K extends keyof C, T>(_propertyKey: K): C[K] extends (() => Record<string, T>) | Record<string, T> ? (_value: unknown, _context: ClassPropertyContext<C, T>) => void : never;
+
+  // object type
+  export function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+
+  // primitive type
+  export function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+
+  // enum type
+  export function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+
+  export function type(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
+    return (_value, _context) => { // could cache the decorator function for each class
+      const key: PropertyKey = _context.name;
+      if (typeof key === "symbol")
+        return;
+
+      const metadata: Metadata = _context.metadata;
+
+      const propertyTypes: Metadata["propertyTypes"] = getOwnProperty(metadata, "propertyTypes") ?? (metadata.propertyTypes = { ...metadata.propertyTypes });
+      propertyTypes[key] = _type;
+
+      mutate(_value, _context);
+    };
   }
   //#endregion
 }

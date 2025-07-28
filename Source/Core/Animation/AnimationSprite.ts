@@ -1,5 +1,4 @@
 namespace FudgeCore {
-  @enumerate
   export class AnimationSprite extends Animation {
     public static readonly iSubclass: number = Animation.registerSubclass(AnimationSprite);
     private frames: number = 25;
@@ -17,8 +16,7 @@ namespace FudgeCore {
       this.framesPerSecond = this.frames;
       this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
     }
-
-    @enumerate
+    
     @type(Texture)
     public get texture(): Texture {
       return this.#texture;

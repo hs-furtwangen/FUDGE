@@ -21,7 +21,6 @@ namespace FudgeCore {
    * The camera component holds the projection-matrix and other data needed to render a scene from the perspective of the node it is attached to.
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  @enumerate
   export class ComponentCamera extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentCamera);
 
@@ -79,7 +78,7 @@ namespace FudgeCore {
     /**
      * Returns true if the background of the camera should be rendered, false if not.
      */
-    @enumerate
+    @mutate
     public get backgroundEnabled(): boolean {
       return this.#backgroundEnabled;
     }
@@ -87,7 +86,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras {@link PROJECTION} mode.
      */
-    @enumerate
+    @mutate
     @type(PROJECTION)
     public get projection(): PROJECTION {
       return this.#projection;
@@ -96,7 +95,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras aspect ratio.
      */
-    @enumerate
+    @mutate
     public get aspectRatio(): number {
       return this.#aspectRatio;
     }
@@ -104,7 +103,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras field of view in degrees.
      */
-    @enumerate
+    @mutate
     public get fieldOfView(): number {
       return this.#fieldOfView;
     }
@@ -112,7 +111,6 @@ namespace FudgeCore {
     /**
      * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
      */
-    @enumerate
     @type(FIELD_OF_VIEW)
     public get direction(): FIELD_OF_VIEW {
       return this.#direction;
@@ -121,7 +119,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras near value i.e. the minimum distance to render objects at.
      */
-    @enumerate
+    @mutate
     public get near(): number {
       return this.#near;
     }
@@ -129,7 +127,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras far value i.e. the maximum distance to render objects at.
      */
-    @enumerate
+    @mutate
     public get far(): number {
       return this.#far;
     }
