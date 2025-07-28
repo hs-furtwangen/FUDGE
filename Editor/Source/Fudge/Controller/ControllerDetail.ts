@@ -65,7 +65,7 @@ namespace Fudge {
       if (this.filterDragDrop(_event, filter.UrlOnMeshGLTF, checkMimeType(MIME.GLTF))) return;
 
       let { mutable, key } = this.getTargetMutableAndKey(_event);
-      let metaTypes: ƒ.MetaPropertyTypes = ƒ.getMetaPropertyTypes(mutable);
+      let metaTypes: ƒ.MutatorTypes = ƒ.getMutatorTypes(mutable);
       let metaType: Object | Function = metaTypes[key];
       // console.log(key, metaTypes, metaType);
 

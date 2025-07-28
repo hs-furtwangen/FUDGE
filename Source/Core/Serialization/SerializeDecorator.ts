@@ -56,8 +56,7 @@ namespace FudgeCore {
      * 
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-  // class decorator
-  export function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
+
 
   // property decorators
   // primitive type
@@ -80,26 +79,7 @@ namespace FudgeCore {
   // enum type array
   export function serialize<T, E extends Record<keyof E, T>>(_type: E, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
 
-  export function serialize(_constructorOrType: Function | Object, _contextOrCollection?: ClassDecoratorContext | ArrayConstructor): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
-    if (_contextOrCollection && (<ClassDecoratorContext>_contextOrCollection).kind == "class")
-      return decorateClass(<Function>_constructorOrType, <ClassDecoratorContext>_contextOrCollection);
-    else
-      return decorateProperty(_constructorOrType, <ArrayConstructor>_contextOrCollection);
-  }
-
-  function decorateClass(_constructor: Function, _context?: ClassDecoratorContext): void {
-    const metadata: Metadata = _context.metadata;
-    const enumerables: Metadata["enumerables"] = metadata.enumerables;
-    const prototype: Serializable = _constructor.prototype;
-    if (enumerables) {  // make getters enumerable
-      const descriptor: PropertyDescriptor = { enumerable: true };
-      for (const key of enumerables)
-        if (Object.hasOwn(prototype, key))
-          Object.defineProperty(prototype, key, descriptor);
-    }
-  }
-
-  function decorateProperty(_type: Function | Object, _collectionType?: ArrayConstructor /* | SetConstructor | MapConstructor */): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function serialize(_type: Function | object, _collection?: ArrayConstructor): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -111,8 +91,10 @@ namespace FudgeCore {
       const metadata: Metadata = _context.metadata;
 
       // add type to metadata
-      const propertyTypes: Metadata["propertyTypes"] = getOwnProperty(metadata, "propertyTypes") ?? (metadata.propertyTypes = { ...metadata.propertyTypes });
-      propertyTypes[key] = _collectionType ?? _type;
+      const types: Metadata["mutatorTypes"] = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
+      types[key] = _collection ?? _type;
+
+      mutate(_value, _context);
 
       // determine serialization type
       let serializationStrategy: Metadata["serializables"][string];
@@ -129,8 +111,8 @@ namespace FudgeCore {
         serializationStrategy = "function";
       }
 
-      if (_collectionType)
-        serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + _collectionType.name);
+      if (_collection)
+        serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + _collection.name);
 
       if (!serializationStrategy)
         return;
@@ -138,13 +120,6 @@ namespace FudgeCore {
       // add serialization type to metadata
       const serializables: Metadata["serializables"] = getOwnProperty(metadata, "serializables") ?? (metadata.serializables = { ...metadata.serializables });
       serializables[key] = serializationStrategy;
-
-      if (_context.kind != "getter")
-        return;
-
-      // mark getter to be made enumerable
-      const enumerables: Metadata["enumerables"] = getOwnProperty(metadata, "enumerables") ?? (metadata.enumerables = []);
-      enumerables.push(key);
     };
   }
 

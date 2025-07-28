@@ -3,10 +3,10 @@ namespace FudgeCore {
   Symbol.metadata ??= Symbol("Symbol.metadata");
 
   /**
-   * Association of an attribute with its specified type, either a constructor or a map of possible options (for enums).
+   * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
    * @see {@link Metadata}.
    */
-  export type MetaPropertyTypes = Record<PropertyKey, Function | Record<PropertyKey, General>>;
+  export type MutatorTypes = Record<PropertyKey, Function | Record<PropertyKey, General>>;
 
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
@@ -14,22 +14,20 @@ namespace FudgeCore {
    */
   export interface Metadata extends DecoratorMetadata {
     /**
-     * A list of property keys to be included in a {@link Mutator} ({@link getMutator}) of this class. Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+     * Keys of properties to be included in the class's {@link Mutator}.
+     * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
      */
-    propertyKeys?: string[];
+    mutatorKeys?: string[];
 
     /**
-     * The specified types of the properties of a class. Use the {@link type} or {@link serialize} decorator to add type information to the metadata of a class.
+     * A map from property keys to their specified types for the class's {@link Mutator}.
+     * Use the {@link type} or {@link serialize} decorator to add type information to this map.
      */
-    propertyTypes?: MetaPropertyTypes;
+    mutatorTypes?: MutatorTypes;
 
     /**
-     * List of property keys that will be made enumerable. Use the {@link enumerate} decorator to add keys to this list.
-     */
-    enumerables?: PropertyKey[];
-
-    /**
-     * Map of property keys to the serialization strategy for the property, as determined by the {@link serialize} decorator.
+     * A map of property keys to their serialization strategy.
+     * Use the {@link serialize} decorator to add to this map.
      */
     serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
@@ -37,14 +35,20 @@ namespace FudgeCore {
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
-  const emptyMetaPropertyKeys: readonly string[] = Object.freeze([]);
-  export function getMetaPropertyKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): K[] {
-    return <K[]>(getMetadata(_from).propertyKeys ?? emptyMetaPropertyKeys);
+  const emptyKeys: readonly string[] = Object.freeze([]);
+  /**
+   * Returns the decorated {@link Metadata.mutatorKeys keys} of the {@link Mutator} of the given instance or class. Returns an empty array if no keys are decorated.
+   */
+  export function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): K[] {
+    return <K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
   }
 
-  const emptyMetaPropertyTypes: MetaPropertyTypes = Object.freeze({});
-  export function getMetaPropertyTypes(_from: Object): MetaPropertyTypes {
-    return getMetadata(_from).propertyTypes ?? emptyMetaPropertyTypes;
+  const emptyTypes: MutatorTypes = Object.freeze({});
+  /**
+   * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+   */
+  export function getMutatorTypes(_from: Object): MutatorTypes {
+    return getMetadata(_from).mutatorTypes ?? emptyTypes;
   }
 
   const emptyMetadata: Metadata = Object.freeze({});
@@ -101,8 +105,8 @@ namespace FudgeCore {
       return;
 
     const metadata: Metadata = _context.metadata;
-    const propertyKeys: Metadata["propertyKeys"] = getOwnProperty(metadata, "propertyKeys") ?? (metadata.propertyKeys = metadata.propertyKeys ? [...metadata.propertyKeys] : []);
-    propertyKeys.push(key);
+    const keys: Metadata["mutatorKeys"] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
+    keys.push(key);
   }
   //#endregion
 
@@ -136,8 +140,8 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      const propertyTypes: Metadata["propertyTypes"] = getOwnProperty(metadata, "propertyTypes") ?? (metadata.propertyTypes = { ...metadata.propertyTypes });
-      propertyTypes[key] = _type;
+      const types: Metadata["mutatorTypes"] = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
+      types[key] = _type;
 
       mutate(_value, _context);
     };

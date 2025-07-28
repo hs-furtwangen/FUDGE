@@ -49,7 +49,7 @@ namespace FudgeCore {
    * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
    */
   export function getMutatorAttributeTypes(_object: Record<string, General>, _mutator: Mutator, _out: MutatorAttributeTypes = {}): MutatorAttributeTypes {
-    const metaTypes: MetaPropertyTypes = getMetaPropertyTypes(_object);
+    const metaTypes: MutatorTypes = getMutatorTypes(_object);
     for (let key in _mutator) {
       const metaType: Function | object = metaTypes[key];
       let type: string | object;
@@ -149,7 +149,7 @@ namespace FudgeCore {
         mutator[attribute] = value;
       }
 
-      for (const key of getMetaPropertyKeys(this))  // include all decorated properties
+      for (const key of getMutatorKeys(this))  // include all decorated properties
         mutator[key] = this[key];
 
       if (!_extendable)
