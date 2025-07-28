@@ -15,13 +15,15 @@
     //"outDir": "../../Build",                /* Redirect output structure to the directory. */
     // "sourceRoot": "./",
     //"rootDir": ".",                         /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
-    "inlineSourceMap": true,               /* Emit a single file with source maps instead of having a separate file. */
-    "inlineSources": true,                 /* Emit the source alongside the sourcemaps within a single file; requires '--inlineSourceMap' or '--sourceMap' to be set. */
+    "inlineSourceMap": true, /* Emit a single file with source maps instead of having a separate file. */
+    "inlineSources": true, /* Emit the source alongside the sourcemaps within a single file; requires '--inlineSourceMap' or '--sourceMap' to be set. */
+    "useDefineForClassFields": false,
     "composite": true, /* Enable project compilation */
     "types": [
       "electron",
+      "webxr",
       "node",
-      "../../GoldenLayout/golden-layout" 
+      "../../GoldenLayout/golden-layout"
     ],
   },
   "references": [
