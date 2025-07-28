@@ -2,7 +2,6 @@
 /// <reference path="Debug/DebugTarget.ts"/>
 /// <reference path="Debug/Debug.ts"/>
 // / <reference path="Time/Time.ts"/>
-/// <reference path="Math/ArrayConvertible.ts"/>
 /// <reference path="Event/Event.ts"/>
 /// <reference path="Recycle/RecyclableEvent.ts"/>
 /// <reference path="Serialization/Metadata.ts"/>
@@ -10,7 +9,6 @@
 /// <reference path="Serialization/SerializeDecorator.ts"/>
 /// <reference path="Serialization/Serializer.ts"/>
 /// <reference path="Render/RenderWebGL.ts"/>
-/// <reference path="Render/RenderInjectorTexture.ts"/>
 /// <reference path="Graph/Node.ts"/>
 /// <reference path="Component/Component.ts"/>
 /// <reference path="Recycle/RecycableArray.ts"/>

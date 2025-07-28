@@ -1,3 +1,5 @@
+/// <reference path="../Render/RenderInjectorTexture.ts"/>
+
 namespace FudgeCore {
   /** {@link TexImageSource} is a union type which as of now includes {@link VideoFrame}. All other parts of this union have a .width and .height property but VideoFrame does not. And since we only ever use {@link HTMLImageElement} and {@link OffscreenCanvas} currently VideoFrame can be excluded for convenience of accessing .width and .height */
   type ImageSource = Exclude<TexImageSource, VideoFrame>;
