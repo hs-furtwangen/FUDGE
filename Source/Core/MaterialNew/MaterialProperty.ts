@@ -1,9 +1,17 @@
+/// <reference path="../Render/RenderWebGLMaterialProperty.ts"/>
+
 namespace FudgeCore {
   export namespace MaterialSystem {
     /**
      * A material property is a part of a {@link Material} and provides data to render a specific {@link ShaderFeature}.
      */
     export abstract class MaterialProperty extends Mutable implements Serializable {
+      /** subclasses get a iSubclass number for identification */
+      public static readonly iSubclass: number;
+      /** list of all the subclasses derived from this class, if they registered properly */
+      public static readonly subclasses: typeof MaterialProperty[] = [];
+
+      protected static registerSubclass(_subclass: typeof MaterialProperty): number { return MaterialProperty.subclasses.push(_subclass) - 1; }
 
       /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
       public updateRenderData(..._args: unknown[]): void { return; }
@@ -11,38 +19,44 @@ namespace FudgeCore {
       /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
       public useRenderData(): void { return; }
 
-      protected reduceMutator(_mutator: Mutator): void { return; }
+      public serialize(): Serialization {
+        return serializeDecorations(this);
+      };
 
-      public abstract serialize(): Serialization;
-      public abstract deserialize(_serialization: Serialization): Promise<Serializable>;
+      public async deserialize(_serialization: Serialization): Promise<Serializable> {
+        return deserializeDecorations(this, _serialization);
+      };
+
+      protected reduceMutator(_mutator: Mutator): void { return; }
     }
 
     @RenderWebGLMaterialPropertyColor.decorate
     export class MaterialPropertyColor extends MaterialProperty {
+      public static readonly iSubclass: number = MaterialProperty.registerSubclass(MaterialPropertyColor);
+
+      @serialize(Color)
       public color: Color;
 
       public constructor(_color: Color = new Color(1, 1, 1, 1)) {
         super();
         this.color = _color;
       }
-
-      public serialize(): Serialization {
-        const serialization: SerializationOf<MaterialPropertyColor> = {};
-        serialization.color = this.color.serialize();
-        return serialization;
-      }
-
-      public async deserialize(_serialization: SerializationOf<MaterialPropertyColor>): Promise<Serializable> {
-        await this.color.deserialize(_serialization.color);
-        return this;
-      }
     }
 
     @RenderWebGLMaterialPropertyRemissive.decorate
     export class MaterialPropertyRemissive extends MaterialProperty {
+      public static readonly iSubclass: number = MaterialProperty.registerSubclass(MaterialPropertyRemissive);
+
+      @serialize(Number)
       public diffuse: number;
+
+      @serialize(Number)
       public specular: number;
+
+      @serialize(Number)
       public intensity: number;
+
+      @serialize(Number)
       public metallic: number;
 
       public constructor(_diffuse: number = 1, _specular: number = 0.5, _intensity: number = 0.7, _metallic: number = 0.0) {
@@ -52,50 +66,22 @@ namespace FudgeCore {
         this.intensity = _intensity;
         this.metallic = _metallic;
       }
-
-      public serialize(): Serialization {
-        const serialization: SerializationOf<MaterialPropertyRemissive> = {
-          diffuse: this.diffuse,
-          specular: this.specular,
-          intensity: this.intensity,
-          metallic: this.metallic
-        };
-        return serialization;
-      }
-
-      public async deserialize(_serialization: SerializationOf<MaterialPropertyRemissive>): Promise<Serializable> {
-        this.diffuse = _serialization.diffuse;
-        this.specular = _serialization.specular;
-        this.intensity = _serialization.intensity;
-        this.metallic = _serialization.metallic;
-        return this;
-      }
     }
 
     export abstract class MaterialPropertyTexture extends MaterialProperty {
+      @serialize(Texture)
       public texture: Texture;
 
       public constructor(_texture?: Texture) {
         super();
         this.texture = _texture;
       }
-
-      public serialize(): Serialization {
-        const serialization: SerializationOf<MaterialPropertyTexture> = {};
-        if (this.texture)
-          serialization.texture = this.texture.idResource;
-        return serialization;
-      }
-
-      public async deserialize(_serialization: SerializationOf<MaterialPropertyTexture>): Promise<Serializable> {
-        if (_serialization.texture)
-          this.texture = <Texture>await Project.getResource(_serialization.texture);
-        return this;
-      }
     }
 
     @RenderWebGLMaterialPropertyTextureColor.decorate
     export class MaterialPropertyTextureColor extends MaterialPropertyTexture {
+      public static readonly iSubclass: number = MaterialProperty.registerSubclass(MaterialPropertyTextureColor);
+
       public constructor(_texture: Texture = TextureDefault.color) {
         super(_texture);
       }
@@ -103,6 +89,8 @@ namespace FudgeCore {
 
     @RenderWebGLMaterialPropertyTextureNormal.decorate
     export class MaterialPropertyTextureNormal extends MaterialPropertyTexture {
+      public static readonly iSubclass: number = MaterialProperty.registerSubclass(MaterialPropertyTextureNormal);
+
       public constructor(_texture: Texture = TextureDefault.normal) {
         super(_texture);
       }
@@ -110,6 +98,8 @@ namespace FudgeCore {
 
     @RenderWebGLMaterialPropertyTextureToon.decorate
     export class MaterialPropertyTextureToon extends MaterialPropertyTexture {
+      public static readonly iSubclass: number = MaterialProperty.registerSubclass(MaterialPropertyTextureToon);
+
       public constructor(_texture: Texture = TextureDefault.toon) {
         super(_texture);
       }

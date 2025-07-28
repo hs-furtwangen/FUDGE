@@ -1,8 +1,8 @@
 namespace FudgeCore {
   export abstract class RenderWebGLMaterialProperty {
     public static decorate(_constructor: typeof MaterialSystem.MaterialProperty, _context: ClassDecoratorContext): void {
-      _constructor.prototype.updateRenderData = this.updateRenderData;
-      _constructor.prototype.useRenderData = this.useRenderData;
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.updateRenderData.name, { value: this.updateRenderData });
+      Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderData.name, { value: this.useRenderData });
     }
 
     public static updateRenderData(this: MaterialSystem.MaterialProperty, _data: Float32Array, _offset: number): void {

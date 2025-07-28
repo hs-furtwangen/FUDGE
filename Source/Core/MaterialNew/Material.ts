@@ -1,3 +1,6 @@
+/// <reference path="../MaterialNew/MaterialProperty.ts"/>
+/// <reference path="../ShaderNew/ShaderFeature.ts"/>
+
 namespace FudgeCore {
   export namespace MaterialSystem {
     Serializer.registerNamespace(MaterialSystem);
@@ -8,9 +11,11 @@ namespace FudgeCore {
      * Attach the material to a {@link Node} via a {@link ComponentMaterial}.
      * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    @enumerate
     export class Material extends Mutable implements SerializableResource {
+      @serialize(String)
       public name: string;
+
+      @serialize(String)
       public idResource: string = undefined;
 
       public timestampUpdate: number = 0;
@@ -18,11 +23,11 @@ namespace FudgeCore {
       /**
        * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
        */
+      @serialize(Number)
       public alphaClip: number = 0.01;
 
       #features: typeof ShaderFeature[];
       #properties: MaterialProperty[];
-
       #shader: Shader;
 
       public constructor(_name: string = Material.name, _features: typeof ShaderFeature[] = [], _properties?: MaterialProperty[]) {
@@ -41,18 +46,7 @@ namespace FudgeCore {
         return true;
       }
 
-      @enumerate
-      public get properties(): MaterialProperty[] {
-        return this.#properties;
-      }
-
-      public set properties(_properties: MaterialProperty[]) {
-        if (!this.#shader.matchProperties(_properties))
-          throw new Error("Shader features and material properties don't match");
-
-        this.#properties = _properties;
-      }
-
+      @serialize(ShaderFeature, Array)
       public get features(): typeof ShaderFeature[] {
         return this.#features;
       }
@@ -65,6 +59,18 @@ namespace FudgeCore {
 
       public get shader(): Shader {
         return this.#shader;
+      }
+
+      @serialize(MaterialProperty, Array)
+      public get properties(): MaterialProperty[] {
+        return this.#properties;
+      }
+
+      public set properties(_properties: MaterialProperty[]) {
+        if (!this.#shader.matchProperties(_properties))
+          throw new Error("Shader features and material properties don't match");
+
+        this.#properties = _properties;
       }
 
       /**
@@ -88,28 +94,17 @@ namespace FudgeCore {
       public useRenderData(..._args: unknown[]): void { return; };
 
       public serialize(): Serialization {
-        const serialization: SerializationOf<Material> = {
-          name: this.name,
-          idResource: this.idResource,
-          // features: Serializer.serializeFunctions(this.#features), TODO: implement serialization 
-          // properties: Serializer.serializeObjects(this.#properties),
-          alphaClip: this.alphaClip
-        };
-        return serialization;
+        return serializeDecorations(this);
       }
 
       public async deserialize(_serialization: SerializationOf<Material>): Promise<Serializable> {
         Project.register(this, _serialization.idResource);
-        this.name = _serialization.name;
-        // this.#features = Serializer.deserializeFunctions(_serialization.features);
-        // this.#properties = await Serializer.deserializeObjects(_serialization.properties);
-        this.#shader = Shader.get(this.#features);
-        this.alphaClip = _serialization.alphaClip;
-        return this;
+        return deserializeDecorations(this, _serialization);
       }
 
       protected reduceMutator(_mutator: Mutator): void {
         delete _mutator.timestampUpdate;
+        delete _mutator.features;
       }
     }
   }
