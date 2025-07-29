@@ -1567,20 +1567,21 @@ var FudgeCore;
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             const vao = FudgeCore.RenderWebGL.assert(crc3.createVertexArray());
             crc3.bindVertexArray(vao);
+            const renderMesh = this.renderMesh;
             buffers = {
-                indices: createBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, this.renderMesh.indices),
-                positions: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.positions),
-                normals: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.normals),
-                textureUVs: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.textureUVs),
-                colors: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.colors),
-                tangents: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.tangents),
-                nIndices: this.renderMesh.indices.length,
+                indices: createBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, renderMesh.indices),
+                positions: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.positions),
+                normals: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.normals),
+                textureUVs: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.textureUVs),
+                colors: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.colors),
+                tangents: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.tangents),
+                nIndices: renderMesh.indices.length,
                 vao: vao
             };
-            if (this.renderMesh.bones)
-                buffers.bones = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.bones);
-            if (this.renderMesh.weights)
-                buffers.weights = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.weights);
+            if (renderMesh.bones)
+                buffers.bones = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.bones);
+            if (renderMesh.weights)
+                buffers.weights = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.weights);
             setAttributeBuffer(buffers.positions, FudgeCore.SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT);
             setAttributeBuffer(buffers.normals, FudgeCore.SHADER_ATTRIBUTE.NORMAL, 3, WebGL2RenderingContext.FLOAT);
             setAttributeBuffer(buffers.textureUVs, FudgeCore.SHADER_ATTRIBUTE.TEXCOORDS, 2, WebGL2RenderingContext.FLOAT);
@@ -1590,7 +1591,7 @@ var FudgeCore;
                 setAttributeBuffer(buffers.bones, FudgeCore.SHADER_ATTRIBUTE.BONES, 4, WebGL2RenderingContext.UNSIGNED_BYTE);
             if (buffers.weights)
                 setAttributeBuffer(buffers.weights, FudgeCore.SHADER_ATTRIBUTE.WEIGHTS, 4, WebGL2RenderingContext.FLOAT);
-            return this.renderMesh.buffers = buffers;
+            return renderMesh.buffers = buffers;
             function createBuffer(_type, _array) {
                 let buffer = FudgeCore.RenderWebGL.assert(crc3.createBuffer());
                 crc3.bindBuffer(_type, buffer);
@@ -1616,6 +1617,7 @@ var FudgeCore;
             let crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             if (_renderBuffers) {
                 crc3.deleteVertexArray(_renderBuffers.vao);
+                crc3.bindVertexArray(null);
                 crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
                 crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, null);
                 Object.values(_renderBuffers)
@@ -14619,7 +14621,7 @@ var FudgeCore;
         }
         create(_radiusRing = 0.5 - 0.125, _radiusTube = 0.125, _longitudes = 8, _latitudes = 6) {
             this.radiusTube = _radiusTube;
-            this.latitudes = Math.max(3, _latitudes);
+            this.latitudes = Math.max(3, Math.round(_latitudes));
             this.radiusRing = _radiusRing;
             super.rotate(MeshTorus.getShape(_radiusRing, _radiusTube, _latitudes), _longitudes);
         }
@@ -17870,9 +17872,6 @@ var FudgeCore;
             this.adjustingCamera = true;
             this.physicsDebugMode = FudgeCore.PHYSICS_DEBUGMODE.NONE;
             this.gizmosEnabled = false;
-            this.gizmosFilter = Object.fromEntries(FudgeCore.Component.subclasses
-                .filter((_class) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
-                .map((_class) => [_class.name, true]));
             this.componentsPick = new FudgeCore.RecycableArray();
             this.#branch = null;
             this.#crc2 = null;
@@ -17887,6 +17886,7 @@ var FudgeCore;
         #branch;
         #crc2;
         #canvas;
+        #gizmosFilter;
         #rectCanvas;
         #rectClient;
         #canvasResizeObserver;
@@ -17904,6 +17904,14 @@ var FudgeCore;
         }
         get rectClient() {
             return this.#rectClient;
+        }
+        get gizmosFilter() {
+            if (!this.#gizmosFilter)
+                this.#gizmosFilter = Object.fromEntries(FudgeCore.Component.subclasses
+                    .filter((_class) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
+                    .map((_class) => [_class.name, true]));
+            this.#gizmosFilter[FudgeCore.ComponentMesh.name] = false;
+            return this.#gizmosFilter;
         }
         initialize(_name, _branch, _camera, _canvas) {
             this.name = _name;

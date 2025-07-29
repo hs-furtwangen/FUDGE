@@ -151,7 +151,8 @@ namespace Fudge {
     private hndKeyboardEvent = async (_event: KeyboardEvent): Promise<void> => {
       switch (_event.code) {
         case ƒ.KEYBOARD_CODE.A:
-          if (_event.ctrlKey) {
+          const focussed: Element = document.activeElement;
+          if (focussed instanceof ƒui.TreeItem && _event.ctrlKey) {
             this.tree.clearSelection();
             this.tree.selectAll();
           }
@@ -192,6 +193,8 @@ namespace Fudge {
         case EVENT_EDITOR.UPDATE:
           if (_event.detail.view instanceof ViewInternal || _event.detail.sender instanceof PanelGraph) {
             this.setGraph(this.graph);
+            if (!this.tree)
+              break;
             this.tree.controller.selection = this.selectionPrevious;
             this.tree.displaySelection(this.selectionPrevious);
           }

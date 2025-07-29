@@ -308,7 +308,8 @@ namespace Fudge {
           input.focus();
           break;
         case ƒ.KEYBOARD_CODE.A:
-          if (_event.ctrlKey) {
+          const focussed: Element = document.activeElement;
+          if (focussed instanceof ƒui.TreeItem && _event.ctrlKey) {
             this.tree.clearSelection();
             this.tree.selectAll();
           }

@@ -32,7 +32,7 @@ namespace FudgeCore {
      */
     public create(_radiusRing: number = 0.5 - 0.125, _radiusTube: number = 0.125,  _longitudes: number = 8, _latitudes: number = 6): void {
       this.radiusTube = _radiusTube;
-      this.latitudes = Math.max(3, _latitudes);
+      this.latitudes = Math.max(3, Math.round(_latitudes));
       this.radiusRing = _radiusRing;
       super.rotate(MeshTorus.getShape(_radiusRing, _radiusTube, _latitudes), _longitudes);
     }

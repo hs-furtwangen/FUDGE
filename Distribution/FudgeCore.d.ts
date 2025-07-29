@@ -8480,9 +8480,6 @@ declare namespace FudgeCore {
         physicsDebugMode: PHYSICS_DEBUGMODE;
         gizmosEnabled: boolean;
         gizmosSelected: Node[];
-        gizmosFilter: {
-            [_gizmo: string]: boolean;
-        };
         componentsPick: RecycableArray<ComponentPick>;
         /**
          * Returns true if this viewport currently has focus and thus receives keyboard events
@@ -8510,6 +8507,9 @@ declare namespace FudgeCore {
          * Adjusted automatically on canvas resize, do not modify.
          */
         get rectClient(): Rectangle;
+        get gizmosFilter(): {
+            [_gizmo: string]: boolean;
+        };
         /**
          * Connects the viewport to the given canvas to render the given branch to using the given camera-component, and names the viewport as given.
          */

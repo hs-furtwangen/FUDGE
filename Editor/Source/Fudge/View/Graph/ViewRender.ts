@@ -77,7 +77,7 @@ namespace Fudge {
       item = new remote.MenuItem({
         label: "Transform", submenu: [
           { label: "None", id: TRANSFORM.NONE, type: "radio", click: _callback, accelerator: "Q" },
-          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: "W" },
+          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: "W", checked: true },
           { label: "Rotate", id: TRANSFORM.ROTATE, type: "radio", click: _callback, accelerator: "E" },
           { label: "Scale", id: TRANSFORM.SCALE, type: "radio", click: _callback, accelerator: "R" },
           { type: "separator" },
@@ -104,7 +104,6 @@ namespace Fudge {
 
       item = new remote.MenuItem({ label: "Render Continuously", id: String(CONTEXTMENU.RENDER_CONTINUOUSLY), type: "checkbox", click: _callback });
       menu.append(item);
-
 
       item = new remote.MenuItem({ label: "Selection Outline", id: String(CONTEXTMENU.SELECTION_OUTLINE), type: "checkbox", click: _callback, checked: true });
       menu.append(item);
