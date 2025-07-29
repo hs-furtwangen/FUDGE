@@ -147,6 +147,9 @@ namespace FudgeCore {
      */
     public static async deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]> {
       const serializables: (Promise<Serializable> | Serializable)[] = new Array(_serializations.length);
+      if (!Array.isArray(_serializations)) 
+        return this.deserializeArrayLegacy<T>(_serializations); // legacy support for old serializations. TODO: remove in future versions 
+      
       if (_constructor)
         for (let i: number = 0; i < _serializations.length; i++)
           serializables[i] = new _constructor().deserialize(_serializations[i]);
@@ -155,6 +158,33 @@ namespace FudgeCore {
           serializables[i] = Serializer.deserialize(_serializations[i]);
 
       return <Promise<T[]>>Promise.all(serializables);
+    }
+
+    /**
+     * @deprecated Use {@link Serializer.deserializeArray} instead.
+     */
+    public static async deserializeArrayLegacy<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]> {
+      let serializables: Serializable[] = [];
+      let construct: new () => Serializable;
+      let serializations: Serialization[] = [];
+      try {
+        // loop constructed solely to access type-property. Only one expected!
+        for (let path in _serialization) {
+          construct = Serializer.getFunction(path);
+          serializations = _serialization[path];
+          break;
+        }
+      } catch (_error) {
+        throw new Error("Deserialization failed: " + _error);
+      }
+
+      for (let serialization of serializations) {
+        let serializable: Serializable = new construct();
+        await serializable.deserialize(serialization);
+        serializables.push(serializable);
+      }
+
+      return <T[]>serializables;
     }
 
     /**

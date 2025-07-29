@@ -1,6 +1,3 @@
-/// <reference types="electron" />
-/// <reference types="node" />
-/// <reference types="../../GoldenLayout/golden-layout" />
 declare namespace Fudge {
     export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
     type Subclass<T> = {
@@ -286,7 +283,7 @@ declare namespace Fudge {
         getSettingsJSON(): string;
         getProjectCSS(): string;
         getProjectHTML(_title: string): string;
-        getMutatorAttributeTypes(_mutator: ƒ.Mutator): ƒ.MutatorAttributeTypes;
+        addMutatorAttributeTypes(_types: ƒ.MutatorAttributeTypes): void;
         protected reduceMutator(_mutator: ƒ.Mutator): void;
         private getGraphs;
         private createProjectHTML;

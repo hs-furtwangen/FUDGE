@@ -1,29 +1,4 @@
-/// <reference path="OimoPhysics.d.ts" />
-/// <reference types="webxr" />
-declare namespace FudgeCore {
-    interface PerformanceMeasurement {
-        start?: number;
-        frameTimeMin: number;
-        frameTimeMax: number;
-        frameTimeAvg: number;
-        callsPerFrame: number;
-        time: number;
-        calls: number;
-    }
-    class PerformanceMonitor {
-        #private;
-        static canvas: HTMLCanvasElement;
-        static context: CanvasRenderingContext2D;
-        static measurements: {
-            [key: string]: PerformanceMeasurement;
-        };
-        static startMeasure(_label: string): void;
-        static endMeasure(_label: string): number;
-        static startFrame(): void;
-        static endFrame(): void;
-        private static resize;
-    }
-}
+/// <reference path="OimoPhysics.d.ts" preserve="true" />
 declare namespace FudgeCore {
     /**
      * Base class for the different DebugTargets, mainly for technical purpose of inheritance
@@ -159,27 +134,6 @@ declare namespace FudgeCore {
          * setup routing to standard console
          */
         private static setupConsole;
-    }
-}
-declare namespace FudgeCore {
-    interface ArrayConvertible {
-        readonly isArrayConvertible: true;
-        /**
-         * Set the values of this object from the given array starting at the given offset.
-         * @param _array - The array to read the values from.
-         * @param _offset - (optional) The offset to start reading from.
-         * @returns A reference to this instance.
-         */
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        /**
-         * Copy the values of this object into the given array starting at the given offset. Creates a new array if none is provided.
-         * @param _out - (optional) The receiving array.
-         * @param _offset - (optional) The offset to start writing to.
-         * @returns `_out` or a new array if none is provided.
-         */
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
     }
 }
 declare namespace FudgeCore {
@@ -373,54 +327,56 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Association of an attribute with its specified type (constructor).
+     * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
      * @see {@link Metadata}.
      */
-    type MetaAttributeTypes = Record<PropertyKey, Function | Object>;
+    type MutatorTypes = Record<PropertyKey, Function | Record<PropertyKey, General>>;
     /**
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
      */
-    interface Metadata extends DecoratorMetadataObject {
+    interface Metadata extends DecoratorMetadata {
         /**
-         * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
+         * Keys of properties to be included in the class's {@link Mutator}.
+         * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
          */
-        attributeTypes?: MetaAttributeTypes;
-        enumerateKeys?: PropertyKey[];
+        mutatorKeys?: string[];
         /**
-         * Map of property names to the type of serialization that should be used for that property.
+         * A map from property keys to their specified types for the class's {@link Mutator}.
+         * Use the {@link type} or {@link serialize} decorator to add type information to this map.
          */
-        serializables?: {
-            [key: string]: "primitive" | "serializable" | "resource" | "node";
-        };
-        implements?: Set<Function>;
+        mutatorTypes?: MutatorTypes;
+        /**
+         * A map of property keys to their serialization strategy.
+         * Use the {@link serialize} decorator to add to this map.
+         */
+        serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
     }
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
     type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
-     * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-     * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
-     *
-     * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator}
-     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
-     * will be displayed via their {@link toString} method in the editor.
-     * @author Jonas Plotzky, HFU, 2024-2025
+     * Returns the decorated {@link Metadata.mutatorKeys keys} of the {@link Mutator} of the given instance or class. Returns an empty array if no keys are decorated.
      */
-    function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): K[];
     /**
-     * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
+     * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+     */
+    function getMutatorTypes(_from: Object): MutatorTypes;
+    /**
+     * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
+     */
+    function getMetadata(_from: Object): Readonly<Metadata>;
+    /**
+     * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
      *
-     * **Usage**: Apply this decorator to both the getter method and the class to make it effective.
+     * **Usage**: Apply this decorator to a property.
      *
      * **Example**:
      * ```typescript
-     * @ƒ.enumerate // apply the decorator to the class.
      * export class SomeScript extends ƒ.ComponentScript {
      *   #size: number = 1;
      *
-     *   @ƒ.enumerate // apply the decorator to the getter
+     *   @ƒ.mutate // apply the decorator to the getter
      *   public get size(): number {
      *     return this.#size;
      *   }
@@ -431,16 +387,28 @@ declare namespace FudgeCore {
      *   }
      * }
      * ```
+     * @author Jonas Plotzky, HFU, 2025
      */
-    function enumerate(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
-    function enumerate(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
+    function mutate(_value: unknown, _context: ClassPropertyContext): void;
+    /**
+     * Decorator to specify a type for a property within a class's {@link Metadata | metadata}.
+     * This allows the intended type of a property to be known at runtime, making it a valid drop target in the editor.
+     *
+     * **Note:** Properties with a specified meta-type will always be included in the {@link Mutator base-mutator}
+     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
+     * will be displayed via their {@link toString} method in the editor.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     */
+    function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
 }
 declare namespace FudgeCore {
     /**
      * Interface describing the datatypes of the attributes a mutator as strings
      */
     interface MutatorAttributeTypes {
-        [attribute: string]: string | Object;
+        [attribute: string]: string | object;
     }
     /**
      * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
@@ -465,6 +433,11 @@ declare namespace FudgeCore {
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object
      */
     function getMutatorOfArbitrary(_object: Object): Mutator;
+    /**
+     * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
+     * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
+     */
+    function getMutatorAttributeTypes(_object: Record<string, General>, _mutator: Mutator, _out?: MutatorAttributeTypes): MutatorAttributeTypes;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -502,22 +475,10 @@ declare namespace FudgeCore {
          */
         getMutatorForUserInterface(_extendable?: boolean): MutatorForUserInterface;
         /**
-         * Collect the attributes of the instance and their values applicable for indiviualization by the component.
-         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
+         * Callback to add or modify the mutator attribute types for this instance. Invoked from {@link getMutatorAttributeTypes} after the decorated and inferred types have been collected.
+         * @param _types The types of the attributes of the mutator, as collected by {@link getMutatorAttributeTypes}.
          */
-        /**
-         * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
-         * Does not recurse into objects! This will return the decorated {@link Metadata meta-type} instead of the runtime-type of the object, if available.
-         */
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        /**
-         * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class.
-         */
-        getMetaAttributeTypes(): MetaAttributeTypes;
-        /**
-         * Retrieves the {@link Metadata | metadata} of this instance's class.
-         */
-        getMetadata(): Metadata;
+        addMutatorAttributeTypes?(_types: MutatorAttributeTypes): void;
         /**
          * Updates the values of the given mutator according to the current state of the instance
          * @param _mutator
@@ -550,6 +511,81 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+       * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
+       *
+       * **Editor Configuration:**
+       * Specify the type of a property within a class's {@link Metadata | metadata}.
+       * This allows the intended type of the property to be known by the editor (at runtime), making it:
+       * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+       * - Display the appropriate input element, even if the property has not been set (`undefined`).
+       *
+       * **Serialization:**
+       * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
+       * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+       * - Primitives and enums will be serialized as is.
+       * - {@link Serializable}s will be serialized nested.
+       * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+       * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
+       *
+       * **Example:**
+       * ```typescript
+       * import ƒ = FudgeCore;
+       *
+       * @ƒ.serialize
+       * export class MyScript extends ƒ.ComponentScript {
+       *   #size: number = 1;
+       *
+       *   @ƒ.serialize(String) // display a string in the editor
+       *   public info: string;
+       *
+       *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+       *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+       *
+       *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+       *   public resource: ƒ.Material;
+       *
+       *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+       *   public reference: ƒ.Node
+       *
+       *   @ƒ.serialize(Number) // display a number in the editor
+       *   public get size(): number {
+       *     return this.#size;
+       *   }
+       *
+       *   // define a setter to allow writing to size, or omit it to leave the property read-only
+       *   public set size(_size: number) {
+       *     this.#size = _size;
+       *   }
+       * }
+       * ```
+       *
+       * **Side effects:**
+       * * Attributes with a specified type will always be included in the {@link Mutator base-mutator}
+       * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
+       * will be displayed via their {@link toString} method in the editor.
+       * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
+       *
+       * @author Jonas Plotzky, HFU, 2024-2025
+       */
+    function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
+    function serialize<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T extends Function>(_type: T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T, E extends Record<keyof E, T>>(_type: E, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    /**
+     * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
+     */
+    function serializeDecorations(_instance: object, _serialization?: Serialization): Serialization;
+    /**
+     * Deserialize the {@link serialize decorated properties} of an instance from a {@link Serialization} object.
+     */
+    function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T>;
+}
+declare namespace FudgeCore {
     type General = any;
     /**
      * Holds information needed to recreate an object identical to the one it originated from.
@@ -572,7 +608,7 @@ declare namespace FudgeCore {
         /**
          * Recreates this instance of {@link Serializable} with the information from the given {@link Serialization}.
          */
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+        deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
     }
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
@@ -604,7 +640,7 @@ declare namespace FudgeCore {
         /** In order for the Serializer to create class instances, it needs access to the appropriate namespaces */
         private static namespaces;
         /**
-         * Registers a namespace to the {@link Serializer}, to enable automatic instantiation of classes defined within
+         * Registers a namespace to the {@link Serializer}, to enable automatic instantiation of classes defined within.
          */
         static registerNamespace(_namespace: Object): string;
         /**
@@ -617,17 +653,41 @@ declare namespace FudgeCore {
          * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
          * including attached components, children, superclass-objects
          */
-        static deserialize(_serialization: Serialization): Promise<Serializable>;
+        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T>;
         /**
-         * Returns an Array of javascript object representing the serializable FUDGE-objects given in the array,
-         * including attached components, children, superclass-objects all information needed for reconstruction
-         */
-        static serializeArray<T extends Serializable>(_type: new () => T, _objects: Serializable[]): Serialization;
+        * Serializes an array of {@link Serializable} objects.
+        * By default, the method creates an array of {@link Serialization}s, each with type information.
+        * If all objects are of the same type, pass the constructor to create a more compact serialization.
+        * @param _constructor If given, all objects are expected to be of this type.
+        */
+        static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _constructor?: new () => T): Serialization[];
         /**
-         * Returns an Array of FUDGE-objects reconstructed from the information in the array of {@link Serialization}s given,
-         * including attached components, children, superclass-objects
+         * Deserializes an array of {@link Serializable} objects from an array of {@link Serialization}s.
+         * By default, the method expects an array of {@link Serialization}s, each with type information.
+         * If all objects are of the same type and serialized without type information, pass the constructor to deserialize them.
+         * @param _constructor If given, all objects are expected to be of this type and the serializations are expected to be without type information.
          */
-        static deserializeArray<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]>;
+        static deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]>;
+        /**
+         * @deprecated Use {@link Serializer.deserializeArray} instead.
+         */
+        static deserializeArrayLegacy<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]>;
+        /**
+         * Returns an array of resource IDs representing the given resources.
+         */
+        static serializeResources(_resources: SerializableResource[]): string[];
+        /**
+         * Returns an array of resources retrieved with the given resource IDs.
+         */
+        static deserializeResources<T extends SerializableResource = SerializableResource>(_resourceIds: string[]): Promise<T[]>;
+        /**
+         * Returns an array of paths to the given functions (constructors), if found in the {@link Serializer.registerNamespace registered namespaces}.
+         */
+        static serializeFunctions(_functions: Function[]): string[];
+        /**
+         * Returns an array of functions (constructors) from the given paths to functions, if found in the {@link Serializer.registerNamespace registered namespaces}.
+         */
+        static deserializeFunctions<T extends Function = Function>(_paths: string[]): T[];
         /**
          * Prettify a JSON-String, to make it more readable.
          * not implemented yet
@@ -649,14 +709,14 @@ declare namespace FudgeCore {
          */
         static reconstruct(_path: string): Serializable;
         /**
-         * Returns the constructor from the given path to a class
+         * Returns the function (constructor) from the given path to a function, if found in the {@link registerNamespace registered namespaces}.
          */
-        static getConstructor<T extends Serializable>(_path: string): new () => T;
+        static getFunction<T extends Function>(_path: string): T;
         /**
-         * Returns the full path to the class of the object, if found in the registered namespaces
-         * @param _object
+         * Returns the full path to a function (constructor), if found in the {@link registerNamespace registered namespaces}.
+         * e.g. "FudgeCore.ComponentScript" or "MyNameSpace.MyScript"
          */
-        private static getFullPath;
+        static getFunctionPath(_to: Serializable | Function): string;
         /**
          * Returns the namespace-object defined within the full path, if registered
          * @param _path
@@ -669,6 +729,8 @@ declare namespace FudgeCore {
          */
         private static findNamespaceIn;
     }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -957,7 +1019,7 @@ declare namespace FudgeCore {
          */
         toString(): string;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Vector2>;
+        deserialize(_serialization: Serialization): Vector2;
         getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
         protected reduceMutator(_mutator: Mutator): void;
@@ -1293,8 +1355,6 @@ declare namespace FudgeCore {
         private static drawParticles;
         private static faceCamera;
     }
-}
-declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     interface MapClassToComponents {
@@ -1812,7 +1872,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
         /** Tell the FudgePhysics system that this joint needs to be handled in the next frame. */
@@ -1956,9 +2015,9 @@ declare namespace FudgeCore {
          */
         static isResource(_object: Serializable): boolean;
         /**
-         * Retrieves the resource stored with the given id
+         * Retrieves the resource stored with the given id.
          */
-        static getResource(_idResource: string): Promise<SerializableResource>;
+        static getResource<T extends SerializableResource>(_idResource: string): Promise<T>;
         static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
         /**
          * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
@@ -2017,6 +2076,8 @@ declare namespace FudgeCore {
     export {};
 }
 declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
     /** {@link TexImageSource} is a union type which as of now includes {@link VideoFrame}. All other parts of this union have a .width and .height property but VideoFrame does not. And since we only ever use {@link HTMLImageElement} and {@link OffscreenCanvas} currently VideoFrame can be excluded for convenience of accessing .width and .height */
     type ImageSource = Exclude<TexImageSource, VideoFrame>;
     /**
@@ -2050,10 +2111,10 @@ declare namespace FudgeCore {
         protected wrapDirty: boolean;
         constructor(_name?: string);
         get isSerializableResource(): true;
-        set mipmap(_mipmap: MIPMAP);
         get mipmap(): MIPMAP;
-        set wrap(_wrap: WRAP);
+        set mipmap(_mipmap: MIPMAP);
         get wrap(): WRAP;
+        set wrap(_wrap: WRAP);
         /**
          * Returns the image source of this texture.
          */
@@ -2065,7 +2126,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(_extendable?: boolean): Mutator;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         protected reduceMutator(_mutator: Mutator): void;
     }
     /**
@@ -2595,7 +2655,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const AnimationGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Animation;
+    const AnimationGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Animation;
     /**
      * An {@link Animation} loaded from a glTF-File.
      * @authors Jonas Plotzky
@@ -3235,7 +3295,6 @@ declare namespace FudgeCore {
          */
         class AnimationTargetBinding {
             target: Mutable;
-            animationMutator: AnimationMutator;
             mutator: AnimationMutator;
             propertyBindings: AnimationPropertyBinding[];
             constructor(_target: Mutable, _propertyBindings: AnimationPropertyBinding[]);
@@ -3398,7 +3457,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         private activateListeners;
         /**
          * Updates the Animation.
@@ -3895,7 +3953,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutatorForAnimation(): MutatorForAnimation;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         private hndEvent;
         private update;
         private updateTimeScale;
@@ -3920,7 +3977,6 @@ declare namespace FudgeCore {
         pickAndDispatch(_ray: Ray, _event: PointerEvent): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         drawGizmosSelected(_cmpCamera: ComponentCamera): void;
     }
 }
@@ -4513,7 +4569,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const GraphGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Graph;
+    const GraphGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Graph;
     /**
      * A {@link Graph} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -4660,7 +4716,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const CoatToon_base: (abstract new (...args: any[]) => {
+    const CoatToon_base: (abstract new (...args: General[]) => {
         texToon: Texture;
     }) & typeof CoatRemissive;
     /**
@@ -4669,7 +4725,7 @@ declare namespace FudgeCore {
     export class CoatToon extends CoatToon_base {
         constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
     }
-    const CoatToonTextured_base: (abstract new (...args: any[]) => {
+    const CoatToonTextured_base: (abstract new (...args: General[]) => {
         texToon: Texture;
     }) & typeof CoatRemissiveTextured;
     /**
@@ -4857,13 +4913,13 @@ declare namespace FudgeCore {
          */
         toCSS(): string;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+        deserialize(_serialization: Serialization): Color;
         mutate(_mutator: Mutator): void;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
-    const MaterialGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Material;
+    const MaterialGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Material;
     /**
      * A {@link Material} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -4872,6 +4928,242 @@ declare namespace FudgeCore {
         load(_url?: RequestInfo, _name?: string): Promise<MaterialGLTF>;
     }
     export {};
+}
+declare namespace FudgeCore {
+    abstract class RenderWebGLMaterialProperty {
+        static decorate(_constructor: typeof MaterialSystem.MaterialProperty, _context: ClassDecoratorContext): void;
+        static updateRenderData(this: MaterialSystem.MaterialProperty, _data: Float32Array, _offset: number): void;
+        static useRenderData(this: MaterialSystem.MaterialProperty): void;
+    }
+    abstract class RenderWebGLMaterialPropertyColor extends RenderWebGLMaterialProperty {
+        static updateRenderData(this: MaterialSystem.MaterialPropertyColor, _data: Float32Array, _offset: number): void;
+    }
+    abstract class RenderWebGLMaterialPropertyRemissive extends RenderWebGLMaterialProperty {
+        static updateRenderData(this: MaterialSystem.MaterialPropertyRemissive, _data: Float32Array, _offset: number): void;
+    }
+    abstract class RenderWebGLMaterialPropertyTextureColor extends RenderWebGLMaterialProperty {
+        static useRenderData(this: MaterialSystem.MaterialPropertyTextureColor): void;
+    }
+    abstract class RenderWebGLMaterialPropertyTextureNormal extends RenderWebGLMaterialProperty {
+        static useRenderData(this: MaterialSystem.MaterialPropertyTextureNormal): void;
+    }
+    abstract class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
+        static useRenderData(this: MaterialSystem.MaterialPropertyTextureToon): void;
+    }
+}
+declare namespace FudgeCore {
+    namespace MaterialSystem {
+        /**
+         * A material property is a part of a {@link Material} and provides data to render a specific {@link ShaderFeature}.
+         */
+        abstract class MaterialProperty extends Mutable implements Serializable {
+            /** subclasses get a iSubclass number for identification */
+            static readonly iSubclass: number;
+            /** list of all the subclasses derived from this class, if they registered properly */
+            static readonly subclasses: typeof MaterialProperty[];
+            protected static registerSubclass(_subclass: typeof MaterialProperty): number;
+            /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+            updateRenderData(..._args: unknown[]): void;
+            /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+            useRenderData(): void;
+            serialize(): Serialization;
+            deserialize(_serialization: Serialization): Promise<Serializable>;
+            protected reduceMutator(_mutator: Mutator): void;
+        }
+        class MaterialPropertyColor extends MaterialProperty {
+            static readonly iSubclass: number;
+            color: Color;
+            constructor(_color?: Color);
+        }
+        class MaterialPropertyRemissive extends MaterialProperty {
+            static readonly iSubclass: number;
+            diffuse: number;
+            specular: number;
+            intensity: number;
+            metallic: number;
+            constructor(_diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        }
+        abstract class MaterialPropertyTexture extends MaterialProperty {
+            texture: Texture;
+            constructor(_texture?: Texture);
+        }
+        class MaterialPropertyTextureColor extends MaterialPropertyTexture {
+            static readonly iSubclass: number;
+            constructor(_texture?: Texture);
+        }
+        class MaterialPropertyTextureNormal extends MaterialPropertyTexture {
+            static readonly iSubclass: number;
+            constructor(_texture?: Texture);
+        }
+        class MaterialPropertyTextureToon extends MaterialPropertyTexture {
+            static readonly iSubclass: number;
+            constructor(_texture?: Texture);
+        }
+    }
+}
+declare namespace FudgeCore {
+    let shaderSources: {
+        [source: string]: string;
+    };
+}
+declare namespace FudgeCore {
+    namespace MaterialSystem {
+        /**
+         * A modular building block used to compose a {@link Shader}. Add shader features to a {@link Material} to enable a specific shading capability.
+         */
+        abstract class ShaderFeature {
+            /** subclasses get a iSubclass number for identification */
+            static readonly iSubclass: number;
+            /** list of all the subclasses derived from this class, if they registered properly*/
+            static readonly subclasses: typeof ShaderFeature[];
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+            protected static registerSubclass(_subclass: typeof ShaderFeature): number;
+        }
+        /**
+         * A shader source feature is a shader feature that also provides source code.
+         * Only one source feature may be be used per {@link Shader}.
+         */
+        abstract class ShaderSourceFeature extends ShaderFeature {
+            static readonly vertexShaderSource: string;
+            static readonly fragmentShaderSource: string;
+        }
+        /**
+         * A base class for the defining shader features that use the universal shader source code.
+         */
+        abstract class ShaderFeatureUniversal extends ShaderSourceFeature {
+            static readonly vertexShaderSource: string;
+            static readonly fragmentShaderSource: string;
+        }
+        /**
+         * Provides the basic functionality for lit materials.
+         */
+        abstract class ShaderFeatureLit extends ShaderFeatureUniversal {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+        }
+        /**
+         * Provides the basic functionality for flat materials.
+         */
+        abstract class ShaderFeatureFlat extends ShaderFeatureUniversal {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+        }
+        /**
+         * Provides the basic functionality for gouraud materials.
+         */
+        abstract class ShaderFeatureGouraud extends ShaderFeatureUniversal {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+        }
+        /**
+         * Provides the basic functionality for phong materials.
+         */
+        abstract class ShaderFeaturePhong extends ShaderFeatureUniversal {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+        }
+        /**
+         * Provides the basic functionality for matcap materials.
+         */
+        abstract class ShaderFeatureMatCap extends ShaderFeatureUniversal {
+            static readonly iSubclass: number;
+            static readonly define: string[];
+        }
+        /**
+         * Provides the basic functionality for skinning materials.
+         */
+        abstract class ShaderFeatureSkin extends ShaderFeature {
+            static readonly iSubclass: number;
+            static readonly define: string[];
+        }
+        /**
+         * Adds color texture support to the material.
+         */
+        abstract class ShaderFeatureTextureColor extends ShaderFeature {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+        }
+        /**
+         * Adds normal texture support to the material.
+         */
+        abstract class ShaderFeatureTextureNormal extends ShaderFeature {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+        }
+        /**
+         * Provides a toon texture to the material.
+         */
+        abstract class ShaderFeatureTextureToon extends ShaderFeature {
+            static readonly iSubclass: number;
+            static readonly properties: (new () => MaterialProperty)[];
+            static readonly define: string[];
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace MaterialSystem {
+        /**
+         * A material is a collection of {@link ShaderFeature}s and {@link MaterialProperty}s.
+         * Shader features compose the {@link Shader} used by the material, while material properties provide the shader with the necessary data for rendering.
+         * Attach the material to a {@link Node} via a {@link ComponentMaterial}.
+         * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
+         */
+        class Material extends Mutable implements SerializableResource {
+            #private;
+            name: string;
+            idResource: string;
+            timestampUpdate: number;
+            /**
+             * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+             */
+            alphaClip: number;
+            constructor(_name?: string, _features?: typeof ShaderFeature[], _properties?: MaterialProperty[]);
+            get isSerializableResource(): true;
+            get features(): typeof ShaderFeature[];
+            set features(_features: typeof ShaderFeature[]);
+            get shader(): Shader;
+            get properties(): MaterialProperty[];
+            set properties(_properties: MaterialProperty[]);
+            /**
+             * Returns the {@link MaterialProperty} of the given class, if it exists in the material's properties.
+             */
+            getProperty<T extends MaterialProperty>(_class: new () => T): T | null;
+            /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+            updateRenderData(..._args: unknown[]): void;
+            /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+            useRenderData(..._args: unknown[]): void;
+            serialize(): Serialization;
+            deserialize(_serialization: SerializationOf<Material>): Promise<Serializable>;
+            protected reduceMutator(_mutator: Mutator): void;
+        }
+    }
+}
+declare namespace FudgeCore {
+    interface ArrayConvertible {
+        readonly isArrayConvertible: true;
+        /**
+         * Set the values of this object from the given array starting at the given offset.
+         * @param _array - The array to read the values from.
+         * @param _offset - (optional) The offset to start reading from.
+         * @returns A reference to this instance.
+         */
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        /**
+         * Copy the values of this object into the given array starting at the given offset. Creates a new array if none is provided.
+         * @param _out - (optional) The receiving array.
+         * @param _offset - (optional) The offset to start writing to.
+         * @returns `_out` or a new array if none is provided.
+         */
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+    }
 }
 declare namespace FudgeCore {
     /**
@@ -5184,10 +5476,9 @@ declare namespace FudgeCore {
          */
         getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+        deserialize(_serialization: Serialization): Matrix3x3;
         getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         protected reduceMutator(_mutator: Mutator): void;
         private resetCache;
     }
@@ -5569,10 +5860,9 @@ declare namespace FudgeCore {
          */
         getTranslationTo(_mtxTarget: Matrix4x4, _vctOut?: Vector3): Vector3;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+        deserialize(_serialization: Serialization): Matrix4x4;
         getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         protected reduceMutator(_mutator: Mutator): void;
         private resetCache;
     }
@@ -5879,7 +6169,7 @@ declare namespace FudgeCore {
             [n: number]: number;
         } = number[]>(_out?: T, _offset?: number): T;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Quaternion>;
+        deserialize(_serialization: Serialization): Quaternion;
         mutate(_mutator: Mutator): void;
         protected reduceMutator(_mutator: Mutator): void;
         private resetCache;
@@ -6243,7 +6533,7 @@ declare namespace FudgeCore {
          */
         toString(): string;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Vector3>;
+        deserialize(_serialization: Serialization): Vector3;
         mutate(_mutator: Mutator): void;
         getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
@@ -6381,7 +6671,7 @@ declare namespace FudgeCore {
          */
         toString(): string;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Vector4>;
+        deserialize(_serialization: Serialization): Vector4;
         mutate(_mutator: Mutator): void;
         protected reduceMutator(_mutator: Mutator): void;
     }
@@ -6480,7 +6770,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshFBX_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshFBX_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Mesh;
     /**
      * A mesh loaded from an FBX-File.
      * @authors Matthias Roming, HFU, 2023 | Jonas Plotzky, HFU, 2023
@@ -6510,7 +6800,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Mesh;
     /**
      * A {@link Mesh} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -6519,12 +6809,12 @@ declare namespace FudgeCore {
         iPrimitive: number;
         load(_url?: RequestInfo, _name?: string, _iPrimitive?: number): Promise<MeshGLTF>;
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+        deserialize(_serialization: Serialization): Promise<MeshGLTF>;
     }
     export {};
 }
 declare namespace FudgeCore {
-    const MeshOBJ_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshOBJ_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Mesh;
     /**
      * A mesh loaded from an OBJ-file.
      * Simple Wavefront OBJ import. Takes a wavefront obj string. To Load from a file url, use the
@@ -7170,7 +7460,6 @@ declare namespace FudgeCore {
         /** Change properties by an associative array */
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         getMutator(): Mutator;
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         protected reduceMutator(_mutator: Mutator): void;
         private hndEvent;
         private create;
@@ -8153,6 +8442,21 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * Injects a {@link Shader} with the necessary functionality to render it in WebGL.
+     */
+    class RenderWebGLShader {
+        /** Replaces the decorated method with the injectors’s implementation of the same name. */
+        static decorate<M extends (...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<General, M>): M;
+        protected static createProgram(this: MaterialSystem.Shader): void;
+        protected static useProgram(this: MaterialSystem.Shader): void;
+        protected static deleteProgram(this: MaterialSystem.Shader): void;
+        private static detectUniforms;
+        private static compileShader;
+        private static bindUniformBlock;
+    }
+}
+declare namespace FudgeCore {
+    /**
      * Controls the rendering of a branch, using the given {@link ComponentCamera},
      * and the propagation of the rendered image from the offscreen renderbuffer to the target canvas
      * through a series of {@link Framing} objects. The stages involved are in order of rendering
@@ -8422,68 +8726,6 @@ declare namespace FudgeCore {
          */
         updateMutator(_mutator: Mutator): void;
     }
-}
-declare namespace FudgeCore {
-    /**
-       * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
-       *
-       * **Editor Configuration:**
-       * Specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-       * This allows the intended type of an attribute to be known by the editor (at runtime), making it:
-       * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-       * - Display the appropriate input element, even if the attribute has not been set (`undefined`).
-       *
-       * **Serialization:**
-       * The automatic serialization occurs after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-       * - Primitives and enums will be serialized as is.
-       * - {@link Serializable}s will be serialized nested.
-       * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-       * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
-       *
-       * **Example:**
-       * ```typescript
-       * import ƒ = FudgeCore;
-       *
-       * @ƒ.serialize
-       * export class MyScript extends ƒ.ComponentScript {
-       *   #size: number = 1;
-       *
-       *   @ƒ.serialize(String) // display a string in the editor
-       *   public info: string;
-       *
-       *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
-       *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
-       *
-       *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
-       *   public resource: ƒ.Material;
-       *
-       *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
-       *   public reference: ƒ.Node
-       *
-       *   @ƒ.serialize(Number) // display a number in the editor
-       *   public get size(): number {
-       *     return this.#size;
-       *   }
-       *
-       *   // define a setter to allow writing to size, or omit it to leave the property read-only
-       *   public set size(_size: number) {
-       *     this.#size = _size;
-       *   }
-       * }
-       * ```
-       *
-       * **Side effects:**
-       * * Attributes with a specified type will always be included in the {@link Mutator base-mutator}
-       * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
-       * will be displayed via their {@link toString} method in the editor.
-       * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
-       *
-       * @author Jonas Plotzky, HFU, 2024-2025
-       */
-    function serialize(_value: abstract new (...args: General[]) => Serializable, _context: ClassDecoratorContext): void;
-    function serialize<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function serialize<T extends Number | String | Boolean>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
 }
 declare namespace FBX {
     /**
@@ -9574,11 +9816,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    let shaderSources: {
-        [source: string]: string;
-    };
-}
-declare namespace FudgeCore {
     /**
      * Interface to access data from a WebGl shaderprogram.
      * This should always mirror the (static) interface of {@link Shader}. It exposes the static members of Shader in an instance-based way. e.g.:
@@ -9825,6 +10062,42 @@ declare namespace FudgeCore {
         static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
+    }
+}
+declare namespace FudgeCore {
+    namespace MaterialSystem {
+        /**
+         * A shader is a collection of {@link ShaderFeature}s that define how a material is rendered.
+         */
+        class Shader {
+            #private;
+            static readonly shaders: Map<string, Shader>;
+            program: unknown;
+            uniforms: {
+                [name: string]: unknown;
+            };
+            private constructor();
+            static get(_features: readonly typeof ShaderFeature[]): Shader;
+            /**
+             * Returns the {@link MaterialProperty} instances that are needed to supply the shader with the necessary data.
+             */
+            createProperties(): MaterialProperty[];
+            /**
+             * Returns true if the given material properties match the shader's requirements, false otherwise.
+             */
+            matchProperties(_properties: MaterialProperty[]): boolean;
+            /** Returns the vertex shader source code for the render system */
+            getVertexShaderSource(): string;
+            /** Returns the fragment shader source code for the render system */
+            getFragmentShaderSource(): string;
+            /** Compile the shader program from the vertex and fragment shader source code. */
+            createProgram(): void;
+            /** Use the shader program for rendering. */
+            useProgram(): void;
+            /** Delete the shader program clearing the used memory on the GPU. */
+            deleteProgram(): void;
+            protected insertDefines(_shader: string): string;
+        }
     }
 }
 declare namespace FudgeCore {
