@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
+  export namespace Experimental {
     /** Blending modes used in {@link AnimationNodeBlend}. */
     export enum ANIMATION_BLENDING {
       /** Adds this animation to the previous animations. */

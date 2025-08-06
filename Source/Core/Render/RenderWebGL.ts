@@ -1,5 +1,5 @@
 ///<reference path="RenderbufferManager.ts"/>
-///<reference path="RenderManagerMaterial.ts"/>
+///<reference path="../Experimental/Render/RenderManagerMaterial.ts"/>
 ///<reference path="RenderManagerCoat.ts"/>
 ///<reference path="RenderManagerNode.ts"/>
 ///<reference path="RenderWebGLPicking.ts"/>

@@ -1,9 +1,9 @@
-/// <reference path="../MaterialNew/MaterialProperty.ts"/>
-/// <reference path="../ShaderNew/ShaderFeature.ts"/>
+/// <reference path="MaterialProperty.ts"/>
+/// <reference path="../Shader/ShaderFeature.ts"/>
 
 namespace FudgeCore {
-  export namespace MaterialSystem {
-    Serializer.registerNamespace(MaterialSystem);
+  export namespace Experimental {
+    Serializer.registerNamespace(Experimental);
 
     /**
      * A material is a collection of {@link ShaderFeature}s and {@link MaterialProperty}s. 

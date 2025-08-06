@@ -1,6 +1,6 @@
 namespace FudgeCore {
   /**
-  * Manages {@link MaterialSystem.Material} data to be transmitted during rendering.
+  * Manages {@link Experimental.Material} data to be transmitted during rendering.
   * @internal
   * @authors Jonas Plotzky, HFU, 2025
   */
@@ -11,21 +11,21 @@ namespace FudgeCore {
       super.initialize(_renderWebGL, UNIFORM_BLOCK.MATERIAL.BINDING, blockSize, maxMaterials);
     }
 
-    protected static override updateRenderData(this: MaterialSystem.Material): void {
+    protected static override updateRenderData(this: Experimental.Material): void {
       const offset: number = RenderManagerMaterial.store(this);
       const data: Float32Array = RenderManagerMaterial.data;
 
-      const properties: MaterialSystem.MaterialProperty[] = this.properties;
+      const properties: Experimental.MaterialProperty[] = this.properties;
       for (let i: number = 0; i < properties.length; i++) 
         properties[i].updateRenderData(data, offset);
 
       data[offset + 8] = this.alphaClip;
     }
 
-    protected static override useRenderData(this: MaterialSystem.Material): void {
+    protected static override useRenderData(this: Experimental.Material): void {
       RenderManagerMaterial.useRenderbuffer(this);
       
-      const properties: MaterialSystem.MaterialProperty[] = this.properties;
+      const properties: Experimental.MaterialProperty[] = this.properties;
       for (let i: number = 0; i < properties.length; i++) 
         properties[i].useRenderData();
     }

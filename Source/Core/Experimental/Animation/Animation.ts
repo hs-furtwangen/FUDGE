@@ -1,6 +1,6 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
-    Serializer.registerNamespace(AnimationSystem);
+  export namespace Experimental {
+    Serializer.registerNamespace(Experimental);
 
     /**
      * A track of events trigerred at specific times during an animation.

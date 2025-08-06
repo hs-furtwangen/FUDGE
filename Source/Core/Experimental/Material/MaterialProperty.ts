@@ -1,7 +1,8 @@
 /// <reference path="../Render/RenderWebGLMaterialProperty.ts"/>
+/// <reference path="../../Material/Color.ts"/>
 
 namespace FudgeCore {
-  export namespace MaterialSystem {
+  export namespace Experimental {
     /**
      * A material property is a part of a {@link Material} and provides data to render a specific {@link ShaderFeature}.
      */

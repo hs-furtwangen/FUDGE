@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
+  export namespace Experimental {
 
     /**
      * Handles evaluation and interpolation of animation keyframe data. 

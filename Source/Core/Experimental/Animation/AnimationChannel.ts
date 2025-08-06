@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
+  export namespace Experimental {
 
     /**
      * Stores the path and keyframe data to animate a single property within a node hierarchy.

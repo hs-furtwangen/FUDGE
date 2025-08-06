@@ -401,7 +401,7 @@ namespace FudgeCore {
       return animation;
     }
 
-    public async getAnimationNew(_iAnimation: number | string, _animationOut?: AnimationSystem.Animation): Promise<AnimationSystem.Animation> {
+    public async getAnimationExperimental(_iAnimation: number | string, _animationOut?: Experimental.Animation): Promise<Experimental.Animation> {
       _iAnimation = this.getIndex(_iAnimation, this.#gltf.animations);
 
       if (_iAnimation == -1)
@@ -410,7 +410,7 @@ namespace FudgeCore {
       const id: string = `${Animation.name}|${_iAnimation}`;
 
       if (!_animationOut && this.#resources[id])
-        return <AnimationSystem.Animation>this.#resources[id];
+        return <Experimental.Animation>this.#resources[id];
 
       const gltfAnimation: GLTF.Animation = this.#gltf.animations?.[_iAnimation];
 
@@ -418,7 +418,7 @@ namespace FudgeCore {
         throw new Error(`${this}: Couldn't find animation with index ${_iAnimation}.`);
 
       const gltfChannels: GLTF.AnimationChannel[] = gltfAnimation.channels;
-      const channels: AnimationSystem.AnimationChannel[] = new Array<AnimationSystem.AnimationChannel>(gltfChannels.length);
+      const channels: Experimental.AnimationChannel[] = new Array<Experimental.AnimationChannel>(gltfChannels.length);
       let duration: number = 0;
       for (let i: number = 0; i < gltfChannels.length; i++) {
         const gltfChannel: GLTF.AnimationChannel = gltfChannels[i];
@@ -442,12 +442,12 @@ namespace FudgeCore {
 
         const output: Float32Array = await this.getFloat32Array(sampler.output);
         if (gltfPath == "rotation")
-          channels[i] = new AnimationSystem.AnimationChannelQuaternion(path, input, output, interpolation);
+          channels[i] = new Experimental.AnimationChannelQuaternion(path, input, output, interpolation);
         else
-          channels[i] = new AnimationSystem.AnimationChannelVector(path, input, output, interpolation);
+          channels[i] = new Experimental.AnimationChannelVector(path, input, output, interpolation);
       }
 
-      const animation: AnimationSystem.Animation = new AnimationSystem.Animation();
+      const animation: Experimental.Animation = new Experimental.Animation();
       animation.name = gltfAnimation.name;
       animation.channels = channels;
       animation.duration = duration;

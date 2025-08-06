@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace MaterialSystem {
+  export namespace Experimental {
     /**
      * A shader is a collection of {@link ShaderFeature}s that define how a material is rendered.
      */

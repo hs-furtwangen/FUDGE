@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
+  export namespace Experimental {
     /**
      * Attaches a {@link AnimationNode} to a {@link Node} and updates the node's properties according to the animation graph.
      */

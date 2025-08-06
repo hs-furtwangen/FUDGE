@@ -451,6 +451,11 @@ declare namespace FudgeCore {
          */
         get type(): string;
         /**
+         * Returns the type of this mutable instance that will be used to display it in the editor, can be either a constructor or a map object to select from.
+         * Override this method to provide a custom type for the mutable.
+         */
+        get mutatorType(): Function | Record<PropertyKey, General>;
+        /**
          * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
          * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
@@ -2973,346 +2978,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /**
-         * A track of events trigerred at specific times during an animation.
-         */
-        class AnimationEventTrack {
-            times: number[];
-            events: string[][];
-            constructor(_times?: number[], _events?: string[][]);
-        }
-        /**
-         * Represents an animation consisting of multiple channels. Each channel targets a specific property within a node hierarchy and contains keyframes that define the animation's behavior over time.
-         */
-        class Animation extends Mutable implements SerializableResource {
-            idResource: string;
-            name: string;
-            duration: number;
-            channels: AnimationChannel[];
-            eventTrack: AnimationEventTrack;
-            constructor(_name?: string, _duration?: number, _channels?: AnimationChannel[], _eventTrack?: AnimationEventTrack);
-            get isSerializableResource(): true;
-            serialize(): SerializationOf<Animation>;
-            deserialize(_serialization: Serialization): Promise<Animation>;
-            protected reduceMutator(_mutator: Mutator): void;
-        }
-    }
-}
-declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /**
-         * Stores the path and keyframe data to animate a single property within a node hierarchy.
-         * The keyframes are stored in an input/output buffer pair: a set of scalar values representing the timestamps; and a set of elements (scalar, vector, quaternion etc.) representing the animated property.
-         * Interpolation between keyframes is defined by the set {@link ANIMATION_INTERPOLATION}. When used with {@link ANIMATION_INTERPOLATION.CUBIC cubic} interpolation, for each timestamp there must be three associated keyframe elements: in-tangent, property value, and out-tangent.
-         *
-         * **Example vector3-input-output:**
-         *
-         * `input: [t0, t1, ...]`
-         *
-         * `output: [e0x, e0y, e0z, e1x, e1y, e1z, ...]`
-         *
-         * **Example vector2-input-cubic-output:** in and out tangents (`a`, `b`) and elements (`e`) must be grouped within keyframes.
-         *
-         * `input: [t0, t1, ...]`
-         *
-         * `output: [a0x, a0y, e0x, e0y, b0x, b0y, a1x, a1y, e1x, e1y, b1x, b1y, ...]`
-         */
-        abstract class AnimationChannel implements Serializable {
-            targetPath: string;
-            input: Float32Array;
-            output: Float32Array;
-            interpolation: ANIMATION_INTERPOLATION;
-            constructor(_targetPath?: string, _input?: Float32Array, _output?: Float32Array, _interpolation?: ANIMATION_INTERPOLATION);
-            /**
-             * Returns the size of a single element in the output buffer, which is the number of values per element. e.g. 3 for a vector3, 4 for a quaternion, 1 for a scalar.
-             */
-            getElementSize(): number;
-            createInterpolant(_result?: Float32Array): AnimationInterpolant;
-            serialize(): SerializationOf<AnimationChannel>;
-            deserialize(_serialization: SerializationOf<AnimationChannel>): Promise<AnimationChannel>;
-            /**
-             * Interpolates between keyframe[i-1] and keyframe[i] using the given t value in the range [0, 1].
-             */
-            interpolate(_i1: number, _t: number, _out: Float32Array): void;
-            protected createInterpolantConstant(_result?: Float32Array): AnimationInterpolant;
-            protected createInterpolantLinear(_result?: Float32Array): AnimationInterpolant;
-            protected createInterpolantCubic(_result?: Float32Array): AnimationInterpolant;
-        }
-        class AnimationChannelNumber extends AnimationChannel {
-        }
-        class AnimationChannelVector extends AnimationChannel {
-        }
-        class AnimationChannelColor extends AnimationChannel {
-        }
-        class AnimationChannelQuaternion extends AnimationChannel {
-            protected createInterpolantLinear(_result?: Float32Array): AnimationInterpolant;
-            protected createInterpolantCubic(_result?: Float32Array): AnimationInterpolant;
-        }
-    }
-}
-declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /**
-         * Handles evaluation and interpolation of animation keyframe data.
-         */
-        abstract class AnimationInterpolant {
-            input: Float32Array;
-            output: Float32Array;
-            result: Float32Array;
-            elementSize: number;
-            constructor(_input: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array);
-            /**
-             * Evaluates the interpolant at a given time.
-             */
-            evaluate(_t: number): Float32Array;
-            /**
-             * Interpolates between the input/output buffer segment `[_i1 - 1, _i1]`.
-             * @param _i1 - The index of the right-hand keyframe.
-             * @param _t0 - The left-hand input value. input[_i1 - 1]
-             * @param _t - The value to interpolate at. Between _t0 and _t1.
-             * @param _t1 - The right-hand input value. input[_i1]
-             */
-            abstract interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
-        }
-        class AnimationInterpolantConstant extends AnimationInterpolant {
-            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
-        }
-        class AnimationInterpolantLinear extends AnimationInterpolant {
-            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
-        }
-        class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
-            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
-        }
-        class AnimationInterpolantCubic extends AnimationInterpolant {
-            /**
-             * The stride of the elements in the output array, which is the size of one element multiplied by 3 (inTangent, element, outTangent).
-             */
-            elementStride: number;
-            constructor(_times: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array);
-            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
-        }
-        class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
-            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
-        }
-    }
-}
-declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /** Blending modes used in {@link AnimationNodeBlend}. */
-        enum ANIMATION_BLENDING {
-            /** Adds this animation to the previous animations. */
-            ADDITIVE = "Additive",
-            /** Overrides the previous animations using linear interpolation. */
-            OVERRIDE = "Override"
-        }
-        /**
-         * Base class for all animation nodes. Animation nodes form an animation graph enabling hierachical animation blending and animation transitions.
-         * Can be attached to a {@link Node} via {@link ComponentAnimationGraph}.
-         * @author Jonas Plotzky, HFU, 2024-2025
-         */
-        abstract class AnimationNode {
-            values: Map<string, Float32Array>;
-            /** The playback speed */
-            speed: number;
-            /** The weight used for blending this node with others in an {@link AnimationNodeBlend}. Default: 1.*/
-            weight: number;
-            /** The mode used for blending this node with others in an {@link AnimationNodeBlend}. Default: {@link ANIMATION_BLENDING.OVERRIDE}. */
-            blending: ANIMATION_BLENDING;
-            constructor(_speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
-            /** Resets the time. */
-            abstract reset(): void;
-            /** Updates the animation according the given delta time */
-            abstract update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
-        }
-        /**
-         * Evaluates a single {@link Animation}.
-         * Used as an input for other {@link AnimationNode}s.
-         * @author Jonas Plotzky, HFU, 2024-2025
-         */
-        class AnimationNodeAnimation extends AnimationNode {
-            #private;
-            animation: Animation;
-            playmode: ANIMATION_PLAYMODE;
-            interpolants: AnimationInterpolant[];
-            time: number;
-            offset: number;
-            constructor(_animation: Animation, _playmode?: ANIMATION_PLAYMODE, _speed?: number, _offset?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
-            reset(): void;
-            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
-        }
-        /**
-         * Blends multiple input {@link AnimationNode}s.
-         * Each child node must specify its own blend {@link weight} and {@link blending}. Processes nodes sequentially, each node blends with the accumulated result.
-         * When combined with {@link AnimationNodeTransition}s as children, transitions from/into an empty state will blend from/into the accumulated result of this node.
-         * @author Jonas Plotzky, HFU, 2024-2025
-         *
-         * **Example walk-run-blend:**
-         * ```typescript
-         * import ƒ = FudgeCore;
-         * // initialization
-         * const walk: ƒ.Animation = new ƒ.Animation();
-         * const run: ƒ.Animation = new ƒ.Animation();
-         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
-         * const nodeRun: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(run, { speed: run.totalTime / walk.totalTime }) // slow down the playback speed of run to synchronize the motion with walk.
-         * const nodeMove: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWalk, nodeRun]);
-         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
-         * cmpAnimationGraph.root = nodeMove;
-         *
-         * // during the game
-         * nodeRun.weight = 0.5; // adjust the weight: 0 is walking, 1 is running.
-         * nodeMove.speed = 1 + nodeRun.weight * nodeRun.speed; // adjust the playback speed of the blend to account for the slowed down run animation.
-         * ```
-         * **Example transition-empty-state:**
-         * ```typescript
-         * import ƒ = FudgeCore;
-         * // initialization
-         * const idle: ƒ.Animation = new ƒ.Animation();
-         * const walk: ƒ.Animation = new ƒ.Animation();
-         * const draw: ƒ.Animation = new ƒ.Animation();
-         * const sheathe: ƒ.Animation = new ƒ.Animation();
-         *
-         * const nodeEmpty: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation();
-         * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
-         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
-         * const nodeDraw: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(draw, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
-         * const nodeSheathe: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(sheathe, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
-         *
-         * const nodeWholeBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
-         * const nodeUpperBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeEmpty);
-         * const nodeRoot: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWholeBody, nodeUpperBody]);
-         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
-         * cmpAnimationGraph.root = nodeRoot;
-         *
-         * // during the game
-         * nodeWholeBody.transit(nodeWalk, 300); // transit whole body into walk.
-         * // in parallel to the whole body, the upper body can transit from empty to draw/sheath and back to empty.
-         * nodeUpperBody.transit(nodeDraw, 300); // transit upper body from empty into draw.
-         * nodeUpperBody.transit(nodeSheathe, 300); // transit upper body from draw into sheathe.
-         * nodeUpperBody.transit(nodeEmpty, 300); // transit upper body from sheathe into empty.
-         * ```
-         */
-        class AnimationNodeBlend extends AnimationNode {
-            nodes: AnimationNode[];
-            constructor(_nodes: AnimationNode[], _speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
-            reset(): void;
-            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
-        }
-        /**
-         * Allows to transition from one {@link AnimationNode} to another over a specified time.
-         * If nested inside an {@link AnimationNodeBlend}, transit from/into an empty state to blend from/into the accumulated result of the container blend node.
-         * @author Jonas Plotzky, HFU, 2024-2025
-         *
-         * **Example:**
-         * ```typescript
-         * import ƒ = FudgeCore;
-         * // initialization
-         * const idle: ƒ.Animation = new ƒ.Animation();
-         * const walk: ƒ.Animation = new ƒ.Animation();
-         * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
-         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
-         * const nodeTransition: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
-         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
-         * cmpAnimationGraph.root = nodeTransition;
-         *
-         * // during the game
-         * nodeTransition.transit(nodeWalk, 300); // transit to the walk animation in 300ms.
-         * nodeTransition.transit(nodeIdle, 300); // transit back to the idle animation.
-         * ```
-         */
-        class AnimationNodeTransition extends AnimationNode {
-            #private;
-            /**
-             * All nodes that can be transitioned to/from.
-             */
-            nodes: AnimationNode[];
-            current: AnimationNode;
-            target: AnimationNode;
-            canceled: boolean;
-            transition: boolean;
-            duration: number;
-            time: number;
-            constructor(_nodes: AnimationNode[], _animation: AnimationNode, _speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
-            reset(): void;
-            /**
-             * Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}.
-             */
-            transit(_target: AnimationNode, _duration: number): void;
-            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
-        }
-    }
-}
-declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /**
-         * Binds a specific property within a node hierarchy (via a path) and allows direct access to it.
-         */
-        class AnimationPropertyBinding {
-            #private;
-            root: Node;
-            path: string;
-            pathParsed: {
-                nodePath: string[];
-                componentType: string;
-                componentIndex: string;
-                targetPath: string[];
-            };
-            node: Node;
-            component: Component;
-            target: Mutable;
-            key: string;
-            property: unknown | ArrayConvertible;
-            /** The animated value to be applied to the property */
-            output: Float32Array;
-            constructor(_root: Node, _path: string, _output: Float32Array);
-            /**
-             * @example "childName/childName/childName/components/ComponentTransform/0/mtxLocal/translation"
-             * @example "components/ComponentTransform/0"
-             */
-            static parsePath(_path: string): AnimationPropertyBinding["pathParsed"];
-            static findNode(_rootNode: Node, _parsedPath: string[]): Node;
-            static findTarget(_component: Component, _parsedPath: string[]): Mutable;
-            bind(): void;
-            unbind(): void;
-            apply(): void;
-            set(_source: Float32Array, _offset: number): void;
-            get(_target: Float32Array, _offset: number): void;
-        }
-    }
-}
-declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /**
-         * Binds a specific {@link Mutable} animation target within a node graph and allows {@link Mutable.animate animation} of it.
-         */
-        class AnimationTargetBinding {
-            target: Mutable;
-            mutator: AnimationMutator;
-            propertyBindings: AnimationPropertyBinding[];
-            constructor(_target: Mutable, _propertyBindings: AnimationPropertyBinding[]);
-            apply(): void;
-        }
-    }
-}
-declare namespace FudgeCore {
-    namespace AnimationSystem {
-        /**
-         * Attaches a {@link AnimationNode} to a {@link Node} and updates the node's properties according to the animation graph.
-         */
-        class ComponentAnimationGraph extends Component {
-            #private;
-            root: AnimationNode;
-            constructor(_root?: AnimationNode);
-            bind(): void;
-            unbind(): void;
-            update(_deltaTime: number): void;
-            private hndRenderPrepare;
-            private onComponentAdd;
-            private onComponentRemove;
-        }
-    }
-}
-declare namespace FudgeCore {
     /**
      * Extension of AudioBuffer with a load method that creates a buffer in the {@link AudioManager}.default to be used with {@link ComponentAudio}
      * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
@@ -4545,188 +4210,366 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    /**
-     * A node managed by {@link Project} that functions as a template for {@link GraphInstance}s
-     * @author Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
-     */
-    class Graph extends Node implements SerializableResource {
-        idResource: string;
-        constructor(_name?: string);
-        get isSerializableResource(): true;
-        get type(): string;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        private hndMutate;
-    }
-}
-declare namespace FudgeCore {
-    const GraphGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Graph;
-    /**
-     * A {@link Graph} loaded from a glTF-File.
-     * @authors Jonas Plotzky, HFU, 2024
-     */
-    export class GraphGLTF extends GraphGLTF_base {
-        load(_url?: RequestInfo, _name?: string): Promise<GraphGLTF>;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-    }
-    export {};
-}
-declare namespace FudgeCore {
-    /**
-     * An instance of a {@link Graph}.
-     * This node keeps a reference to its resource an can thus optimize serialization
-     * @author Jirka Dell'Oro-Friedl, HFU, 2019
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
-     */
-    class GraphInstance extends Node {
-        #private;
-        /** id of the resource that instance was created from */
-        static count: number;
+    namespace Experimental {
         /**
-         * This constructor alone will not create a reconstruction, but only save the id.
-         * To create an instance of the graph, call reset on this or set with a graph as parameter.
-         * Prefer Project.createGraphInstance(_graph).
+         * A track of events trigerred at specific times during an animation.
          */
-        constructor(_graph?: Graph);
-        get idSource(): string;
+        class AnimationEventTrack {
+            times: number[];
+            events: string[][];
+            constructor(_times?: number[], _events?: string[][]);
+        }
         /**
-         * Recreate this node from the {@link Graph} referenced
+         * Represents an animation consisting of multiple channels. Each channel targets a specific property within a node hierarchy and contains keyframes that define the animation's behavior over time.
          */
-        reset(): Promise<void>;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        /**
-         * Connects this graph instance to the graph referenced.
-         */
-        connectToGraph(): Promise<void>;
-        /**
-         * Set this node to be a recreation of the {@link Graph} given
-         */
-        set(_graph: Graph): Promise<void>;
-        /**
-         * Retrieve the graph this instances refers to
-         */
-        get(): Graph;
-        /**
-         * Source graph mutated, reflect mutation in this instance
-         */
-        private hndMutationGraph;
-        /**
-         * This instance mutated, reflect mutation in source graph
-         */
-        private hndMutationInstance;
-        private reflectMutation;
-        private isFiltered;
+        class Animation extends Mutable implements SerializableResource {
+            idResource: string;
+            name: string;
+            duration: number;
+            channels: AnimationChannel[];
+            eventTrack: AnimationEventTrack;
+            constructor(_name?: string, _duration?: number, _channels?: AnimationChannel[], _eventTrack?: AnimationEventTrack);
+            get isSerializableResource(): true;
+            serialize(): SerializationOf<Animation>;
+            deserialize(_serialization: Serialization): Promise<Animation>;
+            protected reduceMutator(_mutator: Mutator): void;
+        }
     }
 }
 declare namespace FudgeCore {
-    /**
-     * Holds data to feed into a {@link Shader} to describe the surface of {@link Mesh}.
-     * {@link Material}s reference {@link Coat} and {@link Shader}.
-     */
-    class Coat extends Mutable implements Serializable {
+    namespace Experimental {
         /**
-         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+         * Stores the path and keyframe data to animate a single property within a node hierarchy.
+         * The keyframes are stored in an input/output buffer pair: a set of scalar values representing the timestamps; and a set of elements (scalar, vector, quaternion etc.) representing the animated property.
+         * Interpolation between keyframes is defined by the set {@link ANIMATION_INTERPOLATION}. When used with {@link ANIMATION_INTERPOLATION.CUBIC cubic} interpolation, for each timestamp there must be three associated keyframe elements: in-tangent, property value, and out-tangent.
+         *
+         * **Example vector3-input-output:**
+         *
+         * `input: [t0, t1, ...]`
+         *
+         * `output: [e0x, e0y, e0z, e1x, e1y, e1z, ...]`
+         *
+         * **Example vector2-input-cubic-output:** in and out tangents (`a`, `b`) and elements (`e`) must be grouped within keyframes.
+         *
+         * `input: [t0, t1, ...]`
+         *
+         * `output: [a0x, a0y, e0x, e0y, b0x, b0y, a1x, a1y, e1x, e1y, b1x, b1y, ...]`
          */
-        alphaClip: number;
-        /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-        updateRenderData(): void;
-        /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-        useRenderData(): void;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
+        abstract class AnimationChannel implements Serializable {
+            targetPath: string;
+            input: Float32Array;
+            output: Float32Array;
+            interpolation: ANIMATION_INTERPOLATION;
+            constructor(_targetPath?: string, _input?: Float32Array, _output?: Float32Array, _interpolation?: ANIMATION_INTERPOLATION);
+            /**
+             * Returns the size of a single element in the output buffer, which is the number of values per element. e.g. 3 for a vector3, 4 for a quaternion, 1 for a scalar.
+             */
+            getElementSize(): number;
+            createInterpolant(_result?: Float32Array): AnimationInterpolant;
+            serialize(): SerializationOf<AnimationChannel>;
+            deserialize(_serialization: SerializationOf<AnimationChannel>): Promise<AnimationChannel>;
+            /**
+             * Interpolates between keyframe[i-1] and keyframe[i] using the given t value in the range [0, 1].
+             */
+            interpolate(_i1: number, _t: number, _out: Float32Array): void;
+            protected createInterpolantConstant(_result?: Float32Array): AnimationInterpolant;
+            protected createInterpolantLinear(_result?: Float32Array): AnimationInterpolant;
+            protected createInterpolantCubic(_result?: Float32Array): AnimationInterpolant;
+        }
+        class AnimationChannelNumber extends AnimationChannel {
+        }
+        class AnimationChannelVector extends AnimationChannel {
+        }
+        class AnimationChannelColor extends AnimationChannel {
+        }
+        class AnimationChannelQuaternion extends AnimationChannel {
+            protected createInterpolantLinear(_result?: Float32Array): AnimationInterpolant;
+            protected createInterpolantCubic(_result?: Float32Array): AnimationInterpolant;
+        }
     }
 }
 declare namespace FudgeCore {
-    /**
-     * The simplest {@link Coat} providing just a color
-     */
-    class CoatColored extends Coat {
-        color: Color;
-        constructor(_color?: Color);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+    namespace Experimental {
+        /**
+         * Handles evaluation and interpolation of animation keyframe data.
+         */
+        abstract class AnimationInterpolant {
+            input: Float32Array;
+            output: Float32Array;
+            result: Float32Array;
+            elementSize: number;
+            constructor(_input: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array);
+            /**
+             * Evaluates the interpolant at a given time.
+             */
+            evaluate(_t: number): Float32Array;
+            /**
+             * Interpolates between the input/output buffer segment `[_i1 - 1, _i1]`.
+             * @param _i1 - The index of the right-hand keyframe.
+             * @param _t0 - The left-hand input value. input[_i1 - 1]
+             * @param _t - The value to interpolate at. Between _t0 and _t1.
+             * @param _t1 - The right-hand input value. input[_i1]
+             */
+            abstract interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantConstant extends AnimationInterpolant {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantLinear extends AnimationInterpolant {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantCubic extends AnimationInterpolant {
+            /**
+             * The stride of the elements in the output array, which is the size of one element multiplied by 3 (inTangent, element, outTangent).
+             */
+            elementStride: number;
+            constructor(_times: Float32Array, _output: Float32Array, _elementSize: number, _result?: Float32Array);
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
+        class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
+            interpolate(_i1: number, _t0: number, _t: number, _t1: number): Float32Array;
+        }
     }
 }
 declare namespace FudgeCore {
-    /**
-     * A {@link Coat} providing a color and parameters for the phong shading model.
-     */
-    class CoatRemissive extends CoatColored {
-        #private;
-        diffuse: number;
-        specular: number;
-        intensity: number;
-        constructor(_color?: Color, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
-        get metallic(): number;
-        set metallic(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
+    namespace Experimental {
+        /** Blending modes used in {@link AnimationNodeBlend}. */
+        enum ANIMATION_BLENDING {
+            /** Adds this animation to the previous animations. */
+            ADDITIVE = "Additive",
+            /** Overrides the previous animations using linear interpolation. */
+            OVERRIDE = "Override"
+        }
+        /**
+         * Base class for all animation nodes. Animation nodes form an animation graph enabling hierachical animation blending and animation transitions.
+         * Can be attached to a {@link Node} via {@link ComponentAnimationGraph}.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         */
+        abstract class AnimationNode {
+            values: Map<string, Float32Array>;
+            /** The playback speed */
+            speed: number;
+            /** The weight used for blending this node with others in an {@link AnimationNodeBlend}. Default: 1.*/
+            weight: number;
+            /** The mode used for blending this node with others in an {@link AnimationNodeBlend}. Default: {@link ANIMATION_BLENDING.OVERRIDE}. */
+            blending: ANIMATION_BLENDING;
+            constructor(_speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            /** Resets the time. */
+            abstract reset(): void;
+            /** Updates the animation according the given delta time */
+            abstract update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+        /**
+         * Evaluates a single {@link Animation}.
+         * Used as an input for other {@link AnimationNode}s.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         */
+        class AnimationNodeAnimation extends AnimationNode {
+            #private;
+            animation: Animation;
+            playmode: ANIMATION_PLAYMODE;
+            interpolants: AnimationInterpolant[];
+            time: number;
+            offset: number;
+            constructor(_animation: Animation, _playmode?: ANIMATION_PLAYMODE, _speed?: number, _offset?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            reset(): void;
+            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+        /**
+         * Blends multiple input {@link AnimationNode}s.
+         * Each child node must specify its own blend {@link weight} and {@link blending}. Processes nodes sequentially, each node blends with the accumulated result.
+         * When combined with {@link AnimationNodeTransition}s as children, transitions from/into an empty state will blend from/into the accumulated result of this node.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         *
+         * **Example walk-run-blend:**
+         * ```typescript
+         * import ƒ = FudgeCore;
+         * // initialization
+         * const walk: ƒ.Animation = new ƒ.Animation();
+         * const run: ƒ.Animation = new ƒ.Animation();
+         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+         * const nodeRun: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(run, { speed: run.totalTime / walk.totalTime }) // slow down the playback speed of run to synchronize the motion with walk.
+         * const nodeMove: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWalk, nodeRun]);
+         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+         * cmpAnimationGraph.root = nodeMove;
+         *
+         * // during the game
+         * nodeRun.weight = 0.5; // adjust the weight: 0 is walking, 1 is running.
+         * nodeMove.speed = 1 + nodeRun.weight * nodeRun.speed; // adjust the playback speed of the blend to account for the slowed down run animation.
+         * ```
+         * **Example transition-empty-state:**
+         * ```typescript
+         * import ƒ = FudgeCore;
+         * // initialization
+         * const idle: ƒ.Animation = new ƒ.Animation();
+         * const walk: ƒ.Animation = new ƒ.Animation();
+         * const draw: ƒ.Animation = new ƒ.Animation();
+         * const sheathe: ƒ.Animation = new ƒ.Animation();
+         *
+         * const nodeEmpty: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation();
+         * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+         * const nodeDraw: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(draw, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+         * const nodeSheathe: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(sheathe, { playmode: ƒ.ANIMATION_PLAYMODE.PLAY_ONCE });
+         *
+         * const nodeWholeBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+         * const nodeUpperBody: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeEmpty);
+         * const nodeRoot: ƒ.AnimationNodeBlend = new ƒ.AnimationNodeBlend([nodeWholeBody, nodeUpperBody]);
+         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+         * cmpAnimationGraph.root = nodeRoot;
+         *
+         * // during the game
+         * nodeWholeBody.transit(nodeWalk, 300); // transit whole body into walk.
+         * // in parallel to the whole body, the upper body can transit from empty to draw/sheath and back to empty.
+         * nodeUpperBody.transit(nodeDraw, 300); // transit upper body from empty into draw.
+         * nodeUpperBody.transit(nodeSheathe, 300); // transit upper body from draw into sheathe.
+         * nodeUpperBody.transit(nodeEmpty, 300); // transit upper body from sheathe into empty.
+         * ```
+         */
+        class AnimationNodeBlend extends AnimationNode {
+            nodes: AnimationNode[];
+            constructor(_nodes: AnimationNode[], _speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            reset(): void;
+            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
+        /**
+         * Allows to transition from one {@link AnimationNode} to another over a specified time.
+         * If nested inside an {@link AnimationNodeBlend}, transit from/into an empty state to blend from/into the accumulated result of the container blend node.
+         * @author Jonas Plotzky, HFU, 2024-2025
+         *
+         * **Example:**
+         * ```typescript
+         * import ƒ = FudgeCore;
+         * // initialization
+         * const idle: ƒ.Animation = new ƒ.Animation();
+         * const walk: ƒ.Animation = new ƒ.Animation();
+         * const nodeIdle: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(idle);
+         * const nodeWalk: ƒ.AnimationNodeAnimation = new ƒ.AnimationNodeAnimation(walk);
+         * const nodeTransition: ƒ.AnimationNodeTransition = new ƒ.AnimationNodeTransition(nodeIdle);
+         * const cmpAnimationGraph: ƒ.ComponentAnimationGraph = new ƒ.ComponentAnimationGraph(); // get the animation component
+         * cmpAnimationGraph.root = nodeTransition;
+         *
+         * // during the game
+         * nodeTransition.transit(nodeWalk, 300); // transit to the walk animation in 300ms.
+         * nodeTransition.transit(nodeIdle, 300); // transit back to the idle animation.
+         * ```
+         */
+        class AnimationNodeTransition extends AnimationNode {
+            #private;
+            /**
+             * All nodes that can be transitioned to/from.
+             */
+            nodes: AnimationNode[];
+            current: AnimationNode;
+            target: AnimationNode;
+            canceled: boolean;
+            transition: boolean;
+            duration: number;
+            time: number;
+            constructor(_nodes: AnimationNode[], _animation: AnimationNode, _speed?: number, _weight?: number, _blending?: ANIMATION_BLENDING);
+            reset(): void;
+            /**
+             * Transit to the given {@link AnimationNode} over the specified duration. The given node will be {@link reset}.
+             */
+            transit(_target: AnimationNode, _duration: number): void;
+            update(_deltaTime: number, _valuesCurrent: Map<string, Float32Array>, _valuesOriginal: Map<string, Float32Array>, _dispatchEvent: (_event: EventUnified) => boolean): void;
+        }
     }
 }
 declare namespace FudgeCore {
-    /**
-     * A {@link Coat} providing a texture and additional data for texturing
-     */
-    class CoatTextured extends CoatColored {
-        texture: Texture;
-        constructor(_color?: Color, _texture?: Texture);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+    namespace Experimental {
+        /**
+         * Binds a specific property within a node hierarchy (via a path) and allows direct access to it.
+         */
+        class AnimationPropertyBinding {
+            #private;
+            root: Node;
+            path: string;
+            pathParsed: {
+                nodePath: string[];
+                componentType: string;
+                componentIndex: string;
+                targetPath: string[];
+            };
+            node: Node;
+            component: Component;
+            target: Mutable;
+            key: string;
+            property: unknown | ArrayConvertible;
+            /** The animated value to be applied to the property */
+            output: Float32Array;
+            constructor(_root: Node, _path: string, _output: Float32Array);
+            /**
+             * @example "childName/childName/childName/components/ComponentTransform/0/mtxLocal/translation"
+             * @example "components/ComponentTransform/0"
+             */
+            static parsePath(_path: string): AnimationPropertyBinding["pathParsed"];
+            static findNode(_rootNode: Node, _parsedPath: string[]): Node;
+            static findTarget(_component: Component, _parsedPath: string[]): Mutable;
+            bind(): void;
+            unbind(): void;
+            apply(): void;
+            set(_source: Float32Array, _offset: number): void;
+            get(_target: Float32Array, _offset: number): void;
+        }
     }
 }
 declare namespace FudgeCore {
-    /**
-     * A {@link Coat} providing a texture and additional data for texturing
-     */
-    class CoatRemissiveTextured extends CoatTextured {
-        #private;
-        diffuse: number;
-        specular: number;
-        intensity: number;
-        constructor(_color?: Color, _texture?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
-        get metallic(): number;
-        set metallic(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
+    namespace Experimental {
+        /**
+         * Binds a specific {@link Mutable} animation target within a node graph and allows {@link Mutable.animate animation} of it.
+         */
+        class AnimationTargetBinding {
+            target: Mutable;
+            mutator: AnimationMutator;
+            propertyBindings: AnimationPropertyBinding[];
+            constructor(_target: Mutable, _propertyBindings: AnimationPropertyBinding[]);
+            apply(): void;
+        }
     }
 }
 declare namespace FudgeCore {
-    /**
-     * A {@link Coat} providing a texture and additional data for texturing
-     */
-    class CoatRemissiveTexturedNormals extends CoatRemissiveTextured {
-        normalMap: Texture;
-        constructor(_color?: Color, _texture?: Texture, _normalMap?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
+    namespace Experimental {
+        /**
+         * Attaches a {@link AnimationNode} to a {@link Node} and updates the node's properties according to the animation graph.
+         */
+        class ComponentAnimationGraph extends Component {
+            #private;
+            root: AnimationNode;
+            constructor(_root?: AnimationNode);
+            bind(): void;
+            unbind(): void;
+            update(_deltaTime: number): void;
+            private hndRenderPrepare;
+            private onComponentAdd;
+            private onComponentRemove;
+        }
     }
 }
 declare namespace FudgeCore {
-    const CoatToon_base: (abstract new (...args: General[]) => {
-        texToon: Texture;
-    }) & typeof CoatRemissive;
-    /**
-     * A {@link Coat} providing a color and parameters for the toon shading model.
-     */
-    export class CoatToon extends CoatToon_base {
-        constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+    abstract class RenderWebGLMaterialProperty {
+        static decorate(_constructor: typeof Experimental.MaterialProperty, _context: ClassDecoratorContext): void;
+        static updateRenderData(this: Experimental.MaterialProperty, _data: Float32Array, _offset: number): void;
+        static useRenderData(this: Experimental.MaterialProperty): void;
     }
-    const CoatToonTextured_base: (abstract new (...args: General[]) => {
-        texToon: Texture;
-    }) & typeof CoatRemissiveTextured;
-    /**
-     * A {@link Coat} providing a texture, a color and parameters for the toon shading model.
-     */
-    export class CoatToonTextured extends CoatToonTextured_base {
-        constructor(_color?: Color, _texture?: Texture, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+    abstract class RenderWebGLMaterialPropertyColor extends RenderWebGLMaterialProperty {
+        static updateRenderData(this: Experimental.MaterialPropertyColor, _data: Float32Array, _offset: number): void;
     }
-    export {};
+    abstract class RenderWebGLMaterialPropertyRemissive extends RenderWebGLMaterialProperty {
+        static updateRenderData(this: Experimental.MaterialPropertyRemissive, _data: Float32Array, _offset: number): void;
+    }
+    abstract class RenderWebGLMaterialPropertyTextureColor extends RenderWebGLMaterialProperty {
+        static useRenderData(this: Experimental.MaterialPropertyTextureColor): void;
+    }
+    abstract class RenderWebGLMaterialPropertyTextureNormal extends RenderWebGLMaterialProperty {
+        static useRenderData(this: Experimental.MaterialPropertyTextureNormal): void;
+    }
+    abstract class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
+        static useRenderData(this: Experimental.MaterialPropertyTextureToon): void;
+    }
 }
 declare namespace FudgeCore {
     /**
@@ -4911,40 +4754,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MaterialGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Material;
-    /**
-     * A {@link Material} loaded from a glTF-File.
-     * @authors Jonas Plotzky, HFU, 2024
-     */
-    export class MaterialGLTF extends MaterialGLTF_base {
-        load(_url?: RequestInfo, _name?: string): Promise<MaterialGLTF>;
-    }
-    export {};
-}
-declare namespace FudgeCore {
-    abstract class RenderWebGLMaterialProperty {
-        static decorate(_constructor: typeof MaterialSystem.MaterialProperty, _context: ClassDecoratorContext): void;
-        static updateRenderData(this: MaterialSystem.MaterialProperty, _data: Float32Array, _offset: number): void;
-        static useRenderData(this: MaterialSystem.MaterialProperty): void;
-    }
-    abstract class RenderWebGLMaterialPropertyColor extends RenderWebGLMaterialProperty {
-        static updateRenderData(this: MaterialSystem.MaterialPropertyColor, _data: Float32Array, _offset: number): void;
-    }
-    abstract class RenderWebGLMaterialPropertyRemissive extends RenderWebGLMaterialProperty {
-        static updateRenderData(this: MaterialSystem.MaterialPropertyRemissive, _data: Float32Array, _offset: number): void;
-    }
-    abstract class RenderWebGLMaterialPropertyTextureColor extends RenderWebGLMaterialProperty {
-        static useRenderData(this: MaterialSystem.MaterialPropertyTextureColor): void;
-    }
-    abstract class RenderWebGLMaterialPropertyTextureNormal extends RenderWebGLMaterialProperty {
-        static useRenderData(this: MaterialSystem.MaterialPropertyTextureNormal): void;
-    }
-    abstract class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
-        static useRenderData(this: MaterialSystem.MaterialPropertyTextureToon): void;
-    }
-}
-declare namespace FudgeCore {
-    namespace MaterialSystem {
+    namespace Experimental {
         /**
          * A material property is a part of a {@link Material} and provides data to render a specific {@link ShaderFeature}.
          */
@@ -4999,7 +4809,7 @@ declare namespace FudgeCore {
     };
 }
 declare namespace FudgeCore {
-    namespace MaterialSystem {
+    namespace Experimental {
         /**
          * A modular building block used to compose a {@link Shader}. Add shader features to a {@link Material} to enable a specific shading capability.
          */
@@ -5099,7 +4909,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    namespace MaterialSystem {
+    namespace Experimental {
         /**
          * A material is a collection of {@link ShaderFeature}s and {@link MaterialProperty}s.
          * Shader features compose the {@link Shader} used by the material, while material properties provide the shader with the necessary data for rendering.
@@ -5135,6 +4945,252 @@ declare namespace FudgeCore {
             protected reduceMutator(_mutator: Mutator): void;
         }
     }
+}
+declare namespace FudgeCore {
+    /**
+     * Injects a {@link Shader} with the necessary functionality to render it in WebGL.
+     */
+    class RenderWebGLShader {
+        /** Replaces the decorated method with the injectors’s implementation of the same name. */
+        static decorate<M extends (...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<General, M>): M;
+        protected static createProgram(this: Experimental.Shader): void;
+        protected static useProgram(this: Experimental.Shader): void;
+        protected static deleteProgram(this: Experimental.Shader): void;
+        private static detectUniforms;
+        private static compileShader;
+        private static bindUniformBlock;
+    }
+}
+declare namespace FudgeCore {
+    namespace Experimental {
+        /**
+         * A shader is a collection of {@link ShaderFeature}s that define how a material is rendered.
+         */
+        class Shader {
+            #private;
+            static readonly shaders: Map<string, Shader>;
+            program: unknown;
+            uniforms: {
+                [name: string]: unknown;
+            };
+            private constructor();
+            static get(_features: readonly typeof ShaderFeature[]): Shader;
+            /**
+             * Returns the {@link MaterialProperty} instances that are needed to supply the shader with the necessary data.
+             */
+            createProperties(): MaterialProperty[];
+            /**
+             * Returns true if the given material properties match the shader's requirements, false otherwise.
+             */
+            matchProperties(_properties: MaterialProperty[]): boolean;
+            /** Returns the vertex shader source code for the render system */
+            getVertexShaderSource(): string;
+            /** Returns the fragment shader source code for the render system */
+            getFragmentShaderSource(): string;
+            /** Compile the shader program from the vertex and fragment shader source code. */
+            createProgram(): void;
+            /** Use the shader program for rendering. */
+            useProgram(): void;
+            /** Delete the shader program clearing the used memory on the GPU. */
+            deleteProgram(): void;
+            protected insertDefines(_shader: string): string;
+        }
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * A node managed by {@link Project} that functions as a template for {@link GraphInstance}s
+     * @author Jirka Dell'Oro-Friedl, HFU, 2019
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
+     */
+    class Graph extends Node implements SerializableResource {
+        idResource: string;
+        constructor(_name?: string);
+        get isSerializableResource(): true;
+        get type(): string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        private hndMutate;
+    }
+}
+declare namespace FudgeCore {
+    const GraphGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Graph;
+    /**
+     * A {@link Graph} loaded from a glTF-File.
+     * @authors Jonas Plotzky, HFU, 2024
+     */
+    export class GraphGLTF extends GraphGLTF_base {
+        load(_url?: RequestInfo, _name?: string): Promise<GraphGLTF>;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }
+    export {};
+}
+declare namespace FudgeCore {
+    /**
+     * An instance of a {@link Graph}.
+     * This node keeps a reference to its resource an can thus optimize serialization
+     * @author Jirka Dell'Oro-Friedl, HFU, 2019
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Resource
+     */
+    class GraphInstance extends Node {
+        #private;
+        /** id of the resource that instance was created from */
+        static count: number;
+        /**
+         * This constructor alone will not create a reconstruction, but only save the id.
+         * To create an instance of the graph, call reset on this or set with a graph as parameter.
+         * Prefer Project.createGraphInstance(_graph).
+         */
+        constructor(_graph?: Graph);
+        get idSource(): string;
+        /**
+         * Recreate this node from the {@link Graph} referenced
+         */
+        reset(): Promise<void>;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        /**
+         * Connects this graph instance to the graph referenced.
+         */
+        connectToGraph(): Promise<void>;
+        /**
+         * Set this node to be a recreation of the {@link Graph} given
+         */
+        set(_graph: Graph): Promise<void>;
+        /**
+         * Retrieve the graph this instances refers to
+         */
+        get(): Graph;
+        /**
+         * Source graph mutated, reflect mutation in this instance
+         */
+        private hndMutationGraph;
+        /**
+         * This instance mutated, reflect mutation in source graph
+         */
+        private hndMutationInstance;
+        private reflectMutation;
+        private isFiltered;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Holds data to feed into a {@link Shader} to describe the surface of {@link Mesh}.
+     * {@link Material}s reference {@link Coat} and {@link Shader}.
+     */
+    class Coat extends Mutable implements Serializable {
+        /**
+         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+         */
+        alphaClip: number;
+        /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+        updateRenderData(): void;
+        /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+        useRenderData(): void;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * The simplest {@link Coat} providing just a color
+     */
+    class CoatColored extends Coat {
+        color: Color;
+        constructor(_color?: Color);
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * A {@link Coat} providing a color and parameters for the phong shading model.
+     */
+    class CoatRemissive extends CoatColored {
+        #private;
+        diffuse: number;
+        specular: number;
+        intensity: number;
+        constructor(_color?: Color, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        get metallic(): number;
+        set metallic(_value: number);
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        getMutator(): Mutator;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * A {@link Coat} providing a texture and additional data for texturing
+     */
+    class CoatTextured extends CoatColored {
+        texture: Texture;
+        constructor(_color?: Color, _texture?: Texture);
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * A {@link Coat} providing a texture and additional data for texturing
+     */
+    class CoatRemissiveTextured extends CoatTextured {
+        #private;
+        diffuse: number;
+        specular: number;
+        intensity: number;
+        constructor(_color?: Color, _texture?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        get metallic(): number;
+        set metallic(_value: number);
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        getMutator(): Mutator;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * A {@link Coat} providing a texture and additional data for texturing
+     */
+    class CoatRemissiveTexturedNormals extends CoatRemissiveTextured {
+        normalMap: Texture;
+        constructor(_color?: Color, _texture?: Texture, _normalMap?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }
+}
+declare namespace FudgeCore {
+    const CoatToon_base: (abstract new (...args: General[]) => {
+        texToon: Texture;
+    }) & typeof CoatRemissive;
+    /**
+     * A {@link Coat} providing a color and parameters for the toon shading model.
+     */
+    export class CoatToon extends CoatToon_base {
+        constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+    }
+    const CoatToonTextured_base: (abstract new (...args: General[]) => {
+        texToon: Texture;
+    }) & typeof CoatRemissiveTextured;
+    /**
+     * A {@link Coat} providing a texture, a color and parameters for the toon shading model.
+     */
+    export class CoatToonTextured extends CoatToonTextured_base {
+        constructor(_color?: Color, _texture?: Texture, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+    }
+    export {};
+}
+declare namespace FudgeCore {
+    const MaterialGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Material;
+    /**
+     * A {@link Material} loaded from a glTF-File.
+     * @authors Jonas Plotzky, HFU, 2024
+     */
+    export class MaterialGLTF extends MaterialGLTF_base {
+        load(_url?: RequestInfo, _name?: string): Promise<MaterialGLTF>;
+    }
+    export {};
 }
 declare namespace FudgeCore {
     interface ArrayConvertible {
@@ -8434,21 +8490,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Injects a {@link Shader} with the necessary functionality to render it in WebGL.
-     */
-    class RenderWebGLShader {
-        /** Replaces the decorated method with the injectors’s implementation of the same name. */
-        static decorate<M extends (...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<General, M>): M;
-        protected static createProgram(this: MaterialSystem.Shader): void;
-        protected static useProgram(this: MaterialSystem.Shader): void;
-        protected static deleteProgram(this: MaterialSystem.Shader): void;
-        private static detectUniforms;
-        private static compileShader;
-        private static bindUniformBlock;
-    }
-}
-declare namespace FudgeCore {
-    /**
      * Controls the rendering of a branch, using the given {@link ComponentCamera},
      * and the propagation of the rendered image from the offscreen renderbuffer to the target canvas
      * through a series of {@link Framing} objects. The stages involved are in order of rendering
@@ -9765,7 +9806,7 @@ declare namespace FudgeCore {
          * Returns the {@link Animation} for the given animation index.
          */
         getAnimation(_iAnimation: number): Promise<Animation>;
-        getAnimationNew(_iAnimation: number | string, _animationOut?: AnimationSystem.Animation): Promise<AnimationSystem.Animation>;
+        getAnimationExperimental(_iAnimation: number | string, _animationOut?: Experimental.Animation): Promise<Experimental.Animation>;
         /**
          * Returns the first {@link MeshGLTF} with the given name.
          */
@@ -10054,42 +10095,6 @@ declare namespace FudgeCore {
         static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
-    }
-}
-declare namespace FudgeCore {
-    namespace MaterialSystem {
-        /**
-         * A shader is a collection of {@link ShaderFeature}s that define how a material is rendered.
-         */
-        class Shader {
-            #private;
-            static readonly shaders: Map<string, Shader>;
-            program: unknown;
-            uniforms: {
-                [name: string]: unknown;
-            };
-            private constructor();
-            static get(_features: readonly typeof ShaderFeature[]): Shader;
-            /**
-             * Returns the {@link MaterialProperty} instances that are needed to supply the shader with the necessary data.
-             */
-            createProperties(): MaterialProperty[];
-            /**
-             * Returns true if the given material properties match the shader's requirements, false otherwise.
-             */
-            matchProperties(_properties: MaterialProperty[]): boolean;
-            /** Returns the vertex shader source code for the render system */
-            getVertexShaderSource(): string;
-            /** Returns the fragment shader source code for the render system */
-            getFragmentShaderSource(): string;
-            /** Compile the shader program from the vertex and fragment shader source code. */
-            createProgram(): void;
-            /** Use the shader program for rendering. */
-            useProgram(): void;
-            /** Delete the shader program clearing the used memory on the GPU. */
-            deleteProgram(): void;
-            protected insertDefines(_shader: string): string;
-        }
     }
 }
 declare namespace FudgeCore {

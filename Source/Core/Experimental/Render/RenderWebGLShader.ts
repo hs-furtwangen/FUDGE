@@ -8,7 +8,7 @@ namespace FudgeCore {
       return Reflect.get(this, _context.name);
     }
 
-    protected static createProgram(this: MaterialSystem.Shader): void {
+    protected static createProgram(this: Experimental.Shader): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       const program: WebGLProgram = RenderWebGL.assert<WebGLProgram>(crc3.createProgram());
 
@@ -58,7 +58,7 @@ namespace FudgeCore {
     }
 
 
-    protected static useProgram(this: MaterialSystem.Shader): void {
+    protected static useProgram(this: Experimental.Shader): void {
       const program: WebGLProgram = this.program;
       if (!program)
         this.createProgram();
@@ -67,7 +67,7 @@ namespace FudgeCore {
     }
 
 
-    protected static deleteProgram(this: MaterialSystem.Shader): void {
+    protected static deleteProgram(this: Experimental.Shader): void {
       const program: WebGLProgram = this.program;
       RenderWebGL.getRenderingContext().deleteProgram(program);
       delete this.uniforms;

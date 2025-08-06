@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
+  export namespace Experimental {
 
     /**
      * Binds a specific {@link Mutable} animation target within a node graph and allows {@link Mutable.animate animation} of it.

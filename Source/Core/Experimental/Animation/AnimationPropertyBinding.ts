@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export namespace AnimationSystem {
+  export namespace Experimental {
     /**
      * Binds a specific property within a node hierarchy (via a path) and allows direct access to it.
      */

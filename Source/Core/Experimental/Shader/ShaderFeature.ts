@@ -1,7 +1,7 @@
-/// <reference path="../Shader/MergedShaderSources.ts"/>
+/// <reference path="../../Shader/MergedShaderSources.ts"/>
 
 namespace FudgeCore {
-  export namespace MaterialSystem {
+  export namespace Experimental {
     /**
      * A modular building block used to compose a {@link Shader}. Add shader features to a {@link Material} to enable a specific shading capability.
      */
