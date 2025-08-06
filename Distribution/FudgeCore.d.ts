@@ -357,11 +357,11 @@ declare namespace FudgeCore {
     /**
      * Returns the decorated {@link Metadata.mutatorKeys keys} of the {@link Mutator} of the given instance or class. Returns an empty array if no keys are decorated.
      */
-    function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): K[];
+    function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
     /**
      * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
      */
-    function getMutatorTypes(_from: Object): MutatorTypes;
+    function getMutatorTypes(_from: Object): Readonly<MutatorTypes>;
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
      */
@@ -434,11 +434,6 @@ declare namespace FudgeCore {
      */
     function getMutatorOfArbitrary(_object: Object): Mutator;
     /**
-     * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
-     * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
-     */
-    function getMutatorAttributeTypes(_object: Record<string, General>, _mutator: Mutator, _out?: MutatorAttributeTypes): MutatorAttributeTypes;
-    /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
      * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
@@ -449,9 +444,6 @@ declare namespace FudgeCore {
      * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
     abstract class Mutable extends EventTargetUnified {
-        /**
-         * Decorator allows to attach {@link Mutable} functionality to existing classes.
-         */
         static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator;
         /**
          * Retrieves the type of this mutable subclass as the name of the runtime class
@@ -475,10 +467,10 @@ declare namespace FudgeCore {
          */
         getMutatorForUserInterface(_extendable?: boolean): MutatorForUserInterface;
         /**
-         * Callback to add or modify the mutator attribute types for this instance. Invoked from {@link getMutatorAttributeTypes} after the decorated and inferred types have been collected.
-         * @param _types The types of the attributes of the mutator, as collected by {@link getMutatorAttributeTypes}.
+         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
+         * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
          */
-        addMutatorAttributeTypes?(_types: MutatorAttributeTypes): void;
+        getMutatorAttributeTypes?(_mutator: Mutator): MutatorAttributeTypes;
         /**
          * Updates the values of the given mutator according to the current state of the instance
          * @param _mutator

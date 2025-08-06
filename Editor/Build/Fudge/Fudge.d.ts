@@ -283,7 +283,7 @@ declare namespace Fudge {
         getSettingsJSON(): string;
         getProjectCSS(): string;
         getProjectHTML(_title: string): string;
-        addMutatorAttributeTypes(_types: ƒ.MutatorAttributeTypes): void;
+        getMutatorAttributeTypes(_mutator: ƒ.Mutator): ƒ.MutatorAttributeTypes;
         protected reduceMutator(_mutator: ƒ.Mutator): void;
         private getGraphs;
         private createProjectHTML;

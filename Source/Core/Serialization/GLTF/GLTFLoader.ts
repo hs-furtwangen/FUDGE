@@ -515,29 +515,31 @@ namespace FudgeCore {
         Debug.warn(`${this}: Mesh with index ${_iMesh} primitive ${_iPrimitive} has no indices. FUDGE does not support non-indexed meshes.`);
       }
 
-      if (gltfPrimitive.attributes.POSITION != undefined)
-        positions = await this.getFloat32Array(gltfPrimitive.attributes.POSITION);
+      const gltfAttributes: GLTF.MeshPrimitive["attributes"] = gltfPrimitive.attributes;
+
+      if (gltfAttributes.POSITION != undefined)
+        positions = await this.getFloat32Array(gltfAttributes.POSITION);
       else
         Debug.warn(`${this}: Mesh with index ${_iMesh} primitive ${_iPrimitive} has no position attribute. Primitive will be ignored.`);
 
-      if (gltfPrimitive.attributes.NORMAL != undefined)
-        normals = await this.getFloat32Array(gltfPrimitive.attributes.NORMAL);
+      if (gltfAttributes.NORMAL != undefined)
+        normals = await this.getFloat32Array(gltfAttributes.NORMAL);
       // TODO: calculate flat normals if not provided, fudge will calculate smooth normals if not provided
 
-      if (gltfPrimitive.attributes.TANGENT != undefined)
-        tangents = await this.getFloat32Array(gltfPrimitive.attributes.TANGENT);
+      if (gltfAttributes.TANGENT != undefined)
+        tangents = await this.getFloat32Array(gltfAttributes.TANGENT);
 
-      if (gltfPrimitive.attributes.TEXCOORD_1 != undefined)
-        textureUVs = await this.getFloat32Array(gltfPrimitive.attributes.TEXCOORD_1);
-      else if (gltfPrimitive.attributes.TEXCOORD_0 != undefined)
-        textureUVs = await this.getFloat32Array(gltfPrimitive.attributes.TEXCOORD_0);
+      if (gltfAttributes.TEXCOORD_1 != undefined)
+        textureUVs = await this.getFloat32Array(gltfAttributes.TEXCOORD_1);
+      else if (gltfAttributes.TEXCOORD_0 != undefined)
+        textureUVs = await this.getFloat32Array(gltfAttributes.TEXCOORD_0);
 
-      if (gltfPrimitive.attributes.COLOR_0 != undefined)
-        colors = await this.getVertexColors(gltfPrimitive.attributes.COLOR_0);
+      if (gltfAttributes.COLOR_0 != undefined)
+        colors = await this.getVertexColors(gltfAttributes.COLOR_0);
 
-      if (gltfPrimitive.attributes.JOINTS_0 != undefined && gltfPrimitive.attributes.WEIGHTS_0 != undefined) {
-        bones = await this.getBoneIndices(gltfPrimitive.attributes.JOINTS_0);
-        weights = await this.getFloat32Array(gltfPrimitive.attributes.WEIGHTS_0);
+      if (gltfAttributes.JOINTS_0 != undefined && gltfAttributes.WEIGHTS_0 != undefined) {
+        bones = await this.getBoneIndices(gltfAttributes.JOINTS_0);
+        weights = await this.getFloat32Array(gltfAttributes.WEIGHTS_0);
       }
 
       const mesh: Mesh = _meshOut ?? new MeshGLTF();
@@ -546,6 +548,7 @@ namespace FudgeCore {
         mesh.iPrimitive = _iPrimitive;
         mesh.url = this.#url;
       }
+
       if (_meshOut) {
         _meshOut.clear();
         _meshOut.faces = [];
@@ -1042,24 +1045,29 @@ namespace FudgeCore {
       const componentType: GLTF.COMPONENT_TYPE = gltfAccessor.componentType;
       const accessorType: GLTF.ACCESSOR_TYPE = gltfAccessor.type;
 
-      if (gltfAccessor.bufferView != undefined)
-        array = await this.getBufferViewData(this.#gltf.bufferViews[gltfAccessor.bufferView], gltfAccessor.byteOffset, componentType, accessorType);
+      if (gltfAccessor.bufferView != undefined) {
+        const gltfBufferView: GLTF.BufferView = this.#gltf.bufferViews[gltfAccessor.bufferView];
+        array = await this.getBufferViewData(gltfBufferView, gltfAccessor.byteOffset, componentType, accessorType, gltfAccessor.count);
+      }
 
-      if (gltfAccessor.sparse) {
-        const gltfBufferViewIndices: GLTF.BufferView = this.#gltf.bufferViews[gltfAccessor.sparse.indices.bufferView];
-        const gltfBufferViewValues: GLTF.BufferView = this.#gltf.bufferViews[gltfAccessor.sparse.values.bufferView];
+      const gltfAccessorSparse: GLTF.AccessorSparse = gltfAccessor.sparse;
+      if (gltfAccessorSparse) {
+        const gltfAccessorSparseIndices: GLTF.AccessorSparseIndices = gltfAccessorSparse.indices;
+        const gltfAccessorSparseValues: GLTF.AccessorSparseValues = gltfAccessorSparse.values;
+        const gltfBufferViewIndices: GLTF.BufferView = this.#gltf.bufferViews[gltfAccessorSparseIndices.bufferView];
+        const gltfBufferViewValues: GLTF.BufferView = this.#gltf.bufferViews[gltfAccessorSparseValues.bufferView];
 
         if (!gltfBufferViewIndices || !gltfBufferViewValues)
           throw new Error(`${this}: Couldn't find buffer views for sparse indices or values of accessor with index ${_iAccessor}.`);
 
-        const arrayIndices: TypedArray = await this.getBufferViewData(gltfBufferViewIndices, gltfAccessor.sparse.indices.byteOffset, gltfAccessor.sparse.indices.componentType, GLTF.ACCESSOR_TYPE.SCALAR);
-        const arrayValues: TypedArray = await this.getBufferViewData(gltfBufferViewValues, gltfAccessor.sparse.values.byteOffset, componentType, accessorType);
+        const arrayIndices: TypedArray = await this.getBufferViewData(gltfBufferViewIndices, gltfAccessorSparseIndices.byteOffset, gltfAccessorSparseIndices.componentType, GLTF.ACCESSOR_TYPE.SCALAR, gltfAccessorSparse.count);
+        const arrayValues: TypedArray = await this.getBufferViewData(gltfBufferViewValues, gltfAccessorSparseValues.byteOffset, componentType, accessorType, gltfAccessorSparse.count);
 
-        const accessorTypeLength: number = toAccessorTypeLength[gltfAccessor.type];
+        const accessorTypeLength: number = toNumberOfComponents[gltfAccessor.type];
         if (gltfAccessor.bufferView == undefined)
           array = new toArrayConstructor[gltfAccessor.componentType](gltfAccessor.count * accessorTypeLength);
 
-        for (let i: number = 0; i < gltfAccessor.sparse.count; i++) {
+        for (let i: number = 0; i < gltfAccessorSparse.count; i++) {
           array.set(arrayValues.slice(i * accessorTypeLength, (i + 1) * accessorTypeLength), arrayIndices[i] * accessorTypeLength);
         }
       }
@@ -1067,31 +1075,30 @@ namespace FudgeCore {
       return array;
     }
 
-    private async getBufferViewData(_bufferView: GLTF.BufferView, _byteOffset: number, _componentType: GLTF.COMPONENT_TYPE, _accessorType: GLTF.ACCESSOR_TYPE): Promise<TypedArray> {
+    private async getBufferViewData(_bufferView: GLTF.BufferView, _byteOffset: number, _componentType: GLTF.COMPONENT_TYPE, _accessorType: GLTF.ACCESSOR_TYPE, _count: number): Promise<TypedArray> {
       const buffer: ArrayBuffer = await this.getBuffer(_bufferView.buffer);
       const byteOffset: number = (_bufferView.byteOffset ?? 0) + (_byteOffset ?? 0);
-      const byteLength: number = _bufferView.byteLength ?? 0;
       const byteStride: number = _bufferView.byteStride;
-
+      
       const arrayConstructor: TypedArrayConstructor = toArrayConstructor[_componentType];
-      //@ts-ignore because the TypedArrayConstructor type is not assignable to the TypedArray type
-      const array: TypedArray = new arrayConstructor(buffer, byteOffset, byteLength / arrayConstructor.BYTES_PER_ELEMENT);
+      const bytesPerComponent: number = arrayConstructor.BYTES_PER_ELEMENT; // e.g. 4 bytes for a float
+      const nComponents: number = toNumberOfComponents[_accessorType]; // e.g. 3 for vec3
+      const bytesPerElement: number = bytesPerComponent * nComponents; // e.g. 4 * 3 = 12 bytes for a float vec3
+      const nElements: number = nComponents * _count;
 
-      if (byteStride != undefined) {
-        // TODO: instead of creating new buffers maybe rather pass stride into the render mesh? and set it when data is passed to the gpu?
-        const nComponentsPerElement: number = toAccessorTypeLength[_accessorType]; // amount of components per element of the accessor type, e.g. 3 for VEC3
-        const nElements: number = byteLength / byteStride; // amount of elements, e.g. n*VEC3 
-        const stride: number = byteStride / arrayConstructor.BYTES_PER_ELEMENT;
-        const newArray: TypedArray = new arrayConstructor(nElements * nComponentsPerElement);
-        for (let iNewElement: number = 0; iNewElement < nElements; iNewElement++) {
-          const iElement: number = iNewElement * stride;
-          // TODO: check if loop is faster than set + slice
-          for (let iComponent: number = 0; iComponent < nComponentsPerElement; iComponent++)
-            newArray[iNewElement * nComponentsPerElement + iComponent] = array[iElement + iComponent];
-          // newArray.set(array.slice(iElement, iElement + nComponentsPerElement), iNewElement * nComponentsPerElement);
-        }
-
-        return newArray;
+      if (byteStride == undefined || byteStride === bytesPerElement)  // tightly packed
+        return new arrayConstructor(buffer, byteOffset, nElements);
+        
+      // interleaved
+      const stride: number = byteStride / bytesPerComponent;
+      const array: TypedArray = new arrayConstructor(nElements);
+      const source: TypedArray = new arrayConstructor(buffer, byteOffset, stride * _count);
+      
+      for (let i: number = 0; i < _count; i++) {
+        const iSource: number = i * stride;
+        const iArray: number = i * nComponents;
+        for (let j: number = 0; j < nComponents; j++) 
+          array[iArray + j] = source[iSource + j];
       }
 
       return array;
@@ -1181,9 +1188,8 @@ namespace FudgeCore {
     "scale": "scaling"
   };
 
-
   // number of components defined by 'type'
-  const toAccessorTypeLength: Record<GLTF.ACCESSOR_TYPE, number> = {
+  const toNumberOfComponents: Record<GLTF.ACCESSOR_TYPE, number> = {
     "SCALAR": 1,
     "VEC2": 2,
     "VEC3": 3,

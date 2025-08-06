@@ -167,9 +167,12 @@ namespace Fudge {
       return this.stringifyHTML(this.#document);
     }
 
-    public override addMutatorAttributeTypes(_types: ƒ.MutatorAttributeTypes): void {
-      if (_types.graphAutoView)
-        _types.graphAutoView = this.getGraphs();
+    public override getMutatorAttributeTypes(_mutator: ƒ.Mutator): ƒ.MutatorAttributeTypes {
+      const types: ƒ.MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
+      if (types.graphAutoView)
+        types.graphAutoView = this.getGraphs();
+      
+      return types;
     }
 
     protected reduceMutator(_mutator: ƒ.Mutator): void {

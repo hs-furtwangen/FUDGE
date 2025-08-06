@@ -56,8 +56,6 @@ namespace FudgeCore {
      * 
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-
-
   // property decorators
   // primitive type
   export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;

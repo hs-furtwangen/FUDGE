@@ -376,36 +376,6 @@ var FudgeCore;
         return mutator;
     }
     FudgeCore.getMutatorOfArbitrary = getMutatorOfArbitrary;
-    function getMutatorAttributeTypes(_object, _mutator, _out = {}) {
-        const metaTypes = FudgeCore.getMutatorTypes(_object);
-        for (let key in _mutator) {
-            const metaType = metaTypes[key];
-            let type;
-            switch (typeof metaType) {
-                case "function":
-                    type = metaType.name;
-                    break;
-                case "object":
-                    type = metaType;
-                    break;
-                case "undefined":
-                    let value = _object[key];
-                    if (value != undefined)
-                        if (typeof value == "object")
-                            type = _object[key].constructor.name;
-                        else if (typeof value == "function")
-                            type = value.name;
-                        else
-                            type = value.constructor.name;
-                    break;
-            }
-            _out[key] = type;
-        }
-        if (typeof _object.addMutatorAttributeTypes == "function")
-            _object.addMutatorAttributeTypes(_out);
-        return _out;
-    }
-    FudgeCore.getMutatorAttributeTypes = getMutatorAttributeTypes;
     class Mutable extends FudgeCore.EventTargetUnified {
         static getMutatorFromPath(_mutator, _path) {
             let key = _path[0];
@@ -449,6 +419,34 @@ var FudgeCore;
         }
         getMutatorForUserInterface(_extendable = false) {
             return this.getMutator(_extendable);
+        }
+        getMutatorAttributeTypes(_mutator) {
+            const out = {};
+            const types = FudgeCore.getMutatorTypes(this);
+            for (const key in _mutator) {
+                const metaType = types[key];
+                let type;
+                switch (typeof metaType) {
+                    case "function":
+                        type = metaType.name;
+                        break;
+                    case "object":
+                        type = metaType;
+                        break;
+                    case "undefined":
+                        let value = _mutator[key];
+                        if (value != undefined)
+                            if (typeof value == "object")
+                                type = this[key].constructor.name;
+                            else if (typeof value == "function")
+                                type = value.name;
+                            else
+                                type = value.constructor.name;
+                        break;
+                }
+                out[key] = type;
+            }
+            return out;
         }
         updateMutator(_mutator) {
             for (let attribute in _mutator) {
@@ -19439,23 +19437,24 @@ var FudgeCore;
             else {
                 FudgeCore.Debug.warn(`${this}: Mesh with index ${_iMesh} primitive ${_iPrimitive} has no indices. FUDGE does not support non-indexed meshes.`);
             }
-            if (gltfPrimitive.attributes.POSITION != undefined)
-                positions = await this.getFloat32Array(gltfPrimitive.attributes.POSITION);
+            const gltfAttributes = gltfPrimitive.attributes;
+            if (gltfAttributes.POSITION != undefined)
+                positions = await this.getFloat32Array(gltfAttributes.POSITION);
             else
                 FudgeCore.Debug.warn(`${this}: Mesh with index ${_iMesh} primitive ${_iPrimitive} has no position attribute. Primitive will be ignored.`);
-            if (gltfPrimitive.attributes.NORMAL != undefined)
-                normals = await this.getFloat32Array(gltfPrimitive.attributes.NORMAL);
-            if (gltfPrimitive.attributes.TANGENT != undefined)
-                tangents = await this.getFloat32Array(gltfPrimitive.attributes.TANGENT);
-            if (gltfPrimitive.attributes.TEXCOORD_1 != undefined)
-                textureUVs = await this.getFloat32Array(gltfPrimitive.attributes.TEXCOORD_1);
-            else if (gltfPrimitive.attributes.TEXCOORD_0 != undefined)
-                textureUVs = await this.getFloat32Array(gltfPrimitive.attributes.TEXCOORD_0);
-            if (gltfPrimitive.attributes.COLOR_0 != undefined)
-                colors = await this.getVertexColors(gltfPrimitive.attributes.COLOR_0);
-            if (gltfPrimitive.attributes.JOINTS_0 != undefined && gltfPrimitive.attributes.WEIGHTS_0 != undefined) {
-                bones = await this.getBoneIndices(gltfPrimitive.attributes.JOINTS_0);
-                weights = await this.getFloat32Array(gltfPrimitive.attributes.WEIGHTS_0);
+            if (gltfAttributes.NORMAL != undefined)
+                normals = await this.getFloat32Array(gltfAttributes.NORMAL);
+            if (gltfAttributes.TANGENT != undefined)
+                tangents = await this.getFloat32Array(gltfAttributes.TANGENT);
+            if (gltfAttributes.TEXCOORD_1 != undefined)
+                textureUVs = await this.getFloat32Array(gltfAttributes.TEXCOORD_1);
+            else if (gltfAttributes.TEXCOORD_0 != undefined)
+                textureUVs = await this.getFloat32Array(gltfAttributes.TEXCOORD_0);
+            if (gltfAttributes.COLOR_0 != undefined)
+                colors = await this.getVertexColors(gltfAttributes.COLOR_0);
+            if (gltfAttributes.JOINTS_0 != undefined && gltfAttributes.WEIGHTS_0 != undefined) {
+                bones = await this.getBoneIndices(gltfAttributes.JOINTS_0);
+                weights = await this.getFloat32Array(gltfAttributes.WEIGHTS_0);
             }
             const mesh = _meshOut ?? new FudgeCore.MeshGLTF();
             mesh.name = gltfMesh.name;
@@ -19794,42 +19793,48 @@ var FudgeCore;
             let array;
             const componentType = gltfAccessor.componentType;
             const accessorType = gltfAccessor.type;
-            if (gltfAccessor.bufferView != undefined)
-                array = await this.getBufferViewData(this.#gltf.bufferViews[gltfAccessor.bufferView], gltfAccessor.byteOffset, componentType, accessorType);
-            if (gltfAccessor.sparse) {
-                const gltfBufferViewIndices = this.#gltf.bufferViews[gltfAccessor.sparse.indices.bufferView];
-                const gltfBufferViewValues = this.#gltf.bufferViews[gltfAccessor.sparse.values.bufferView];
+            if (gltfAccessor.bufferView != undefined) {
+                const gltfBufferView = this.#gltf.bufferViews[gltfAccessor.bufferView];
+                array = await this.getBufferViewData(gltfBufferView, gltfAccessor.byteOffset, componentType, accessorType, gltfAccessor.count);
+            }
+            const gltfAccessorSparse = gltfAccessor.sparse;
+            if (gltfAccessorSparse) {
+                const gltfAccessorSparseIndices = gltfAccessorSparse.indices;
+                const gltfAccessorSparseValues = gltfAccessorSparse.values;
+                const gltfBufferViewIndices = this.#gltf.bufferViews[gltfAccessorSparseIndices.bufferView];
+                const gltfBufferViewValues = this.#gltf.bufferViews[gltfAccessorSparseValues.bufferView];
                 if (!gltfBufferViewIndices || !gltfBufferViewValues)
                     throw new Error(`${this}: Couldn't find buffer views for sparse indices or values of accessor with index ${_iAccessor}.`);
-                const arrayIndices = await this.getBufferViewData(gltfBufferViewIndices, gltfAccessor.sparse.indices.byteOffset, gltfAccessor.sparse.indices.componentType, GLTF.ACCESSOR_TYPE.SCALAR);
-                const arrayValues = await this.getBufferViewData(gltfBufferViewValues, gltfAccessor.sparse.values.byteOffset, componentType, accessorType);
-                const accessorTypeLength = toAccessorTypeLength[gltfAccessor.type];
+                const arrayIndices = await this.getBufferViewData(gltfBufferViewIndices, gltfAccessorSparseIndices.byteOffset, gltfAccessorSparseIndices.componentType, GLTF.ACCESSOR_TYPE.SCALAR, gltfAccessorSparse.count);
+                const arrayValues = await this.getBufferViewData(gltfBufferViewValues, gltfAccessorSparseValues.byteOffset, componentType, accessorType, gltfAccessorSparse.count);
+                const accessorTypeLength = toNumberOfComponents[gltfAccessor.type];
                 if (gltfAccessor.bufferView == undefined)
                     array = new toArrayConstructor[gltfAccessor.componentType](gltfAccessor.count * accessorTypeLength);
-                for (let i = 0; i < gltfAccessor.sparse.count; i++) {
+                for (let i = 0; i < gltfAccessorSparse.count; i++) {
                     array.set(arrayValues.slice(i * accessorTypeLength, (i + 1) * accessorTypeLength), arrayIndices[i] * accessorTypeLength);
                 }
             }
             return array;
         }
-        async getBufferViewData(_bufferView, _byteOffset, _componentType, _accessorType) {
+        async getBufferViewData(_bufferView, _byteOffset, _componentType, _accessorType, _count) {
             const buffer = await this.getBuffer(_bufferView.buffer);
             const byteOffset = (_bufferView.byteOffset ?? 0) + (_byteOffset ?? 0);
-            const byteLength = _bufferView.byteLength ?? 0;
             const byteStride = _bufferView.byteStride;
             const arrayConstructor = toArrayConstructor[_componentType];
-            const array = new arrayConstructor(buffer, byteOffset, byteLength / arrayConstructor.BYTES_PER_ELEMENT);
-            if (byteStride != undefined) {
-                const nComponentsPerElement = toAccessorTypeLength[_accessorType];
-                const nElements = byteLength / byteStride;
-                const stride = byteStride / arrayConstructor.BYTES_PER_ELEMENT;
-                const newArray = new arrayConstructor(nElements * nComponentsPerElement);
-                for (let iNewElement = 0; iNewElement < nElements; iNewElement++) {
-                    const iElement = iNewElement * stride;
-                    for (let iComponent = 0; iComponent < nComponentsPerElement; iComponent++)
-                        newArray[iNewElement * nComponentsPerElement + iComponent] = array[iElement + iComponent];
-                }
-                return newArray;
+            const bytesPerComponent = arrayConstructor.BYTES_PER_ELEMENT;
+            const nComponents = toNumberOfComponents[_accessorType];
+            const bytesPerElement = bytesPerComponent * nComponents;
+            const nElements = nComponents * _count;
+            if (byteStride == undefined || byteStride === bytesPerElement)
+                return new arrayConstructor(buffer, byteOffset, nElements);
+            const stride = byteStride / bytesPerComponent;
+            const array = new arrayConstructor(nElements);
+            const source = new arrayConstructor(buffer, byteOffset, stride * _count);
+            for (let i = 0; i < _count; i++) {
+                const iSource = i * stride;
+                const iArray = i * nComponents;
+                for (let j = 0; j < nComponents; j++)
+                    array[iArray + j] = source[iSource + j];
             }
             return array;
         }
@@ -19901,7 +19906,7 @@ var FudgeCore;
         "rotation": "quaternion",
         "scale": "scaling"
     };
-    const toAccessorTypeLength = {
+    const toNumberOfComponents = {
         "SCALAR": 1,
         "VEC2": 2,
         "VEC3": 3,
