@@ -45,50 +45,6 @@ namespace FudgeCore {
   }
 
   /**
-   * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
-   * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
-   */
-  export function getMutatorAttributeTypes(_object: Record<string, General>, _mutator: Mutator, _out: MutatorAttributeTypes = {}): MutatorAttributeTypes {
-    const metaTypes: MutatorTypes = getMutatorTypes(_object);
-    for (let key in _mutator) {
-      const metaType: Function | object = metaTypes[key];
-      let type: string | object;
-      switch (typeof metaType) {
-        case "function":
-          type = metaType.name;
-          break;
-        case "object":
-          type = metaType;
-          break;
-        // case "string": // runtime type, retrieve it from an object property/method
-        //   const member: Function | object = _object[metaType];
-        //   if (typeof member == "function")
-        //     type = member.call(_object);
-        //   else
-        //     type = member;
-        //   break;
-        case "undefined":
-          let value: number | boolean | string | object | Function = _object[key];
-          if (value != undefined)
-            if (typeof value == "object")
-              type = (<General>_object)[key].constructor.name;
-            else if (typeof value == "function")
-              type = value.name;
-            else
-              type = value.constructor.name;
-          break;
-      }
-
-      _out[key] = type;
-    }
-
-    if (typeof (<Mutable>_object).addMutatorAttributeTypes == "function")
-      (<Mutable>_object).addMutatorAttributeTypes(_out);
-
-    return _out;
-  }
-
-  /**
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
    * 
    * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
@@ -99,18 +55,6 @@ namespace FudgeCore {
    * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
    */
   export abstract class Mutable extends EventTargetUnified {
-
-
-    /**
-     * Decorator allows to attach {@link Mutable} functionality to existing classes. 
-     */
-    // public static decorate(_constructor: Function): void {
-    //   Object.defineProperty(_constructor.prototype, "useRenderData", {
-    //     value: function getMutator(this: MutableForUserInterface): Mutator {
-    //       return getMutatorOfArbitrary(this);
-    //     }
-    //   });
-    // }
 
     public static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator {
       let key: string = _path[0];
@@ -186,12 +130,47 @@ namespace FudgeCore {
       return <MutatorForUserInterface>this.getMutator(_extendable);  // TODO: both of these (this and getMutatorForAnimation) don't really work as they don't recursively call getMutatorForUserInterface on sub-mutable objects, maybe instead implement a reduceMutatorForUserInterface???
     }
 
-
     /**
-     * Callback to add or modify the mutator attribute types for this instance. Invoked from {@link getMutatorAttributeTypes} after the decorated and inferred types have been collected.
-     * @param _types The types of the attributes of the mutator, as collected by {@link getMutatorAttributeTypes}.
+     * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
+     * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
      */
-    public addMutatorAttributeTypes?(_types: MutatorAttributeTypes): void;
+    public getMutatorAttributeTypes?(_mutator: Mutator): MutatorAttributeTypes {
+      const out: MutatorAttributeTypes = {};
+      const types: MutatorTypes = getMutatorTypes(this);
+      for (const key in _mutator) {
+        const metaType: Function | object = types[key];
+        let type: string | object;
+        switch (typeof metaType) {
+          case "function":
+            type = metaType.name;
+            break;
+          case "object":
+            type = metaType;
+            break;
+          // case "string": // runtime type, retrieve it from an object property/method
+          //   const member: Function | object = _object[metaType];
+          //   if (typeof member == "function")
+          //     type = member.call(_object);
+          //   else
+          //     type = member;
+          //   break;
+          case "undefined":
+            let value: number | boolean | string | object | Function = _mutator[key];
+            if (value != undefined)
+              if (typeof value == "object")
+                type = (<General>this)[key].constructor.name;
+              else if (typeof value == "function")
+                type = value.name;
+              else
+                type = value.constructor.name;
+            break;
+        }
+
+        out[key] = type;
+      }
+
+      return out;
+    }
 
     /**
      * Updates the values of the given mutator according to the current state of the instance

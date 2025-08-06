@@ -56,7 +56,7 @@ namespace FudgeUserInterface {
       // TODO: examine if this.mutator should also be addressed in some way...
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
       // TODO: Mutator type now only used for enums. Examine if there is another way
-      let mutatorTypes: ƒ.MutatorAttributeTypes = _types || ƒ.getMutatorAttributeTypes(_mutable, mutator);
+      let mutatorTypes: ƒ.MutatorAttributeTypes = _types || _mutable.getMutatorAttributeTypes(mutator);
 
       for (let key in mutator) {
         let element: HTMLElement = Controller.findChildElementByKey(_domElement, key);
@@ -87,7 +87,7 @@ namespace FudgeUserInterface {
      */
     public static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
-      let mutatorTypes: ƒ.MutatorAttributeTypes = ƒ.getMutatorAttributeTypes(_mutable, mutator);
+      let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
 
       for (let key in mutator) {
         let element: CustomElement = <CustomElement>Controller.findChildElementByKey(_domElement, key);
@@ -167,7 +167,7 @@ namespace FudgeUserInterface {
       this.mutable = _mutable;
       this.mutator = _mutable.getMutatorForUserInterface();
       if (_mutable instanceof ƒ.Mutable)
-        this.mutatorTypes = ƒ.getMutatorAttributeTypes(this, this.mutator);
+        this.mutatorTypes = _mutable.getMutatorAttributeTypes(this.mutator);
     }
 
     public getMutable(): ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> {

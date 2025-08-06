@@ -39,7 +39,7 @@ namespace FudgeCore {
   /**
    * Returns the decorated {@link Metadata.mutatorKeys keys} of the {@link Mutator} of the given instance or class. Returns an empty array if no keys are decorated.
    */
-  export function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): K[] {
+  export function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
     return <K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
   }
 
@@ -47,7 +47,7 @@ namespace FudgeCore {
   /**
    * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
    */
-  export function getMutatorTypes(_from: Object): MutatorTypes {
+  export function getMutatorTypes(_from: Object): Readonly<MutatorTypes> {
     return getMetadata(_from).mutatorTypes ?? emptyTypes;
   }
 
