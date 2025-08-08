@@ -56,28 +56,27 @@ namespace FudgeCore {
      * 
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-  // property decorators
   // primitive type
-  export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  // primitive type array
-  export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+  export function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+  export function serialize<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
 
   // object type
+  export function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
   export function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-  // object type array
-  export function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
-
-  // function type
-  export function serialize<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  // function type array
-  export function serialize<T extends Function>(_type: T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
 
   // enum type
-  export function serialize<T, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  // enum type array
-  export function serialize<T, E extends Record<keyof E, T>>(_type: E, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+  export function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+  export function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
 
-  export function serialize(_type: Function | object, _collection?: ArrayConstructor): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
+  // function type
+  export function serialize<T extends Function>(_type: T, _array: typeof Array, _function: typeof Function): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+  export function serialize<T extends Function>(_type: T, _array: typeof Function): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+
+  export function serialize(_type: Function | Record<string, unknown>, _flag0?: typeof Array | typeof Function, _flag1?: typeof Function): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
+    return serializeFactory(_type, _flag0 === Array, _flag0 == Function || _flag1 === Function);
+  }
+
+  function serializeFactory(_type: Function | Record<string, unknown>, _array?: boolean, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -88,16 +87,15 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      // add type to metadata
-      const types: Metadata["mutatorTypes"] = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
-      types[key] = _collection ?? _type;
-
-      mutate(_value, _context);
+      // invoke type decorator
+      type<General, General>(_type)(_value, _context);
 
       // determine serialization type
       let serializationStrategy: Metadata["serializables"][string];
 
-      if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") { // primitive or enum 
+      if (_function) {
+        serializationStrategy = "function";
+      } else if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") { // primitive or enum 
         serializationStrategy = "primitive";
       } else if (_type == Node) {
         serializationStrategy = "node";
@@ -105,12 +103,13 @@ namespace FudgeCore {
         serializationStrategy = "resource";
       } else if ((<Serializable>_type.prototype).serialize && (<Serializable>_type.prototype).deserialize) {
         serializationStrategy = "serializable";
-      } else { // assume function
-        serializationStrategy = "function";
       }
 
-      if (_collection)
-        serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + _collection.name);
+      if (serializationStrategy == "node" || serializationStrategy == "resource" || serializationStrategy == "function")
+        reference(_value, _context); // invoke reference decorator
+
+      if (_array)
+        serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + "Array");
 
       if (!serializationStrategy)
         return;
@@ -119,6 +118,7 @@ namespace FudgeCore {
       const serializables: Metadata["serializables"] = getOwnProperty(metadata, "serializables") ?? (metadata.serializables = { ...metadata.serializables });
       serializables[key] = serializationStrategy;
     };
+
   }
 
   /**
