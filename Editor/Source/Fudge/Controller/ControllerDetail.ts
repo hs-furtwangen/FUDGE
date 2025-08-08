@@ -39,10 +39,10 @@ namespace Fudge {
     private hndInsert = (_event: CustomEvent): void => {
       ƒ.Debug.log("INSERT at ControllerDetail");
       ƒ.Debug.log(_event.detail);
-      let mutable: ƒ.Mutable = this.mutable[_event.detail.getAttribute("key")];
-      ƒ.Debug.log(mutable.type);
-      if (mutable instanceof ƒ.MutableArray)
-        mutable.push(new mutable.type());
+      let property: ƒ.Mutable = this.mutable[_event.detail.getAttribute("key")];
+      ƒ.Debug.log(property.type);
+      if (property instanceof ƒ.MutableArray && property.type) 
+        property.push(new property.type());
     };
 
     private hndKey = (_event: KeyboardEvent): void => {

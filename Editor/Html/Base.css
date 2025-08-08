@@ -6,8 +6,10 @@
 }
 
 :root {
-  --color-error: red; /* default error color */
-  --color-warning: yellow; /* default warning color */
+  /* default error color */
+  --color-error: red;
+  /* default warning color */
+  --color-warning: yellow;
 }
 
 object {
@@ -15,7 +17,8 @@ object {
   height: 100%;
 }
 
-.lm_goldenlayout, body {
+.lm_goldenlayout,
+body {
   background-color: var(--color-background-main);
   color: var(--color-text);
   user-select: none;
@@ -36,7 +39,8 @@ div[panel] .lm_close {
   box-sizing: border-box;
 }
 
-*[view="ViewRender"], *[view="ViewPreview"] {
+*[view="ViewRender"],
+*[view="ViewPreview"] {
   padding: 0em;
   overflow: hidden;
 }
@@ -57,7 +61,9 @@ img {
   background-color: var(--color-background-content);
 }
 
-.lm_tab:hover, .lm_tab .lm_active, .lm_dragProxy .lm_tab {
+.lm_tab:hover,
+.lm_tab .lm_active,
+.lm_dragProxy .lm_tab {
   background-color: var(--color-background-content);
 }
 
@@ -211,10 +217,12 @@ input {
   border: none;
 }
 
-output.placeholder {
-  background-color: var(--color-background-content);
-  color: var(--color-text);
-  font-style: italic;
+/* fix autofill colors, fuck chromium... */
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+input:autofill:active {
+  transition: color calc(infinity * 1s) step-end, background-color calc(infinity * 1s) step-end;
 }
 
 *:focus {
@@ -319,12 +327,27 @@ option {
 
 /* standard fudge elements */
 
-fudge-boolean, fudge-color, fudge-stepper, fudge-select {
+fudge-boolean,
+fudge-color,
+fudge-stepper,
+fudge-select {
   display: block;
 }
 
-fudge-textinput, fudge-output {
+fudge-textinput,
+fudge-reference {
   display: flex;
+}
+
+fudge-reference {
+  align-items: center;
+
+}
+
+fudge-reference>label {
+  padding-right: 0;
+  display: flex;
+  align-items: center;
 }
 
 fudge-digit {
@@ -361,6 +384,7 @@ custom-matrix3x3 {
   grid-template-rows: min-content min-content min-content min-content
 }
 
-custom-matrix4x4 span.rowVector, custom-matrix3x3 span.rowVector {
+custom-matrix4x4 span.rowVector,
+custom-matrix3x3 span.rowVector {
   text-align: right
 }

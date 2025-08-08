@@ -37,6 +37,7 @@ namespace FudgeUserInterface {
     public static createInterfaceFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator?: ƒ.Mutator): HTMLDivElement {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
       let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
+      let mutatorReferences: ƒ.MutatorReferences = ƒ.getMutatorReferences(_mutable);
       let div: HTMLDivElement = document.createElement("div");
 
       for (let key in mutatorTypes) {
@@ -44,13 +45,16 @@ namespace FudgeUserInterface {
         let value: Object = mutator[key];
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
+        if (!element && mutatorReferences[key]) // the new way
+          element = new CustomElementReference({ key: key, label: key, type: type.toString() }, _mutable, mutatorReferences[key]);
+
         if (!element) {
           let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
           element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
         }
 
-        if (!element && type)
-          element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` }); // new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
+        if (!element && type) // the old way... remove
+          element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
         if (!element) { // undefined values without a type can't be displayed
           console.warn("No interface created for", _mutable.constructor.name, key);

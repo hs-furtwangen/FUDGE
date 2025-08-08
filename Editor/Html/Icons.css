@@ -8,6 +8,7 @@ details>summary::after,
 .lm_maximised .lm_controls .lm_maximise::before,
 div[view=ViewAnimation] fudge-stepper::after,
 .buttonIcon::before,
+fudge-reference>label::after,
 fudge-boolean input[type="checkbox"]::before {
   width: 16px;
   height: 16px;
@@ -26,36 +27,30 @@ fudge-boolean input[type="checkbox"] {
 }
 
 fudge-boolean input[type="checkbox"]::before {
-  mask: url(../Html/Icon/SwitchOff.svg);
-  -webkit-mask: url(../Html/Icon/SwitchOff.svg);
+  mask-image: url(../Html/Icon/SwitchOff.svg);
 }
 
 fudge-boolean input[type="checkbox"]:checked:before {
-  mask: url(../Html/Icon/SwitchOn.svg);
-  -webkit-mask: url(../Html/Icon/SwitchOn.svg);
+  mask-image: url(../Html/Icon/SwitchOn.svg);
 }
 
 /* View controls */
 .lm_controls .lm_close::before {
-  mask: url(../Html/Icon/Close.svg);
-  -webkit-mask: url(../Html/Icon/Close.svg);
+  mask-image: url(../Html/Icon/Close.svg);
   margin-left: 5px;
 }
 
 .lm_controls .lm_maximise::before {
-  mask: url(../Html/Icon/Maximize.svg);
-  -webkit-mask: url(../Html/Icon/Maximize.svg);
+  mask-image: url(../Html/Icon/Maximize.svg);
 }
 
 .lm_controls .lm_tabdropdown::before {
-  mask: url(../Html/Icon/Dropdown.svg);
-  -webkit-mask: url(../Html/Icon/Dropdown.svg);
+  mask-image: url(../Html/Icon/Dropdown.svg);
   margin-left: 5px;
 }
 
 .lm_maximised .lm_controls .lm_maximise::before {
-  mask: url(../Html/Icon/Minimize.svg);
-  -webkit-mask: url(../Html/Icon/Minimize.svg);
+  mask-image: url(../Html/Icon/Minimize.svg);
 }
 
 /* Resources in ViewInternal */
@@ -65,50 +60,42 @@ tr[icon]>td:first-child>input {
 
 ul.tree fieldset:has(>*[icon^=Folder])::before,
 tr[icon^=Folder]>td:first-child::before {
-  mask: url(../Html/Icon/Folder.svg);
-  -webkit-mask: url(../Html/Icon/Folder.svg);
+  mask-image: url(../Html/Icon/Folder.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=Mesh])::before,
 tr[icon^=Mesh]>td:first-child::before {
-  mask: url(../Html/Icon/Mesh.svg);
-  -webkit-mask: url(../Html/Icon/Mesh.svg);
+  mask-image: url(../Html/Icon/Mesh.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=Material])::before,
 tr[icon^=Material]>td:first-child::before {
-  mask: url(../Html/Icon/Material.svg);
-  -webkit-mask: url(../Html/Icon/Material.svg);
+  mask-image: url(../Html/Icon/Material.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=Graph])::before,
 tr[icon^=Graph]>td:first-child::before {
-  mask: url(../Html/Icon/Graph.svg);
-  -webkit-mask: url(../Html/Icon/Graph.svg);
+  mask-image: url(../Html/Icon/Graph.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=Audio])::before,
 tr[icon^=Audio]>td:first-child::before {
-  mask: url(../Html/Icon/Audio.svg);
-  -webkit-mask: url(../Html/Icon/Audio.svg);
+  mask-image: url(../Html/Icon/Audio.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=Texture])::before,
 tr[icon^=Texture]>td:first-child::before {
-  mask: url(../Html/Icon/Texture.svg);
-  -webkit-mask: url(../Html/Icon/Texture.svg);
+  mask-image: url(../Html/Icon/Texture.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=Animation])::before,
 tr[icon^=Animation]>td:first-child::before {
-  mask: url(../Html/Icon/Animation.svg);
-  -webkit-mask: url(../Html/Icon/Animation.svg);
+  mask-image: url(../Html/Icon/Animation.svg);
 }
 
 ul.tree fieldset:has(>*[icon^=ParticleSystem])::before,
 tr[icon^=ParticleSystem]>td:first-child::before {
-  mask: url(../Html/Icon/Particles.svg);
-  -webkit-mask: url(../Html/Icon/Particles.svg);
+  mask-image: url(../Html/Icon/Particles.svg);
 }
 
 ul.tree fieldset:has(>*[icon])::before {
@@ -127,87 +114,71 @@ ul.tree input[type="checkbox"]:has(+ fieldset>*[icon=Folder]) {
 /* Panel titles */
 
 div.lm_tab[title^="Graph"]::before {
-  mask: url(../Html/Icon/Graph.svg);
-  -webkit-mask: url(../Html/Icon/Graph.svg);
+  mask-image: url(../Html/Icon/Graph.svg);
 }
 
 div.lm_tab[title^="Project"]::before {
-  mask: url(../Html/Icon/Project.svg);
-  -webkit-mask: url(../Html/Icon/Project.svg);
+  mask-image: url(../Html/Icon/Project.svg);
 }
 
 div.lm_tab[title^="Help"]::before {
-  mask: url(../Html/Icon/Help.svg);
-  -webkit-mask: url(../Html/Icon/Help.svg);
+  mask-image: url(../Html/Icon/Help.svg);
 }
 
 div.lm_tab[title^="Animation"]::before {
-  mask: url(../Html/Icon/Animation.svg);
-  -webkit-mask: url(../Html/Icon/Animation.svg);
+  mask-image: url(../Html/Icon/Animation.svg);
 }
 
 div.lm_tab[title^="ParticleSystem"]::before {
-  mask: url(../Html/Icon/Particles.svg);
-  -webkit-mask: url(../Html/Icon/Particles.svg);
+  mask-image: url(../Html/Icon/Particles.svg);
 }
 
 
 /* View titles */
 div.lm_tab[title^="Internal"]::before {
-  mask: url(../Html/Icon/Internal.svg);
-  -webkit-mask: url(../Html/Icon/Internal.svg);
+  mask-image: url(../Html/Icon/Internal.svg);
 }
 
 div.lm_tab[title^="Table"]::before {
-  mask: url(../Html/Icon/Table.svg);
-  -webkit-mask: url(../Html/Icon/Table.svg);
+  mask-image: url(../Html/Icon/Table.svg);
 }
 
 div.lm_tab[title^="External"]::before {
-  mask: url(../Html/Icon/External.svg);
-  -webkit-mask: url(../Html/Icon/External.svg);
+  mask-image: url(../Html/Icon/External.svg);
 }
 
 div.lm_tab[title^="Preview"]::before,
 div.lm_tab[title^="Render"]::before {
-  mask: url(../Html/Icon/Camera.svg);
-  -webkit-mask: url(../Html/Icon/Camera.svg);
+  mask-image: url(../Html/Icon/Camera.svg);
 }
 
 div.lm_tab[title^="PREVIEW"]::before,
 div.lm_tab[title^="RENDER"]::before {
-  mask: url(../Html/Icon/Light.svg);
-  -webkit-mask: url(../Html/Icon/Light.svg);
+  mask-image: url(../Html/Icon/Light.svg);
 }
 
 div.lm_tab[title^="Properties"]::before {
-  mask: url(../Html/Icon/Document.svg);
-  -webkit-mask: url(../Html/Icon/Document.svg);
+  mask-image: url(../Html/Icon/Document.svg);
 }
 
 div.lm_tab[title^="Script"]::before {
-  mask: url(../Html/Icon/Script.svg);
-  -webkit-mask: url(../Html/Icon/Script.svg);
+  mask-image: url(../Html/Icon/Script.svg);
 }
 
 div.lm_tab[title^="Hierarchy"]::before {
-  mask: url(../Html/Icon/Hierarchy.svg);
-  -webkit-mask: url(../Html/Icon/Hierarchy.svg);
+  mask-image: url(../Html/Icon/Hierarchy.svg);
 }
 
 div.lm_tab[title^="Components"]::before {
-  mask: url(../Html/Icon/Components.svg);
-  -webkit-mask: url(../Html/Icon/Components.svg);
+  mask-image: url(../Html/Icon/Components.svg);
 }
 
 div.lm_tab[title^="Dopesheet"]::before {
-  mask: url(../Html/Icon/Dopesheet.svg);
-  -webkit-mask: url(../Html/Icon/Dopesheet.svg);
+  mask-image: url(../Html/Icon/Dopesheet.svg);
 }
 
 div.lm_tab[title^="Curves"]::before {
-  mask: url(../Html/Icon/Curves.svg);
-  -webkit-mask: url(../Html/Icon/Curves.svg);
+  mask-image: url(../Html/Icon/Curves.svg);
 }
 
 /* Properties */
@@ -215,8 +186,7 @@ details>summary::after {
   margin-right: 0px;
   margin-left: 5px;
   /* default icon for scripts */
-  mask: url(../Html/Icon/Script.svg);
-  -webkit-mask: url(../Html/Icon/Script.svg);
+  mask-image: url(../Html/Icon/Script.svg);
   vertical-align: bottom;
 }
 
@@ -230,78 +200,81 @@ details[key^=coat]>summary::after {
   margin: 0px;
 }
 
-details[type*=Texture]>summary::after {
-  mask: url(../Html/Icon/Texture.svg);
-  -webkit-mask: url(../Html/Icon/Texture.svg);
+fudge-reference>label::after {
+  margin-left: 0.5em;
+  margin-right: 3px;
+  mask-image: url(../Html/Icon/Script.svg);
 }
 
-details[type*=Material]>summary::after {
-  mask: url(../Html/Icon/Material.svg);
-  -webkit-mask: url(../Html/Icon/Material.svg);
+fudge-reference[type*=Graph]>label::after {
+  mask-image: url(../Html/Icon/Graph.svg);
 }
 
-details[type*=Mesh]>summary::after {
-  mask: url(../Html/Icon/Mesh.svg);
-  -webkit-mask: url(../Html/Icon/Mesh.svg);
+details[type*=Texture]>summary::after,
+fudge-reference[type*=Texture]>label::after {
+  mask-image: url(../Html/Icon/Texture.svg);
 }
 
-details[type*=Light]>summary::after {
-  mask: url(../Html/Icon/Light.svg);
-  -webkit-mask: url(../Html/Icon/Light.svg);
+details[type*=Material]>summary::after,
+fudge-reference[type*=Material]>label::after {
+  mask-image: url(../Html/Icon/Material.svg);
+}
+
+details[type*=Mesh]>summary::after,
+fudge-reference[type*=Mesh]>label::after {
+  mask-image: url(../Html/Icon/Mesh.svg);
+}
+
+details[type*=Light]>summary::after,
+fudge-reference[type*=Light]>label::after {
+  mask-image: url(../Html/Icon/Light.svg);
 }
 
 details[type*=Animation]>summary::after,
-details[type^=ComponentAnimation]>summary::after {
-  mask: url(../Html/Icon/Animation.svg);
-  -webkit-mask: url(../Html/Icon/Animation.svg);
+details[type^=ComponentAnimation]>summary::after,
+fudge-reference[type*=Animation]>label::after {
+  mask-image: url(../Html/Icon/Animation.svg);
 }
 
-details[type*=ParticleSystem]>summary::after {
-  mask: url(../Html/Icon/Particles.svg);
-  -webkit-mask: url(../Html/Icon/Particles.svg);
+details[type*=ParticleSystem]>summary::after,
+fudge-reference[type*=ParticleSystem]>label::after {
+  mask-image: url(../Html/Icon/Particles.svg);
 }
 
-details[type*=Audio]>summary::after {
-  mask: url(../Html/Icon/Audio.svg);
-  -webkit-mask: url(../Html/Icon/Audio.svg);
+details[type*=Audio]>summary::after,
+fudge-reference[type*=Audio]>label::after {
+  mask-image: url(../Html/Icon/Audio.svg);
 }
 
 details[key^=script]>summary::after,
 details[key^=ComponentScript]>summary::after {
-  mask: url(../Html/Icon/Script.svg);
-  -webkit-mask: url(../Html/Icon/Script.svg);
+  mask-image: url(../Html/Icon/Script.svg);
 }
 
 details[type^=ComponentAudioListener]>summary::after {
-  mask: url(../Html/Icon/Listener.svg);
-  -webkit-mask: url(../Html/Icon/Listener.svg);
+  mask-image: url(../Html/Icon/Listener.svg);
 }
 
 details[type^=ComponentTransform]>summary::after,
 details[key^=mtxTransforms]>summary::after {
-  mask: url(../Html/Icon/Transform.svg);
-  -webkit-mask: url(../Html/Icon/Transform.svg);
+  mask-image: url(../Html/Icon/Transform.svg);
 }
 
 details[type^=ComponentRigidbody]>summary::after {
-  mask: url(../Html/Icon/Rigidbody.svg);
-  -webkit-mask: url(../Html/Icon/Rigidbody.svg);
+  mask-image: url(../Html/Icon/Rigidbody.svg);
 }
 
 details[key^=Joint]>summary::after {
-  mask: url(../Html/Icon/Joint.svg);
-  -webkit-mask: url(../Html/Icon/Joint.svg);
+  mask-image: url(../Html/Icon/Joint.svg);
 }
 
 details[type^=ComponentCamera]>summary::after,
 details[type^=ComponentVRDevice]>summary::after {
-  mask: url(../Html/Icon/Camera.svg);
-  -webkit-mask: url(../Html/Icon/Camera.svg);
+  mask-image: url(../Html/Icon/Camera.svg);
 }
 
 details[key^=shape]>summary::after {
-  mask: url(../Html/Icon/Shape.svg);
-  -webkit-mask: url(../Html/Icon/Shape.svg);
+  mask-image: url(../Html/Icon/Shape.svg);
 }
 
 /* Playback */
@@ -311,33 +284,27 @@ details[key^=shape]>summary::after {
 }
 
 .buttonIcon[id="previous"]::before {
-  mask: url(../Html/Icon/Previous.svg);
-  -webkit-mask: url(../Html/Icon/Previous.svg);
+  mask-image: url(../Html/Icon/Previous.svg);
 }
 
 .buttonIcon[id="backward"]::before {
-  mask: url(../Html/Icon/Backward.svg);
-  -webkit-mask: url(../Html/Icon/Backward.svg);
+  mask-image: url(../Html/Icon/Backward.svg);
 }
 
 .buttonIcon[id="forward"]::before {
-  mask: url(../Html/Icon/Forward.svg);
-  -webkit-mask: url(../Html/Icon/Forward.svg);
+  mask-image: url(../Html/Icon/Forward.svg);
 }
 
 .buttonIcon[id="play"]::before {
-  mask: url(../Html/Icon/Play.svg);
-  -webkit-mask: url(../Html/Icon/Play.svg);
+  mask-image: url(../Html/Icon/Play.svg);
 }
 
 .buttonIcon[id="pause"]::before {
-  mask: url(../Html/Icon/Pause.svg);
-  -webkit-mask: url(../Html/Icon/Pause.svg);
+  mask-image: url(../Html/Icon/Pause.svg);
 }
 
 .buttonIcon[id="next"]::before {
-  mask: url(../Html/Icon/Next.svg);
-  -webkit-mask: url(../Html/Icon/Next.svg);
+  mask-image: url(../Html/Icon/Next.svg);
 }
 
 /* Animation */
@@ -351,6 +318,5 @@ div[view=ViewAnimation] fudge-stepper::after {
   margin-left: 5px;
   background: var(--color-animation-property);
   vertical-align: middle;
-  mask: url(../Html/Icon/AnimationKey.svg);
-  -webkit-mask: url(../Html/Icon/AnimationKey.svg);
+  mask-image: url(../Html/Icon/AnimationKey.svg);
 }
