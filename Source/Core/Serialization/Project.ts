@@ -106,7 +106,7 @@ namespace FudgeCore {
     /**
      * Returns an array of all resources of the requested type.
      */
-    public static getResourcesByType<T>(_type: new (_args: General) => T): SerializableResource[] {
+    public static getResourcesByType<T>(_type: abstract new (..._args: General[]) => T): SerializableResource[] {
       let found: SerializableResource[] = [];
       for (let resourceId in Project.resources) {
         let resource: SerializableResource = Project.resources[resourceId];

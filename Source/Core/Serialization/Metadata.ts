@@ -6,7 +6,12 @@ namespace FudgeCore {
    * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
    * @see {@link Metadata}.
    */
-  export type MutatorTypes = Record<PropertyKey, Function | Record<PropertyKey, General>>;
+  export type MutatorTypes = { [key: string]: Function | Record<string, unknown> };
+
+  /**
+   * Map from each property of a mutator to a function that returns a map of possible options for the property.
+   */
+  export type MutatorReferences = { [key: string]: (this: unknown, _key: string) => Record<string, unknown> };
 
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
@@ -24,6 +29,12 @@ namespace FudgeCore {
      * Use the {@link type} or {@link serialize} decorator to add type information to this map.
      */
     mutatorTypes?: MutatorTypes;
+
+    /**
+     * A map from property keys to functions that return a map of possible options for the property.
+     * Use the {@link serialize} or the {@link type} and {@link reference} decorator to add to this map.
+     */
+    mutatorReferences?: MutatorReferences;
 
     /**
      * A map of property keys to their serialization strategy.
@@ -49,6 +60,14 @@ namespace FudgeCore {
    */
   export function getMutatorTypes(_from: Object): Readonly<MutatorTypes> {
     return getMetadata(_from).mutatorTypes ?? emptyTypes;
+  }
+
+  const emptyReferences: Readonly<MutatorReferences> = Object.freeze({});
+  /**
+   * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+   */
+  export function getMutatorReferences(_from: Object): Readonly<MutatorReferences> {
+    return getMetadata(_from).mutatorReferences ?? emptyReferences;
   }
 
   const emptyMetadata: Metadata = Object.freeze({});
@@ -124,16 +143,16 @@ namespace FudgeCore {
   // export function type<C, K extends keyof C, T>(_propertyKey: K): C[K] extends (() => Record<string, T>) | Record<string, T> ? (_value: unknown, _context: ClassPropertyContext<C, T>) => void : never;
 
   // object type
-  export function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
+  export function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>) => void;
 
   // primitive type
-  export function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  export function type<T extends Boolean | Number | String>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
 
   // enum type
-  export function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+  export function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
 
-  export function type(_type: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
-    return (_value, _context) => { // could cache the decorator function for each class
+  export function type(_type: Function | Record<string, unknown>): (_value: unknown, _context: ClassPropertyContext) => void {
+    return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
         return;
@@ -145,6 +164,62 @@ namespace FudgeCore {
 
       mutate(_value, _context);
     };
+  }
+  //#endregion
+
+  //#region Reference
+  export function reference(_value: unknown, _context: ClassPropertyContext): void {
+    const key: PropertyKey = _context.name;
+    if (typeof key === "symbol")
+      return;
+
+    const metadata: Metadata = _context.metadata;
+    const type: Function | Record<string, unknown> = metadata.mutatorTypes?.[key];
+    if (typeof type !== "function")
+      return;
+
+    const prototype: unknown = type.prototype;
+
+    let get: (this: General, _key: General) => Record<string, unknown>;
+    if ((<SerializableResource>prototype).isSerializableResource)
+      get = getResourceOptions;
+    else if (type === Node)
+      get = getNodeOptions;
+    if ((<General>type).subclasses)
+      get = getSubclassOptions;
+
+    if (!get)
+      return;
+
+    const references: MutatorReferences = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = { ...metadata.mutatorReferences });
+    references[key] = get;
+  }
+
+  function getSubclassOptions(this: object & { constructor: Function & { readonly subclasses: Function[] } }): Record<string, Function> {
+    const subclasses: Function[] = this.constructor.subclasses;
+    const options: Record<string, Function> = {};
+    for (const subclass of subclasses)
+      options[subclass.name] = subclass;
+
+    return options;
+  }
+
+  function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
+    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>getMutatorTypes(this)[_key]);
+    const options: Record<string, SerializableResource> = {};
+    for (const resource of resources)
+      options[resource.name] = resource;
+
+    return options;
+  }
+
+  function getNodeOptions(this: Component): Record<string, Node> {
+    const root: Node = this.node.getAncestor();
+    const options: Record<string, Node> = {};
+    for (const node of root)
+      options[node.name] = node;
+
+    return options;
   }
   //#endregion
 }

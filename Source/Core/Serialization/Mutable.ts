@@ -102,9 +102,12 @@ namespace FudgeCore {
       // delete unwanted attributes
       this.reduceMutator(mutator);
 
+      const references: MutatorReferences = getMutatorReferences(this);
       // replace references to mutable objects with references to mutators
       for (let attribute in mutator) {
         let value: Object = mutator[attribute];
+        if (references[attribute])
+          continue; // do not replace references
         if (value instanceof Mutable)
           mutator[attribute] = value.getMutator();
         if (value instanceof MutableArray)
@@ -134,11 +137,11 @@ namespace FudgeCore {
      * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
      * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
      */
-    public getMutatorAttributeTypes?(_mutator: Mutator): MutatorAttributeTypes {
+    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
       const out: MutatorAttributeTypes = {};
-      const types: MutatorTypes = getMutatorTypes(this);
+      const metaTypes: MutatorTypes = getMutatorTypes(this);
       for (const key in _mutator) {
-        const metaType: Function | object = types[key];
+        const metaType: Function | Record<string, unknown> = metaTypes[key];
         let type: string | object;
         switch (typeof metaType) {
           case "function":
@@ -148,9 +151,9 @@ namespace FudgeCore {
             type = metaType;
             break;
           // case "string": // runtime type, retrieve it from an object property/method
-          //   const member: Function | object = _object[metaType];
+          //   const member: General = Reflect.get(this, metaType);
           //   if (typeof member == "function")
-          //     type = member.call(_object);
+          //     type = member.call(this);
           //   else
           //     type = member;
           //   break;
@@ -235,7 +238,6 @@ namespace FudgeCore {
      */
     protected async mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void> {
       let mutator: Mutator = _mutator;
-
       if (_selection) { // TODO: this doesn't work as it does not recurse into objects
         mutator = {};
         for (let attribute of _selection) // reduce the mutator to the selection
@@ -248,7 +250,8 @@ namespace FudgeCore {
           continue;
         let mutant: Object = Reflect.get(this, attribute);
         let value: Mutator = <Mutator>mutator[attribute];
-        if (mutant instanceof MutableArray || mutant instanceof Mutable)
+
+        if (value != null && (mutant instanceof MutableArray || mutant instanceof Mutable))
           await mutant.mutate(value, null, false);
         else
           Reflect.set(this, attribute, value);
