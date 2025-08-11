@@ -82,19 +82,25 @@ namespace FudgeCore {
      */
     public getMutator(_extendable: boolean = false): Mutator {
       const mutator: Mutator = {};
+      const keys: ReadonlySet<string> = getMutatorKeys(this);
 
       // collect primitive and mutable attributes
       for (let attribute in this) {
-        let value: Object = this[attribute];
+        const value: Object = this[attribute];
+        if (keys.has(attribute)) // always include decorated properties
+          mutator[attribute] = value;
+
         if (value instanceof Function)
           continue;
+
         if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")))
           continue;
+
         mutator[attribute] = value;
       }
 
-      for (const key of getMutatorKeys(this))  // include all decorated properties
-        mutator[key] = this[key];
+      // for (const key of getMutatorKeys(this))  // maybe mutation should be opt-in instead of opt-out? i.e. only include decorated properties by default, remove reduceMutator() and _extendable parameter
+      //   mutator[key] = this[key];
 
       if (!_extendable)
         // mutator can be reduced but not extended!

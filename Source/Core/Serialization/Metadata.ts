@@ -13,6 +13,8 @@ namespace FudgeCore {
    */
   export type MutatorReferences = { [key: string]: (this: unknown, _key: string) => Record<string, unknown> };
 
+  // export type MutatorInfo = { [key: string]: { type?: Function | Record<string, unknown>; isArray?: boolean; isFunction?: boolean; getOptions?: (this: unknown, _key: string) => Record<string, unknown> } };
+
   /**
    * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
    * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
@@ -22,7 +24,7 @@ namespace FudgeCore {
      * Keys of properties to be included in the class's {@link Mutator}.
      * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
      */
-    mutatorKeys?: string[];
+    mutatorKeys?: Set<string>;
 
     /**
      * A map from property keys to their specified types for the class's {@link Mutator}.
@@ -36,6 +38,8 @@ namespace FudgeCore {
      */
     mutatorReferences?: MutatorReferences;
 
+    // mutatorInfo?: Record<string, { type: Function | Record<string, unknown>; getOptions: (this: unknown, _key: string) => Record<string, unknown> }>;
+
     /**
      * A map of property keys to their serialization strategy.
      * Use the {@link serialize} decorator to add to this map.
@@ -46,12 +50,12 @@ namespace FudgeCore {
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
-  const emptyKeys: readonly string[] = Object.freeze([]);
+  const emptyKeys: ReadonlySet<string> = Object.freeze(new Set<string>());
   /**
-   * Returns the decorated {@link Metadata.mutatorKeys keys} of the {@link Mutator} of the given instance or class. Returns an empty array if no keys are decorated.
+   * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
    */
-  export function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
-    return <K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
+  export function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
+    return <ReadonlySet<K>>(getMetadata(_from).mutatorKeys ?? emptyKeys);
   }
 
   const emptyTypes: MutatorTypes = Object.freeze({});
@@ -124,8 +128,8 @@ namespace FudgeCore {
       return;
 
     const metadata: Metadata = _context.metadata;
-    const keys: Metadata["mutatorKeys"] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
-    keys.push(key);
+    const keys: Set<string> = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = new Set<string>(metadata.mutatorKeys));
+    keys.add(key);
   }
   //#endregion
 
@@ -185,7 +189,7 @@ namespace FudgeCore {
       get = getResourceOptions;
     else if (type === Node)
       get = getNodeOptions;
-    if ((<General>type).subclasses)
+    else if ((<General>type).subclasses)
       get = getSubclassOptions;
 
     if (!get)
