@@ -310,19 +310,25 @@ option {
 
 /* Button */
 
-.buttonIcon {
+button {
   border: none;
-  /* border-right: 2px solid var(--color-background-content); */
   background-color: var(--color-background-main);
-  /* padding: 2px; */
-  min-width: 30px;
-  width: 60px;
-  height: 25px;
+  color: var(--color-text);
   cursor: pointer;
 }
 
-.buttonIcon:focus {
-  outline: none;
+button {
+  border: 1px outset var(--color-medium);
+}
+
+button:active {
+  border: 1px inset var(--color-medium);
+}
+
+.buttonPlayback {
+  min-width: 30px;
+  width: 60px;
+  height: 25px;
 }
 
 /* standard fudge elements */
@@ -341,13 +347,16 @@ fudge-reference {
 
 fudge-reference {
   align-items: center;
-
 }
 
 fudge-reference>label {
   padding-right: 0;
   display: flex;
   align-items: center;
+}
+
+fudge-reference>button::before {
+  content: "X";
 }
 
 fudge-digit {

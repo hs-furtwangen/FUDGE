@@ -175,7 +175,8 @@ namespace Fudge {
         .map(_id => {
           let button: HTMLButtonElement = document.createElement("button");
           button.id = _id;
-          button.className = "buttonIcon";
+          button.classList.add("buttonIcon");
+          button.classList.add("buttonPlayback");
           button.onclick = this.hndToolbarClick;
           return button;
         })

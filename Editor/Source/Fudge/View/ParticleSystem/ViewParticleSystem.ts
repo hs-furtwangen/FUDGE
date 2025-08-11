@@ -266,6 +266,7 @@ namespace Fudge {
           let button: HTMLButtonElement = document.createElement("button");
           button.id = _id;
           button.classList.add("buttonIcon");
+          button.classList.add("buttonPlayback");
           button.onclick = (_event: MouseEvent) => {
             let timeScale: number = this.cmpParticleSystem.timeScale;
             switch ((<HTMLInputElement>_event.target).id) {
