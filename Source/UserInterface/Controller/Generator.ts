@@ -46,7 +46,7 @@ namespace FudgeUserInterface {
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
         if (!element && mutatorReferences[key]) // the new way
-          element = new CustomElementReference({ key: key, label: key, type: type.toString() }, _mutable, mutatorReferences[key]);
+          element = new CustomElementReference({ key: key, label: key, type: type.toString() });
 
         if (!element) {
           let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
@@ -96,16 +96,13 @@ namespace FudgeUserInterface {
      */
     public static createMutatorElement(_key: string, _type: Object | string, _value: Object): HTMLElement {
       let element: HTMLElement;
+      let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement;
       try {
         if (_type instanceof Object) {
-          let elementType: typeof CustomElement = CustomElement.get("Object");
-          // @ts-ignore: instantiate abstract class
+          elementType = CustomElement.get("Object");
           element = new elementType({ key: _key, label: _key, value: _value?.toString() }, _type);
-        } else if (_value instanceof ƒ.MutableArray) { // TODO: delete?
-          ƒ.Debug.fudge("MutableArray");
-          // insert Array-Controller!
         } else {
-          let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement = CustomElement.get(_type);
+          elementType = CustomElement.get(_type);
           if (elementType)
             element = new elementType({ key: _key, label: _key, value: _value?.toString() });
         }

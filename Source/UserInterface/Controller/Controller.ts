@@ -25,6 +25,7 @@ namespace FudgeUserInterface {
       this.startRefresh();
       this.domElement.addEventListener(EVENT.INPUT, this.mutateOnInput);
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
+      this.domElement.addEventListener(EVENT.REQUEST_OPTIONS, this.hndRequestOptions);
     }
 
     /**
@@ -179,25 +180,13 @@ namespace FudgeUserInterface {
       this.idInterval = window.setInterval(this.refresh, this.timeUpdate);
     }
 
-
     protected mutateOnInput = async (_event: Event): Promise<void> => {
-      let path: string[] = [];
-      for (let target of _event.composedPath()) {
-        if (target == this.domElement)
-          break;
-
-        let key: string = (<HTMLElement>target).getAttribute("key");
-        if (key)
-          path.push(key);
-      }
-      path.reverse();
-
+      let path: string[] = this.getTargetPath(_event);
       // get current mutator and save for undo
       let mutator: ƒ.Mutator = this.mutable.getMutator();
       // ƒ.Debug.info(mutator);
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, {bubbles: true, detail: {mutable: this.mutable, mutator: ƒ.Mutable.getMutatorFromPath(mutator, path)
-      }}));
- 
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: ƒ.Mutable.getMutatorFromPath(mutator, path) } }));
+
       // get current mutator from interface for mutation   
       this.mutator = this.getMutator();
       await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));
@@ -238,5 +227,41 @@ namespace FudgeUserInterface {
 
       window.clearInterval(this.idInterval);
     };
+
+    private hndRequestOptions = (_event: Event): void => {
+      const target: EventTarget = _event.target;
+      if (!(target instanceof CustomElementReference))
+        return;
+
+      const mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.getTargetMutable(_event);
+      const key: string = target.getAttribute("key");
+      const references: ƒ.MutatorReferences = ƒ.getMutatorReferences(mutable);
+      const getOptions: (this: unknown, _key: string) => Record<string, unknown> = references[key];
+      const options: Record<string, unknown> = getOptions.call(mutable, key);
+      target.setOptions(options);
+    };
+
+    private getTargetMutable(_event: Event): ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> {
+      const path: string[] = this.getTargetPath(_event);
+      let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.mutable;
+      for (let i: number = 0; i < path.length - 1; i++)
+        mutable = Reflect.get(mutable, path[i]);
+
+      return mutable;
+    }
+
+    private getTargetPath(_event: Event): string[] {
+      const path: string[] = [];
+      for (const target of _event.composedPath()) {
+        if (target == this.domElement)
+          break;
+
+        const key: string = (<HTMLElement>target).getAttribute("key");
+        if (key)
+          path.push(key);
+      }
+      
+      return path.reverse();
+    }
   }
 }

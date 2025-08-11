@@ -1,6 +1,4 @@
 namespace FudgeUserInterface {
-  import ƒ = FudgeCore;
-
   /**
    * TODO:
    */
@@ -8,14 +6,8 @@ namespace FudgeUserInterface {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-reference", CustomElementReference);
 
-    #mutable: ƒ.Mutable | ƒ.MutableArray<unknown>;
-    #getOptions: (this: unknown, _key: keyof unknown) => Record<string, unknown>;
-
-    public constructor(_attributes: CustomElementAttributes, _mutable: ƒ.Mutable | ƒ.MutableArray<unknown>, _getOptions: (this: unknown, _key: keyof unknown) => Record<string, unknown>) {
-      super(_attributes);
-      this.#mutable = _mutable;
-      this.#getOptions = _getOptions;
-    }
+    // set by controller on request via EVENT.REQUEST_OPTIONS
+    #options: Record<string, unknown> = {};
 
     /**
      * Creates the content of the element when connected the first time
@@ -34,19 +26,48 @@ namespace FudgeUserInterface {
       let input: HTMLInputElement = document.createElement("input");
       input.setAttribute("list", datalist.id);
       input.placeholder = `${this.getAttribute("type")}...`;
+      input.spellcheck = false;
       input.onfocus = this.hndFocus;
-      input.spellcheck = false; 
+      input.oninput = this.hndInput;
       this.appendChild(input);
 
       let button: HTMLButtonElement = document.createElement("button");
-      button.textContent = "X";
       button.onclick = this.hndClick;
+      button.hidden = true;
       this.appendChild(button);
-
-      this.setMutatorValue(Reflect.get(this.#mutable, this.getAttribute("key")));
     }
 
-    public hndFocus = (_event: FocusEvent): void => {
+    // Set by controller
+    public setOptions(_options: Record<string, unknown>): void {
+      this.#options = _options;
+    }
+
+    public getMutatorValue(): unknown {
+      const input: HTMLInputElement = this.querySelector("input");
+      const options: Record<string, unknown> = this.getOptions();
+      return options[input.value];
+    }
+
+    public setMutatorValue(_value: { name?: string }): void {
+      const input: HTMLInputElement = this.querySelector("input");
+      if (input == document.activeElement)
+        return;
+
+      const value: string = _value ? _value.name ?? _value.toString() : "";
+
+      const button: HTMLButtonElement = this.querySelector("button");
+      button.hidden = !value;
+
+      input.value = value;
+    }
+
+    private hndClick = (_event: MouseEvent): void => {
+      const input: HTMLInputElement = this.querySelector("input");
+      input.value = "";
+      input.dispatchEvent(new Event(EVENT.INPUT, { bubbles: true }));
+    };
+
+    private hndFocus = (_event: FocusEvent): void => {
       const datalist: HTMLDataListElement = this.querySelector("datalist");
       datalist.innerHTML = ""; // clear previous entries
       const options: Record<string, unknown> = this.getOptions();
@@ -57,31 +78,15 @@ namespace FudgeUserInterface {
       }
     };
 
-    public hndClick = (_event: MouseEvent): void => {
-      let input: HTMLInputElement = this.querySelector("input");
-      input.value = null;
-      input.dispatchEvent(new Event(EVENT.INPUT, { bubbles: true }));
+    private hndInput = (_event: Event): void => {
+      const button: HTMLButtonElement = this.querySelector("button");
+      button.hidden = !(_event.target as HTMLInputElement).value;
     };
 
-    public getMutatorValue(): unknown {
-      const input: HTMLInputElement = this.querySelector("input");
-      const options: Record<string, unknown> = this.getOptions();
-      return options[input.value];
-    }
-
-    public setMutatorValue(_value: ƒ.General): void {
-      if (_value == null)
-        return;
-
-      this.querySelector("input").value = _value.name ?? _value.toString();
-    }
-
+    // Requests options from controller
     private getOptions(): Record<string, unknown> {
-      const options: Record<string, unknown> = this.#getOptions?.call(this.#mutable, this.getAttribute("key"));
-      if (!options)
-        throw new Error(`${this.#mutable.constructor.name}: No selection options provided for property "${this.getAttribute("label")}".`);
-
-      return options;
+      this.dispatchEvent(new Event(EVENT.REQUEST_OPTIONS, { bubbles: true }));
+      return this.#options;
     }
   }
 }

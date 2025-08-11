@@ -22,7 +22,7 @@ namespace FudgeUserInterface {
     private static idCounter: number = 0;
     protected initialized: boolean = false;
 
-    public constructor(_attributes?: CustomElementAttributes) {
+    public constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]) {
       super();
       if (_attributes)
         for (let name in _attributes) {
@@ -54,7 +54,7 @@ namespace FudgeUserInterface {
     /**
      * Retrieve the element representing the given data type (if registered)
      */
-    public static get(_type: string): (typeof CustomElement) & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement) {
+    public static get(_type: string): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement) {
       let element: string | typeof CustomElement | CustomElementConstructor = CustomElement.mapObjectToCustomElement.get(_type);
       if (typeof (element) == "string")
         element = customElements.get(element);
