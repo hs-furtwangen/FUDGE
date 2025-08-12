@@ -365,9 +365,9 @@ namespace FudgeCore {
         this.#translationDirty = false;
       }
 
-      if (_rotation || _scaling) {
+      if (_rotation != null || _scaling) {
         const rotation: number = _rotation ?? this.rotation;
-        if (_rotation != undefined)
+        if (_rotation != null)
           this.#rotation = rotation;
 
         const scaling: Vector2 = this.scaling;
