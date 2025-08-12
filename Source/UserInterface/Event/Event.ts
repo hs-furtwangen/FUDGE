@@ -39,7 +39,6 @@ namespace FudgeUserInterface {
     POINTER_MOVE = "pointermove",
     INSERT = "insert",
     SELECT_ALL = "selectAll",
-    SAVE_HISTORY = "saveHistory",
-    REQUEST_OPTIONS = "requestOptions"
+    SAVE_HISTORY = "saveHistory"
   }
 }

@@ -1,13 +1,18 @@
 namespace FudgeUserInterface {
-  /**
-   * TODO:
-   */
+
   export class CustomElementReference extends CustomElement {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-reference", CustomElementReference);
 
-    // set by controller on request via EVENT.REQUEST_OPTIONS
-    #options: Record<string, unknown> = {};
+    // this breaches the separation of concerns of view and controller, but it is very handy if the custom element reference can get its options by itself.
+    #mutable: object;
+    #getOptions: (this: object, _key: string) => Record<string, unknown>;
+
+    public constructor(_attributes: CustomElementAttributes, _mutable: object, _get: (this: object, _key: string) => Record<string, unknown>) {
+      super(_attributes);
+      this.#mutable = _mutable;
+      this.#getOptions = _get;
+    }
 
     /**
      * Creates the content of the element when connected the first time
@@ -36,11 +41,8 @@ namespace FudgeUserInterface {
       button.onclick = this.hndClick;
       button.hidden = true;
       this.appendChild(button);
-    }
 
-    // Set by controller
-    public setOptions(_options: Record<string, unknown>): void {
-      this.#options = _options;
+      this.setMutatorValue(Reflect.get(this.#mutable, this.getAttribute("key")));
     }
 
     public getMutatorValue(): unknown {
@@ -65,6 +67,8 @@ namespace FudgeUserInterface {
     private hndClick = (_event: MouseEvent): void => {
       const input: HTMLInputElement = this.querySelector("input");
       input.value = "";
+      const button: HTMLButtonElement = this.querySelector("button");
+      button.hidden = true;
       this.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
     };
 
@@ -89,10 +93,8 @@ namespace FudgeUserInterface {
       _event.stopPropagation();
     };
 
-    // Requests options from controller
     private getOptions(): Record<string, unknown> {
-      this.dispatchEvent(new Event(EVENT.REQUEST_OPTIONS, { bubbles: true }));
-      return this.#options;
+      return this.#getOptions.call(this.#mutable, this.getAttribute("key"));
     }
   }
 }

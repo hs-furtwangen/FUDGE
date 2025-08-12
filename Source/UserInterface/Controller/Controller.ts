@@ -20,9 +20,7 @@ namespace FudgeUserInterface {
       this.startRefresh();
       this.domElement.addEventListener(EVENT.INPUT, this.mutateOnInput);
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
-      this.domElement.addEventListener(EVENT.REQUEST_OPTIONS, this.hndRequestOptions);
       this.domElement.addEventListener(EVENT.CHANGE, this.hndChange);
-
     }
 
     /**
@@ -50,7 +48,7 @@ namespace FudgeUserInterface {
      * Recursive method taking the a [[ƒ.Mutable]] as a template to create a [[ƒ.Mutator]] or update the given [[ƒ.Mutator]] 
      * with the values in the given UI-domElement
      */
-    public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
+    public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray<unknown>, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
 
       for (let key in mutator) {
@@ -212,21 +210,6 @@ namespace FudgeUserInterface {
       _event.stopPropagation();
 
       this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));
-    };
-
-    private hndRequestOptions = (_event: Event): void => {
-      const target: EventTarget = _event.target;
-      if (!(target instanceof CustomElementReference))
-        return;
-
-      const path: string[] = this.getMutatorPath(_event);
-      path.pop();
-      const mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = ƒ.Mutable.getMutableFromPath(this.mutable, path);
-      const key: string = target.getAttribute("key");
-      const references: ƒ.MutatorReferences = ƒ.getMutatorReferences(mutable);
-      const getOptions: (this: unknown, _key: string) => Record<string, unknown> = references[key];
-      const options: Record<string, unknown> = getOptions.call(mutable, key);
-      target.setOptions(options);
     };
 
     private getMutatorPath(_event: Event): string[] {
