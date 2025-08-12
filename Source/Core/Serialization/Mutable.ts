@@ -44,6 +44,75 @@ namespace FudgeCore {
     return mutator;
   }
 
+  // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
+  /**
+   * Updates the values of the given mutator according to the current state of the given mutable.
+   * @param _mutable The mutable to update the state from.
+   * @param _mutator The mutator to update.
+   * @returns `_mutator`.
+   */
+  export function updateMutator(_mutable: Mutable | MutableArray<unknown>, _mutator: Mutator): Mutator {
+    const references: MutatorReferences = getMutatorReferences(_mutable);
+    for (const key in _mutator) {
+      const value: Object = Reflect.get(_mutable, key);
+      if ((value instanceof Mutable || value instanceof MutableArray) && !references[key])
+        updateMutator(value, _mutator[key]);
+      else
+        _mutator[key] = value;
+    }
+
+    return _mutator;
+  }
+
+  /**
+   * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
+   * @param _mutator The mutator to clone. Must be a plain object or array.
+   * @returns A clone of `_mutator` or null if it is not a plain object or array.
+   */
+  export function cloneMutator(_mutator: Mutator): Mutator | null {
+    const out: Mutator | null = createMutator(_mutator);
+    if (out)
+      for (const key in _mutator)
+        out[key] = cloneMutator(_mutator[key]) ?? _mutator[key];
+
+    return out;
+  }
+
+  /**
+   * Clones the given mutator at the given path. See {@link cloneMutator} for restrictions.
+   */
+  export function cloneMutatorFromPath(_mutator: Mutator, _path: string[], _index: number = 0): Mutator {
+    const key: string = _path[_index];
+    if (!(key in _mutator)) // if the path deviates from mutator, return the mutator
+      return _mutator;
+
+    const clone: Mutator = createMutator(_mutator);
+    if (!clone) // if the mutator is not a plain object or array, return it
+      return _mutator;
+
+    if (_index < _path.length - 1)
+      clone[key] = cloneMutatorFromPath(_mutator[key], _path, _index + 1); // recursively clone the next part of the path
+    else
+      clone[key] = _mutator[key];
+
+    return clone;
+  }
+
+  /**
+   * Creates and returns an empty mutator for the given value.
+   * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
+   */
+  function createMutator(_mutator: Mutator): Mutator | null {
+    const prototype: object = _mutator != null ? Object.getPrototypeOf(_mutator) : null;
+    if (prototype === Object.prototype)
+      return {};
+
+    if (prototype === Array.prototype)
+      return [];
+
+    return null;
+  }
+
   /**
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
    * 
@@ -56,14 +125,26 @@ namespace FudgeCore {
    */
   export abstract class Mutable extends EventTargetUnified {
 
+    public static getMutableFromPath(_mutable: Mutable | MutableArray<unknown>, _path: string[]): Mutable | MutableArray<unknown> {
+      for (let i: number = 0; i < _path.length; i++)
+        _mutable = Reflect.get(_mutable, _path[i]);
+
+      return _mutable;
+    }
+
+    /**
+     * @deprecated use {@link cloneMutatorFromPath}
+     */
     public static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator {
       let key: string = _path[0];
-      let mutator: Mutator = {};
-      if (_mutator[key] == undefined) // if the path deviates from mutator structure, return the mutator
+      if (!(key in _mutator)) // if the path deviates from mutator structure, return the mutator
         return _mutator;
+
+      let mutator: Mutator = {};
       mutator[key] = _mutator[key];
       if (_path.length > 1)
         mutator[key] = Mutable.getMutatorFromPath(mutator[key], _path.slice(1, _path.length));
+
       return mutator;
     }
 
@@ -114,10 +195,8 @@ namespace FudgeCore {
         let value: Object = mutator[attribute];
         if (references[attribute])
           continue; // do not replace references
-        if (value instanceof Mutable)
+        if (value instanceof Mutable || value instanceof MutableArray)
           mutator[attribute] = value.getMutator();
-        if (value instanceof MutableArray)
-          mutator[attribute] = value.map((_value) => _value.getMutator());
       }
 
       return mutator;
@@ -183,7 +262,7 @@ namespace FudgeCore {
 
     /**
      * Updates the values of the given mutator according to the current state of the instance
-     * @param _mutator 
+     * @deprecated Use {@link updateMutator} instead.
      */
     public updateMutator(_mutator: Mutator): void {
       for (let attribute in _mutator) {
@@ -195,6 +274,7 @@ namespace FudgeCore {
       }
     }
 
+    //TODO: remove the _selection parameter, seems to be unused and adds a lot of boilerplate...
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
      * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
@@ -251,13 +331,15 @@ namespace FudgeCore {
             mutator[attribute] = _mutator[attribute];
       }
 
+      const references: MutatorReferences = getMutatorReferences(this);
       for (let attribute in mutator) {
         if (!Reflect.has(this, attribute))
           continue;
         let mutant: Object = Reflect.get(this, attribute);
         let value: Mutator = <Mutator>mutator[attribute];
 
-        if (value != null && (mutant instanceof MutableArray || mutant instanceof Mutable))
+
+        if (value != null && !references[attribute] && (mutant instanceof MutableArray || mutant instanceof Mutable))
           await mutant.mutate(value, null, false);
         else
           Reflect.set(this, attribute, value);
