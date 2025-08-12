@@ -53,11 +53,8 @@ namespace FudgeUserInterface {
      * Recursive method taking the a [[ƒ.Mutable]] as a template to create a [[ƒ.Mutator]] or update the given [[ƒ.Mutator]] 
      * with the values in the given UI-domElement
      */
-    public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
-      // TODO: examine if this.mutator should also be addressed in some way...
+    public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray<unknown>, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
-      // TODO: Mutator type now only used for enums. Examine if there is another way
-      let mutatorTypes: ƒ.MutatorAttributeTypes = _types || _mutable.getMutatorAttributeTypes(mutator);
 
       for (let key in mutator) {
         let element: HTMLElement = Controller.findChildElementByKey(_domElement, key);
@@ -65,20 +62,14 @@ namespace FudgeUserInterface {
           continue;
 
         if (element instanceof CustomElement)
-          mutator[key] = (<CustomElement>element).getMutatorValue();
-        else if (element instanceof HTMLInputElement)
-          mutator[key] = element.value;
-        else if (mutatorTypes[key] instanceof Object)
-          // TODO: setting a value of the dom element doesn't make sense... examine what this line was supposed to do. Assumably enums
-          mutator[key] = (<HTMLSelectElement>element).value;
+          mutator[key] = element.getMutatorValue();
         else {
-          let subMutator: ƒ.Mutator = Reflect.get(mutator, key);
-          let subMutable: ƒ.Mutable;
-          subMutable = Reflect.get(_mutable, key);
+          const subMutable: ƒ.Mutable = Reflect.get(_mutable, key);
           if (subMutable instanceof ƒ.MutableArray || subMutable instanceof ƒ.Mutable)
-            mutator[key] = this.getMutator(subMutable, element, subMutator); //, subTypes);
+            mutator[key] = this.getMutator(subMutable, element, mutator[key]);
         }
       }
+      
       return mutator;
     }
 
@@ -88,7 +79,6 @@ namespace FudgeUserInterface {
      */
     public static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
-      let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
 
       for (let key in mutator) {
         let element: CustomElement = <CustomElement>Controller.findChildElementByKey(_domElement, key);
@@ -99,15 +89,10 @@ namespace FudgeUserInterface {
 
         if (element instanceof CustomElement && element != document.activeElement)
           element.setMutatorValue(value);
-        else if (mutatorTypes[key] instanceof Object)
-          element.setMutatorValue(value);
         else {
-          let subMutable: ƒ.Mutable = Reflect.get(_mutable, key);
+          const subMutable: ƒ.Mutable = Reflect.get(_mutable, key);
           if (subMutable instanceof ƒ.MutableArray || subMutable instanceof ƒ.Mutable)
             this.updateUserInterface(subMutable, element, mutator[key]);
-          else
-            //element.setMutatorValue(value);
-            Reflect.set(element, "value", value);
         }
       }
     }
@@ -181,7 +166,7 @@ namespace FudgeUserInterface {
     }
 
     protected mutateOnInput = async (_event: Event): Promise<void> => {
-      let path: string[] = this.getTargetPath(_event);
+      let path: string[] = this.getMutatorPath(_event);
       // get current mutator and save for undo
       let mutator: ƒ.Mutator = this.mutable.getMutator();
       // ƒ.Debug.info(mutator);
@@ -233,7 +218,9 @@ namespace FudgeUserInterface {
       if (!(target instanceof CustomElementReference))
         return;
 
-      const mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.getTargetMutable(_event);
+      const path: string[] = this.getMutatorPath(_event);
+      path.pop();
+      const mutable: ƒ.Mutable | ƒ.MutableArray<unknown> = ƒ.Mutable.getMutableFromPath(this.mutable, path);
       const key: string = target.getAttribute("key");
       const references: ƒ.MutatorReferences = ƒ.getMutatorReferences(mutable);
       const getOptions: (this: unknown, _key: string) => Record<string, unknown> = references[key];
@@ -241,16 +228,7 @@ namespace FudgeUserInterface {
       target.setOptions(options);
     };
 
-    private getTargetMutable(_event: Event): ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> {
-      const path: string[] = this.getTargetPath(_event);
-      let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.mutable;
-      for (let i: number = 0; i < path.length - 1; i++)
-        mutable = Reflect.get(mutable, path[i]);
-
-      return mutable;
-    }
-
-    private getTargetPath(_event: Event): string[] {
+    private getMutatorPath(_event: Event): string[] {
       const path: string[] = [];
       for (const target of _event.composedPath()) {
         if (target == this.domElement)
@@ -260,7 +238,7 @@ namespace FudgeUserInterface {
         if (key)
           path.push(key);
       }
-      
+
       return path.reverse();
     }
   }

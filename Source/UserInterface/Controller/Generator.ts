@@ -70,32 +70,26 @@ namespace FudgeUserInterface {
      * Create a div-Element containing the interface for the [[FudgeCore.Mutator]] 
      * Does not support nested mutators!
      */
-    public static createInterfaceFromMutator(_mutator: ƒ.Mutator | Object): HTMLDivElement {
+    public static createInterfaceFromMutator(_mutator: ƒ.Mutator): HTMLDivElement {
       let div: HTMLDivElement = document.createElement("div");
       for (let key in _mutator) {
-        let value: Object = Reflect.get(_mutator, key);
-        // if (value === undefined) // at this time (1/23) adding a property to an animation in the editor creates an empty keys list...
-        // {
-        //   div.appendChild(this.createMutatorElement(key, Object, {})); 
-        //   continue;
-        // }
+        let value: Object = _mutator[key];
         if (value instanceof Object) {
-          // let details: Details = Generator.createDetails(key, "Details");
           let details: Details = new Details(key, "Details");
           details.setContent(Generator.createInterfaceFromMutator(value));
           div.appendChild(details);
         } else
           div.appendChild(this.createMutatorElement(key, (<Object>value).constructor.name, value));
       }
+
       return div;
     }
 
-
     /**
-     * Create a specific CustomElement for the given data, using _key as identification
+     * Create a specific CustomElement for the given data. Returns undefined if no element is {@link CustomElement.register registered} for the given type.
      */
-    public static createMutatorElement(_key: string, _type: Object | string, _value: Object): HTMLElement {
-      let element: HTMLElement;
+    public static createMutatorElement(_key: string, _type: Object | string, _value: Object): CustomElement | undefined {
+      let element: CustomElement;
       let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement;
       try {
         if (_type instanceof Object) {
@@ -112,38 +106,5 @@ namespace FudgeUserInterface {
 
       return element;
     }
-
-    /**
-     * TODO: refactor for enums 
-     */
-    public static createDropdown(_name: string, _content: Object, _value: string, _parent: HTMLElement, _cssClass?: string): HTMLSelectElement {
-      let dropdown: HTMLSelectElement = document.createElement("select");
-      dropdown.name = _name;
-      for (let value in _content) {
-        let entry: HTMLOptionElement = document.createElement("option");
-        entry.text = value;
-        entry.value = value;
-        if (value.toUpperCase() == _value.toUpperCase()) {
-          entry.selected = true;
-        }
-        dropdown.add(entry);
-      }
-      _parent.appendChild(dropdown);
-      return dropdown;
-    }
-
-    // public static createDetails(_key: string, _type: string): Details {
-    //   let details: Details = new Details(_key);
-    //   // details.setAttribute("type", _type);
-    //   return details;
-    // }
-    // public static createDetailsArray(_key: string, _type: string): Details {
-    //   let details: Details = new DetailsArray(_key);
-    //   details.setAttribute("key", _key);
-    //   details.setAttribute("type", _type);
-    //   return details;
-    // }
   }
 }
-
-
