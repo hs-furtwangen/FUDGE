@@ -29,6 +29,7 @@ namespace FudgeUserInterface {
       input.spellcheck = false;
       input.onfocus = this.hndFocus;
       input.oninput = this.hndInput;
+      input.onkeyup = this.hndKey;
       this.appendChild(input);
 
       let button: HTMLButtonElement = document.createElement("button");
@@ -64,7 +65,7 @@ namespace FudgeUserInterface {
     private hndClick = (_event: MouseEvent): void => {
       const input: HTMLInputElement = this.querySelector("input");
       input.value = "";
-      input.dispatchEvent(new Event(EVENT.INPUT, { bubbles: true }));
+      this.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
     };
 
     private hndFocus = (_event: FocusEvent): void => {
@@ -81,6 +82,11 @@ namespace FudgeUserInterface {
     private hndInput = (_event: Event): void => {
       const button: HTMLButtonElement = this.querySelector("button");
       button.hidden = !(_event.target as HTMLInputElement).value;
+      _event.stopPropagation(); // prevent bubbling of input event to controller
+    };
+
+    private hndKey(_event: KeyboardEvent): void {
+      _event.stopPropagation();
     };
 
     // Requests options from controller

@@ -315,7 +315,7 @@ var FudgeCore;
 var FudgeCore;
 (function (FudgeCore) {
     Symbol.metadata ??= Symbol("Symbol.metadata");
-    const emptyKeys = Object.freeze([]);
+    const emptyKeys = Object.freeze(new Set());
     function getMutatorKeys(_from) {
         return (getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
@@ -325,6 +325,11 @@ var FudgeCore;
         return getMetadata(_from).mutatorTypes ?? emptyTypes;
     }
     FudgeCore.getMutatorTypes = getMutatorTypes;
+    const emptyReferences = Object.freeze({});
+    function getMutatorReferences(_from) {
+        return getMetadata(_from).mutatorReferences ?? emptyReferences;
+    }
+    FudgeCore.getMutatorReferences = getMutatorReferences;
     const emptyMetadata = Object.freeze({});
     function getMetadata(_from) {
         if (_from == null)
@@ -345,8 +350,8 @@ var FudgeCore;
         if (typeof key === "symbol")
             return;
         const metadata = _context.metadata;
-        const keys = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
-        keys.push(key);
+        const keys = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = new Set(metadata.mutatorKeys));
+        keys.add(key);
     }
     FudgeCore.mutate = mutate;
     function type(_type) {
@@ -361,27 +366,118 @@ var FudgeCore;
         };
     }
     FudgeCore.type = type;
+    function reference(_value, _context) {
+        const key = _context.name;
+        if (typeof key === "symbol")
+            return;
+        const metadata = _context.metadata;
+        const type = metadata.mutatorTypes?.[key];
+        if (typeof type !== "function")
+            return;
+        const prototype = type.prototype;
+        let get;
+        if (prototype.isSerializableResource)
+            get = getResourceOptions;
+        else if (type === FudgeCore.Node)
+            get = getNodeOptions;
+        else if (type.subclasses)
+            get = getSubclassOptions;
+        if (!get)
+            return;
+        const references = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = { ...metadata.mutatorReferences });
+        references[key] = get;
+    }
+    FudgeCore.reference = reference;
+    function getSubclassOptions() {
+        const subclasses = this.constructor.subclasses;
+        const options = {};
+        for (const subclass of subclasses)
+            options[subclass.name] = subclass;
+        return options;
+    }
+    function getResourceOptions(_key) {
+        const resources = FudgeCore.Project.getResourcesByType(getMutatorTypes(this)[_key]);
+        const options = {};
+        for (const resource of resources)
+            options[resource.name] = resource;
+        return options;
+    }
+    function getNodeOptions() {
+        const root = this.node.getAncestor();
+        const options = {};
+        for (const node of root)
+            options[node.name] = node;
+        return options;
+    }
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    function getMutatorOfArbitrary(_object) {
-        let mutator = {};
-        let attributes = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
-        for (let attribute of attributes) {
-            let value = Reflect.get(_object, attribute);
-            if (value instanceof Function)
-                continue;
-            mutator[attribute.toString()] = value;
+    class Mutator {
+        static clone(_mutator) {
+            const out = Mutator.create(_mutator);
+            if (out)
+                for (const key in _mutator)
+                    out[key] = Mutator.clone(_mutator[key]) ?? _mutator[key];
+            return out;
         }
-        return mutator;
+        ;
+        static fromPath(_mutator, _path, _index = 0) {
+            const key = _path[_index];
+            if (!(key in _mutator))
+                return _mutator;
+            const clone = Mutator.create(_mutator);
+            if (!clone)
+                return _mutator;
+            if (_index < _path.length - 1)
+                clone[key] = Mutator.fromPath(_mutator[key], _path, _index + 1);
+            else
+                clone[key] = _mutator[key];
+            return clone;
+        }
+        static from(_object) {
+            let mutator = {};
+            let attributes = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
+            for (let attribute of attributes) {
+                let value = Reflect.get(_object, attribute);
+                if (value instanceof Function)
+                    continue;
+                mutator[attribute.toString()] = value;
+            }
+            return mutator;
+        }
+        static update(_mutable, _mutator) {
+            const references = FudgeCore.getMutatorReferences(_mutable);
+            for (const key in _mutator) {
+                const value = Reflect.get(_mutable, key);
+                if ((value instanceof Mutable || value instanceof FudgeCore.MutableArray) && !references[key])
+                    Mutator.update(value, _mutator[key]);
+                else
+                    _mutator[key] = value;
+            }
+            return _mutator;
+        }
+        static create(_mutator) {
+            const prototype = _mutator != null ? Object.getPrototypeOf(_mutator) : null;
+            if (prototype === Object.prototype)
+                return {};
+            if (prototype === Array.prototype)
+                return [];
+            return null;
+        }
     }
-    FudgeCore.getMutatorOfArbitrary = getMutatorOfArbitrary;
+    FudgeCore.Mutator = Mutator;
+    ;
     class Mutable extends FudgeCore.EventTargetUnified {
+        static getMutableFromPath(_mutable, _path) {
+            for (let i = 0; i < _path.length; i++)
+                _mutable = Reflect.get(_mutable, _path[i]);
+            return _mutable;
+        }
         static getMutatorFromPath(_mutator, _path) {
             let key = _path[0];
-            let mutator = {};
-            if (_mutator[key] == undefined)
+            if (!(key in _mutator))
                 return _mutator;
+            let mutator = {};
             mutator[key] = _mutator[key];
             if (_path.length > 1)
                 mutator[key] = Mutable.getMutatorFromPath(mutator[key], _path.slice(1, _path.length));
@@ -392,25 +488,26 @@ var FudgeCore;
         }
         getMutator(_extendable = false) {
             const mutator = {};
+            for (const key of FudgeCore.getMutatorKeys(this))
+                mutator[key] = this[key];
             for (let attribute in this) {
-                let value = this[attribute];
+                const value = this[attribute];
                 if (value instanceof Function)
                     continue;
                 if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof FudgeCore.MutableArray) && !(value.hasOwnProperty("idResource")))
                     continue;
                 mutator[attribute] = value;
             }
-            for (const key of FudgeCore.getMutatorKeys(this))
-                mutator[key] = this[key];
             if (!_extendable)
                 Object.preventExtensions(mutator);
             this.reduceMutator(mutator);
+            const references = FudgeCore.getMutatorReferences(this);
             for (let attribute in mutator) {
                 let value = mutator[attribute];
-                if (value instanceof Mutable)
+                if (references[attribute])
+                    continue;
+                if (value instanceof Mutable || value instanceof FudgeCore.MutableArray)
                     mutator[attribute] = value.getMutator();
-                if (value instanceof FudgeCore.MutableArray)
-                    mutator[attribute] = value.map((_value) => _value.getMutator());
             }
             return mutator;
         }
@@ -422,9 +519,9 @@ var FudgeCore;
         }
         getMutatorAttributeTypes(_mutator) {
             const out = {};
-            const types = FudgeCore.getMutatorTypes(this);
+            const metaTypes = FudgeCore.getMutatorTypes(this);
             for (const key in _mutator) {
-                const metaType = types[key];
+                const metaType = metaTypes[key];
                 let type;
                 switch (typeof metaType) {
                     case "function":
@@ -492,12 +589,13 @@ var FudgeCore;
                     if (typeof (_mutator[attribute]) !== "undefined")
                         mutator[attribute] = _mutator[attribute];
             }
+            const references = FudgeCore.getMutatorReferences(this);
             for (let attribute in mutator) {
                 if (!Reflect.has(this, attribute))
                     continue;
                 let mutant = Reflect.get(this, attribute);
                 let value = mutator[attribute];
-                if (mutant instanceof FudgeCore.MutableArray || mutant instanceof Mutable)
+                if (value != null && !references[attribute] && (mutant instanceof FudgeCore.MutableArray || mutant instanceof Mutable))
                     await mutant.mutate(value, null, false);
                 else
                     Reflect.set(this, attribute, value);
@@ -508,7 +606,11 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    function serialize(_type, _collection) {
+    function serialize(_type, _flag0, _flag1) {
+        return serializeFactory(_type, _flag0 === Array, _flag0 == Function || _flag1 === Function);
+    }
+    FudgeCore.serialize = serialize;
+    function serializeFactory(_type, _array, _function) {
         return (_value, _context) => {
             if (_context.static || _context.private)
                 throw new Error("@serialize decorator can only serialize public instance members.");
@@ -516,11 +618,12 @@ var FudgeCore;
             if (typeof key === "symbol")
                 throw new Error("@serialize decorator can't serialize symbol-named properties");
             const metadata = _context.metadata;
-            const types = FudgeCore.getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
-            types[key] = _collection ?? _type;
-            FudgeCore.mutate(_value, _context);
+            FudgeCore.type(_type)(_value, _context);
             let serializationStrategy;
-            if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") {
+            if (_function) {
+                serializationStrategy = "function";
+            }
+            else if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") {
                 serializationStrategy = "primitive";
             }
             else if (_type == FudgeCore.Node) {
@@ -532,18 +635,16 @@ var FudgeCore;
             else if (_type.prototype.serialize && _type.prototype.deserialize) {
                 serializationStrategy = "serializable";
             }
-            else {
-                serializationStrategy = "function";
-            }
-            if (_collection)
-                serializationStrategy = (serializationStrategy + _collection.name);
+            if (serializationStrategy == "node" || serializationStrategy == "resource" || serializationStrategy == "function")
+                FudgeCore.reference(_value, _context);
+            if (_array)
+                serializationStrategy = (serializationStrategy + "Array");
             if (!serializationStrategy)
                 return;
             const serializables = FudgeCore.getOwnProperty(metadata, "serializables") ?? (metadata.serializables = { ...metadata.serializables });
             serializables[key] = serializationStrategy;
         };
     }
-    FudgeCore.serialize = serialize;
     function serializeDecorations(_instance, _serialization = {}) {
         const serializables = FudgeCore.getMetadata(_instance).serializables;
         for (const key in serializables) {
@@ -5753,676 +5854,6 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        FudgeCore.Serializer.registerNamespace(AnimationSystem);
-        class AnimationEventTrack {
-            constructor(_times = [], _events = []) {
-                this.times = _times;
-                this.events = _events;
-            }
-        }
-        AnimationSystem.AnimationEventTrack = AnimationEventTrack;
-        class Animation extends FudgeCore.Mutable {
-            constructor(_name = Animation.name, _duration = -1, _channels = [], _eventTrack = new AnimationEventTrack()) {
-                super();
-                this.name = _name;
-                this.duration = _duration;
-                this.channels = _channels;
-                this.eventTrack = _eventTrack;
-                FudgeCore.Project.register(this);
-            }
-            get isSerializableResource() {
-                return true;
-            }
-            serialize() {
-                const serialization = {
-                    idResource: this.idResource,
-                    name: this.name,
-                    duration: this.duration,
-                    channels: FudgeCore.Serializer.serializeArray(this.channels),
-                    eventTrack: {
-                        times: this.eventTrack.times,
-                        events: this.eventTrack.events
-                    }
-                };
-                return serialization;
-            }
-            async deserialize(_serialization) {
-                this.idResource = _serialization.idResource;
-                this.name = _serialization.name;
-                this.duration = _serialization.duration;
-                this.channels = await FudgeCore.Serializer.deserializeArray(_serialization.channels);
-                this.eventTrack.times = _serialization.eventTrack.times;
-                this.eventTrack.events = _serialization.eventTrack.events;
-                return this;
-            }
-            reduceMutator(_mutator) {
-                throw new Error("Method not implemented.");
-            }
-        }
-        AnimationSystem.Animation = Animation;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        class AnimationChannel {
-            constructor(_targetPath, _input, _output, _interpolation) {
-                this.targetPath = _targetPath;
-                this.input = _input;
-                this.output = _output;
-                this.interpolation = _interpolation;
-            }
-            getElementSize() {
-                let size = this.output.length / this.input.length;
-                switch (this.interpolation) {
-                    case FudgeCore.ANIMATION_INTERPOLATION.CUBIC:
-                        size /= 3;
-                        break;
-                }
-                return size;
-            }
-            createInterpolant(_result) {
-                switch (this.interpolation) {
-                    case FudgeCore.ANIMATION_INTERPOLATION.CONSTANT:
-                        return this.createInterpolantConstant(_result);
-                    case FudgeCore.ANIMATION_INTERPOLATION.LINEAR:
-                        return this.createInterpolantLinear(_result);
-                    case FudgeCore.ANIMATION_INTERPOLATION.CUBIC:
-                        return this.createInterpolantCubic(_result);
-                    default:
-                        throw new Error("Unknown interpolation type: " + this.interpolation);
-                }
-            }
-            serialize() {
-                const serialization = {
-                    targetPath: this.targetPath,
-                    input: Array.from(this.input),
-                    output: Array.from(this.output),
-                    interpolation: this.interpolation
-                };
-                return serialization;
-            }
-            async deserialize(_serialization) {
-                this.targetPath = _serialization.targetPath;
-                this.input = new Float32Array(_serialization.input);
-                this.output = new Float32Array(_serialization.output);
-                this.interpolation = _serialization.interpolation;
-                return this;
-            }
-            interpolate(_i1, _t, _out) {
-                return null;
-            }
-            createInterpolantConstant(_result) {
-                return new AnimationSystem.AnimationInterpolantConstant(this.input, this.output, this.getElementSize(), _result);
-            }
-            createInterpolantLinear(_result) {
-                return new AnimationSystem.AnimationInterpolantLinear(this.input, this.output, this.getElementSize(), _result);
-            }
-            createInterpolantCubic(_result) {
-                return new AnimationSystem.AnimationInterpolantCubic(this.input, this.output, this.getElementSize(), _result);
-            }
-        }
-        AnimationSystem.AnimationChannel = AnimationChannel;
-        class AnimationChannelNumber extends AnimationChannel {
-        }
-        AnimationSystem.AnimationChannelNumber = AnimationChannelNumber;
-        class AnimationChannelVector extends AnimationChannel {
-        }
-        AnimationSystem.AnimationChannelVector = AnimationChannelVector;
-        class AnimationChannelColor extends AnimationChannel {
-        }
-        AnimationSystem.AnimationChannelColor = AnimationChannelColor;
-        class AnimationChannelQuaternion extends AnimationChannel {
-            createInterpolantLinear(_result) {
-                return new AnimationSystem.AnimationInterpolantQuaternionLinear(this.input, this.output, this.getElementSize(), _result);
-            }
-            createInterpolantCubic(_result) {
-                return new AnimationSystem.AnimationInterpolantQuaternionCubic(this.input, this.output, this.getElementSize(), _result);
-            }
-        }
-        AnimationSystem.AnimationChannelQuaternion = AnimationChannelQuaternion;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        class AnimationInterpolant {
-            constructor(_input, _output, _elementSize, _result) {
-                this.input = _input;
-                this.output = _output;
-                this.elementSize = _elementSize;
-                this.result = _result ?? new Float32Array(this.elementSize);
-            }
-            evaluate(_t) {
-                const input = this.input;
-                let i1 = 0;
-                let iRight = input.length - 1;
-                let iMid;
-                while (i1 < iRight) {
-                    iMid = (i1 + iRight) >>> 1;
-                    if (_t < input[iMid])
-                        iRight = iMid;
-                    else
-                        i1 = iMid + 1;
-                }
-                return this.interpolate(i1, input[i1 - 1], _t, input[i1]);
-            }
-        }
-        AnimationSystem.AnimationInterpolant = AnimationInterpolant;
-        class AnimationInterpolantConstant extends AnimationInterpolant {
-            interpolate(_i1, _t0, _t, _t1) {
-                const stride = this.elementSize;
-                const output = this.output;
-                const result = this.result;
-                const offset0 = (_i1 - 1) * stride;
-                for (let i = 0; i < stride; i++)
-                    result[i] = output[offset0 + i];
-                return result;
-            }
-        }
-        AnimationSystem.AnimationInterpolantConstant = AnimationInterpolantConstant;
-        class AnimationInterpolantLinear extends AnimationInterpolant {
-            interpolate(_i1, _t0, _t, _t1) {
-                const stride = this.elementSize;
-                const output = this.output;
-                const result = this.result;
-                const offset1 = _i1 * stride;
-                const offset0 = offset1 - stride;
-                const weight1 = (_t - _t0) / (_t1 - _t0);
-                const weight0 = 1 - weight1;
-                for (let i = 0; i < stride; i++)
-                    result[i] = output[offset0 + i] * weight0 + output[offset1 + i] * weight1;
-                return result;
-            }
-        }
-        AnimationSystem.AnimationInterpolantLinear = AnimationInterpolantLinear;
-        class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
-            interpolate(_i1, _t0, _t, _t1) {
-                const stride = this.elementSize;
-                const output = this.output;
-                const result = this.result;
-                const offset1 = _i1 * stride;
-                const offset0 = offset1 - stride;
-                return FudgeCore.Quaternion.SLERP_ARRAY(output, offset0, output, offset1, (_t - _t0) / (_t1 - _t0), result, 0);
-            }
-        }
-        AnimationSystem.AnimationInterpolantQuaternionLinear = AnimationInterpolantQuaternionLinear;
-        class AnimationInterpolantCubic extends AnimationInterpolant {
-            constructor(_times, _output, _elementSize, _result) {
-                super(_times, _output, _elementSize, _result);
-                this.elementStride = _elementSize * 3;
-            }
-            interpolate(_i1, _t0, _t, _t1) {
-                const elementStride = this.elementStride;
-                const stride = this.elementSize;
-                const output = this.output;
-                const result = this.result;
-                const t = (_t - _t0) / (_t1 - _t0);
-                const t2 = t * t;
-                const t3 = t2 * t;
-                const h00 = 2 * t3 - 3 * t2 + 1;
-                const h10 = t3 - 2 * t2 + t;
-                const h01 = -2 * t3 + 3 * t2;
-                const h11 = t3 - t2;
-                const offsetV1 = _i1 * elementStride + stride;
-                const offsetV0 = offsetV1 - elementStride;
-                const offsetM0 = offsetV0 + stride;
-                const offsetM1 = offsetV1 - stride;
-                for (let i = 0; i < stride; i++) {
-                    const v0 = output[offsetV0 + i];
-                    const m0 = output[offsetM0 + i];
-                    const v1 = output[offsetV1 + i];
-                    const m1 = output[offsetM1 + i];
-                    result[i] = h00 * v0 + h10 * m0 + h01 * v1 + h11 * m1;
-                }
-                return result;
-            }
-        }
-        AnimationSystem.AnimationInterpolantCubic = AnimationInterpolantCubic;
-        class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
-            interpolate(_i1, _t0, _t, _t1) {
-                const result = super.interpolate(_i1, _t0, _t, _t1);
-                return FudgeCore.Quaternion.NORMALIZE_ARRAY(result, 0, result, 0);
-            }
-        }
-        AnimationSystem.AnimationInterpolantQuaternionCubic = AnimationInterpolantQuaternionCubic;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        let ANIMATION_BLENDING;
-        (function (ANIMATION_BLENDING) {
-            ANIMATION_BLENDING["ADDITIVE"] = "Additive";
-            ANIMATION_BLENDING["OVERRIDE"] = "Override";
-        })(ANIMATION_BLENDING = AnimationSystem.ANIMATION_BLENDING || (AnimationSystem.ANIMATION_BLENDING = {}));
-        class AnimationNode {
-            constructor(_speed = 1, _weight = 1, _blending = ANIMATION_BLENDING.OVERRIDE) {
-                this.speed = _speed;
-                this.weight = _weight;
-                this.blending = _blending;
-            }
-        }
-        AnimationSystem.AnimationNode = AnimationNode;
-        class AnimationNodeAnimation extends AnimationNode {
-            #previousTime;
-            constructor(_animation, _playmode = FudgeCore.ANIMATION_PLAYMODE.LOOP, _speed, _offset = 0, _weight, _blending) {
-                super(_speed, _weight, _blending);
-                this.animation = _animation;
-                this.playmode = _playmode;
-                this.time = 0;
-                this.offset = _offset;
-                this.#previousTime = 0;
-                const channels = this.animation.channels;
-                const nChannels = channels.length;
-                const values = new Map();
-                const interpolants = new Array(nChannels);
-                for (let i = 0; i < nChannels; i++) {
-                    const channel = channels[i];
-                    const value = new Float32Array(channel.getElementSize());
-                    values.set(channel.targetPath, value);
-                    interpolants[i] = channel.createInterpolant(value);
-                }
-                this.values = values;
-                this.interpolants = interpolants;
-            }
-            reset() {
-                this.time = this.offset;
-            }
-            update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent) {
-                const animation = this.animation;
-                const duration = animation.duration;
-                const time = (this.time += _deltaTime * this.speed) % duration;
-                const interpolants = this.interpolants;
-                const length = interpolants.length;
-                for (let i = 0; i < length; i++)
-                    interpolants[i].evaluate(time);
-                const eventTrack = animation.eventTrack;
-                const eventTrackTimes = eventTrack.times;
-                if (eventTrackTimes.length == 0)
-                    return;
-                let min = this.#previousTime;
-                let max = time;
-                let minSection = Math.floor(min / duration);
-                let maxSection = Math.floor(max / duration);
-                min = min % duration;
-                max = max % duration;
-                const eventTrackEvents = eventTrack.events;
-                while (minSection <= maxSection) {
-                    for (let i = 0; i < eventTrackTimes.length; i++) {
-                        const time = eventTrackTimes[i];
-                        if (min <= time && time < max) {
-                            const events = eventTrackEvents[i];
-                            for (let j = 0; j < events.length; j++) {
-                                const event = FudgeCore.RecyclableEvent.get(events[j]);
-                                _dispatchEvent(event);
-                                FudgeCore.RecyclableEvent.store(event);
-                            }
-                        }
-                    }
-                    if (minSection != maxSection)
-                        min = 0;
-                    minSection++;
-                }
-                this.#previousTime = time;
-            }
-        }
-        AnimationSystem.AnimationNodeAnimation = AnimationNodeAnimation;
-        class AnimationNodeBlend extends AnimationNode {
-            constructor(_nodes, _speed = 1, _weight = 1, _blending = ANIMATION_BLENDING.OVERRIDE) {
-                super(_speed, _weight, _blending);
-                this.nodes = _nodes;
-                const values = new Map();
-                for (const node of _nodes) {
-                    for (const path of node.values.keys()) {
-                        if (!values.has(path))
-                            values.set(path, new Float32Array(node.values.get(path).length));
-                    }
-                }
-                this.values = values;
-            }
-            reset() {
-                for (const node of this.nodes)
-                    node.reset();
-            }
-            update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent) {
-                _deltaTime *= this.speed;
-                const valuesBlended = this.values;
-                for (const path of valuesBlended.keys()) {
-                    const valueOriginal = _valuesOriginal.get(path);
-                    const valueBlended = valuesBlended.get(path);
-                    valueBlended.set(valueOriginal);
-                }
-                for (let i = 0; i < this.nodes.length; i++) {
-                    const node = this.nodes[i];
-                    node.update(_deltaTime, valuesBlended, _valuesOriginal, _dispatchEvent);
-                    const valuesNode = node.values;
-                    const t = node.weight;
-                    if (t == 0)
-                        continue;
-                    switch (node.blending) {
-                        case ANIMATION_BLENDING.ADDITIVE:
-                            for (const path of valuesNode.keys()) {
-                                const valueBlended = valuesBlended.get(path);
-                                const valueNode = valuesNode.get(path);
-                                for (let j = 0; j < valueBlended.length; j++)
-                                    valueBlended[j] += valueNode[j] * t;
-                            }
-                            break;
-                        case ANIMATION_BLENDING.OVERRIDE:
-                            for (const path of valuesNode.keys()) {
-                                const valueBlended = valuesBlended.get(path);
-                                const valueNode = valuesNode.get(path);
-                                const s = 1 - t;
-                                for (let j = 0; j < valueBlended.length; j++)
-                                    valueBlended[j] = valueBlended[j] * s + valueNode[j] * t;
-                            }
-                            break;
-                    }
-                    ;
-                }
-            }
-        }
-        AnimationSystem.AnimationNodeBlend = AnimationNodeBlend;
-        class AnimationNodeTransition extends AnimationNode {
-            #valuesCached;
-            constructor(_nodes, _animation, _speed = 1, _weight = 1, _blending = ANIMATION_BLENDING.OVERRIDE) {
-                super(_speed, _weight, _blending);
-                this.nodes = _nodes;
-                this.current = _animation;
-                const values = new Map();
-                const valuesCached = new Map();
-                for (const node of _nodes) {
-                    for (const path of node.values.keys()) {
-                        if (!values.has(path))
-                            values.set(path, new Float32Array(node.values.get(path).length));
-                        if (!valuesCached.has(path))
-                            valuesCached.set(path, new Float32Array(node.values.get(path).length));
-                    }
-                }
-                this.values = values;
-                this.#valuesCached = valuesCached;
-            }
-            reset() {
-                this.current.reset();
-                this.target?.reset();
-            }
-            transit(_target, _duration) {
-                _target?.reset();
-                if (this.transition) {
-                    const valuesCurrent = this.values;
-                    const valuesCached = this.#valuesCached;
-                    for (const path of valuesCurrent.keys())
-                        valuesCached.get(path).set(valuesCurrent.get(path));
-                    this.canceled = true;
-                }
-                this.target = _target;
-                this.duration = _duration;
-                this.time = 0;
-                this.transition = true;
-            }
-            update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent) {
-                _deltaTime *= this.speed;
-                const current = this.current;
-                const target = this.target;
-                const valuesOut = this.values;
-                let valuesFrom;
-                let valuesTo;
-                if (this.canceled) {
-                    valuesFrom = this.#valuesCached;
-                }
-                else if (current) {
-                    current.update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent);
-                    valuesFrom = current.values;
-                }
-                else {
-                    valuesFrom = _valuesCurrent;
-                }
-                if (target) {
-                    target.update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent);
-                    valuesTo = target.values;
-                }
-                else {
-                    valuesTo = _valuesCurrent;
-                }
-                if (!this.transition) {
-                    for (const path of valuesFrom.keys())
-                        valuesOut.get(path).set(valuesFrom.get(path));
-                    return;
-                }
-                this.time += _deltaTime;
-                let progress = Math.min(this.time / this.duration, 1);
-                for (const path of valuesTo.keys()) {
-                    const valueFrom = valuesFrom.get(path);
-                    const valueTo = valuesTo.get(path);
-                    const valueOut = valuesOut.get(path);
-                    if (valueOut.length == 4) {
-                        FudgeCore.Quaternion.SLERP_ARRAY(valueFrom, 0, valueTo, 0, progress, valueOut, 0);
-                        continue;
-                    }
-                    const t = progress;
-                    const s = 1 - t;
-                    for (let j = 0; j < valueFrom.length; j++)
-                        valueOut[j] = valueFrom[j] * s + valueTo[j] * t;
-                }
-                if (progress >= 1) {
-                    this.current = this.target;
-                    this.target = null;
-                    this.duration = null;
-                    this.time = null;
-                    this.canceled = false;
-                    this.transition = false;
-                }
-            }
-        }
-        AnimationSystem.AnimationNodeTransition = AnimationNodeTransition;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        class AnimationPropertyBinding {
-            static #regex = /^((?:[^/]*?\/)*)?components\/([^/]+)\/(\d+)(?:\/)(.*)$/;
-            constructor(_root, _path, _output) {
-                this.root = _root;
-                this.path = _path;
-                this.output = _output;
-                this.pathParsed = AnimationPropertyBinding.parsePath(_path);
-            }
-            static parsePath(_path) {
-                const match = AnimationPropertyBinding.#regex.exec(_path);
-                if (!match)
-                    throw new Error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.parsePath.name}: Invalid path: ${_path}`);
-                const nodePath = match[1]?.slice(0, -1).split("/");
-                const componentType = match[2];
-                const componentIndex = match[3];
-                const targetPath = match[4].split("/");
-                return { nodePath, componentType, componentIndex, targetPath };
-            }
-            static findNode(_rootNode, _parsedPath) {
-                let node = _rootNode;
-                if (_parsedPath)
-                    for (let i = 0; i < _parsedPath.length; i++) {
-                        node = node.getChildByName(_parsedPath[i]);
-                    }
-                return node;
-            }
-            static findTarget(_component, _parsedPath) {
-                let target = _component;
-                if (_parsedPath)
-                    for (let i = 0; i < _parsedPath.length - 1; i++)
-                        target = Reflect.get(target, _parsedPath[i]);
-                return target;
-            }
-            bind() {
-                this.get = this.#getUnbound;
-                this.set = this.#setUnbound;
-                this.node = AnimationPropertyBinding.findNode(this.root, this.pathParsed.nodePath);
-                if (!this.node)
-                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Node not found: ${this.pathParsed.nodePath}`);
-                this.component = Reflect.get(this.node, "components")[this.pathParsed.componentType]?.[this.pathParsed.componentIndex];
-                if (!this.component)
-                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Component not found: ${this.pathParsed.componentType} at index ${this.pathParsed.componentIndex}`);
-                this.target = AnimationPropertyBinding.findTarget(this.component, this.pathParsed.targetPath);
-                if (!this.target)
-                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Target not found: ${this.pathParsed.targetPath}`);
-                this.key = this.pathParsed.targetPath[this.pathParsed.targetPath.length - 1];
-                if (!(this.key in this.target))
-                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Key not found: ${this.key}`);
-                this.property = Reflect.get(this.target, this.key);
-                if (this.property == undefined)
-                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Property is undefined: ${this.key}`);
-                if (typeof this.property == "string" || typeof this.property == "number" || typeof this.property == "boolean") {
-                    this.get = this.#getDirect;
-                    this.set = this.#setDirect;
-                }
-                else if ((this.property.isArrayConvertible)) {
-                    this.get = this.#getToArray;
-                    this.set = this.#setFromArray;
-                }
-            }
-            unbind() {
-                this.root = null;
-                this.path = null;
-                this.pathParsed = null;
-                this.node = null;
-                this.component = null;
-                this.target = null;
-                this.key = null;
-                this.property = null;
-                this.output = null;
-            }
-            apply() {
-                this.set(this.output, 0);
-            }
-            set(_source, _offset) { }
-            get(_target, _offset) { }
-            #getUnbound(_target, _offset) { }
-            #setUnbound(_source, _offset) { }
-            #getDirect(_target, _offset) {
-                _target[_offset] = Reflect.get(this.target, this.key);
-            }
-            #setDirect(_source, _offset) {
-                Reflect.set(this.target, this.key, _source[_offset]);
-            }
-            #getToArray(_target, _offset) {
-                this.property.toArray(_target, _offset);
-            }
-            #setFromArray(_source, _offset) {
-                this.property.fromArray(_source, _offset);
-            }
-        }
-        AnimationSystem.AnimationPropertyBinding = AnimationPropertyBinding;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        class AnimationTargetBinding {
-            constructor(_target, _propertyBindings) {
-                this.target = _target;
-                this.propertyBindings = _propertyBindings;
-                const animationMutator = {};
-                for (const binding of _propertyBindings)
-                    animationMutator[binding.key] = binding.output;
-                this.mutator = animationMutator;
-            }
-            apply() {
-                this.target.animate(this.mutator);
-            }
-        }
-        AnimationSystem.AnimationTargetBinding = AnimationTargetBinding;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let AnimationSystem;
-    (function (AnimationSystem) {
-        class ComponentAnimationGraph extends FudgeCore.Component {
-            #valuesOriginal;
-            #propertyBindings;
-            #targetBindings;
-            #dispatchEvent;
-            constructor(_root) {
-                super();
-                this.#dispatchEvent = this.dispatchEvent.bind(this);
-                this.hndRenderPrepare = () => {
-                    this.update(FudgeCore.Loop.timeFrameGame);
-                };
-                this.onComponentAdd = () => {
-                    this.node.addEventListener("renderPrepare", this.hndRenderPrepare);
-                    this.bind();
-                };
-                this.onComponentRemove = () => {
-                    this.node.removeEventListener("renderPrepare", this.hndRenderPrepare);
-                    this.unbind();
-                };
-                this.root = _root;
-                if (FudgeCore.Project.mode == FudgeCore.MODE.EDITOR)
-                    return;
-                this.addEventListener("componentAdd", this.onComponentAdd);
-                this.addEventListener("componentRemove", this.onComponentRemove);
-            }
-            bind() {
-                if (!this.node || !this.root)
-                    return;
-                const valuesRoot = this.root.values;
-                const valuesOriginal = new Map();
-                const propertyBindings = [];
-                const targetBindings = [];
-                const targetsGrouped = new Map();
-                for (const path of valuesRoot.keys()) {
-                    const valueRoot = valuesRoot.get(path);
-                    const binding = new AnimationSystem.AnimationPropertyBinding(this.node, path, valueRoot);
-                    binding.bind();
-                    propertyBindings.push(binding);
-                    const valueOriginal = new Float32Array(valueRoot.length);
-                    valuesOriginal.set(path, valueOriginal);
-                    binding.get(valueOriginal, 0);
-                    let bindings = targetsGrouped.get(binding.target);
-                    if (!bindings)
-                        targetsGrouped.set(binding.target, bindings = []);
-                    bindings.push(binding);
-                }
-                for (const [target, bindings] of targetsGrouped) {
-                    const targetBinding = new AnimationSystem.AnimationTargetBinding(target, bindings);
-                    targetBindings.push(targetBinding);
-                }
-                this.#valuesOriginal = valuesOriginal;
-                this.#propertyBindings = propertyBindings;
-                this.#targetBindings = targetBindings;
-            }
-            ;
-            unbind() {
-                const bindings = this.#propertyBindings;
-                for (let i = 0; i < bindings.length; i++)
-                    bindings[i].unbind();
-                this.#valuesOriginal = null;
-                this.#propertyBindings = null;
-                this.#targetBindings = null;
-            }
-            update(_deltaTime) {
-                if (!this.root || !this.node || !this.active)
-                    return;
-                const root = this.root;
-                root.update(FudgeCore.Loop.timeFrameGame, this.#valuesOriginal, this.#valuesOriginal, this.#dispatchEvent);
-                const targetBindings = this.#targetBindings;
-                for (let i = 0; i < targetBindings.length; i++)
-                    targetBindings[i].apply();
-            }
-        }
-        AnimationSystem.ComponentAnimationGraph = ComponentAnimationGraph;
-    })(AnimationSystem = FudgeCore.AnimationSystem || (FudgeCore.AnimationSystem = {}));
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
     class Audio extends FudgeCore.Mutable {
         constructor(_url) {
             super();
@@ -6869,7 +6300,7 @@ var FudgeCore;
             }
             getMutatorOfNode(_type) {
                 let node = this.getAudioNode(_type);
-                let mutator = FudgeCore.getMutatorOfArbitrary(node);
+                let mutator = FudgeCore.Mutator.from(node);
                 return mutator;
             }
             getAudioNode(_type) {
@@ -8742,472 +8173,722 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class Graph extends FudgeCore.Node {
-        constructor(_name = "Graph") {
-            super(_name);
-            this.idResource = undefined;
-            this.hndMutate = async (_event) => {
-                _event.detail.path = Reflect.get(_event, "path");
-                this.dispatchEvent(new CustomEvent("mutateGraph", { detail: _event.detail }));
-                this.dispatchEvent(new CustomEvent("graphMutated", { detail: _event.detail }));
-            };
-            this.addEventListener("mutate", this.hndMutate);
-        }
-        get isSerializableResource() {
-            return true;
-        }
-        get type() {
-            return this.constructor.name;
-        }
-        serialize() {
-            let serialization = super.serialize();
-            serialization.idResource = this.idResource;
-            serialization.type = this.type;
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization);
-            FudgeCore.Project.register(this, _serialization.idResource);
-            await FudgeCore.Project.resyncGraphInstances(this);
-            this.broadcastEvent(new Event("graphDeserialized"));
-            FudgeCore.Debug.log("Deserialized", this.name);
-            return this;
-        }
-    }
-    FudgeCore.Graph = Graph;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    class GraphGLTF extends FudgeCore.mixinSerializableResourceExternal(FudgeCore.Graph) {
-        async load(_url = this.url, _name = this.name) {
-            this.url = _url;
-            this.name = _name;
-            return FudgeCore.GLTFLoader.loadResource(this);
-        }
-        serialize() {
-            const serializationExternal = super.serialize();
-            const serializationNode = FudgeCore.Node.prototype.serialize.call(this);
-            delete serializationNode.components[FudgeCore.ComponentSkeleton.name];
-            delete serializationNode.children;
-            return { ...serializationNode, ...serializationExternal };
-        }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization);
-            await FudgeCore.Graph.prototype.deserialize.call(this, _serialization);
-            return this;
-        }
-    }
-    FudgeCore.GraphGLTF = GraphGLTF;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    class GraphInstance extends FudgeCore.Node {
-        static { this.count = 0; }
-        #idSource;
-        #deserializeFromSource;
-        constructor(_graph) {
-            super("GraphInstance");
-            this.#idSource = undefined;
-            this.#deserializeFromSource = true;
-            this.hndMutationGraph = async (_event) => {
-                if (this.isFiltered())
-                    return;
-                await this.reflectMutation(_event, _event.currentTarget, this, _event.detail.path);
-                this.dispatchEvent(new Event("mutateGraphDone", { bubbles: true }));
-            };
-            this.hndMutationInstance = async (_event) => {
-                if (this.isFiltered())
-                    return;
-                await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"));
-                this.get().dispatchEvent(new CustomEvent("mutate", { detail: _event.detail }));
-            };
-            this.addEventListener("mutate", this.hndMutationInstance);
-            if (!_graph)
-                return;
-            this.#idSource = _graph.idResource;
-        }
-        get idSource() {
-            return this.#idSource;
-        }
-        async reset() {
-            let resource = await FudgeCore.Project.getResource(this.#idSource);
-            await this.set(resource);
-        }
-        serialize() {
-            let filter = this.getComponent(FudgeCore.ComponentGraphFilter);
-            let serialization = {};
-            if (filter && filter.isActive) {
-                serialization = super.serialize();
-                let graph = this.get();
-                if (graph instanceof FudgeCore.GraphGLTF) {
-                    delete serialization.components[FudgeCore.ComponentSkeleton.name];
-                    delete serialization.children;
-                    serialization.url = graph.url;
-                }
+    let Experimental;
+    (function (Experimental) {
+        FudgeCore.Serializer.registerNamespace(Experimental);
+        class AnimationEventTrack {
+            constructor(_times = [], _events = []) {
+                this.times = _times;
+                this.events = _events;
             }
-            else {
-                serialization.deserializeFromSource = true;
-            }
-            serialization.idSource = this.#idSource;
-            return serialization;
         }
-        async deserialize(_serialization) {
-            this.#idSource = _serialization.idSource ?? _serialization.idResource;
-            if (!_serialization.deserializeFromSource) {
-                let graph = await FudgeCore.Project.getResource(this.#idSource);
-                if (graph instanceof FudgeCore.GraphGLTF)
-                    await FudgeCore.GLTFLoader.loadResource(this, _serialization.url);
-                await super.deserialize(_serialization);
-                this.#deserializeFromSource = false;
+        Experimental.AnimationEventTrack = AnimationEventTrack;
+        class Animation extends FudgeCore.Mutable {
+            constructor(_name = Animation.name, _duration = -1, _channels = [], _eventTrack = new AnimationEventTrack()) {
+                super();
+                this.name = _name;
+                this.duration = _duration;
+                this.channels = _channels;
+                this.eventTrack = _eventTrack;
+                FudgeCore.Project.register(this);
             }
-            let graph = this.get();
-            if (graph)
-                await this.connectToGraph();
-            else {
-                FudgeCore.Debug.log("Register for resync", _serialization.name, this.name);
-                FudgeCore.Project.registerGraphInstanceForResync(this);
+            get isSerializableResource() {
+                return true;
             }
-            return this;
-        }
-        async connectToGraph() {
-            let graph = this.get();
-            if (this.#deserializeFromSource)
-                await this.set(graph);
-        }
-        async set(_graph) {
-            this.#idSource = _graph.idResource;
-            let currentGraph = this.get();
-            if (currentGraph) {
-                currentGraph.removeEventListener("mutateGraph", this.hndMutationGraph);
-            }
-            let serialization = FudgeCore.Serializer.serialize(_graph);
-            for (let path in serialization) {
-                await this.deserialize(serialization[path]);
-                break;
-            }
-            FudgeCore.Debug.fudge("GraphInstance set to " + this.name + " | " + "Instance count: " + GraphInstance.count++);
-            _graph.addEventListener("mutateGraph", this.hndMutationGraph);
-            this.broadcastEvent(new Event("graphInstantiated"));
-        }
-        get() {
-            return FudgeCore.Project.resources[this.#idSource];
-        }
-        async reflectMutation(_event, _source, _destination, _path) {
-            for (let node of _path)
-                if (node instanceof GraphInstance)
-                    if (node == this)
-                        break;
-                    else {
-                        console.log("Sync aborted, target already synced");
-                        return;
-                    }
-            let index = _path.indexOf(_source);
-            for (let i = index - 1; i >= 0; i--) {
-                let childIndex = _path[i].getParent().findChild(_path[i]);
-                _destination = _destination.getChild(childIndex);
-            }
-            let cmpMutate = _destination.getComponent(_event.detail.component.constructor);
-            if (cmpMutate)
-                await cmpMutate.mutate(_event.detail.mutator, null, false);
-        }
-        isFiltered() {
-            let cmpFilter = this.getComponent(FudgeCore.ComponentGraphFilter);
-            return (cmpFilter && cmpFilter.isActive);
-        }
-    }
-    FudgeCore.GraphInstance = GraphInstance;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let Coat = (() => {
-        var _a, _b, _c, _d;
-        let _classSuper = FudgeCore.Mutable;
-        let _staticExtraInitializers = [];
-        let _instanceExtraInitializers = [];
-        let _static_resetRenderData_decorators;
-        let _static_updateRenderbuffer_decorators;
-        let _updateRenderData_decorators;
-        let _useRenderData_decorators;
-        return class Coat extends _classSuper {
-            constructor() {
-                super(...arguments);
-                this.alphaClip = (__runInitializers(this, _instanceExtraInitializers), 0.01);
-            }
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _static_resetRenderData_decorators = [(_a = FudgeCore.RenderManagerCoat).decorate.bind(_a)];
-                _static_updateRenderbuffer_decorators = [(_b = FudgeCore.RenderManagerCoat).decorate.bind(_b)];
-                _updateRenderData_decorators = [(_c = FudgeCore.RenderManagerCoat).decorate.bind(_c)];
-                _useRenderData_decorators = [(_d = FudgeCore.RenderManagerCoat).decorate.bind(_d)];
-                __esDecorate(this, null, _static_resetRenderData_decorators, { kind: "method", name: "resetRenderData", static: true, private: false, access: { has: obj => "resetRenderData" in obj, get: obj => obj.resetRenderData }, metadata: _metadata }, null, _staticExtraInitializers);
-                __esDecorate(this, null, _static_updateRenderbuffer_decorators, { kind: "method", name: "updateRenderbuffer", static: true, private: false, access: { has: obj => "updateRenderbuffer" in obj, get: obj => obj.updateRenderbuffer }, metadata: _metadata }, null, _staticExtraInitializers);
-                __esDecorate(this, null, _updateRenderData_decorators, { kind: "method", name: "updateRenderData", static: false, private: false, access: { has: obj => "updateRenderData" in obj, get: obj => obj.updateRenderData }, metadata: _metadata }, null, _instanceExtraInitializers);
-                __esDecorate(this, null, _useRenderData_decorators, { kind: "method", name: "useRenderData", static: false, private: false, access: { has: obj => "useRenderData" in obj, get: obj => obj.useRenderData }, metadata: _metadata }, null, _instanceExtraInitializers);
-                if (_metadata)
-                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                __runInitializers(this, _staticExtraInitializers);
-            }
-            static resetRenderData() { }
-            ;
-            static updateRenderbuffer() { }
-            ;
-            updateRenderData() { }
-            ;
-            useRenderData() { }
-            ;
             serialize() {
-                return {
-                    alphaClip: this.alphaClip
+                const serialization = {
+                    idResource: this.idResource,
+                    name: this.name,
+                    duration: this.duration,
+                    channels: FudgeCore.Serializer.serializeArray(this.channels),
+                    eventTrack: {
+                        times: this.eventTrack.times,
+                        events: this.eventTrack.events
+                    }
                 };
+                return serialization;
             }
             async deserialize(_serialization) {
-                if (_serialization.alphaClip !== undefined)
-                    this.alphaClip = _serialization.alphaClip;
+                this.idResource = _serialization.idResource;
+                this.name = _serialization.name;
+                this.duration = _serialization.duration;
+                this.channels = await FudgeCore.Serializer.deserializeArray(_serialization.channels);
+                this.eventTrack.times = _serialization.eventTrack.times;
+                this.eventTrack.events = _serialization.eventTrack.events;
                 return this;
             }
             reduceMutator(_mutator) {
-                delete _mutator.renderData;
+                throw new Error("Method not implemented.");
             }
-        };
-    })();
-    FudgeCore.Coat = Coat;
+        }
+        Experimental.Animation = Animation;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class CoatColored extends FudgeCore.Coat {
-        constructor(_color = new FudgeCore.Color()) {
-            super();
-            this.color = _color;
-        }
-        serialize() {
-            let serialization = super.serialize();
-            serialization.color = this.color.serialize();
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization);
-            await this.color.deserialize(_serialization.color);
-            return this;
-        }
-    }
-    FudgeCore.CoatColored = CoatColored;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    class CoatRemissive extends FudgeCore.CoatColored {
-        #metallic;
-        constructor(_color = new FudgeCore.Color(), _diffuse = 1, _specular = 0.5, _intensity = 0.7, _metallic = 0.0) {
-            super(_color);
-            this.diffuse = _diffuse;
-            this.specular = _specular;
-            this.intensity = _intensity;
-            this.metallic = _metallic;
-        }
-        get metallic() {
-            return this.#metallic;
-        }
-        set metallic(_value) {
-            this.#metallic = FudgeCore.Calc.clamp(_value, 0, 1);
-        }
-        serialize() {
-            let serialization = super.serialize();
-            serialization.diffuse = this.diffuse;
-            serialization.specular = this.specular;
-            serialization.intensity = this.intensity;
-            serialization.metallic = this.metallic;
-            return serialization;
-        }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization);
-            this.diffuse = _serialization.diffuse;
-            this.specular = _serialization.specular;
-            this.intensity = _serialization.intensity ?? this.intensity;
-            this.metallic = _serialization.metallic ?? this.metallic;
-            return this;
-        }
-        getMutator() {
-            let mutator = super.getMutator(true);
-            delete mutator.diffuse;
-            delete mutator.specular;
-            delete mutator.intensity;
-            mutator.diffuse = this.diffuse;
-            mutator.specular = this.specular;
-            mutator.intensity = this.intensity;
-            mutator.metallic = this.metallic;
-            return mutator;
-        }
-    }
-    FudgeCore.CoatRemissive = CoatRemissive;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let CoatTextured = (() => {
-        let _classSuper = FudgeCore.CoatColored;
-        let _texture_decorators;
-        let _texture_initializers = [];
-        let _texture_extraInitializers = [];
-        return class CoatTextured extends _classSuper {
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _texture_decorators = [FudgeCore.type(FudgeCore.Texture)];
-                __esDecorate(null, null, _texture_decorators, { kind: "field", name: "texture", static: false, private: false, access: { has: obj => "texture" in obj, get: obj => obj.texture, set: (obj, value) => { obj.texture = value; } }, metadata: _metadata }, _texture_initializers, _texture_extraInitializers);
-                if (_metadata)
-                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    let Experimental;
+    (function (Experimental) {
+        class AnimationChannel {
+            constructor(_targetPath, _input, _output, _interpolation) {
+                this.targetPath = _targetPath;
+                this.input = _input;
+                this.output = _output;
+                this.interpolation = _interpolation;
             }
-            constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color) {
-                super(_color);
-                this.texture = __runInitializers(this, _texture_initializers, void 0);
-                __runInitializers(this, _texture_extraInitializers);
-                this.texture = _texture;
+            getElementSize() {
+                let size = this.output.length / this.input.length;
+                switch (this.interpolation) {
+                    case FudgeCore.ANIMATION_INTERPOLATION.CUBIC:
+                        size /= 3;
+                        break;
+                }
+                return size;
+            }
+            createInterpolant(_result) {
+                switch (this.interpolation) {
+                    case FudgeCore.ANIMATION_INTERPOLATION.CONSTANT:
+                        return this.createInterpolantConstant(_result);
+                    case FudgeCore.ANIMATION_INTERPOLATION.LINEAR:
+                        return this.createInterpolantLinear(_result);
+                    case FudgeCore.ANIMATION_INTERPOLATION.CUBIC:
+                        return this.createInterpolantCubic(_result);
+                    default:
+                        throw new Error("Unknown interpolation type: " + this.interpolation);
+                }
             }
             serialize() {
-                let serialization = super.serialize();
-                serialization.idTexture = this.texture.idResource;
+                const serialization = {
+                    targetPath: this.targetPath,
+                    input: Array.from(this.input),
+                    output: Array.from(this.output),
+                    interpolation: this.interpolation
+                };
                 return serialization;
             }
             async deserialize(_serialization) {
-                await super.deserialize(_serialization);
-                if (_serialization.idTexture)
-                    this.texture = await FudgeCore.Project.getResource(_serialization.idTexture);
+                this.targetPath = _serialization.targetPath;
+                this.input = new Float32Array(_serialization.input);
+                this.output = new Float32Array(_serialization.output);
+                this.interpolation = _serialization.interpolation;
                 return this;
             }
-        };
-    })();
-    FudgeCore.CoatTextured = CoatTextured;
+            interpolate(_i1, _t, _out) {
+                return null;
+            }
+            createInterpolantConstant(_result) {
+                return new Experimental.AnimationInterpolantConstant(this.input, this.output, this.getElementSize(), _result);
+            }
+            createInterpolantLinear(_result) {
+                return new Experimental.AnimationInterpolantLinear(this.input, this.output, this.getElementSize(), _result);
+            }
+            createInterpolantCubic(_result) {
+                return new Experimental.AnimationInterpolantCubic(this.input, this.output, this.getElementSize(), _result);
+            }
+        }
+        Experimental.AnimationChannel = AnimationChannel;
+        class AnimationChannelNumber extends AnimationChannel {
+        }
+        Experimental.AnimationChannelNumber = AnimationChannelNumber;
+        class AnimationChannelVector extends AnimationChannel {
+        }
+        Experimental.AnimationChannelVector = AnimationChannelVector;
+        class AnimationChannelColor extends AnimationChannel {
+        }
+        Experimental.AnimationChannelColor = AnimationChannelColor;
+        class AnimationChannelQuaternion extends AnimationChannel {
+            createInterpolantLinear(_result) {
+                return new Experimental.AnimationInterpolantQuaternionLinear(this.input, this.output, this.getElementSize(), _result);
+            }
+            createInterpolantCubic(_result) {
+                return new Experimental.AnimationInterpolantQuaternionCubic(this.input, this.output, this.getElementSize(), _result);
+            }
+        }
+        Experimental.AnimationChannelQuaternion = AnimationChannelQuaternion;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class CoatRemissiveTextured extends FudgeCore.CoatTextured {
-        #metallic;
-        constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color, _diffuse = 1, _specular = 0.5, _intensity = 0.7, _metallic = 0.0) {
-            super(_color, _texture);
-            this.diffuse = _diffuse;
-            this.specular = _specular;
-            this.intensity = _intensity;
-            this.metallic = _metallic;
+    let Experimental;
+    (function (Experimental) {
+        class AnimationInterpolant {
+            constructor(_input, _output, _elementSize, _result) {
+                this.input = _input;
+                this.output = _output;
+                this.elementSize = _elementSize;
+                this.result = _result ?? new Float32Array(this.elementSize);
+            }
+            evaluate(_t) {
+                const input = this.input;
+                let i1 = 0;
+                let iRight = input.length - 1;
+                let iMid;
+                while (i1 < iRight) {
+                    iMid = (i1 + iRight) >>> 1;
+                    if (_t < input[iMid])
+                        iRight = iMid;
+                    else
+                        i1 = iMid + 1;
+                }
+                return this.interpolate(i1, input[i1 - 1], _t, input[i1]);
+            }
         }
-        get metallic() {
-            return this.#metallic;
+        Experimental.AnimationInterpolant = AnimationInterpolant;
+        class AnimationInterpolantConstant extends AnimationInterpolant {
+            interpolate(_i1, _t0, _t, _t1) {
+                const stride = this.elementSize;
+                const output = this.output;
+                const result = this.result;
+                const offset0 = (_i1 - 1) * stride;
+                for (let i = 0; i < stride; i++)
+                    result[i] = output[offset0 + i];
+                return result;
+            }
         }
-        set metallic(_value) {
-            this.#metallic = FudgeCore.Calc.clamp(_value, 0, 1);
+        Experimental.AnimationInterpolantConstant = AnimationInterpolantConstant;
+        class AnimationInterpolantLinear extends AnimationInterpolant {
+            interpolate(_i1, _t0, _t, _t1) {
+                const stride = this.elementSize;
+                const output = this.output;
+                const result = this.result;
+                const offset1 = _i1 * stride;
+                const offset0 = offset1 - stride;
+                const weight1 = (_t - _t0) / (_t1 - _t0);
+                const weight0 = 1 - weight1;
+                for (let i = 0; i < stride; i++)
+                    result[i] = output[offset0 + i] * weight0 + output[offset1 + i] * weight1;
+                return result;
+            }
         }
-        serialize() {
-            let serialization = super.serialize();
-            serialization.diffuse = this.diffuse;
-            serialization.specular = this.specular;
-            serialization.intensity = this.intensity;
-            serialization.metallic = this.metallic;
-            return serialization;
+        Experimental.AnimationInterpolantLinear = AnimationInterpolantLinear;
+        class AnimationInterpolantQuaternionLinear extends AnimationInterpolant {
+            interpolate(_i1, _t0, _t, _t1) {
+                const stride = this.elementSize;
+                const output = this.output;
+                const result = this.result;
+                const offset1 = _i1 * stride;
+                const offset0 = offset1 - stride;
+                return FudgeCore.Quaternion.SLERP_ARRAY(output, offset0, output, offset1, (_t - _t0) / (_t1 - _t0), result, 0);
+            }
         }
-        async deserialize(_serialization) {
-            await super.deserialize(_serialization);
-            this.diffuse = _serialization.diffuse;
-            this.specular = _serialization.specular;
-            this.intensity = _serialization.intensity ?? this.intensity;
-            this.metallic = _serialization.metallic ?? this.metallic;
-            return this;
+        Experimental.AnimationInterpolantQuaternionLinear = AnimationInterpolantQuaternionLinear;
+        class AnimationInterpolantCubic extends AnimationInterpolant {
+            constructor(_times, _output, _elementSize, _result) {
+                super(_times, _output, _elementSize, _result);
+                this.elementStride = _elementSize * 3;
+            }
+            interpolate(_i1, _t0, _t, _t1) {
+                const elementStride = this.elementStride;
+                const stride = this.elementSize;
+                const output = this.output;
+                const result = this.result;
+                const t = (_t - _t0) / (_t1 - _t0);
+                const t2 = t * t;
+                const t3 = t2 * t;
+                const h00 = 2 * t3 - 3 * t2 + 1;
+                const h10 = t3 - 2 * t2 + t;
+                const h01 = -2 * t3 + 3 * t2;
+                const h11 = t3 - t2;
+                const offsetV1 = _i1 * elementStride + stride;
+                const offsetV0 = offsetV1 - elementStride;
+                const offsetM0 = offsetV0 + stride;
+                const offsetM1 = offsetV1 - stride;
+                for (let i = 0; i < stride; i++) {
+                    const v0 = output[offsetV0 + i];
+                    const m0 = output[offsetM0 + i];
+                    const v1 = output[offsetV1 + i];
+                    const m1 = output[offsetM1 + i];
+                    result[i] = h00 * v0 + h10 * m0 + h01 * v1 + h11 * m1;
+                }
+                return result;
+            }
         }
-        getMutator() {
-            let mutator = super.getMutator(true);
-            delete mutator.diffuse;
-            delete mutator.specular;
-            delete mutator.intensity;
-            mutator.diffuse = this.diffuse;
-            mutator.specular = this.specular;
-            mutator.intensity = this.intensity;
-            mutator.metallic = this.metallic;
-            return mutator;
+        Experimental.AnimationInterpolantCubic = AnimationInterpolantCubic;
+        class AnimationInterpolantQuaternionCubic extends AnimationInterpolantCubic {
+            interpolate(_i1, _t0, _t, _t1) {
+                const result = super.interpolate(_i1, _t0, _t, _t1);
+                return FudgeCore.Quaternion.NORMALIZE_ARRAY(result, 0, result, 0);
+            }
         }
-    }
-    FudgeCore.CoatRemissiveTextured = CoatRemissiveTextured;
+        Experimental.AnimationInterpolantQuaternionCubic = AnimationInterpolantQuaternionCubic;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    let CoatRemissiveTexturedNormals = (() => {
-        let _classSuper = FudgeCore.CoatRemissiveTextured;
-        let _normalMap_decorators;
-        let _normalMap_initializers = [];
-        let _normalMap_extraInitializers = [];
-        return class CoatRemissiveTexturedNormals extends _classSuper {
-            static {
-                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                _normalMap_decorators = [FudgeCore.type(FudgeCore.Texture)];
-                __esDecorate(null, null, _normalMap_decorators, { kind: "field", name: "normalMap", static: false, private: false, access: { has: obj => "normalMap" in obj, get: obj => obj.normalMap, set: (obj, value) => { obj.normalMap = value; } }, metadata: _metadata }, _normalMap_initializers, _normalMap_extraInitializers);
-                if (_metadata)
-                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    let Experimental;
+    (function (Experimental) {
+        let ANIMATION_BLENDING;
+        (function (ANIMATION_BLENDING) {
+            ANIMATION_BLENDING["ADDITIVE"] = "Additive";
+            ANIMATION_BLENDING["OVERRIDE"] = "Override";
+        })(ANIMATION_BLENDING = Experimental.ANIMATION_BLENDING || (Experimental.ANIMATION_BLENDING = {}));
+        class AnimationNode {
+            constructor(_speed = 1, _weight = 1, _blending = ANIMATION_BLENDING.OVERRIDE) {
+                this.speed = _speed;
+                this.weight = _weight;
+                this.blending = _blending;
             }
-            constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color, _normalMap = FudgeCore.TextureDefault.normal, _diffuse, _specular = undefined, _intensity = undefined, _metallic = undefined) {
-                super(_color, _texture, _diffuse, _specular, _intensity, _metallic);
-                this.normalMap = __runInitializers(this, _normalMap_initializers, void 0);
-                __runInitializers(this, _normalMap_extraInitializers);
-                this.normalMap = _normalMap;
+        }
+        Experimental.AnimationNode = AnimationNode;
+        class AnimationNodeAnimation extends AnimationNode {
+            #previousTime;
+            constructor(_animation, _playmode = FudgeCore.ANIMATION_PLAYMODE.LOOP, _speed, _offset = 0, _weight, _blending) {
+                super(_speed, _weight, _blending);
+                this.animation = _animation;
+                this.playmode = _playmode;
+                this.time = 0;
+                this.offset = _offset;
+                this.#previousTime = 0;
+                const channels = this.animation.channels;
+                const nChannels = channels.length;
+                const values = new Map();
+                const interpolants = new Array(nChannels);
+                for (let i = 0; i < nChannels; i++) {
+                    const channel = channels[i];
+                    const value = new Float32Array(channel.getElementSize());
+                    values.set(channel.targetPath, value);
+                    interpolants[i] = channel.createInterpolant(value);
+                }
+                this.values = values;
+                this.interpolants = interpolants;
             }
-            serialize() {
-                let serialization = super.serialize();
-                serialization.idNormalMap = this.normalMap.idResource;
-                return serialization;
+            reset() {
+                this.time = this.offset;
             }
-            async deserialize(_serialization) {
-                await super.deserialize(_serialization);
-                if (_serialization.idNormalMap)
-                    this.normalMap = await FudgeCore.Project.getResource(_serialization.idNormalMap);
-                return this;
+            update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent) {
+                const animation = this.animation;
+                const duration = animation.duration;
+                const time = (this.time += _deltaTime * this.speed) % duration;
+                const interpolants = this.interpolants;
+                const length = interpolants.length;
+                for (let i = 0; i < length; i++)
+                    interpolants[i].evaluate(time);
+                const eventTrack = animation.eventTrack;
+                const eventTrackTimes = eventTrack.times;
+                if (eventTrackTimes.length == 0)
+                    return;
+                let min = this.#previousTime;
+                let max = time;
+                let minSection = Math.floor(min / duration);
+                let maxSection = Math.floor(max / duration);
+                min = min % duration;
+                max = max % duration;
+                const eventTrackEvents = eventTrack.events;
+                while (minSection <= maxSection) {
+                    for (let i = 0; i < eventTrackTimes.length; i++) {
+                        const time = eventTrackTimes[i];
+                        if (min <= time && time < max) {
+                            const events = eventTrackEvents[i];
+                            for (let j = 0; j < events.length; j++) {
+                                const event = FudgeCore.RecyclableEvent.get(events[j]);
+                                _dispatchEvent(event);
+                                FudgeCore.RecyclableEvent.store(event);
+                            }
+                        }
+                    }
+                    if (minSection != maxSection)
+                        min = 0;
+                    minSection++;
+                }
+                this.#previousTime = time;
             }
-        };
-    })();
-    FudgeCore.CoatRemissiveTexturedNormals = CoatRemissiveTexturedNormals;
+        }
+        Experimental.AnimationNodeAnimation = AnimationNodeAnimation;
+        class AnimationNodeBlend extends AnimationNode {
+            constructor(_nodes, _speed = 1, _weight = 1, _blending = ANIMATION_BLENDING.OVERRIDE) {
+                super(_speed, _weight, _blending);
+                this.nodes = _nodes;
+                const values = new Map();
+                for (const node of _nodes) {
+                    for (const path of node.values.keys()) {
+                        if (!values.has(path))
+                            values.set(path, new Float32Array(node.values.get(path).length));
+                    }
+                }
+                this.values = values;
+            }
+            reset() {
+                for (const node of this.nodes)
+                    node.reset();
+            }
+            update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent) {
+                _deltaTime *= this.speed;
+                const valuesBlended = this.values;
+                for (const path of valuesBlended.keys()) {
+                    const valueOriginal = _valuesOriginal.get(path);
+                    const valueBlended = valuesBlended.get(path);
+                    valueBlended.set(valueOriginal);
+                }
+                for (let i = 0; i < this.nodes.length; i++) {
+                    const node = this.nodes[i];
+                    node.update(_deltaTime, valuesBlended, _valuesOriginal, _dispatchEvent);
+                    const valuesNode = node.values;
+                    const t = node.weight;
+                    if (t == 0)
+                        continue;
+                    switch (node.blending) {
+                        case ANIMATION_BLENDING.ADDITIVE:
+                            for (const path of valuesNode.keys()) {
+                                const valueBlended = valuesBlended.get(path);
+                                const valueNode = valuesNode.get(path);
+                                for (let j = 0; j < valueBlended.length; j++)
+                                    valueBlended[j] += valueNode[j] * t;
+                            }
+                            break;
+                        case ANIMATION_BLENDING.OVERRIDE:
+                            for (const path of valuesNode.keys()) {
+                                const valueBlended = valuesBlended.get(path);
+                                const valueNode = valuesNode.get(path);
+                                const s = 1 - t;
+                                for (let j = 0; j < valueBlended.length; j++)
+                                    valueBlended[j] = valueBlended[j] * s + valueNode[j] * t;
+                            }
+                            break;
+                    }
+                    ;
+                }
+            }
+        }
+        Experimental.AnimationNodeBlend = AnimationNodeBlend;
+        class AnimationNodeTransition extends AnimationNode {
+            #valuesCached;
+            constructor(_nodes, _animation, _speed = 1, _weight = 1, _blending = ANIMATION_BLENDING.OVERRIDE) {
+                super(_speed, _weight, _blending);
+                this.nodes = _nodes;
+                this.current = _animation;
+                const values = new Map();
+                const valuesCached = new Map();
+                for (const node of _nodes) {
+                    for (const path of node.values.keys()) {
+                        if (!values.has(path))
+                            values.set(path, new Float32Array(node.values.get(path).length));
+                        if (!valuesCached.has(path))
+                            valuesCached.set(path, new Float32Array(node.values.get(path).length));
+                    }
+                }
+                this.values = values;
+                this.#valuesCached = valuesCached;
+            }
+            reset() {
+                this.current.reset();
+                this.target?.reset();
+            }
+            transit(_target, _duration) {
+                _target?.reset();
+                if (this.transition) {
+                    const valuesCurrent = this.values;
+                    const valuesCached = this.#valuesCached;
+                    for (const path of valuesCurrent.keys())
+                        valuesCached.get(path).set(valuesCurrent.get(path));
+                    this.canceled = true;
+                }
+                this.target = _target;
+                this.duration = _duration;
+                this.time = 0;
+                this.transition = true;
+            }
+            update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent) {
+                _deltaTime *= this.speed;
+                const current = this.current;
+                const target = this.target;
+                const valuesOut = this.values;
+                let valuesFrom;
+                let valuesTo;
+                if (this.canceled) {
+                    valuesFrom = this.#valuesCached;
+                }
+                else if (current) {
+                    current.update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent);
+                    valuesFrom = current.values;
+                }
+                else {
+                    valuesFrom = _valuesCurrent;
+                }
+                if (target) {
+                    target.update(_deltaTime, _valuesCurrent, _valuesOriginal, _dispatchEvent);
+                    valuesTo = target.values;
+                }
+                else {
+                    valuesTo = _valuesCurrent;
+                }
+                if (!this.transition) {
+                    for (const path of valuesFrom.keys())
+                        valuesOut.get(path).set(valuesFrom.get(path));
+                    return;
+                }
+                this.time += _deltaTime;
+                let progress = Math.min(this.time / this.duration, 1);
+                for (const path of valuesTo.keys()) {
+                    const valueFrom = valuesFrom.get(path);
+                    const valueTo = valuesTo.get(path);
+                    const valueOut = valuesOut.get(path);
+                    if (valueOut.length == 4) {
+                        FudgeCore.Quaternion.SLERP_ARRAY(valueFrom, 0, valueTo, 0, progress, valueOut, 0);
+                        continue;
+                    }
+                    const t = progress;
+                    const s = 1 - t;
+                    for (let j = 0; j < valueFrom.length; j++)
+                        valueOut[j] = valueFrom[j] * s + valueTo[j] * t;
+                }
+                if (progress >= 1) {
+                    this.current = this.target;
+                    this.target = null;
+                    this.duration = null;
+                    this.time = null;
+                    this.canceled = false;
+                    this.transition = false;
+                }
+            }
+        }
+        Experimental.AnimationNodeTransition = AnimationNodeTransition;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class CoatToon extends mixinCoatToon(FudgeCore.CoatRemissive) {
-        constructor(_color = new FudgeCore.Color(), _texToon = FudgeCore.TextureDefault.toon, _diffuse, _specular = 1.2, _intensity, _metallic) {
-            super(_color, _diffuse, _specular, _intensity, _metallic);
-            this.texToon = _texToon;
+    let Experimental;
+    (function (Experimental) {
+        class AnimationPropertyBinding {
+            static #regex = /^((?:[^/]*?\/)*)?components\/([^/]+)\/(\d+)(?:\/)(.*)$/;
+            constructor(_root, _path, _output) {
+                this.root = _root;
+                this.path = _path;
+                this.output = _output;
+                this.pathParsed = AnimationPropertyBinding.parsePath(_path);
+            }
+            static parsePath(_path) {
+                const match = AnimationPropertyBinding.#regex.exec(_path);
+                if (!match)
+                    throw new Error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.parsePath.name}: Invalid path: ${_path}`);
+                const nodePath = match[1]?.slice(0, -1).split("/");
+                const componentType = match[2];
+                const componentIndex = match[3];
+                const targetPath = match[4].split("/");
+                return { nodePath, componentType, componentIndex, targetPath };
+            }
+            static findNode(_rootNode, _parsedPath) {
+                let node = _rootNode;
+                if (_parsedPath)
+                    for (let i = 0; i < _parsedPath.length; i++) {
+                        node = node.getChildByName(_parsedPath[i]);
+                    }
+                return node;
+            }
+            static findTarget(_component, _parsedPath) {
+                let target = _component;
+                if (_parsedPath)
+                    for (let i = 0; i < _parsedPath.length - 1; i++)
+                        target = Reflect.get(target, _parsedPath[i]);
+                return target;
+            }
+            bind() {
+                this.get = this.#getUnbound;
+                this.set = this.#setUnbound;
+                this.node = AnimationPropertyBinding.findNode(this.root, this.pathParsed.nodePath);
+                if (!this.node)
+                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Node not found: ${this.pathParsed.nodePath}`);
+                this.component = Reflect.get(this.node, "components")[this.pathParsed.componentType]?.[this.pathParsed.componentIndex];
+                if (!this.component)
+                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Component not found: ${this.pathParsed.componentType} at index ${this.pathParsed.componentIndex}`);
+                this.target = AnimationPropertyBinding.findTarget(this.component, this.pathParsed.targetPath);
+                if (!this.target)
+                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Target not found: ${this.pathParsed.targetPath}`);
+                this.key = this.pathParsed.targetPath[this.pathParsed.targetPath.length - 1];
+                if (!(this.key in this.target))
+                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Key not found: ${this.key}`);
+                this.property = Reflect.get(this.target, this.key);
+                if (this.property == undefined)
+                    FudgeCore.Debug.error(`${AnimationPropertyBinding.name}.${AnimationPropertyBinding.bind.name}: Property is undefined: ${this.key}`);
+                if (typeof this.property == "string" || typeof this.property == "number" || typeof this.property == "boolean") {
+                    this.get = this.#getDirect;
+                    this.set = this.#setDirect;
+                }
+                else if ((this.property.isArrayConvertible)) {
+                    this.get = this.#getToArray;
+                    this.set = this.#setFromArray;
+                }
+            }
+            unbind() {
+                this.root = null;
+                this.path = null;
+                this.pathParsed = null;
+                this.node = null;
+                this.component = null;
+                this.target = null;
+                this.key = null;
+                this.property = null;
+                this.output = null;
+            }
+            apply() {
+                this.set(this.output, 0);
+            }
+            set(_source, _offset) { }
+            get(_target, _offset) { }
+            #getUnbound(_target, _offset) { }
+            #setUnbound(_source, _offset) { }
+            #getDirect(_target, _offset) {
+                _target[_offset] = Reflect.get(this.target, this.key);
+            }
+            #setDirect(_source, _offset) {
+                Reflect.set(this.target, this.key, _source[_offset]);
+            }
+            #getToArray(_target, _offset) {
+                this.property.toArray(_target, _offset);
+            }
+            #setFromArray(_source, _offset) {
+                this.property.fromArray(_source, _offset);
+            }
+        }
+        Experimental.AnimationPropertyBinding = AnimationPropertyBinding;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    let Experimental;
+    (function (Experimental) {
+        class AnimationTargetBinding {
+            constructor(_target, _propertyBindings) {
+                this.target = _target;
+                this.propertyBindings = _propertyBindings;
+                const animationMutator = {};
+                for (const binding of _propertyBindings)
+                    animationMutator[binding.key] = binding.output;
+                this.mutator = animationMutator;
+            }
+            apply() {
+                this.target.animate(this.mutator);
+            }
+        }
+        Experimental.AnimationTargetBinding = AnimationTargetBinding;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    let Experimental;
+    (function (Experimental) {
+        class ComponentAnimationGraph extends FudgeCore.Component {
+            #valuesOriginal;
+            #propertyBindings;
+            #targetBindings;
+            #dispatchEvent;
+            constructor(_root) {
+                super();
+                this.#dispatchEvent = this.dispatchEvent.bind(this);
+                this.hndRenderPrepare = () => {
+                    this.update(FudgeCore.Loop.timeFrameGame);
+                };
+                this.onComponentAdd = () => {
+                    this.node.addEventListener("renderPrepare", this.hndRenderPrepare);
+                    this.bind();
+                };
+                this.onComponentRemove = () => {
+                    this.node.removeEventListener("renderPrepare", this.hndRenderPrepare);
+                    this.unbind();
+                };
+                this.root = _root;
+                if (FudgeCore.Project.mode == FudgeCore.MODE.EDITOR)
+                    return;
+                this.addEventListener("componentAdd", this.onComponentAdd);
+                this.addEventListener("componentRemove", this.onComponentRemove);
+            }
+            bind() {
+                if (!this.node || !this.root)
+                    return;
+                const valuesRoot = this.root.values;
+                const valuesOriginal = new Map();
+                const propertyBindings = [];
+                const targetBindings = [];
+                const targetsGrouped = new Map();
+                for (const path of valuesRoot.keys()) {
+                    const valueRoot = valuesRoot.get(path);
+                    const binding = new Experimental.AnimationPropertyBinding(this.node, path, valueRoot);
+                    binding.bind();
+                    propertyBindings.push(binding);
+                    const valueOriginal = new Float32Array(valueRoot.length);
+                    valuesOriginal.set(path, valueOriginal);
+                    binding.get(valueOriginal, 0);
+                    let bindings = targetsGrouped.get(binding.target);
+                    if (!bindings)
+                        targetsGrouped.set(binding.target, bindings = []);
+                    bindings.push(binding);
+                }
+                for (const [target, bindings] of targetsGrouped) {
+                    const targetBinding = new Experimental.AnimationTargetBinding(target, bindings);
+                    targetBindings.push(targetBinding);
+                }
+                this.#valuesOriginal = valuesOriginal;
+                this.#propertyBindings = propertyBindings;
+                this.#targetBindings = targetBindings;
+            }
+            ;
+            unbind() {
+                const bindings = this.#propertyBindings;
+                for (let i = 0; i < bindings.length; i++)
+                    bindings[i].unbind();
+                this.#valuesOriginal = null;
+                this.#propertyBindings = null;
+                this.#targetBindings = null;
+            }
+            update(_deltaTime) {
+                if (!this.root || !this.node || !this.active)
+                    return;
+                const root = this.root;
+                root.update(FudgeCore.Loop.timeFrameGame, this.#valuesOriginal, this.#valuesOriginal, this.#dispatchEvent);
+                const targetBindings = this.#targetBindings;
+                for (let i = 0; i < targetBindings.length; i++)
+                    targetBindings[i].apply();
+            }
+        }
+        Experimental.ComponentAnimationGraph = ComponentAnimationGraph;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class RenderWebGLMaterialProperty {
+        static decorate(_constructor, _context) {
+            Object.defineProperty(_constructor.prototype, _constructor.prototype.updateRenderData.name, { value: this.updateRenderData });
+            Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderData.name, { value: this.useRenderData });
+        }
+        static updateRenderData(_data, _offset) {
+            return;
+        }
+        static useRenderData() {
+            return;
         }
     }
-    FudgeCore.CoatToon = CoatToon;
-    class CoatToonTextured extends mixinCoatToon(FudgeCore.CoatRemissiveTextured) {
-        constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color, _texToon = FudgeCore.TextureDefault.toon, _diffuse, _specular = 1.2, _intensity, _metallic) {
-            super(_color, _texture, _diffuse, _specular, _intensity, _metallic);
-            this.texToon = _texToon;
+    FudgeCore.RenderWebGLMaterialProperty = RenderWebGLMaterialProperty;
+    class RenderWebGLMaterialPropertyColor extends RenderWebGLMaterialProperty {
+        static updateRenderData(_data, _offset) {
+            this.color.toArray(_data, _offset);
         }
     }
-    FudgeCore.CoatToonTextured = CoatToonTextured;
-    function mixinCoatToon(_base) {
-        let CoatToon = (() => {
-            let _classSuper = _base;
-            let _texToon_decorators;
-            let _texToon_initializers = [];
-            let _texToon_extraInitializers = [];
-            return class CoatToon extends _classSuper {
-                static {
-                    const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-                    _texToon_decorators = [FudgeCore.type(FudgeCore.Texture)];
-                    __esDecorate(null, null, _texToon_decorators, { kind: "field", name: "texToon", static: false, private: false, access: { has: obj => "texToon" in obj, get: obj => obj.texToon, set: (obj, value) => { obj.texToon = value; } }, metadata: _metadata }, _texToon_initializers, _texToon_extraInitializers);
-                    if (_metadata)
-                        Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                }
-                serialize() {
-                    let serialization = super.serialize();
-                    serialization.idTexToon = this.texToon.idResource;
-                    return serialization;
-                }
-                async deserialize(_serialization) {
-                    await super.deserialize(_serialization);
-                    if (_serialization.idTexToon)
-                        this.texToon = await FudgeCore.Project.getResource(_serialization.idTexToon);
-                    return this;
-                }
-                constructor() {
-                    super(...arguments);
-                    this.texToon = __runInitializers(this, _texToon_initializers, void 0);
-                    __runInitializers(this, _texToon_extraInitializers);
-                }
-            };
-        })();
-        return CoatToon;
+    FudgeCore.RenderWebGLMaterialPropertyColor = RenderWebGLMaterialPropertyColor;
+    class RenderWebGLMaterialPropertyRemissive extends RenderWebGLMaterialProperty {
+        static updateRenderData(_data, _offset) {
+            _data[_offset + 4] = this.diffuse;
+            _data[_offset + 5] = this.specular;
+            _data[_offset + 6] = this.intensity;
+            _data[_offset + 7] = this.metallic;
+        }
     }
+    FudgeCore.RenderWebGLMaterialPropertyRemissive = RenderWebGLMaterialPropertyRemissive;
+    class RenderWebGLMaterialPropertyTextureColor extends RenderWebGLMaterialProperty {
+        static useRenderData() {
+            this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.COLOR.UNIT);
+        }
+    }
+    FudgeCore.RenderWebGLMaterialPropertyTextureColor = RenderWebGLMaterialPropertyTextureColor;
+    class RenderWebGLMaterialPropertyTextureNormal extends RenderWebGLMaterialProperty {
+        static useRenderData() {
+            this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.NORMAL.UNIT);
+        }
+    }
+    FudgeCore.RenderWebGLMaterialPropertyTextureNormal = RenderWebGLMaterialPropertyTextureNormal;
+    class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
+        static useRenderData() {
+            this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.TOON.UNIT);
+        }
+    }
+    FudgeCore.RenderWebGLMaterialPropertyTextureToon = RenderWebGLMaterialPropertyTextureToon;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -9468,68 +9149,8 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class MaterialGLTF extends FudgeCore.mixinSerializableResourceExternal(FudgeCore.Material) {
-        async load(_url = this.url, _name = this.name) {
-            this.url = _url;
-            this.name = _name;
-            return FudgeCore.GLTFLoader.loadResource(this);
-        }
-    }
-    FudgeCore.MaterialGLTF = MaterialGLTF;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    class RenderWebGLMaterialProperty {
-        static decorate(_constructor, _context) {
-            Object.defineProperty(_constructor.prototype, _constructor.prototype.updateRenderData.name, { value: this.updateRenderData });
-            Object.defineProperty(_constructor.prototype, _constructor.prototype.useRenderData.name, { value: this.useRenderData });
-        }
-        static updateRenderData(_data, _offset) {
-            return;
-        }
-        static useRenderData() {
-            return;
-        }
-    }
-    FudgeCore.RenderWebGLMaterialProperty = RenderWebGLMaterialProperty;
-    class RenderWebGLMaterialPropertyColor extends RenderWebGLMaterialProperty {
-        static updateRenderData(_data, _offset) {
-            this.color.toArray(_data, _offset);
-        }
-    }
-    FudgeCore.RenderWebGLMaterialPropertyColor = RenderWebGLMaterialPropertyColor;
-    class RenderWebGLMaterialPropertyRemissive extends RenderWebGLMaterialProperty {
-        static updateRenderData(_data, _offset) {
-            _data[_offset + 4] = this.diffuse;
-            _data[_offset + 5] = this.specular;
-            _data[_offset + 6] = this.intensity;
-            _data[_offset + 7] = this.metallic;
-        }
-    }
-    FudgeCore.RenderWebGLMaterialPropertyRemissive = RenderWebGLMaterialPropertyRemissive;
-    class RenderWebGLMaterialPropertyTextureColor extends RenderWebGLMaterialProperty {
-        static useRenderData() {
-            this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.COLOR.UNIT);
-        }
-    }
-    FudgeCore.RenderWebGLMaterialPropertyTextureColor = RenderWebGLMaterialPropertyTextureColor;
-    class RenderWebGLMaterialPropertyTextureNormal extends RenderWebGLMaterialProperty {
-        static useRenderData() {
-            this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.NORMAL.UNIT);
-        }
-    }
-    FudgeCore.RenderWebGLMaterialPropertyTextureNormal = RenderWebGLMaterialPropertyTextureNormal;
-    class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
-        static useRenderData() {
-            this.texture.useRenderData(FudgeCore.TEXTURE_LOCATION.TOON.UNIT);
-        }
-    }
-    FudgeCore.RenderWebGLMaterialPropertyTextureToon = RenderWebGLMaterialPropertyTextureToon;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let MaterialSystem;
-    (function (MaterialSystem) {
+    let Experimental;
+    (function (Experimental) {
         class MaterialProperty extends FudgeCore.Mutable {
             static { this.subclasses = []; }
             static registerSubclass(_subclass) { return MaterialProperty.subclasses.push(_subclass) - 1; }
@@ -9545,7 +9166,7 @@ var FudgeCore;
             ;
             reduceMutator(_mutator) { return; }
         }
-        MaterialSystem.MaterialProperty = MaterialProperty;
+        Experimental.MaterialProperty = MaterialProperty;
         let MaterialPropertyColor = (() => {
             var _a;
             let _classDecorators = [(_a = FudgeCore.RenderWebGLMaterialPropertyColor).decorate.bind(_a)];
@@ -9580,7 +9201,7 @@ var FudgeCore;
             };
             return MaterialPropertyColor = _classThis;
         })();
-        MaterialSystem.MaterialPropertyColor = MaterialPropertyColor;
+        Experimental.MaterialPropertyColor = MaterialPropertyColor;
         let MaterialPropertyRemissive = (() => {
             var _a;
             let _classDecorators = [(_a = FudgeCore.RenderWebGLMaterialPropertyRemissive).decorate.bind(_a)];
@@ -9636,7 +9257,7 @@ var FudgeCore;
             };
             return MaterialPropertyRemissive = _classThis;
         })();
-        MaterialSystem.MaterialPropertyRemissive = MaterialPropertyRemissive;
+        Experimental.MaterialPropertyRemissive = MaterialPropertyRemissive;
         let MaterialPropertyTexture = (() => {
             let _classSuper = MaterialProperty;
             let _texture_decorators;
@@ -9658,7 +9279,7 @@ var FudgeCore;
                 }
             };
         })();
-        MaterialSystem.MaterialPropertyTexture = MaterialPropertyTexture;
+        Experimental.MaterialPropertyTexture = MaterialPropertyTexture;
         let MaterialPropertyTextureColor = (() => {
             var _a;
             let _classDecorators = [(_a = FudgeCore.RenderWebGLMaterialPropertyTextureColor).decorate.bind(_a)];
@@ -9685,7 +9306,7 @@ var FudgeCore;
             };
             return MaterialPropertyTextureColor = _classThis;
         })();
-        MaterialSystem.MaterialPropertyTextureColor = MaterialPropertyTextureColor;
+        Experimental.MaterialPropertyTextureColor = MaterialPropertyTextureColor;
         let MaterialPropertyTextureNormal = (() => {
             var _a;
             let _classDecorators = [(_a = FudgeCore.RenderWebGLMaterialPropertyTextureNormal).decorate.bind(_a)];
@@ -9712,7 +9333,7 @@ var FudgeCore;
             };
             return MaterialPropertyTextureNormal = _classThis;
         })();
-        MaterialSystem.MaterialPropertyTextureNormal = MaterialPropertyTextureNormal;
+        Experimental.MaterialPropertyTextureNormal = MaterialPropertyTextureNormal;
         let MaterialPropertyTextureToon = (() => {
             var _a;
             let _classDecorators = [(_a = FudgeCore.RenderWebGLMaterialPropertyTextureToon).decorate.bind(_a)];
@@ -9739,8 +9360,8 @@ var FudgeCore;
             };
             return MaterialPropertyTextureToon = _classThis;
         })();
-        MaterialSystem.MaterialPropertyTextureToon = MaterialPropertyTextureToon;
-    })(MaterialSystem = FudgeCore.MaterialSystem || (FudgeCore.MaterialSystem = {}));
+        Experimental.MaterialPropertyTextureToon = MaterialPropertyTextureToon;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -11053,81 +10674,81 @@ void main() {
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    let MaterialSystem;
-    (function (MaterialSystem) {
+    let Experimental;
+    (function (Experimental) {
         class ShaderFeature {
             static { this.subclasses = []; }
             static { this.properties = []; }
             static { this.define = []; }
             static registerSubclass(_subclass) { return ShaderFeature.subclasses.push(_subclass) - 1; }
         }
-        MaterialSystem.ShaderFeature = ShaderFeature;
+        Experimental.ShaderFeature = ShaderFeature;
         class ShaderSourceFeature extends ShaderFeature {
         }
-        MaterialSystem.ShaderSourceFeature = ShaderSourceFeature;
+        Experimental.ShaderSourceFeature = ShaderSourceFeature;
         class ShaderFeatureUniversal extends ShaderSourceFeature {
             static { this.vertexShaderSource = FudgeCore.shaderSources["ShaderUniversal.vert"]; }
             static { this.fragmentShaderSource = FudgeCore.shaderSources["ShaderUniversal.frag"]; }
         }
-        MaterialSystem.ShaderFeatureUniversal = ShaderFeatureUniversal;
+        Experimental.ShaderFeatureUniversal = ShaderFeatureUniversal;
         class ShaderFeatureLit extends ShaderFeatureUniversal {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureLit); }
-            static { this.properties = [MaterialSystem.MaterialPropertyColor]; }
+            static { this.properties = [Experimental.MaterialPropertyColor]; }
         }
-        MaterialSystem.ShaderFeatureLit = ShaderFeatureLit;
+        Experimental.ShaderFeatureLit = ShaderFeatureLit;
         class ShaderFeatureFlat extends ShaderFeatureUniversal {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureFlat); }
-            static { this.properties = [MaterialSystem.MaterialPropertyColor]; }
+            static { this.properties = [Experimental.MaterialPropertyColor]; }
             static { this.define = ["FLAT"]; }
         }
-        MaterialSystem.ShaderFeatureFlat = ShaderFeatureFlat;
+        Experimental.ShaderFeatureFlat = ShaderFeatureFlat;
         class ShaderFeatureGouraud extends ShaderFeatureUniversal {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureGouraud); }
-            static { this.properties = [MaterialSystem.MaterialPropertyColor, MaterialSystem.MaterialPropertyRemissive]; }
+            static { this.properties = [Experimental.MaterialPropertyColor, Experimental.MaterialPropertyRemissive]; }
             static { this.define = ["GOURAUD"]; }
         }
-        MaterialSystem.ShaderFeatureGouraud = ShaderFeatureGouraud;
+        Experimental.ShaderFeatureGouraud = ShaderFeatureGouraud;
         class ShaderFeaturePhong extends ShaderFeatureUniversal {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeaturePhong); }
-            static { this.properties = [MaterialSystem.MaterialPropertyColor, MaterialSystem.MaterialPropertyRemissive]; }
+            static { this.properties = [Experimental.MaterialPropertyColor, Experimental.MaterialPropertyRemissive]; }
             static { this.define = ["PHONG"]; }
         }
-        MaterialSystem.ShaderFeaturePhong = ShaderFeaturePhong;
+        Experimental.ShaderFeaturePhong = ShaderFeaturePhong;
         class ShaderFeatureMatCap extends ShaderFeatureUniversal {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureMatCap); }
             static { this.define = ["MATCAP"]; }
         }
-        MaterialSystem.ShaderFeatureMatCap = ShaderFeatureMatCap;
+        Experimental.ShaderFeatureMatCap = ShaderFeatureMatCap;
         class ShaderFeatureSkin extends ShaderFeature {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureSkin); }
             static { this.define = ["SKIN"]; }
         }
-        MaterialSystem.ShaderFeatureSkin = ShaderFeatureSkin;
+        Experimental.ShaderFeatureSkin = ShaderFeatureSkin;
         class ShaderFeatureTextureColor extends ShaderFeature {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureTextureColor); }
-            static { this.properties = [MaterialSystem.MaterialPropertyTextureColor]; }
+            static { this.properties = [Experimental.MaterialPropertyTextureColor]; }
             static { this.define = ["TEXTURE"]; }
         }
-        MaterialSystem.ShaderFeatureTextureColor = ShaderFeatureTextureColor;
+        Experimental.ShaderFeatureTextureColor = ShaderFeatureTextureColor;
         class ShaderFeatureTextureNormal extends ShaderFeature {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureTextureNormal); }
-            static { this.properties = [MaterialSystem.MaterialPropertyTextureNormal]; }
+            static { this.properties = [Experimental.MaterialPropertyTextureNormal]; }
             static { this.define = ["NORMALMAP"]; }
         }
-        MaterialSystem.ShaderFeatureTextureNormal = ShaderFeatureTextureNormal;
+        Experimental.ShaderFeatureTextureNormal = ShaderFeatureTextureNormal;
         class ShaderFeatureTextureToon extends ShaderFeature {
             static { this.iSubclass = ShaderFeature.registerSubclass(ShaderFeatureTextureToon); }
-            static { this.properties = [MaterialSystem.MaterialPropertyTextureToon]; }
+            static { this.properties = [Experimental.MaterialPropertyTextureToon]; }
             static { this.define = ["TOON"]; }
         }
-        MaterialSystem.ShaderFeatureTextureToon = ShaderFeatureTextureToon;
-    })(MaterialSystem = FudgeCore.MaterialSystem || (FudgeCore.MaterialSystem = {}));
+        Experimental.ShaderFeatureTextureToon = ShaderFeatureTextureToon;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    let MaterialSystem;
-    (function (MaterialSystem) {
-        FudgeCore.Serializer.registerNamespace(MaterialSystem);
+    let Experimental;
+    (function (Experimental) {
+        FudgeCore.Serializer.registerNamespace(Experimental);
         let Material = (() => {
             var _a, _b;
             let _classSuper = FudgeCore.Mutable;
@@ -11151,8 +10772,8 @@ var FudgeCore;
                     _name_decorators = [FudgeCore.serialize(String)];
                     _idResource_decorators = [FudgeCore.serialize(String)];
                     _alphaClip_decorators = [FudgeCore.serialize(Number)];
-                    _get_features_decorators = [FudgeCore.serialize(MaterialSystem.ShaderFeature, Array)];
-                    _get_properties_decorators = [FudgeCore.serialize(MaterialSystem.MaterialProperty, Array)];
+                    _get_features_decorators = [FudgeCore.serialize(Experimental.ShaderFeature, Array, Function)];
+                    _get_properties_decorators = [FudgeCore.serialize(Experimental.MaterialProperty, Array)];
                     _updateRenderData_decorators = [(_a = FudgeCore.RenderManagerMaterial).decorate.bind(_a)];
                     _useRenderData_decorators = [(_b = FudgeCore.RenderManagerMaterial).decorate.bind(_b)];
                     __esDecorate(this, null, _get_features_decorators, { kind: "getter", name: "features", static: false, private: false, access: { has: obj => "features" in obj, get: obj => obj.features }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -11177,7 +10798,7 @@ var FudgeCore;
                     this.#features = __runInitializers(this, _alphaClip_extraInitializers);
                     this.name = _name;
                     this.#features = _features;
-                    this.#shader = MaterialSystem.Shader.get(_features);
+                    this.#shader = Experimental.Shader.get(_features);
                     if (_features && !_properties)
                         this.#properties = this.#shader.createProperties();
                     else
@@ -11192,7 +10813,7 @@ var FudgeCore;
                 }
                 set features(_features) {
                     this.#features = _features;
-                    this.#shader = MaterialSystem.Shader.get(_features);
+                    this.#shader = Experimental.Shader.get(_features);
                     this.#properties = this.#shader.createProperties();
                 }
                 get shader() {
@@ -11230,8 +10851,676 @@ var FudgeCore;
                 }
             };
         })();
-        MaterialSystem.Material = Material;
-    })(MaterialSystem = FudgeCore.MaterialSystem || (FudgeCore.MaterialSystem = {}));
+        Experimental.Material = Material;
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class RenderWebGLShader {
+        static decorate(_method, _context) {
+            return Reflect.get(this, _context.name);
+        }
+        static createProgram() {
+            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
+            const program = FudgeCore.RenderWebGL.assert(crc3.createProgram());
+            try {
+                const shdVertex = RenderWebGLShader.compileShader(crc3, this.getVertexShaderSource(), WebGL2RenderingContext.VERTEX_SHADER);
+                const shdFragment = RenderWebGLShader.compileShader(crc3, this.getFragmentShaderSource(), WebGL2RenderingContext.FRAGMENT_SHADER);
+                crc3.attachShader(program, FudgeCore.RenderWebGL.assert(shdVertex));
+                crc3.attachShader(program, FudgeCore.RenderWebGL.assert(shdFragment));
+                crc3.linkProgram(program);
+                const error = FudgeCore.RenderWebGL.assert(crc3.getProgramInfoLog(program));
+                if (error !== "")
+                    throw new Error("Error linking Shader: " + error);
+                this.program = program;
+                this.uniforms = RenderWebGLShader.detectUniforms(crc3, program);
+                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.LIGHTS.NAME, FudgeCore.UNIFORM_BLOCK.LIGHTS.BINDING);
+                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.CAMERA.NAME, FudgeCore.UNIFORM_BLOCK.CAMERA.BINDING);
+                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.MATERIAL.NAME, FudgeCore.UNIFORM_BLOCK.MATERIAL.BINDING);
+                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.NODE.NAME, FudgeCore.UNIFORM_BLOCK.NODE.BINDING);
+                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.SKIN.NAME, FudgeCore.UNIFORM_BLOCK.SKIN.BINDING);
+                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.FOG.NAME, FudgeCore.UNIFORM_BLOCK.FOG.BINDING);
+                crc3.useProgram(this.program);
+                let uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.COLOR.UNIFORM];
+                if (uniform)
+                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.COLOR.INDEX);
+                uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.NORMAL.UNIFORM];
+                if (uniform)
+                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.NORMAL.INDEX);
+                uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.TOON.UNIFORM];
+                if (uniform)
+                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.TOON.INDEX);
+                uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.PARTICLE.UNIFORM];
+                if (uniform)
+                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.PARTICLE.INDEX);
+            }
+            catch (_error) {
+                FudgeCore.Debug.error(_error);
+                debugger;
+            }
+        }
+        static useProgram() {
+            const program = this.program;
+            if (!program)
+                this.createProgram();
+            FudgeCore.RenderWebGL.getRenderingContext().useProgram(program);
+        }
+        static deleteProgram() {
+            const program = this.program;
+            FudgeCore.RenderWebGL.getRenderingContext().deleteProgram(program);
+            delete this.uniforms;
+            delete this.program;
+        }
+        static detectUniforms(_crc3, _program) {
+            const detectedUniforms = {};
+            const uniformCount = _crc3.getProgramParameter(_program, WebGL2RenderingContext.ACTIVE_UNIFORMS);
+            for (let i = 0; i < uniformCount; i++) {
+                const info = FudgeCore.RenderWebGL.assert(_crc3.getActiveUniform(_program, i));
+                if (!info)
+                    break;
+                const location = _crc3.getUniformLocation(_program, info.name);
+                if (location)
+                    detectedUniforms[info.name] = FudgeCore.RenderWebGL.assert(location);
+            }
+            return detectedUniforms;
+        }
+        static compileShader(_crc3, _shaderCode, _shaderType) {
+            const webGLShader = _crc3.createShader(_shaderType);
+            _crc3.shaderSource(webGLShader, _shaderCode);
+            _crc3.compileShader(webGLShader);
+            let error = FudgeCore.RenderWebGL.assert(_crc3.getShaderInfoLog(webGLShader));
+            if (error !== "") {
+                FudgeCore.Debug.log(_shaderCode);
+                throw new Error("Error compiling shader: " + error);
+            }
+            if (!_crc3.getShaderParameter(webGLShader, WebGL2RenderingContext.COMPILE_STATUS)) {
+                alert(_crc3.getShaderInfoLog(webGLShader));
+                return null;
+            }
+            return webGLShader;
+        }
+        static bindUniformBlock(_crc3, _program, _uniformBlockName, _uniformBlockBinding) {
+            const blockIndex = _crc3.getUniformBlockIndex(_program, _uniformBlockName);
+            if (blockIndex == WebGL2RenderingContext.INVALID_INDEX)
+                return;
+            const referencedByVertexShader = _crc3.getActiveUniformBlockParameter(_program, blockIndex, WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER);
+            const referencedByFragmentShader = _crc3.getActiveUniformBlockParameter(_program, blockIndex, WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER);
+            if (!referencedByVertexShader && !referencedByFragmentShader)
+                return;
+            _crc3.uniformBlockBinding(_program, blockIndex, _uniformBlockBinding);
+        }
+    }
+    FudgeCore.RenderWebGLShader = RenderWebGLShader;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    let Experimental;
+    (function (Experimental) {
+        let Shader = (() => {
+            var _c, _d, _e;
+            let _instanceExtraInitializers = [];
+            let _createProgram_decorators;
+            let _useProgram_decorators;
+            let _deleteProgram_decorators;
+            return class Shader {
+                static {
+                    const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+                    _createProgram_decorators = [(_c = FudgeCore.RenderWebGLShader).decorate.bind(_c)];
+                    _useProgram_decorators = [(_d = FudgeCore.RenderWebGLShader).decorate.bind(_d)];
+                    _deleteProgram_decorators = [(_e = FudgeCore.RenderWebGLShader).decorate.bind(_e)];
+                    __esDecorate(this, null, _createProgram_decorators, { kind: "method", name: "createProgram", static: false, private: false, access: { has: obj => "createProgram" in obj, get: obj => obj.createProgram }, metadata: _metadata }, null, _instanceExtraInitializers);
+                    __esDecorate(this, null, _useProgram_decorators, { kind: "method", name: "useProgram", static: false, private: false, access: { has: obj => "useProgram" in obj, get: obj => obj.useProgram }, metadata: _metadata }, null, _instanceExtraInitializers);
+                    __esDecorate(this, null, _deleteProgram_decorators, { kind: "method", name: "deleteProgram", static: false, private: false, access: { has: obj => "deleteProgram" in obj, get: obj => obj.deleteProgram }, metadata: _metadata }, null, _instanceExtraInitializers);
+                    if (_metadata)
+                        Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                }
+                static { this.shaders = new Map(); }
+                #source;
+                #features;
+                #properties;
+                constructor(_features) {
+                    this.program = __runInitializers(this, _instanceExtraInitializers);
+                    const featuresSorted = _features.toSorted(sortByName);
+                    this.#features = featuresSorted;
+                    this.#source = featuresSorted.find(_feature => _feature.prototype instanceof Experimental.ShaderSourceFeature);
+                    this.#properties = featuresSorted.flatMap(_feature => _feature.properties);
+                }
+                static get(_features) {
+                    const key = _features
+                        .map(_feature => _feature.name)
+                        .sort()
+                        .join("")
+                        .replaceAll(Experimental.ShaderFeature.name, "");
+                    const shaders = Shader.shaders;
+                    let shader = shaders.get(key);
+                    if (!shader)
+                        shaders.set(key, shader = new Shader(_features));
+                    return shader;
+                }
+                createProperties() {
+                    return this.#properties.map(_property => new _property());
+                }
+                matchProperties(_properties) {
+                    const types = this.#properties;
+                    if (_properties.length !== types.length)
+                        return false;
+                    for (let type of types) {
+                        let found = false;
+                        for (let property of _properties) {
+                            if (property instanceof type) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                            return false;
+                    }
+                    return true;
+                }
+                getVertexShaderSource() {
+                    return this.insertDefines(this.#source.vertexShaderSource);
+                }
+                getFragmentShaderSource() {
+                    return this.insertDefines(this.#source.fragmentShaderSource);
+                }
+                createProgram() { return; }
+                useProgram() { return; }
+                deleteProgram() { return; }
+                insertDefines(_shader) {
+                    let code = "#version 300 es\n";
+                    for (let feature of this.#features) {
+                        for (let define of feature.define)
+                            code += `#define ${define}\n`;
+                    }
+                    return _shader.replace("#version 300 es", code);
+                }
+            };
+        })();
+        Experimental.Shader = Shader;
+        function sortByName(_a, _b) {
+            return _a.name.localeCompare(_b.name);
+        }
+    })(Experimental = FudgeCore.Experimental || (FudgeCore.Experimental = {}));
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class Graph extends FudgeCore.Node {
+        constructor(_name = "Graph") {
+            super(_name);
+            this.idResource = undefined;
+            this.hndMutate = async (_event) => {
+                _event.detail.path = Reflect.get(_event, "path");
+                this.dispatchEvent(new CustomEvent("mutateGraph", { detail: _event.detail }));
+                this.dispatchEvent(new CustomEvent("graphMutated", { detail: _event.detail }));
+            };
+            this.addEventListener("mutate", this.hndMutate);
+        }
+        get isSerializableResource() {
+            return true;
+        }
+        get type() {
+            return this.constructor.name;
+        }
+        serialize() {
+            let serialization = super.serialize();
+            serialization.idResource = this.idResource;
+            serialization.type = this.type;
+            return serialization;
+        }
+        async deserialize(_serialization) {
+            await super.deserialize(_serialization);
+            FudgeCore.Project.register(this, _serialization.idResource);
+            await FudgeCore.Project.resyncGraphInstances(this);
+            this.broadcastEvent(new Event("graphDeserialized"));
+            FudgeCore.Debug.log("Deserialized", this.name);
+            return this;
+        }
+    }
+    FudgeCore.Graph = Graph;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class GraphGLTF extends FudgeCore.mixinSerializableResourceExternal(FudgeCore.Graph) {
+        async load(_url = this.url, _name = this.name) {
+            this.url = _url;
+            this.name = _name;
+            return FudgeCore.GLTFLoader.loadResource(this);
+        }
+        serialize() {
+            const serializationExternal = super.serialize();
+            const serializationNode = FudgeCore.Node.prototype.serialize.call(this);
+            delete serializationNode.components[FudgeCore.ComponentSkeleton.name];
+            delete serializationNode.children;
+            return { ...serializationNode, ...serializationExternal };
+        }
+        async deserialize(_serialization) {
+            await super.deserialize(_serialization);
+            await FudgeCore.Graph.prototype.deserialize.call(this, _serialization);
+            return this;
+        }
+    }
+    FudgeCore.GraphGLTF = GraphGLTF;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class GraphInstance extends FudgeCore.Node {
+        static { this.count = 0; }
+        #idSource;
+        #deserializeFromSource;
+        constructor(_graph) {
+            super("GraphInstance");
+            this.#idSource = undefined;
+            this.#deserializeFromSource = true;
+            this.hndMutationGraph = async (_event) => {
+                if (this.isFiltered())
+                    return;
+                await this.reflectMutation(_event, _event.currentTarget, this, _event.detail.path);
+                this.dispatchEvent(new Event("mutateGraphDone", { bubbles: true }));
+            };
+            this.hndMutationInstance = async (_event) => {
+                if (this.isFiltered())
+                    return;
+                await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"));
+                this.get().dispatchEvent(new CustomEvent("mutate", { detail: _event.detail }));
+            };
+            this.addEventListener("mutate", this.hndMutationInstance);
+            if (!_graph)
+                return;
+            this.#idSource = _graph.idResource;
+        }
+        get idSource() {
+            return this.#idSource;
+        }
+        async reset() {
+            let resource = await FudgeCore.Project.getResource(this.#idSource);
+            await this.set(resource);
+        }
+        serialize() {
+            let filter = this.getComponent(FudgeCore.ComponentGraphFilter);
+            let serialization = {};
+            if (filter && filter.isActive) {
+                serialization = super.serialize();
+                let graph = this.get();
+                if (graph instanceof FudgeCore.GraphGLTF) {
+                    delete serialization.components[FudgeCore.ComponentSkeleton.name];
+                    delete serialization.children;
+                    serialization.url = graph.url;
+                }
+            }
+            else {
+                serialization.deserializeFromSource = true;
+            }
+            serialization.idSource = this.#idSource;
+            return serialization;
+        }
+        async deserialize(_serialization) {
+            this.#idSource = _serialization.idSource ?? _serialization.idResource;
+            if (!_serialization.deserializeFromSource) {
+                let graph = await FudgeCore.Project.getResource(this.#idSource);
+                if (graph instanceof FudgeCore.GraphGLTF)
+                    await FudgeCore.GLTFLoader.loadResource(this, _serialization.url);
+                await super.deserialize(_serialization);
+                this.#deserializeFromSource = false;
+            }
+            let graph = this.get();
+            if (graph)
+                await this.connectToGraph();
+            else {
+                FudgeCore.Debug.log("Register for resync", _serialization.name, this.name);
+                FudgeCore.Project.registerGraphInstanceForResync(this);
+            }
+            return this;
+        }
+        async connectToGraph() {
+            let graph = this.get();
+            if (this.#deserializeFromSource)
+                await this.set(graph);
+        }
+        async set(_graph) {
+            this.#idSource = _graph.idResource;
+            let currentGraph = this.get();
+            if (currentGraph) {
+                currentGraph.removeEventListener("mutateGraph", this.hndMutationGraph);
+            }
+            let serialization = FudgeCore.Serializer.serialize(_graph);
+            for (let path in serialization) {
+                await this.deserialize(serialization[path]);
+                break;
+            }
+            FudgeCore.Debug.fudge("GraphInstance set to " + this.name + " | " + "Instance count: " + GraphInstance.count++);
+            _graph.addEventListener("mutateGraph", this.hndMutationGraph);
+            this.broadcastEvent(new Event("graphInstantiated"));
+        }
+        get() {
+            return FudgeCore.Project.resources[this.#idSource];
+        }
+        async reflectMutation(_event, _source, _destination, _path) {
+            for (let node of _path)
+                if (node instanceof GraphInstance)
+                    if (node == this)
+                        break;
+                    else {
+                        console.log("Sync aborted, target already synced");
+                        return;
+                    }
+            let index = _path.indexOf(_source);
+            for (let i = index - 1; i >= 0; i--) {
+                let childIndex = _path[i].getParent().findChild(_path[i]);
+                _destination = _destination.getChild(childIndex);
+            }
+            let cmpMutate = _destination.getComponent(_event.detail.component.constructor);
+            if (cmpMutate)
+                await cmpMutate.mutate(_event.detail.mutator, null, false);
+        }
+        isFiltered() {
+            let cmpFilter = this.getComponent(FudgeCore.ComponentGraphFilter);
+            return (cmpFilter && cmpFilter.isActive);
+        }
+    }
+    FudgeCore.GraphInstance = GraphInstance;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    let Coat = (() => {
+        var _a, _b, _c, _d;
+        let _classSuper = FudgeCore.Mutable;
+        let _staticExtraInitializers = [];
+        let _instanceExtraInitializers = [];
+        let _static_resetRenderData_decorators;
+        let _static_updateRenderbuffer_decorators;
+        let _updateRenderData_decorators;
+        let _useRenderData_decorators;
+        return class Coat extends _classSuper {
+            constructor() {
+                super(...arguments);
+                this.alphaClip = (__runInitializers(this, _instanceExtraInitializers), 0.01);
+            }
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _static_resetRenderData_decorators = [(_a = FudgeCore.RenderManagerCoat).decorate.bind(_a)];
+                _static_updateRenderbuffer_decorators = [(_b = FudgeCore.RenderManagerCoat).decorate.bind(_b)];
+                _updateRenderData_decorators = [(_c = FudgeCore.RenderManagerCoat).decorate.bind(_c)];
+                _useRenderData_decorators = [(_d = FudgeCore.RenderManagerCoat).decorate.bind(_d)];
+                __esDecorate(this, null, _static_resetRenderData_decorators, { kind: "method", name: "resetRenderData", static: true, private: false, access: { has: obj => "resetRenderData" in obj, get: obj => obj.resetRenderData }, metadata: _metadata }, null, _staticExtraInitializers);
+                __esDecorate(this, null, _static_updateRenderbuffer_decorators, { kind: "method", name: "updateRenderbuffer", static: true, private: false, access: { has: obj => "updateRenderbuffer" in obj, get: obj => obj.updateRenderbuffer }, metadata: _metadata }, null, _staticExtraInitializers);
+                __esDecorate(this, null, _updateRenderData_decorators, { kind: "method", name: "updateRenderData", static: false, private: false, access: { has: obj => "updateRenderData" in obj, get: obj => obj.updateRenderData }, metadata: _metadata }, null, _instanceExtraInitializers);
+                __esDecorate(this, null, _useRenderData_decorators, { kind: "method", name: "useRenderData", static: false, private: false, access: { has: obj => "useRenderData" in obj, get: obj => obj.useRenderData }, metadata: _metadata }, null, _instanceExtraInitializers);
+                if (_metadata)
+                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                __runInitializers(this, _staticExtraInitializers);
+            }
+            static resetRenderData() { }
+            ;
+            static updateRenderbuffer() { }
+            ;
+            updateRenderData() { }
+            ;
+            useRenderData() { }
+            ;
+            serialize() {
+                return {
+                    alphaClip: this.alphaClip
+                };
+            }
+            async deserialize(_serialization) {
+                if (_serialization.alphaClip !== undefined)
+                    this.alphaClip = _serialization.alphaClip;
+                return this;
+            }
+            reduceMutator(_mutator) {
+                delete _mutator.renderData;
+            }
+        };
+    })();
+    FudgeCore.Coat = Coat;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class CoatColored extends FudgeCore.Coat {
+        constructor(_color = new FudgeCore.Color()) {
+            super();
+            this.color = _color;
+        }
+        serialize() {
+            let serialization = super.serialize();
+            serialization.color = this.color.serialize();
+            return serialization;
+        }
+        async deserialize(_serialization) {
+            await super.deserialize(_serialization);
+            await this.color.deserialize(_serialization.color);
+            return this;
+        }
+    }
+    FudgeCore.CoatColored = CoatColored;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class CoatRemissive extends FudgeCore.CoatColored {
+        #metallic;
+        constructor(_color = new FudgeCore.Color(), _diffuse = 1, _specular = 0.5, _intensity = 0.7, _metallic = 0.0) {
+            super(_color);
+            this.diffuse = _diffuse;
+            this.specular = _specular;
+            this.intensity = _intensity;
+            this.metallic = _metallic;
+        }
+        get metallic() {
+            return this.#metallic;
+        }
+        set metallic(_value) {
+            this.#metallic = FudgeCore.Calc.clamp(_value, 0, 1);
+        }
+        serialize() {
+            let serialization = super.serialize();
+            serialization.diffuse = this.diffuse;
+            serialization.specular = this.specular;
+            serialization.intensity = this.intensity;
+            serialization.metallic = this.metallic;
+            return serialization;
+        }
+        async deserialize(_serialization) {
+            await super.deserialize(_serialization);
+            this.diffuse = _serialization.diffuse;
+            this.specular = _serialization.specular;
+            this.intensity = _serialization.intensity ?? this.intensity;
+            this.metallic = _serialization.metallic ?? this.metallic;
+            return this;
+        }
+        getMutator() {
+            let mutator = super.getMutator(true);
+            delete mutator.diffuse;
+            delete mutator.specular;
+            delete mutator.intensity;
+            mutator.diffuse = this.diffuse;
+            mutator.specular = this.specular;
+            mutator.intensity = this.intensity;
+            mutator.metallic = this.metallic;
+            return mutator;
+        }
+    }
+    FudgeCore.CoatRemissive = CoatRemissive;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    let CoatTextured = (() => {
+        let _classSuper = FudgeCore.CoatColored;
+        let _texture_decorators;
+        let _texture_initializers = [];
+        let _texture_extraInitializers = [];
+        return class CoatTextured extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _texture_decorators = [FudgeCore.type(FudgeCore.Texture)];
+                __esDecorate(null, null, _texture_decorators, { kind: "field", name: "texture", static: false, private: false, access: { has: obj => "texture" in obj, get: obj => obj.texture, set: (obj, value) => { obj.texture = value; } }, metadata: _metadata }, _texture_initializers, _texture_extraInitializers);
+                if (_metadata)
+                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color) {
+                super(_color);
+                this.texture = __runInitializers(this, _texture_initializers, void 0);
+                __runInitializers(this, _texture_extraInitializers);
+                this.texture = _texture;
+            }
+            serialize() {
+                let serialization = super.serialize();
+                serialization.idTexture = this.texture.idResource;
+                return serialization;
+            }
+            async deserialize(_serialization) {
+                await super.deserialize(_serialization);
+                if (_serialization.idTexture)
+                    this.texture = await FudgeCore.Project.getResource(_serialization.idTexture);
+                return this;
+            }
+        };
+    })();
+    FudgeCore.CoatTextured = CoatTextured;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class CoatRemissiveTextured extends FudgeCore.CoatTextured {
+        #metallic;
+        constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color, _diffuse = 1, _specular = 0.5, _intensity = 0.7, _metallic = 0.0) {
+            super(_color, _texture);
+            this.diffuse = _diffuse;
+            this.specular = _specular;
+            this.intensity = _intensity;
+            this.metallic = _metallic;
+        }
+        get metallic() {
+            return this.#metallic;
+        }
+        set metallic(_value) {
+            this.#metallic = FudgeCore.Calc.clamp(_value, 0, 1);
+        }
+        serialize() {
+            let serialization = super.serialize();
+            serialization.diffuse = this.diffuse;
+            serialization.specular = this.specular;
+            serialization.intensity = this.intensity;
+            serialization.metallic = this.metallic;
+            return serialization;
+        }
+        async deserialize(_serialization) {
+            await super.deserialize(_serialization);
+            this.diffuse = _serialization.diffuse;
+            this.specular = _serialization.specular;
+            this.intensity = _serialization.intensity ?? this.intensity;
+            this.metallic = _serialization.metallic ?? this.metallic;
+            return this;
+        }
+        getMutator() {
+            let mutator = super.getMutator(true);
+            delete mutator.diffuse;
+            delete mutator.specular;
+            delete mutator.intensity;
+            mutator.diffuse = this.diffuse;
+            mutator.specular = this.specular;
+            mutator.intensity = this.intensity;
+            mutator.metallic = this.metallic;
+            return mutator;
+        }
+    }
+    FudgeCore.CoatRemissiveTextured = CoatRemissiveTextured;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    let CoatRemissiveTexturedNormals = (() => {
+        let _classSuper = FudgeCore.CoatRemissiveTextured;
+        let _normalMap_decorators;
+        let _normalMap_initializers = [];
+        let _normalMap_extraInitializers = [];
+        return class CoatRemissiveTexturedNormals extends _classSuper {
+            static {
+                const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                _normalMap_decorators = [FudgeCore.type(FudgeCore.Texture)];
+                __esDecorate(null, null, _normalMap_decorators, { kind: "field", name: "normalMap", static: false, private: false, access: { has: obj => "normalMap" in obj, get: obj => obj.normalMap, set: (obj, value) => { obj.normalMap = value; } }, metadata: _metadata }, _normalMap_initializers, _normalMap_extraInitializers);
+                if (_metadata)
+                    Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            }
+            constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color, _normalMap = FudgeCore.TextureDefault.normal, _diffuse, _specular = undefined, _intensity = undefined, _metallic = undefined) {
+                super(_color, _texture, _diffuse, _specular, _intensity, _metallic);
+                this.normalMap = __runInitializers(this, _normalMap_initializers, void 0);
+                __runInitializers(this, _normalMap_extraInitializers);
+                this.normalMap = _normalMap;
+            }
+            serialize() {
+                let serialization = super.serialize();
+                serialization.idNormalMap = this.normalMap.idResource;
+                return serialization;
+            }
+            async deserialize(_serialization) {
+                await super.deserialize(_serialization);
+                if (_serialization.idNormalMap)
+                    this.normalMap = await FudgeCore.Project.getResource(_serialization.idNormalMap);
+                return this;
+            }
+        };
+    })();
+    FudgeCore.CoatRemissiveTexturedNormals = CoatRemissiveTexturedNormals;
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class CoatToon extends mixinCoatToon(FudgeCore.CoatRemissive) {
+        constructor(_color = new FudgeCore.Color(), _texToon = FudgeCore.TextureDefault.toon, _diffuse, _specular = 1.2, _intensity, _metallic) {
+            super(_color, _diffuse, _specular, _intensity, _metallic);
+            this.texToon = _texToon;
+        }
+    }
+    FudgeCore.CoatToon = CoatToon;
+    class CoatToonTextured extends mixinCoatToon(FudgeCore.CoatRemissiveTextured) {
+        constructor(_color = new FudgeCore.Color(), _texture = FudgeCore.TextureDefault.color, _texToon = FudgeCore.TextureDefault.toon, _diffuse, _specular = 1.2, _intensity, _metallic) {
+            super(_color, _texture, _diffuse, _specular, _intensity, _metallic);
+            this.texToon = _texToon;
+        }
+    }
+    FudgeCore.CoatToonTextured = CoatToonTextured;
+    function mixinCoatToon(_base) {
+        let CoatToon = (() => {
+            let _classSuper = _base;
+            let _texToon_decorators;
+            let _texToon_initializers = [];
+            let _texToon_extraInitializers = [];
+            return class CoatToon extends _classSuper {
+                static {
+                    const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                    _texToon_decorators = [FudgeCore.type(FudgeCore.Texture)];
+                    __esDecorate(null, null, _texToon_decorators, { kind: "field", name: "texToon", static: false, private: false, access: { has: obj => "texToon" in obj, get: obj => obj.texToon, set: (obj, value) => { obj.texToon = value; } }, metadata: _metadata }, _texToon_initializers, _texToon_extraInitializers);
+                    if (_metadata)
+                        Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                }
+                serialize() {
+                    let serialization = super.serialize();
+                    serialization.idTexToon = this.texToon.idResource;
+                    return serialization;
+                }
+                async deserialize(_serialization) {
+                    await super.deserialize(_serialization);
+                    if (_serialization.idTexToon)
+                        this.texToon = await FudgeCore.Project.getResource(_serialization.idTexToon);
+                    return this;
+                }
+                constructor() {
+                    super(...arguments);
+                    this.texToon = __runInitializers(this, _texToon_initializers, void 0);
+                    __runInitializers(this, _texToon_extraInitializers);
+                }
+            };
+        })();
+        return CoatToon;
+    }
+})(FudgeCore || (FudgeCore = {}));
+var FudgeCore;
+(function (FudgeCore) {
+    class MaterialGLTF extends FudgeCore.mixinSerializableResourceExternal(FudgeCore.Material) {
+        async load(_url = this.url, _name = this.name) {
+            this.url = _url;
+            this.name = _name;
+            return FudgeCore.GLTFLoader.loadResource(this);
+        }
+    }
+    FudgeCore.MaterialGLTF = MaterialGLTF;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
@@ -11632,9 +11921,9 @@ var FudgeCore;
                 m[7] = translation.y;
                 this.#translationDirty = false;
             }
-            if (_rotation || _scaling) {
+            if (_rotation != null || _scaling) {
                 const rotation = _rotation ?? this.rotation;
-                if (_rotation != undefined)
+                if (_rotation != null)
                     this.#rotation = rotation;
                 const scaling = this.scaling;
                 if (_scaling)
@@ -17759,104 +18048,6 @@ var FudgeCore;
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {
-    class RenderWebGLShader {
-        static decorate(_method, _context) {
-            return Reflect.get(this, _context.name);
-        }
-        static createProgram() {
-            const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
-            const program = FudgeCore.RenderWebGL.assert(crc3.createProgram());
-            try {
-                const shdVertex = RenderWebGLShader.compileShader(crc3, this.getVertexShaderSource(), WebGL2RenderingContext.VERTEX_SHADER);
-                const shdFragment = RenderWebGLShader.compileShader(crc3, this.getFragmentShaderSource(), WebGL2RenderingContext.FRAGMENT_SHADER);
-                crc3.attachShader(program, FudgeCore.RenderWebGL.assert(shdVertex));
-                crc3.attachShader(program, FudgeCore.RenderWebGL.assert(shdFragment));
-                crc3.linkProgram(program);
-                const error = FudgeCore.RenderWebGL.assert(crc3.getProgramInfoLog(program));
-                if (error !== "")
-                    throw new Error("Error linking Shader: " + error);
-                this.program = program;
-                this.uniforms = RenderWebGLShader.detectUniforms(crc3, program);
-                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.LIGHTS.NAME, FudgeCore.UNIFORM_BLOCK.LIGHTS.BINDING);
-                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.CAMERA.NAME, FudgeCore.UNIFORM_BLOCK.CAMERA.BINDING);
-                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.MATERIAL.NAME, FudgeCore.UNIFORM_BLOCK.MATERIAL.BINDING);
-                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.NODE.NAME, FudgeCore.UNIFORM_BLOCK.NODE.BINDING);
-                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.SKIN.NAME, FudgeCore.UNIFORM_BLOCK.SKIN.BINDING);
-                RenderWebGLShader.bindUniformBlock(crc3, program, FudgeCore.UNIFORM_BLOCK.FOG.NAME, FudgeCore.UNIFORM_BLOCK.FOG.BINDING);
-                crc3.useProgram(this.program);
-                let uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.COLOR.UNIFORM];
-                if (uniform)
-                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.COLOR.INDEX);
-                uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.NORMAL.UNIFORM];
-                if (uniform)
-                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.NORMAL.INDEX);
-                uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.TOON.UNIFORM];
-                if (uniform)
-                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.TOON.INDEX);
-                uniform = this.uniforms[FudgeCore.TEXTURE_LOCATION.PARTICLE.UNIFORM];
-                if (uniform)
-                    crc3.uniform1i(uniform, FudgeCore.TEXTURE_LOCATION.PARTICLE.INDEX);
-            }
-            catch (_error) {
-                FudgeCore.Debug.error(_error);
-                debugger;
-            }
-        }
-        static useProgram() {
-            const program = this.program;
-            if (!program)
-                this.createProgram();
-            FudgeCore.RenderWebGL.getRenderingContext().useProgram(program);
-        }
-        static deleteProgram() {
-            const program = this.program;
-            FudgeCore.RenderWebGL.getRenderingContext().deleteProgram(program);
-            delete this.uniforms;
-            delete this.program;
-        }
-        static detectUniforms(_crc3, _program) {
-            const detectedUniforms = {};
-            const uniformCount = _crc3.getProgramParameter(_program, WebGL2RenderingContext.ACTIVE_UNIFORMS);
-            for (let i = 0; i < uniformCount; i++) {
-                const info = FudgeCore.RenderWebGL.assert(_crc3.getActiveUniform(_program, i));
-                if (!info)
-                    break;
-                const location = _crc3.getUniformLocation(_program, info.name);
-                if (location)
-                    detectedUniforms[info.name] = FudgeCore.RenderWebGL.assert(location);
-            }
-            return detectedUniforms;
-        }
-        static compileShader(_crc3, _shaderCode, _shaderType) {
-            const webGLShader = _crc3.createShader(_shaderType);
-            _crc3.shaderSource(webGLShader, _shaderCode);
-            _crc3.compileShader(webGLShader);
-            let error = FudgeCore.RenderWebGL.assert(_crc3.getShaderInfoLog(webGLShader));
-            if (error !== "") {
-                FudgeCore.Debug.log(_shaderCode);
-                throw new Error("Error compiling shader: " + error);
-            }
-            if (!_crc3.getShaderParameter(webGLShader, WebGL2RenderingContext.COMPILE_STATUS)) {
-                alert(_crc3.getShaderInfoLog(webGLShader));
-                return null;
-            }
-            return webGLShader;
-        }
-        static bindUniformBlock(_crc3, _program, _uniformBlockName, _uniformBlockBinding) {
-            const blockIndex = _crc3.getUniformBlockIndex(_program, _uniformBlockName);
-            if (blockIndex == WebGL2RenderingContext.INVALID_INDEX)
-                return;
-            const referencedByVertexShader = _crc3.getActiveUniformBlockParameter(_program, blockIndex, WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER);
-            const referencedByFragmentShader = _crc3.getActiveUniformBlockParameter(_program, blockIndex, WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER);
-            if (!referencedByVertexShader && !referencedByFragmentShader)
-                return;
-            _crc3.uniformBlockBinding(_program, blockIndex, _uniformBlockBinding);
-        }
-    }
-    FudgeCore.RenderWebGLShader = RenderWebGLShader;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
     class Viewport extends FudgeCore.EventTargetUnified {
         constructor() {
             super(...arguments);
@@ -19361,7 +19552,7 @@ var FudgeCore;
             }
             return animation;
         }
-        async getAnimationNew(_iAnimation, _animationOut) {
+        async getAnimationExperimental(_iAnimation, _animationOut) {
             _iAnimation = this.getIndex(_iAnimation, this.#gltf.animations);
             if (_iAnimation == -1)
                 return null;
@@ -19392,11 +19583,11 @@ var FudgeCore;
                 duration = Math.max(duration, input[input.length - 1]);
                 const output = await this.getFloat32Array(sampler.output);
                 if (gltfPath == "rotation")
-                    channels[i] = new FudgeCore.AnimationSystem.AnimationChannelQuaternion(path, input, output, interpolation);
+                    channels[i] = new FudgeCore.Experimental.AnimationChannelQuaternion(path, input, output, interpolation);
                 else
-                    channels[i] = new FudgeCore.AnimationSystem.AnimationChannelVector(path, input, output, interpolation);
+                    channels[i] = new FudgeCore.Experimental.AnimationChannelVector(path, input, output, interpolation);
             }
-            const animation = new FudgeCore.AnimationSystem.Animation();
+            const animation = new FudgeCore.Experimental.Animation();
             animation.name = gltfAnimation.name;
             animation.channels = channels;
             animation.duration = duration;
@@ -20370,96 +20561,6 @@ var FudgeCore;
         static getCoat() { return FudgeCore.CoatToonTextured; }
     }
     FudgeCore.ShaderToonTexturedSkin = ShaderToonTexturedSkin;
-})(FudgeCore || (FudgeCore = {}));
-var FudgeCore;
-(function (FudgeCore) {
-    let MaterialSystem;
-    (function (MaterialSystem) {
-        let Shader = (() => {
-            var _c, _d, _e;
-            let _instanceExtraInitializers = [];
-            let _createProgram_decorators;
-            let _useProgram_decorators;
-            let _deleteProgram_decorators;
-            return class Shader {
-                static {
-                    const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-                    _createProgram_decorators = [(_c = FudgeCore.RenderWebGLShader).decorate.bind(_c)];
-                    _useProgram_decorators = [(_d = FudgeCore.RenderWebGLShader).decorate.bind(_d)];
-                    _deleteProgram_decorators = [(_e = FudgeCore.RenderWebGLShader).decorate.bind(_e)];
-                    __esDecorate(this, null, _createProgram_decorators, { kind: "method", name: "createProgram", static: false, private: false, access: { has: obj => "createProgram" in obj, get: obj => obj.createProgram }, metadata: _metadata }, null, _instanceExtraInitializers);
-                    __esDecorate(this, null, _useProgram_decorators, { kind: "method", name: "useProgram", static: false, private: false, access: { has: obj => "useProgram" in obj, get: obj => obj.useProgram }, metadata: _metadata }, null, _instanceExtraInitializers);
-                    __esDecorate(this, null, _deleteProgram_decorators, { kind: "method", name: "deleteProgram", static: false, private: false, access: { has: obj => "deleteProgram" in obj, get: obj => obj.deleteProgram }, metadata: _metadata }, null, _instanceExtraInitializers);
-                    if (_metadata)
-                        Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-                }
-                static { this.shaders = new Map(); }
-                #source;
-                #features;
-                #properties;
-                constructor(_features) {
-                    this.program = __runInitializers(this, _instanceExtraInitializers);
-                    const featuresSorted = _features.toSorted(sortByName);
-                    this.#features = featuresSorted;
-                    this.#source = featuresSorted.find(_feature => _feature.prototype instanceof MaterialSystem.ShaderSourceFeature);
-                    this.#properties = featuresSorted.flatMap(_feature => _feature.properties);
-                }
-                static get(_features) {
-                    const key = _features
-                        .map(_feature => _feature.name)
-                        .sort()
-                        .join("")
-                        .replaceAll(MaterialSystem.ShaderFeature.name, "");
-                    const shaders = Shader.shaders;
-                    let shader = shaders.get(key);
-                    if (!shader)
-                        shaders.set(key, shader = new Shader(_features));
-                    return shader;
-                }
-                createProperties() {
-                    return this.#properties.map(_property => new _property());
-                }
-                matchProperties(_properties) {
-                    const types = this.#properties;
-                    if (_properties.length !== types.length)
-                        return false;
-                    for (let type of types) {
-                        let found = false;
-                        for (let property of _properties) {
-                            if (property instanceof type) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found)
-                            return false;
-                    }
-                    return true;
-                }
-                getVertexShaderSource() {
-                    return this.insertDefines(this.#source.vertexShaderSource);
-                }
-                getFragmentShaderSource() {
-                    return this.insertDefines(this.#source.fragmentShaderSource);
-                }
-                createProgram() { return; }
-                useProgram() { return; }
-                deleteProgram() { return; }
-                insertDefines(_shader) {
-                    let code = "#version 300 es\n";
-                    for (let feature of this.#features) {
-                        for (let define of feature.define)
-                            code += `#define ${define}\n`;
-                    }
-                    return _shader.replace("#version 300 es", code);
-                }
-            };
-        })();
-        MaterialSystem.Shader = Shader;
-        function sortByName(_a, _b) {
-            return _a.name.localeCompare(_b.name);
-        }
-    })(MaterialSystem = FudgeCore.MaterialSystem || (FudgeCore.MaterialSystem = {}));
 })(FudgeCore || (FudgeCore = {}));
 var FudgeCore;
 (function (FudgeCore) {

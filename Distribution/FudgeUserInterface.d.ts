@@ -24,12 +24,7 @@ declare namespace FudgeUserInterface {
     class Controller {
         domElement: HTMLElement;
         protected timeUpdate: number;
-        /** Refererence to the [[FudgeCore.Mutable]] this ui refers to */
         protected mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>;
-        /** [[FudgeCore.Mutator]] used to convey data to and from the mutable*/
-        protected mutator: ƒ.Mutator;
-        /** [[FudgeCore.Mutator]] used to store the data types of the mutator attributes*/
-        protected mutatorTypes: ƒ.Mutator;
         private idInterval;
         constructor(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement);
         /**
@@ -51,17 +46,17 @@ declare namespace FudgeUserInterface {
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
-        /**
-         * Performs a breadth-first search on the given _domElement for an element with the given key.
-         */
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
-        setMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>): void;
         getMutable(): ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>;
+        setMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>): void;
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
         protected refresh: (_event: Event) => void;
+        protected hndChange: (_event: Event) => Promise<void>;
+        private hndRequestOptions;
+        private getMutatorPath;
     }
 }
 declare namespace FudgeUserInterface {
@@ -86,15 +81,11 @@ declare namespace FudgeUserInterface {
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
          */
-        static createInterfaceFromMutator(_mutator: ƒ.Mutator | Object): HTMLDivElement;
+        static createInterfaceFromMutator(_mutator: ƒ.Mutator): HTMLDivElement;
         /**
-         * Create a specific CustomElement for the given data, using _key as identification
+         * Create a specific CustomElement for the given data. Returns undefined if no element is {@link CustomElement.register registered} for the given type.
          */
-        static createMutatorElement(_key: string, _type: Object | string, _value: Object): HTMLElement;
-        /**
-         * TODO: refactor for enums
-         */
-        static createDropdown(_name: string, _content: Object, _value: string, _parent: HTMLElement, _cssClass?: string): HTMLSelectElement;
+        static createMutatorElement(_key: string, _type: Object | string, _value: Object): CustomElement | undefined;
     }
 }
 declare namespace FudgeUserInterface {
@@ -117,7 +108,7 @@ declare namespace FudgeUserInterface {
         private static mapObjectToCustomElement;
         private static idCounter;
         protected initialized: boolean;
-        constructor(_attributes?: CustomElementAttributes);
+        constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]);
         /**
          * Retrieve an id to use for children of this element, needed e.g. for standard interaction with the label
          */
@@ -129,7 +120,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve the element representing the given data type (if registered)
          */
-        static get(_type: string): typeof CustomElement;
+        static get(_type: string): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement);
         private static map;
         /**
          * Return the key (name) of the attribute this element represents
@@ -272,6 +263,29 @@ declare namespace FudgeUserInterface {
          * Sets the content of the input element
          */
         setMutatorValue(_value: FudgeCore.General): void;
+    }
+}
+declare namespace FudgeUserInterface {
+    /**
+     * TODO:
+     */
+    class CustomElementReference extends CustomElement {
+        #private;
+        private static customElement;
+        /**
+         * Creates the content of the element when connected the first time
+         */
+        connectedCallback(): void;
+        setOptions(_options: Record<string, unknown>): void;
+        getMutatorValue(): unknown;
+        setMutatorValue(_value: {
+            name?: string;
+        }): void;
+        private hndClick;
+        private hndFocus;
+        private hndInput;
+        private hndKey;
+        private getOptions;
     }
 }
 declare namespace FudgeUserInterface {
@@ -830,6 +844,7 @@ declare namespace FudgeUserInterface {
         POINTER_MOVE = "pointermove",
         INSERT = "insert",
         SELECT_ALL = "selectAll",
-        SAVE_HISTORY = "saveHistory"
+        SAVE_HISTORY = "saveHistory",
+        REQUEST_OPTIONS = "requestOptions"
     }
 }

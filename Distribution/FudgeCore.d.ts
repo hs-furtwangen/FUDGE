@@ -330,7 +330,15 @@ declare namespace FudgeCore {
      * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
      * @see {@link Metadata}.
      */
-    type MutatorTypes = Record<PropertyKey, Function | Record<PropertyKey, General>>;
+    type MutatorTypes = {
+        [key: string]: Function | Record<string, unknown>;
+    };
+    /**
+     * Map from each property of a mutator to a function that returns a map of possible options for the property.
+     */
+    type MutatorReferences = {
+        [key: string]: (this: unknown, _key: string) => Record<string, unknown>;
+    };
     /**
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
@@ -340,12 +348,17 @@ declare namespace FudgeCore {
          * Keys of properties to be included in the class's {@link Mutator}.
          * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
          */
-        mutatorKeys?: string[];
+        mutatorKeys?: Set<string>;
         /**
          * A map from property keys to their specified types for the class's {@link Mutator}.
          * Use the {@link type} or {@link serialize} decorator to add type information to this map.
          */
         mutatorTypes?: MutatorTypes;
+        /**
+         * A map from property keys to functions that return a map of possible options for the property.
+         * Use the {@link serialize} or the {@link type} and {@link reference} decorator to add to this map.
+         */
+        mutatorReferences?: MutatorReferences;
         /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
@@ -355,13 +368,17 @@ declare namespace FudgeCore {
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
     type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
-     * Returns the decorated {@link Metadata.mutatorKeys keys} of the {@link Mutator} of the given instance or class. Returns an empty array if no keys are decorated.
+     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
      */
-    function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
+    function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
     /**
      * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
      */
     function getMutatorTypes(_from: Object): Readonly<MutatorTypes>;
+    /**
+     * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+     */
+    function getMutatorReferences(_from: Object): Readonly<MutatorReferences>;
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
      */
@@ -399,9 +416,10 @@ declare namespace FudgeCore {
      * will be displayed via their {@link toString} method in the editor.
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>) => void;
+    function type<T extends Boolean | Number | String>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
+    function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
+    function reference(_value: unknown, _context: ClassPropertyContext): void;
 }
 declare namespace FudgeCore {
     /**
@@ -411,7 +429,7 @@ declare namespace FudgeCore {
         [attribute: string]: string | object;
     }
     /**
-     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
+     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
      */
     interface Mutator {
         [attribute: string]: General;
@@ -429,10 +447,34 @@ declare namespace FudgeCore {
     interface MutatorForUserInterface extends Mutator {
         readonly forUserInterface: null;
     }
-    /**
-     * Collect applicable attributes of the instance and copies of their values in a Mutator-object
-     */
-    function getMutatorOfArbitrary(_object: Object): Mutator;
+    abstract class Mutator {
+        /**
+         * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
+         * @param _mutator The mutator to clone. Must be a plain object or array.
+         * @returns A clone of `_mutator` or null if it is not a plain object or array.
+         */
+        static clone(_mutator: Mutator): Mutator | null;
+        /**
+         * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
+         */
+        static fromPath(_mutator: Mutator, _path: string[], _index?: number): Mutator;
+        /**
+         * Collect applicable attributes of the given instance and copies of their values in a mutator.
+         */
+        static from(_object: object): Mutator;
+        /**
+         * Updates the values of the given mutator according to the current state of the given mutable.
+         * @param _mutable The mutable to update the state from.
+         * @param _mutator The mutator to update.
+         * @returns `_mutator`.
+         */
+        static update(_mutable: Mutable | MutableArray<Mutable>, _mutator: Mutator): Mutator;
+        /**
+         * Creates and returns an empty mutator for the given value.
+         * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
+         */
+        private static create;
+    }
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -444,17 +486,16 @@ declare namespace FudgeCore {
      * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
     abstract class Mutable extends EventTargetUnified {
+        static getMutableFromPath(_mutable: Mutable | MutableArray<Mutable>, _path: string[]): Mutable | MutableArray<Mutable>;
+        /**
+         * @deprecated use {@link cloneMutatorFromPath}
+         */
         static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator;
         /**
          * Retrieves the type of this mutable subclass as the name of the runtime class
          * @returns The type of the mutable
          */
         get type(): string;
-        /**
-         * Returns the type of this mutable instance that will be used to display it in the editor, can be either a constructor or a map object to select from.
-         * Override this method to provide a custom type for the mutable.
-         */
-        get mutatorType(): Function | Record<PropertyKey, General>;
         /**
          * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
          * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
@@ -475,10 +516,10 @@ declare namespace FudgeCore {
          * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
          * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
          */
-        getMutatorAttributeTypes?(_mutator: Mutator): MutatorAttributeTypes;
+        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
          * Updates the values of the given mutator according to the current state of the instance
-         * @param _mutator
+         * @deprecated Use {@link updateMutator} instead.
          */
         updateMutator(_mutator: Mutator): void;
         /**
@@ -565,14 +606,14 @@ declare namespace FudgeCore {
        *
        * @author Jonas Plotzky, HFU, 2024-2025
        */
-    function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
     function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
-    function serialize<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T extends Function>(_type: T, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
-    function serialize<T, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T, E extends Record<keyof E, T>>(_type: E, _collection: ArrayConstructor): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+    function serialize<T extends Function>(_type: T, _array: typeof Array, _function: typeof Function): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
+    function serialize<T extends Function>(_type: T, _array: typeof Function): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
     /**
      * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
      */
@@ -1996,7 +2037,7 @@ declare namespace FudgeCore {
         /**
          * Returns an array of all resources of the requested type.
          */
-        static getResourcesByType<T>(_type: new (_args: General) => T): SerializableResource[];
+        static getResourcesByType<T>(_type: abstract new (..._args: General[]) => T): SerializableResource[];
         /**
          * Returns an array of all resources with the requested name.
          */

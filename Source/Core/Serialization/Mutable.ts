@@ -5,8 +5,9 @@ namespace FudgeCore {
   export interface MutatorAttributeTypes {
     [attribute: string]: string | object;
   }
+
   /**
-   * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
+   * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
    */
   export interface Mutator {
     [attribute: string]: General;
@@ -25,93 +26,95 @@ namespace FudgeCore {
    */
   export interface MutatorForAnimation extends Mutator { readonly forAnimation: null }
   export interface MutatorForUserInterface extends Mutator { readonly forUserInterface: null }
-  // export interface MutatorForComponent extends Mutator { readonly forUserComponent: null; }
 
-  /**
-   * Collect applicable attributes of the instance and copies of their values in a Mutator-object
-   */
-  export function getMutatorOfArbitrary(_object: Object): Mutator {
-    let mutator: Mutator = {};
-    let attributes: (string | number | symbol)[] = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
-    for (let attribute of attributes) {
-      let value: Object = Reflect.get(_object, attribute);
-      if (value instanceof Function)
-        continue;
-      // if (value instanceof Object && !(value instanceof Mutable))
-      //   continue;
-      mutator[attribute.toString()] = value;
-    }
-    return mutator;
-  }
+  export abstract class Mutator {
+    
+    /**
+     * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
+     * @param _mutator The mutator to clone. Must be a plain object or array.
+     * @returns A clone of `_mutator` or null if it is not a plain object or array.
+     */
+    public static clone(_mutator: Mutator): Mutator | null {
+      const out: Mutator | null = Mutator.create(_mutator);
+      if (out)
+        for (const key in _mutator)
+          out[key] = Mutator.clone(_mutator[key]) ?? _mutator[key];
 
-  // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
-  /**
-   * Updates the values of the given mutator according to the current state of the given mutable.
-   * @param _mutable The mutable to update the state from.
-   * @param _mutator The mutator to update.
-   * @returns `_mutator`.
-   */
-  export function updateMutator(_mutable: Mutable | MutableArray<unknown>, _mutator: Mutator): Mutator {
-    const references: MutatorReferences = getMutatorReferences(_mutable);
-    for (const key in _mutator) {
-      const value: Object = Reflect.get(_mutable, key);
-      if ((value instanceof Mutable || value instanceof MutableArray) && !references[key])
-        updateMutator(value, _mutator[key]);
+      return out;
+    };
+
+    /**
+     * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
+     */
+    public static fromPath(_mutator: Mutator, _path: string[], _index: number = 0): Mutator {
+      const key: string = _path[_index];
+      if (!(key in _mutator)) // if the path deviates from mutator, return the mutator
+        return _mutator;
+
+      const clone: Mutator = Mutator.create(_mutator);
+      if (!clone) // if the mutator is not a plain object or array, return it
+        return _mutator;
+
+      if (_index < _path.length - 1)
+        clone[key] = Mutator.fromPath(_mutator[key], _path, _index + 1); // recursively clone the next part of the path
       else
-        _mutator[key] = value;
+        clone[key] = _mutator[key];
+
+      return clone;
     }
 
-    return _mutator;
-  }
+    /**
+     * Collect applicable attributes of the given instance and copies of their values in a mutator.
+     */
+    public static from(_object: object): Mutator {
+      let mutator: Mutator = {};
+      let attributes: (string | number | symbol)[] = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
+      for (let attribute of attributes) {
+        let value: Object = Reflect.get(_object, attribute);
+        if (value instanceof Function)
+          continue;
 
-  /**
-   * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
-   * @param _mutator The mutator to clone. Must be a plain object or array.
-   * @returns A clone of `_mutator` or null if it is not a plain object or array.
-   */
-  export function cloneMutator(_mutator: Mutator): Mutator | null {
-    const out: Mutator | null = createMutator(_mutator);
-    if (out)
-      for (const key in _mutator)
-        out[key] = cloneMutator(_mutator[key]) ?? _mutator[key];
+        mutator[attribute.toString()] = value;
+      }
 
-    return out;
-  }
+      return mutator;
+    }
 
-  /**
-   * Clones the given mutator at the given path. See {@link cloneMutator} for restrictions.
-   */
-  export function cloneMutatorFromPath(_mutator: Mutator, _path: string[], _index: number = 0): Mutator {
-    const key: string = _path[_index];
-    if (!(key in _mutator)) // if the path deviates from mutator, return the mutator
+    // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
+    /**
+     * Updates the values of the given mutator according to the current state of the given mutable.
+     * @param _mutable The mutable to update the state from.
+     * @param _mutator The mutator to update.
+     * @returns `_mutator`.
+     */
+    public static update(_mutable: Mutable | MutableArray<Mutable>, _mutator: Mutator): Mutator {
+      const references: MutatorReferences = getMutatorReferences(_mutable);
+      for (const key in _mutator) {
+        const value: Object = Reflect.get(_mutable, key);
+        if ((value instanceof Mutable || value instanceof MutableArray) && !references[key])
+          Mutator.update(value, _mutator[key]);
+        else
+          _mutator[key] = value;
+      }
+
       return _mutator;
+    }
 
-    const clone: Mutator = createMutator(_mutator);
-    if (!clone) // if the mutator is not a plain object or array, return it
-      return _mutator;
+    /**
+     * Creates and returns an empty mutator for the given value.
+     * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
+     */
+    private static create(_mutator: Mutator): Mutator | null {
+      const prototype: object = _mutator != null ? Object.getPrototypeOf(_mutator) : null;
+      if (prototype === Object.prototype)
+        return {};
 
-    if (_index < _path.length - 1)
-      clone[key] = cloneMutatorFromPath(_mutator[key], _path, _index + 1); // recursively clone the next part of the path
-    else
-      clone[key] = _mutator[key];
+      if (prototype === Array.prototype)
+        return [];
 
-    return clone;
-  }
-
-  /**
-   * Creates and returns an empty mutator for the given value.
-   * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
-   */
-  function createMutator(_mutator: Mutator): Mutator | null {
-    const prototype: object = _mutator != null ? Object.getPrototypeOf(_mutator) : null;
-    if (prototype === Object.prototype)
-      return {};
-
-    if (prototype === Array.prototype)
-      return [];
-
-    return null;
-  }
+      return null;
+    }
+  };
 
   /**
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
@@ -125,7 +128,7 @@ namespace FudgeCore {
    */
   export abstract class Mutable extends EventTargetUnified {
 
-    public static getMutableFromPath(_mutable: Mutable | MutableArray<unknown>, _path: string[]): Mutable | MutableArray<unknown> {
+    public static getMutableFromPath(_mutable: Mutable | MutableArray<Mutable>, _path: string[]): Mutable | MutableArray<Mutable> {
       for (let i: number = 0; i < _path.length; i++)
         _mutable = Reflect.get(_mutable, _path[i]);
 

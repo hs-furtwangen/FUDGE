@@ -120,7 +120,7 @@ namespace FudgeCore {
      */
     public getMutatorOfNode(_type: AUDIO_NODE_TYPE): Mutator {
       let node: AudioNode = this.getAudioNode(_type);
-      let mutator: Mutator = getMutatorOfArbitrary(node);
+      let mutator: Mutator = Mutator.from(node);
       return mutator;
     }
 
