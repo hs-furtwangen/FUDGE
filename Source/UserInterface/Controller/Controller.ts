@@ -11,10 +11,6 @@ namespace FudgeUserInterface {
     protected timeUpdate: number = 190;
     /** Refererence to the [[FudgeCore.Mutable]] this ui refers to */
     protected mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>;
-    /** [[FudgeCore.Mutator]] used to convey data to and from the mutable*/
-    protected mutator: ƒ.Mutator;
-    /** [[FudgeCore.Mutator]] used to store the data types of the mutator attributes*/
-    protected mutatorTypes: ƒ.Mutator = null;
 
     private idInterval: number;
 
@@ -69,7 +65,7 @@ namespace FudgeUserInterface {
             mutator[key] = this.getMutator(subMutable, element, mutator[key]);
         }
       }
-      
+
       return mutator;
     }
 
@@ -140,8 +136,6 @@ namespace FudgeUserInterface {
     // }
 
     public getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
-      // TODO: should get Mutator for UI or work with this.mutator (examine)
-      this.mutable.updateMutator(this.mutator);
       return Controller.getMutator(this.mutable, this.domElement, _mutator, _types);
     }
 
@@ -149,15 +143,12 @@ namespace FudgeUserInterface {
       Controller.updateUserInterface(this.mutable, this.domElement);
     }
 
-    public setMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>): void {
-      this.mutable = _mutable;
-      this.mutator = _mutable.getMutatorForUserInterface();
-      if (_mutable instanceof ƒ.Mutable)
-        this.mutatorTypes = _mutable.getMutatorAttributeTypes(this.mutator);
-    }
-
     public getMutable(): ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> {
       return this.mutable;
+    }
+
+    public setMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>): void {
+      this.mutable = _mutable;
     }
 
     public startRefresh(): void {
@@ -173,8 +164,8 @@ namespace FudgeUserInterface {
       this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: ƒ.Mutable.getMutatorFromPath(mutator, path) } }));
 
       // get current mutator from interface for mutation   
-      this.mutator = this.getMutator();
-      await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(this.mutator, path));
+      mutator = this.getMutator();
+      await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(mutator, path));
       _event.stopPropagation();
 
       this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));
