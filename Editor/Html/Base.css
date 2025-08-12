@@ -397,3 +397,8 @@ custom-matrix4x4 span.rowVector,
 custom-matrix3x3 span.rowVector {
   text-align: right
 }
+
+custom-matrix4x4>div,
+custom-matrix3x3>div {
+  display: contents;
+}

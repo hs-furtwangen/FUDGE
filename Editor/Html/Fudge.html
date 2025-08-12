@@ -82,17 +82,23 @@
       <span>y</span>
       <span>z</span>
       <span class="rowVector">translation</span>
-      <fudge-stepper key="tx"></fudge-stepper>
-      <fudge-stepper key="ty"></fudge-stepper>
-      <fudge-stepper key="tz"></fudge-stepper>
+      <div key="translation">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+        <fudge-stepper key="z"></fudge-stepper>
+      </div>
       <span class="rowVector">rotation</span>
-      <fudge-stepper key="rx"></fudge-stepper>
-      <fudge-stepper key="ry"></fudge-stepper>
-      <fudge-stepper key="rz"></fudge-stepper>
+      <div key="rotation">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+        <fudge-stepper key="z"></fudge-stepper>
+      </div>
       <span class="rowVector">scaling</span>
-      <fudge-stepper key="sx"></fudge-stepper>
-      <fudge-stepper key="sy"></fudge-stepper>
-      <fudge-stepper key="sz"></fudge-stepper>
+      <div key="scaling">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+        <fudge-stepper key="z"></fudge-stepper>
+      </div>
     </custom-matrix4x4>
   </template>
   <script>
@@ -109,13 +115,17 @@
       <span>x</span>
       <span>y</span>
       <span class="rowVector">translation</span>
-      <fudge-stepper key="tx"></fudge-stepper>
-      <fudge-stepper key="ty"></fudge-stepper>
+      <div key="translation">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+      </div>
       <span class="rowVector">scaling</span>
-      <fudge-stepper key="sx"></fudge-stepper>
-      <fudge-stepper key="sy"></fudge-stepper>
+      <div key="scaling">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+      </div>
       <span class="rowVector">rotation</span>
-      <fudge-stepper key="r"></fudge-stepper>
+      <fudge-stepper key="rotation"></fudge-stepper>
     </custom-matrix3x3>
   </template>
   <script>
