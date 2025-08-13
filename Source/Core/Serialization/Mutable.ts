@@ -87,11 +87,11 @@ namespace FudgeCore {
      * @param _mutator The mutator to update.
      * @returns `_mutator`.
      */
-    public static update(_mutable: Mutable | MutableArray<Mutable>, _mutator: Mutator): Mutator {
-      const references: MutatorReferences = getMutatorReferences(_mutable);
+    public static update(_mutable: Mutable | MutableArray<unknown>, _mutator: Mutator): Mutator {
+      const references: ReadonlySet<string> = getMutatorReferences(_mutable);
       for (const key in _mutator) {
         const value: Object = Reflect.get(_mutable, key);
-        if ((value instanceof Mutable || value instanceof MutableArray) && !references[key])
+        if ((value instanceof Mutable || value instanceof MutableArray) && !references.has(key))
           Mutator.update(value, _mutator[key]);
         else
           _mutator[key] = value;
@@ -128,7 +128,7 @@ namespace FudgeCore {
    */
   export abstract class Mutable extends EventTargetUnified {
 
-    public static getMutableFromPath(_mutable: Mutable | MutableArray<Mutable>, _path: string[]): Mutable | MutableArray<Mutable> {
+    public static getMutableFromPath(_mutable: Mutable | MutableArray<unknown>, _path: string[]): Mutable | MutableArray<unknown> {
       for (let i: number = 0; i < _path.length; i++)
         _mutable = Reflect.get(_mutable, _path[i]);
 
@@ -187,11 +187,11 @@ namespace FudgeCore {
       // delete unwanted attributes
       this.reduceMutator(mutator);
 
-      const references: MutatorReferences = getMutatorReferences(this);
+      const references: ReadonlySet<string> = getMutatorReferences(this);
       // replace references to mutable objects with references to mutators
       for (let attribute in mutator) {
         let value: Object = mutator[attribute];
-        if (references[attribute])
+        if (references.has(attribute))
           continue; // do not replace references
         if (value instanceof Mutable || value instanceof MutableArray)
           mutator[attribute] = value.getMutator();
@@ -329,7 +329,7 @@ namespace FudgeCore {
             mutator[attribute] = _mutator[attribute];
       }
 
-      const references: MutatorReferences = getMutatorReferences(this);
+      const references: ReadonlySet<string> = getMutatorReferences(this);
       for (let attribute in mutator) {
         if (!Reflect.has(this, attribute))
           continue;
@@ -337,7 +337,7 @@ namespace FudgeCore {
         let value: Mutator = <Mutator>mutator[attribute];
 
 
-        if (value != null && !references[attribute] && (mutant instanceof MutableArray || mutant instanceof Mutable))
+        if (value != null && !references.has(attribute) && (mutant instanceof MutableArray || mutant instanceof Mutable))
           await mutant.mutate(value, null, false);
         else
           Reflect.set(this, attribute, value);

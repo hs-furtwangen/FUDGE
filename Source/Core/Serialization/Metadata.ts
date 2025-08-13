@@ -8,10 +8,13 @@ namespace FudgeCore {
    */
   export type MutatorTypes = { [key: string]: Function | Record<string, unknown> };
 
+
   /**
    * Map from each property of a mutator to a function that returns a map of possible options for the property.
    */
-  export type MutatorReferences = { [key: string]: (this: unknown, _key: string) => Record<string, unknown> };
+  export type MutatorOptions = { [key: string]: MutatorOptionsGetter };
+  export type MutatorOptionsGetter = (this: unknown, _key: string) => Record<string, unknown>;
+
 
   // export type MutatorInfo = { [key: string]: { type?: Function | Record<string, unknown>; isArray?: boolean; isFunction?: boolean; getOptions?: (this: unknown, _key: string) => Record<string, unknown> } };
 
@@ -27,6 +30,11 @@ namespace FudgeCore {
     mutatorKeys?: Set<string>;
 
     /**
+     * Keys of properties of the class's {@link Mutator} that are references to other objects.
+     */
+    mutatorReferences?: Set<string>;
+
+    /**
      * A map from property keys to their specified types for the class's {@link Mutator}.
      * Use the {@link type} or {@link serialize} decorator to add type information to this map.
      */
@@ -36,7 +44,7 @@ namespace FudgeCore {
      * A map from property keys to functions that return a map of possible options for the property.
      * Use the {@link serialize} or the {@link type} and {@link reference} decorator to add to this map.
      */
-    mutatorReferences?: MutatorReferences;
+    mutatorOptions?: MutatorOptions;
 
     // mutatorInfo?: Record<string, { type: Function | Record<string, unknown>; getOptions: (this: unknown, _key: string) => Record<string, unknown> }>;
 
@@ -66,12 +74,17 @@ namespace FudgeCore {
     return getMetadata(_from).mutatorTypes ?? emptyTypes;
   }
 
-  const emptyReferences: Readonly<MutatorReferences> = Object.freeze({});
+  const emptyReferences: Readonly<MutatorOptions> = Object.freeze({});
   /**
-   * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+   * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
    */
-  export function getMutatorReferences(_from: Object): Readonly<MutatorReferences> {
-    return getMetadata(_from).mutatorReferences ?? emptyReferences;
+  export function getMutatorOptions(_from: Object): Readonly<MutatorOptions> {
+    return getMetadata(_from).mutatorOptions ?? emptyReferences;
+  }
+
+
+  export function getMutatorReferences<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
+    return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyKeys);
   }
 
   const emptyMetadata: Metadata = Object.freeze({});
@@ -133,6 +146,18 @@ namespace FudgeCore {
   }
   //#endregion
 
+  //#region Reference
+  export function reference(_value: unknown, _context: ClassPropertyContext<unknown, object>): void {
+    const key: PropertyKey = _context.name;
+    if (typeof key === "symbol")
+      return;
+
+    const metadata: Metadata = _context.metadata;
+    const keys: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
+    keys.add(key);
+  }
+  //#endregion
+
   //#region Type
   /**
    * Decorator to specify a type for a property within a class's {@link Metadata | metadata}.
@@ -171,8 +196,48 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region Reference
-  export function reference(_value: unknown, _context: ClassPropertyContext): void {
+  //#region Select
+  /**
+   * Decorator to provide a list of options for a property to be displayed in the editor.
+   * The provided function will be executed to retrieve the options.
+   *
+   * **Usage**: Apply this decorator to a property and pass a function that returns a `Record<string, unknown>`.
+   * The record's keys are displayed as labels in the UI, and its values are assigned to the property upon selection.
+   *
+   * **Example**:
+   * ```typescript
+   * class MyComponent extends ƒ.Component {
+   *   @ƒ.reference(() => ({ "Option A": "Value A", "Option B": "Value B" }))
+   *   public myChoice: string = "Value A";
+   *
+   *   @ƒ.type(ƒ.Mesh) // You can still specify a type for drag&drop
+   *   @ƒ.reference(function() { return ƒ.Project.getResourcesByType(ƒ.Mesh); })
+   *   public myMesh: ƒ.Mesh;
+   * }
+   * ```
+   * @param _getOptions A function that returns a record of display names to values.
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function select(_value: unknown, _context: ClassPropertyContext): void;
+  export function select(_getOptions: MutatorOptionsGetter): (_value: unknown, _context: ClassPropertyContext) => void;
+  export function select(_param0: unknown | MutatorOptionsGetter, _context?: ClassPropertyContext): void | ((_value: unknown, _context: ClassPropertyContext) => void) {
+    // // option provided
+    // if (typeof _param0 === "function") {
+    //   const getOptions: MutatorGetOptions = <MutatorGetOptions>_param0;
+
+    //   return function (_value: unknown, _context: ClassPropertyContext): void {
+    //     const key: PropertyKey = _context.name;
+    //     if (typeof key === "symbol")
+    //       return;
+
+    //     const metadata: Metadata = _context.metadata;
+    //     const references: MutatorOptions = getOwnProperty(metadata, "mutatorOptions") ?? (metadata.mutatorOptions = { ...metadata.mutatorOptions });
+    //     references[key] = getOptions;
+
+    //     mutate(_value, _context);
+    //   };
+    // }
+
     const key: PropertyKey = _context.name;
     if (typeof key === "symbol")
       return;
@@ -195,9 +260,11 @@ namespace FudgeCore {
     if (!get)
       return;
 
-    const references: MutatorReferences = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = { ...metadata.mutatorReferences });
+    const references: MutatorOptions = getOwnProperty(metadata, "mutatorOptions") ?? (metadata.mutatorOptions = { ...metadata.mutatorOptions });
     references[key] = get;
   }
+
+
 
   function getSubclassOptions(this: object & { constructor: Function & { readonly subclasses: Function[] } }): Record<string, Function> {
     const subclasses: Function[] = this.constructor.subclasses;

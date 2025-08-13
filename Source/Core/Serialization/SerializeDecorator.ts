@@ -105,8 +105,10 @@ namespace FudgeCore {
         serializationStrategy = "serializable";
       }
 
-      if (serializationStrategy == "node" || serializationStrategy == "resource" || serializationStrategy == "function")
-        reference(_value, _context); // invoke reference decorator
+      if (serializationStrategy == "node" || serializationStrategy == "resource" || serializationStrategy == "function") {
+        reference(_value, <ClassPropertyContext<unknown, object>>_context); // invoke reference decorator
+        select(_value, _context);
+      }
 
       if (_array)
         serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + "Array");

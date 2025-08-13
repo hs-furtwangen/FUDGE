@@ -37,7 +37,7 @@ namespace FudgeUserInterface {
     public static createInterfaceFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator?: ƒ.Mutator): HTMLDivElement {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
       let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
-      let mutatorReferences: ƒ.MutatorReferences = ƒ.getMutatorReferences(_mutable);
+      let mutatorOptions: ƒ.MutatorOptions = ƒ.getMutatorOptions(_mutable);
       let div: HTMLDivElement = document.createElement("div");
 
       for (let key in mutatorTypes) {
@@ -45,8 +45,8 @@ namespace FudgeUserInterface {
         let value: Object = mutator[key];
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
-        if (!element && mutatorReferences[key]) // the new way
-          element = new CustomElementComboSelect({ key: key, label: key, type: type.toString() }, _mutable, mutatorReferences[key]);
+        if (!element && mutatorOptions[key]) // the new way
+          element = new CustomElementComboSelect({ key: key, label: key, type: type.toString() }, _mutable, mutatorOptions[key]);
 
         if (!element) {
           let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
