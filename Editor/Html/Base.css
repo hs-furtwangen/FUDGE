@@ -341,21 +341,21 @@ fudge-select {
 }
 
 fudge-textinput,
-fudge-reference {
+fudge-comboselect {
   display: flex;
 }
 
-fudge-reference {
+fudge-comboselect {
   align-items: center;
 }
 
-fudge-reference>label {
+fudge-comboselect>label {
   padding-right: 0;
   display: flex;
   align-items: center;
 }
 
-fudge-reference>button::before {
+fudge-comboselect>button::before {
   content: "X";
 }
 
