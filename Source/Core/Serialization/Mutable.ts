@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  
+
   /**
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
    * 
@@ -117,13 +117,6 @@ namespace FudgeCore {
           case "object":
             type = metaType;
             break;
-          // case "string": // runtime type, retrieve it from an object property/method
-          //   const member: General = Reflect.get(this, metaType);
-          //   if (typeof member == "function")
-          //     type = member.call(this);
-          //   else
-          //     type = member;
-          //   break;
           case "undefined":
             let value: number | boolean | string | object | Function = _mutator[key];
             if (value != undefined)

@@ -104,12 +104,7 @@ namespace FudgeCore {
       } else if ((<Serializable>_type.prototype).serialize && (<Serializable>_type.prototype).deserialize) {
         serializationStrategy = "serializable";
       }
-
-      if (serializationStrategy == "node" || serializationStrategy == "resource" || serializationStrategy == "function") {
-        reference(_value, <ClassPropertyContext<unknown, object>>_context); // invoke reference decorator
-        select(_value, _context);
-      }
-
+      
       if (_array)
         serializationStrategy = <Metadata["serializables"][string]>(serializationStrategy + "Array");
 
