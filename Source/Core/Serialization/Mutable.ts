@@ -27,14 +27,13 @@ namespace FudgeCore {
   export interface MutatorForAnimation extends Mutator { readonly forAnimation: null }
   export interface MutatorForUserInterface extends Mutator { readonly forUserInterface: null }
 
-  export abstract class Mutator {
-    
+  export namespace Mutator {
     /**
      * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
      * @param _mutator The mutator to clone. Must be a plain object or array.
      * @returns A clone of `_mutator` or null if it is not a plain object or array.
      */
-    public static clone(_mutator: Mutator): Mutator | null {
+    export function clone(_mutator: Mutator): Mutator | null {
       const out: Mutator | null = Mutator.create(_mutator);
       if (out)
         for (const key in _mutator)
@@ -46,7 +45,7 @@ namespace FudgeCore {
     /**
      * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
      */
-    public static fromPath(_mutator: Mutator, _path: string[], _index: number = 0): Mutator {
+    export function fromPath(_mutator: Mutator, _path: string[], _index: number = 0): Mutator {
       const key: string = _path[_index];
       if (!(key in _mutator)) // if the path deviates from mutator, return the mutator
         return _mutator;
@@ -66,7 +65,7 @@ namespace FudgeCore {
     /**
      * Collect applicable attributes of the given instance and copies of their values in a mutator.
      */
-    public static from(_object: object): Mutator {
+    export function from(_object: object): Mutator {
       let mutator: Mutator = {};
       let attributes: (string | number | symbol)[] = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
       for (let attribute of attributes) {
@@ -87,8 +86,8 @@ namespace FudgeCore {
      * @param _mutator The mutator to update.
      * @returns `_mutator`.
      */
-    public static update(_mutable: Mutable | MutableArray<unknown>, _mutator: Mutator): Mutator {
-      const references: ReadonlySet<string> = getMutatorReferences(_mutable);
+    export function update(_mutable: Mutable | MutableArray<unknown>, _mutator: Mutator): Mutator {
+      const references: ReadonlySet<string> = Mutator.references(_mutable);
       for (const key in _mutator) {
         const value: Object = Reflect.get(_mutable, key);
         if ((value instanceof Mutable || value instanceof MutableArray) && !references.has(key))
@@ -104,7 +103,7 @@ namespace FudgeCore {
      * Creates and returns an empty mutator for the given value.
      * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
      */
-    private static create(_mutator: Mutator): Mutator | null {
+    export function create(_mutator: Mutator): Mutator | null {
       const prototype: object = _mutator != null ? Object.getPrototypeOf(_mutator) : null;
       if (prototype === Object.prototype)
         return {};
@@ -167,7 +166,7 @@ namespace FudgeCore {
     public getMutator(_extendable: boolean = false): Mutator {
       const mutator: Mutator = {};
       // opt-in for decorated properties. Maybe this should be the default behavior instead of the old opt-out solution?
-      for (const key of getMutatorKeys(this))
+      for (const key of Mutator.keys(this))
         mutator[key] = this[key];
 
       // collect primitive and mutable attributes
@@ -187,7 +186,7 @@ namespace FudgeCore {
       // delete unwanted attributes
       this.reduceMutator(mutator);
 
-      const references: ReadonlySet<string> = getMutatorReferences(this);
+      const references: ReadonlySet<string> = Mutator.references(this);
       // replace references to mutable objects with references to mutators
       for (let attribute in mutator) {
         let value: Object = mutator[attribute];
@@ -222,7 +221,7 @@ namespace FudgeCore {
      */
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
       const out: MutatorAttributeTypes = {};
-      const metaTypes: MutatorTypes = getMutatorTypes(this);
+      const metaTypes: MutatorTypes = Mutator.types(this);
       for (const key in _mutator) {
         const metaType: Function | Record<string, unknown> = metaTypes[key];
         let type: string | object;
@@ -329,7 +328,7 @@ namespace FudgeCore {
             mutator[attribute] = _mutator[attribute];
       }
 
-      const references: ReadonlySet<string> = getMutatorReferences(this);
+      const references: ReadonlySet<string> = Mutator.references(this);
       for (let attribute in mutator) {
         if (!Reflect.has(this, attribute))
           continue;

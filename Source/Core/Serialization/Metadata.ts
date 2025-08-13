@@ -55,37 +55,39 @@ namespace FudgeCore {
     serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
 
+  export namespace Mutator {
+
+    const emptyKeys: ReadonlySet<string> = Object.freeze(new Set<string>());
+    /**
+     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
+     */
+    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
+      return <ReadonlySet<K>>(getMetadata(_from).mutatorKeys ?? emptyKeys);
+    }
+
+    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
+      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyKeys);
+    }
+
+    const emptyTypes: MutatorTypes = Object.freeze({});
+    /**
+     * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+     */
+    export function types(_from: Object): Readonly<MutatorTypes> {
+      return getMetadata(_from).mutatorTypes ?? emptyTypes;
+    }
+
+    const emptyReferences: Readonly<MutatorOptions> = Object.freeze({});
+    /**
+     * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+     */
+    export function options(_from: Object): Readonly<MutatorOptions> {
+      return getMetadata(_from).mutatorOptions ?? emptyReferences;
+    }
+  }
+
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
-
-  const emptyKeys: ReadonlySet<string> = Object.freeze(new Set<string>());
-  /**
-   * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
-   */
-  export function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-    return <ReadonlySet<K>>(getMetadata(_from).mutatorKeys ?? emptyKeys);
-  }
-
-  const emptyTypes: MutatorTypes = Object.freeze({});
-  /**
-   * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
-   */
-  export function getMutatorTypes(_from: Object): Readonly<MutatorTypes> {
-    return getMetadata(_from).mutatorTypes ?? emptyTypes;
-  }
-
-  const emptyReferences: Readonly<MutatorOptions> = Object.freeze({});
-  /**
-   * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
-   */
-  export function getMutatorOptions(_from: Object): Readonly<MutatorOptions> {
-    return getMetadata(_from).mutatorOptions ?? emptyReferences;
-  }
-
-
-  export function getMutatorReferences<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-    return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyKeys);
-  }
 
   const emptyMetadata: Metadata = Object.freeze({});
   /**
@@ -276,7 +278,7 @@ namespace FudgeCore {
   }
 
   function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
-    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>getMutatorTypes(this)[_key]);
+    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>Mutator.types(this)[_key]);
     const options: Record<string, SerializableResource> = {};
     for (const resource of resources)
       options[resource.name] = resource;
