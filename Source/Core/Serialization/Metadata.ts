@@ -91,24 +91,6 @@ namespace FudgeCore {
   /**
    * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
    *
-   * **Usage**: Apply this decorator to a property.
-   *
-   * **Example**:
-   * ```typescript
-   * export class SomeScript extends ƒ.ComponentScript {
-   *   #size: number = 1;
-   * 
-   *   @ƒ.mutate // apply the decorator to the getter
-   *   public get size(): number {
-   *     return this.#size;
-   *   }
-   * 
-   *   // define a setter to allow writing, or omit it to leave the property read-only
-   *   public set size(_size: number) {
-   *     this.#size = _size;
-   *   }
-   * }
-   * ```
    * @author Jonas Plotzky, HFU, 2025
    */
   export function mutate(_value: unknown, _context: ClassPropertyContext<Mutable>): void {
@@ -131,7 +113,7 @@ namespace FudgeCore {
    *
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function reference<T extends object>(_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>): void {
+  export function reference<T extends object>(_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>, _function?: boolean): void {
     const key: PropertyKey = _context.name;
     if (typeof key === "symbol")
       return;
@@ -147,40 +129,61 @@ namespace FudgeCore {
     const prototype: unknown = type.prototype;
 
     let get: (this: General, _key: General) => Record<string, unknown>;
-    if ((<SerializableResource>prototype).isSerializableResource)
+    if (_function && (<General>type).subclasses)
+      get = getSubclassOptions;
+    else if ((<SerializableResource>prototype).isSerializableResource)
       get = getResourceOptions;
     else if (type === Node)
       get = getNodeOptions;
-    else if ((<General>type).subclasses)
-      get = getSubclassOptions;
 
     if (!get)
       return;
 
     select(get)(_value, _context);
   }
+  
   //#endregion
 
   //#region Type
   /**
-   * Decorator to specify a type for a property within a class's {@link Metadata | metadata}.
-   * This allows the intended type of a property to be known at runtime, making it a valid drop target in the editor.
+   * Decorator to specify a type for a property of a {@link Mutable}.
+   * 
+   * This allows the intended type of the property to be known by the editor (at runtime), making it:
+   * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+   * - Display the appropriate input element, even if the property has not been set (`undefined`).
    *
-   * **Note:** Properties with a specified meta-type will always be included in the {@link Mutator base-mutator} 
-   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
-   * will be displayed via their {@link toString} method in the editor.
+   * **Side effects:**
+   * - Invokes the {@link mutate} decorator on the property.
+   * - Invokes the {@link reference} decorator if the `_type` is a {@link SerializableResource} or {@link Node}.
    * @author Jonas Plotzky, HFU, 2024-2025
    */
-  // object type
-  export function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>) => void;
-
   // primitive type
-  export function type<T extends Boolean | Number | String>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
-
+  export function type<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  // object type
+  export function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
   // enum type
-  export function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
+  export function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
 
-  export function type(_type: Function | Record<string, unknown>, _array?: boolean, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function type(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
+    return typeFactory(_type, false);
+  }
+
+  /**
+   * Decorator to specify a function type (typeof `_type`) for a property of a {@link Mutable}.
+   * See {@link type} decorator for more information.
+   * 
+   * **Side effects:**
+   * Invokes the {@link reference} decorator.
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function typef<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
+    return typeFactory(_type, true);
+  }
+
+  /**
+   * @internal
+   */
+  export function typeFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
@@ -193,8 +196,8 @@ namespace FudgeCore {
 
       mutate(_value, _context);
 
-      if ((typeof _type == "function") && (_type == Node || (<SerializableResource>_type.prototype).isSerializableResource)) 
-        reference(_value, <ClassPropertyContext<Mutable, object>>_context);
+      if (_function || (typeof _type == "function") && (_type == Node || (<SerializableResource>_type.prototype).isSerializableResource))
+        reference(_value, <ClassPropertyContext<Mutable, object>>_context, _function);
     };
   }
   //#endregion
@@ -208,9 +211,7 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2025
    */
   export function select(_getOptions: MutatorOptionsGetter): (_value: unknown, _context: ClassPropertyContext) => void;
-  // export function select(_value: unknown, _context: ClassPropertyContext): void;
   export function select(_param0: unknown | MutatorOptionsGetter, _context?: ClassPropertyContext): void | ((_value: unknown, _context: ClassPropertyContext) => void) {
-    // Factory form: @select(getOptions)
     if (typeof _param0 === "function") {
       const getOptions: MutatorOptionsGetter = <MutatorOptionsGetter>_param0;
 
@@ -224,35 +225,10 @@ namespace FudgeCore {
         options[key as string] = getOptions;
       };
     }
-
-    // // Plain decorator: @select
-    // const key: PropertyKey = _context.name;
-    // if (typeof key === "symbol")
-    //   return;
-
-    // const metadata: Metadata = _context.metadata;
-    // const type: Function | Record<string, unknown> = metadata.mutatorTypes?.[key];
-    // if (typeof type !== "function")
-    //   return;
-
-    // const prototype: unknown = type.prototype;
-
-    // let get: (this: General, _key: General) => Record<string, unknown>;
-    // if ((<SerializableResource>prototype).isSerializableResource)
-    //   get = getResourceOptions;
-    // else if (type === Node)
-    //   get = getNodeOptions;
-    // else if ((<General>type).subclasses)
-    //   get = getSubclassOptions;
-
-    // if (!get)
-    //   return;
-
-    // select(get)(_param0, _context);
   }
 
-  function getSubclassOptions(this: object & { constructor: Function & { readonly subclasses: Function[] } }): Record<string, Function> {
-    const subclasses: Function[] = this.constructor.subclasses;
+  function getSubclassOptions(this: object, _key: string): Record<string, Function> {
+    const subclasses: Function[] = (<{ readonly subclasses: Function[] }>Mutator.types(this)[_key]).subclasses;
     const options: Record<string, Function> = {};
     for (const subclass of subclasses)
       options[subclass.name] = subclass;

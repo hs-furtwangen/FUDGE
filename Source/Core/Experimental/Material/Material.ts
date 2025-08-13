@@ -46,7 +46,7 @@ namespace FudgeCore {
         return true;
       }
 
-      @serialize(ShaderFeature, Array, Function)
+      @serializef(ShaderFeature)
       public get features(): typeof ShaderFeature[] {
         return this.#features;
       }
@@ -61,7 +61,7 @@ namespace FudgeCore {
         return this.#shader;
       }
 
-      @serialize(MaterialProperty, Array)
+      @serialize(MaterialProperty)
       public get properties(): MaterialProperty[] {
         return this.#properties;
       }

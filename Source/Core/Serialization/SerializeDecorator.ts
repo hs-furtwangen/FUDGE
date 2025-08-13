@@ -1,61 +1,58 @@
 namespace FudgeCore {
   /**
-     * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
-     * 
-     * **Editor Configuration:**
-     * Specify the type of a property within a class's {@link Metadata | metadata}.
-     * This allows the intended type of the property to be known by the editor (at runtime), making it:
-     * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-     * - Display the appropriate input element, even if the property has not been set (`undefined`).
-     * 
-     * **Serialization:**
-     * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
-     * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-     * - Primitives and enums will be serialized as is.
-     * - {@link Serializable}s will be serialized nested. 
-     * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-     * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
-     * 
-     * **Example:**
-     * ```typescript
-     * import ƒ = FudgeCore;
-     *
-     * @ƒ.serialize
-     * export class MyScript extends ƒ.ComponentScript {
-     *   #size: number = 1;
-     * 
-     *   @ƒ.serialize(String) // display a string in the editor
-     *   public info: string;
-     *
-     *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
-     *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
-     *
-     *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
-     *   public resource: ƒ.Material;
-     *
-     *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
-     *   public reference: ƒ.Node
-     * 
-     *   @ƒ.serialize(Number) // display a number in the editor
-     *   public get size(): number {
-     *     return this.#size;
-     *   }
-     * 
-     *   // define a setter to allow writing to size, or omit it to leave the property read-only
-     *   public set size(_size: number) {
-     *     this.#size = _size;
-     *   }
-     * }
-     * ```
-     * 
-     * **Side effects:**
-     * * Attributes with a specified type will always be included in the {@link Mutator base-mutator} 
-     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
-     * will be displayed via their {@link toString} method in the editor.
-     * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
-     * 
-     * @author Jonas Plotzky, HFU, 2024-2025
-     */
+   * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
+   * 
+   * **Editor Configuration:**
+   * Specify the type of a property within a class's {@link Metadata | metadata}.
+   * This allows the intended type of the property to be known by the editor (at runtime), making it:
+   * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+   * - Display the appropriate input element, even if the property has not been set (`undefined`).
+   * 
+   * **Serialization:**
+   * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
+   * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+   * - Primitives and enums will be serialized as is.
+   * - {@link Serializable}s will be serialized nested. 
+   * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+   * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
+   * 
+   * **Example:**
+   * ```typescript
+   * import ƒ = FudgeCore;
+   *
+   * @ƒ.serialize
+   * export class MyScript extends ƒ.ComponentScript {
+   *   #size: number = 1;
+   * 
+   *   @ƒ.serialize(String) // display a string in the editor
+   *   public info: string;
+   *
+   *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+   *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+   *
+   *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+   *   public resource: ƒ.Material;
+   *
+   *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+   *   public reference: ƒ.Node
+   * 
+   *   @ƒ.serialize(Number) // display a number in the editor
+   *   public get size(): number {
+   *     return this.#size;
+   *   }
+   * 
+   *   // define a setter to allow writing to size, or omit it to leave the property read-only
+   *   public set size(_size: number) {
+   *     this.#size = _size;
+   *   }
+   * }
+   * ```
+   * 
+   * **Side effects:**
+   * Invokes the {@link type} decorator on the property.
+   * 
+   * @author Jonas Plotzky, HFU, 2024-2025
+   */
   // primitive type
   export function serialize<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
   // object type
@@ -63,11 +60,32 @@ namespace FudgeCore {
   // enum type
   export function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
 
-  export function serialize(_type: Function | Record<string, unknown>, _function?: typeof Function): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
+  export function serialize(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
     return serializeFactory(_type, false);
   }
 
-  // function type
+  /**
+   * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for automatic serialization and editor configuration.
+   * See {@link serialize} decorator for more information.
+   *
+   * **Example**:
+   * ```typescript
+   * import ƒ = FudgeCore;
+   *
+   * export class SomeClass { }
+   *
+   * export function someFunction(): void { }
+   *
+   * export class SomeScript extends ƒ.ComponentScript {
+   *   @ƒ.serializef(SomeClass)
+   *   someClass: typeof SomeClass;
+   *
+   *   @ƒ.serializef(someFunction)
+   *   someFunction: typeof someFunction;
+   * }
+   * ```
+   * @author Jonas Plotzky, HFU, 2025
+   */
   export function serializef<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
     return serializeFactory(_type, true);
   }
@@ -84,7 +102,7 @@ namespace FudgeCore {
       const metadata: Metadata = _context.metadata;
 
       // invoke type decorator
-      type<General, General>(_type)(_value, _context);
+      typeFactory(_type, _function)(_value, _context);
 
       // determine serialization type
       let strategy: Metadata["serializables"][string];
