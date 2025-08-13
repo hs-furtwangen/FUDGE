@@ -204,20 +204,6 @@ namespace FudgeCore {
    * Decorator to provide a list of select options for a property of a {@link Mutable} to be displayed in the editor.
    * The provided function will be executed to retrieve the options.
    *
-   * **Usage**: Apply this decorator to a property and pass a function that returns a `Record<string, unknown>`.
-   * The record's keys are displayed as labels in the UI, and its values are assigned to the property upon selection.
-   *
-   * **Example**:
-   * ```typescript
-   * class MyComponent extends ƒ.Component {
-   *   @ƒ.reference(() => ({ "Option A": "Value A", "Option B": "Value B" }))
-   *   public myChoice: string = "Value A";
-   *
-   *   @ƒ.type(ƒ.Mesh) // You can still specify a type for drag&drop
-   *   @ƒ.reference(function() { return ƒ.Project.getResourcesByType(ƒ.Mesh); })
-   *   public myMesh: ƒ.Mesh;
-   * }
-   * ```
    * @param _getOptions A function that returns a record of display names to values.
    * @author Jonas Plotzky, HFU, 2025
    */
