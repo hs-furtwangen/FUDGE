@@ -19,7 +19,7 @@ namespace FudgeCore {
    * @param this The instance containing the property.
    * @param _key The key of the property for which options are requested.
    */
-  export type MutatorOptionsGetter = (this: unknown, _key: string) => Record<string, unknown>;
+  export type MutatorOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
 
   // export type MutatorInfo = { [key: string]: { type?: Function | Record<string, unknown>; isArray?: boolean; isFunction?: boolean; getOptions?: (this: unknown, _key: string) => Record<string, unknown> } };
 
@@ -104,46 +104,6 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region Reference
-  /**
-   * Decorator to mark properties of a {@link Mutable} as references. Reference properties are included in the {@link Mutator} (via {@link Mutable.getMutator}) as direct references to other objects regardless of their own type. 
-   * {@link Mutable.mutate} simply sets references similarly to how primitive values are set.
-   *
-   * If used in combination with the {@link FudgeCore.type type} decorator, and the provided type is either {@link SerializableResource}, {@link Node} or class with subclasses, this will invoke the {@link select} decorator with a default set of options.
-   *
-   * @author Jonas Plotzky, HFU, 2025
-   */
-  export function reference<T extends object>(_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>, _function?: boolean): void {
-    const key: PropertyKey = _context.name;
-    if (typeof key === "symbol")
-      return;
-
-    const metadata: Metadata = _context.metadata;
-    const keys: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
-    keys.add(key);
-
-    const type: Function | Record<string, unknown> = metadata.mutatorTypes?.[key];
-    if (typeof type !== "function")
-      return;
-
-    const prototype: unknown = type.prototype;
-
-    let get: (this: General, _key: General) => Record<string, unknown>;
-    if (_function && (<General>type).subclasses)
-      get = getSubclassOptions;
-    else if ((<SerializableResource>prototype).isSerializableResource)
-      get = getResourceOptions;
-    else if (type === Node)
-      get = getNodeOptions;
-
-    if (!get)
-      return;
-
-    select(get)(_value, _context);
-  }
-  
-  //#endregion
-
   //#region Type
   /**
    * Decorator to specify a type for a property of a {@link Mutable}.
@@ -163,6 +123,8 @@ namespace FudgeCore {
   export function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
   // enum type
   export function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  // function type
+  export function type<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
 
   export function type(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
     return typeFactory(_type, false);
@@ -176,7 +138,7 @@ namespace FudgeCore {
    * Invokes the {@link reference} decorator.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function typef<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
+  export function typeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
     return typeFactory(_type, true);
   }
 
@@ -202,6 +164,45 @@ namespace FudgeCore {
   }
   //#endregion
 
+  //#region Reference
+  /**
+   * Decorator to mark properties of a {@link Mutable} as references. Reference properties are included in the {@link Mutator} (via {@link Mutable.getMutator}) as direct references to other objects regardless of their own type. 
+   * {@link Mutable.mutate} simply sets references similarly to how primitive values are set.
+   *
+   * If used in combination with the {@link FudgeCore.type type} decorator, and the provided type is either {@link SerializableResource}, {@link Node} or class with subclasses, this will invoke the {@link select} decorator with a default set of options.
+   *
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function reference<T extends object>(_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>, _function?: boolean): void {
+    const key: PropertyKey = _context.name;
+    if (typeof key === "symbol")
+      return;
+
+    const metadata: Metadata = _context.metadata;
+    const keys: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
+    keys.add(key);
+
+    const type: Function | Record<string, unknown> = metadata.mutatorTypes?.[key];
+    if (typeof type !== "function")
+      return;
+
+    const prototype: unknown = type.prototype;
+
+    let get: MutatorOptionsGetter;
+    if (_function && (<General>type).subclasses)
+      get = getSubclassOptions;
+    else if ((<SerializableResource>prototype).isSerializableResource)
+      get = getResourceOptions;
+    else if (type === Node)
+      get = getNodeOptions;
+
+    if (!get)
+      return;
+
+    select(get)(_value, _context);
+  }
+  //#endregionF
+
   //#region Select
   /**
    * Decorator to provide a list of select options for a property of a {@link Mutable} to be displayed in the editor.
@@ -210,21 +211,19 @@ namespace FudgeCore {
    * @param _getOptions A function that returns a record of display names to values.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function select(_getOptions: MutatorOptionsGetter): (_value: unknown, _context: ClassPropertyContext) => void;
-  export function select(_param0: unknown | MutatorOptionsGetter, _context?: ClassPropertyContext): void | ((_value: unknown, _context: ClassPropertyContext) => void) {
-    if (typeof _param0 === "function") {
-      const getOptions: MutatorOptionsGetter = <MutatorOptionsGetter>_param0;
+  export function select<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
+    const getOptions: MutatorOptionsGetter = <MutatorOptionsGetter>_getOptions;
 
-      return function (_value: unknown, _context: ClassPropertyContext): void {
-        const key: PropertyKey = _context.name;
-        if (typeof key === "symbol")
-          return;
+    return function (_value: unknown, _context: ClassPropertyContext): void {
+      const key: PropertyKey = _context.name;
+      if (typeof key === "symbol")
+        return;
 
-        const metadata: Metadata = _context.metadata;
-        const options: MutatorOptions = getOwnProperty(metadata, "mutatorOptions") ?? (metadata.mutatorOptions = { ...metadata.mutatorOptions });
-        options[key as string] = getOptions;
-      };
-    }
+      const metadata: Metadata = _context.metadata;
+      const options: MutatorOptions = getOwnProperty(metadata, "mutatorOptions") ?? (metadata.mutatorOptions = { ...metadata.mutatorOptions });
+      options[key as string] = getOptions;
+    };
+
   }
 
   function getSubclassOptions(this: object, _key: string): Record<string, Function> {

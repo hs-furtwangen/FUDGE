@@ -77,16 +77,16 @@ namespace FudgeCore {
    * export function someFunction(): void { }
    *
    * export class SomeScript extends ƒ.ComponentScript {
-   *   @ƒ.serializef(SomeClass)
+   *   @ƒ.serializeF(SomeClass)
    *   someClass: typeof SomeClass;
    *
-   *   @ƒ.serializef(someFunction)
+   *   @ƒ.serializeF(someFunction)
    *   someFunction: typeof someFunction;
    * }
    * ```
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function serializef<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
+  export function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
     return serializeFactory(_type, true);
   }
 
