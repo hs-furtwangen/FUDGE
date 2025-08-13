@@ -55,40 +55,6 @@ namespace FudgeCore {
     serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
 
-  export namespace Mutator {
-
-    const emptyKeys: ReadonlySet<string> = Object.freeze(new Set<string>());
-    /**
-     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
-     */
-    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorKeys ?? emptyKeys);
-    }
-
-    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyKeys);
-    }
-
-    const emptyTypes: MutatorTypes = Object.freeze({});
-    /**
-     * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
-     */
-    export function types(_from: Object): Readonly<MutatorTypes> {
-      return getMetadata(_from).mutatorTypes ?? emptyTypes;
-    }
-
-    const emptyReferences: Readonly<MutatorOptions> = Object.freeze({});
-    /**
-     * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
-     */
-    export function options(_from: Object): Readonly<MutatorOptions> {
-      return getMetadata(_from).mutatorOptions ?? emptyReferences;
-    }
-  }
-
-  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-  export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
-
   const emptyMetadata: Metadata = Object.freeze({});
   /**
    * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
@@ -112,6 +78,9 @@ namespace FudgeCore {
 
     return undefined;
   }
+
+  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+  export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
   //#region Mutate
   /**
