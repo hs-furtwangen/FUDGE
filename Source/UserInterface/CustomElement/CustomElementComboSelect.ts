@@ -1,8 +1,8 @@
 namespace FudgeUserInterface {
 
-  export class CustomElementReference extends CustomElement {
+  export class CustomElementComboSelect extends CustomElement {
     // @ts-ignore
-    private static customElement: void = CustomElement.register("fudge-reference", CustomElementReference);
+    private static customElement: void = CustomElement.register("fudge-comboselect", CustomElementComboSelect);
 
     // this breaches the separation of concerns of view and controller, but it is very handy if the custom element reference can get its options by itself.
     #mutable: object;
