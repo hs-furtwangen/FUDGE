@@ -109,12 +109,6 @@ namespace FudgeCore {
         this.activate(_mutator.active);
     }
 
-    protected mutateSync(_mutator: Mutator, _dispatchMutate: boolean = true): void {
-      super.mutateSync(_mutator, _dispatchMutate);
-      if (_mutator.active != undefined)
-        this.activate(_mutator.active);
-    }
-
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.singleton;
       delete _mutator.mtxWorld;

@@ -92,8 +92,7 @@ namespace FudgeCore {
     }
 
     public override mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate: boolean = true): void {
-      // super.mutateSync(_mutator, _dispatchMutate);
-      // inline mutation for animation performance, slightly faster than calling super.mutate
+      // inline sync mutate for animation performance
       if (_mutator.active != undefined) 
         this.activate(_mutator.active);
       if (_mutator.mtxLocal != undefined)

@@ -119,20 +119,6 @@ namespace FudgeCore {
       return out;
     }
 
-    /**
-     * Updates the values of the given mutator according to the current state of the instance
-     * @deprecated Use {@link updateMutator} instead.
-     */
-    public updateMutator(_mutator: Mutator): void {
-      for (let attribute in _mutator) {
-        let value: Object = Reflect.get(this, attribute);
-        if (value instanceof Mutable)
-          value.updateMutator(_mutator[attribute]);
-        else
-          _mutator[attribute] = value;
-      }
-    }
-
     //TODO: remove the _selection parameter, seems to be unused and adds a lot of boilerplate...
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
@@ -158,25 +144,6 @@ namespace FudgeCore {
           (<General>this)[key].setArray(valueArray);
       }
     }
-
-    /**
-     * Synchronous implementation of {@link mutate}.
-     * Override {@link mutate} with a sync implementation and call this method from it to mutate synchronously.
-     */
-    protected mutateSync(_mutator: Mutator, _dispatchMutate: boolean = true): void {
-      let mutator: Mutator = _mutator;
-
-      for (let attribute in mutator) {
-        let mutant: Object = Reflect.get(this, attribute);
-        if (mutant instanceof MutableArray || mutant instanceof Mutable)
-          mutant.mutate(mutator[attribute], null, false);
-        else
-          Reflect.set(this, attribute, mutator[attribute]);
-      }
-
-      if (_dispatchMutate)
-        this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
-    };
 
     /**
      * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
