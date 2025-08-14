@@ -20,22 +20,6 @@ namespace FudgeCore {
     }
 
     /**
-     * @deprecated use {@link cloneMutatorFromPath}
-     */
-    public static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator {
-      let key: string = _path[0];
-      if (!(key in _mutator)) // if the path deviates from mutator structure, return the mutator
-        return _mutator;
-
-      let mutator: Mutator = {};
-      mutator[key] = _mutator[key];
-      if (_path.length > 1)
-        mutator[key] = Mutable.getMutatorFromPath(mutator[key], _path.slice(1, _path.length));
-
-      return mutator;
-    }
-
-    /**
      * Retrieves the type of this mutable subclass as the name of the runtime class
      * @returns The type of the mutable
      */

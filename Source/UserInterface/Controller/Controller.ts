@@ -141,11 +141,11 @@ namespace FudgeUserInterface {
       // get current mutator and save for undo
       let mutator: ƒ.Mutator = this.mutable.getMutator();
       // ƒ.Debug.info(mutator);
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: ƒ.Mutable.getMutatorFromPath(mutator, path) } }));
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: ƒ.Mutator.fromPath(mutator, path) } }));
 
       // get current mutator from interface for mutation   
       mutator = this.getMutator();
-      await this.mutable.mutate(ƒ.Mutable.getMutatorFromPath(mutator, path));
+      await this.mutable.mutate(ƒ.Mutator.fromPath(mutator, path));
       _event.stopPropagation();
 
       this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));
