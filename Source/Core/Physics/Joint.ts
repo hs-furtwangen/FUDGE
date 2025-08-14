@@ -1,4 +1,13 @@
 namespace FudgeCore {
+  // function getConnectOptions(this: Component): Record<string, Node> {
+  //   const options: Record<string, Node> = {};
+  //   for (const descendant of this.node)
+  //     if (descendant.getComponent(ComponentRigidbody))
+  //       options[descendant.name] = descendant;
+
+  //   return options;
+  // }
+
   /**
      * Acts as the physical representation of a connection between two {@link Node}'s.
      * The type of conncetion is defined by the subclasses like prismatic joint, cylinder joint etc.
@@ -23,13 +32,14 @@ namespace FudgeCore {
     #bodyTied: ComponentRigidbody;
 
     #connected: boolean = false;
-    #anchor: OIMO.Vec3;
+    #anchor: Vector3;
     #internalCollision: boolean = false;
 
     #breakForce: number = 0;
     #breakTorque: number = 0;
 
     #nameChildToConnect: string = "";
+    #connection: Node;
 
     protected abstract joint: OIMO.Joint;
     protected abstract config: OIMO.JointConfig;
@@ -76,11 +86,12 @@ namespace FudgeCore {
     /**
      * The exact position where the two {@link Node}s are connected. When changed after initialization the joint needs to be reconnected.
      */
+    @type(Vector3)
     public get anchor(): Vector3 {
-      return new Vector3(this.#anchor.x, this.#anchor.y, this.#anchor.z);
+      return this.#anchor;
     }
     public set anchor(_value: Vector3) {
-      this.#anchor = new OIMO.Vec3(_value.x, _value.y, _value.z);
+      this.#anchor = _value;
       this.disconnect();
       this.dirtyStatus();
     }
@@ -88,6 +99,7 @@ namespace FudgeCore {
     /**
      * The amount of force needed to break the JOINT, while rotating, in Newton. 0 equals unbreakable (default) 
     */
+    @type(Number)
     public get breakTorque(): number {
       return this.#breakTorque;
     }
@@ -99,6 +111,7 @@ namespace FudgeCore {
     /**
      * The amount of force needed to break the JOINT, in Newton. 0 equals unbreakable (default) 
      */
+    @type(Number)
     public get breakForce(): number {
       return this.#breakForce;
     }
@@ -112,6 +125,7 @@ namespace FudgeCore {
       * On a welding joint the connected bodies should not be colliding with each other,
       * for best results
      */
+    @type(Boolean)
     public get internalCollision(): boolean {
       return this.#internalCollision;
     }
@@ -119,6 +133,40 @@ namespace FudgeCore {
       this.#internalCollision = _value;
       if (this.joint != null) this.joint.setAllowCollision(this.#internalCollision);
     }
+
+    @type(String)
+    protected get nameChildToConnect(): string {
+      return this.#nameChildToConnect;
+    }
+
+    protected set nameChildToConnect(_name: string) {
+      this.#nameChildToConnect = _name;
+      this.connectChild(_name);
+    }
+
+    // @select(getConnectOptions)
+    // @type(Node)
+    // // @type(Node)
+    // protected get connection(): Node {
+    //   return this.#connection;
+    // }
+
+    // protected set connection(_node: Node) {
+    //   if (_node == null) {
+    //     this.#bodyAnchor = null;
+    //     this.#idBodyAnchor = -1;
+    //     this.#bodyTied = null;
+    //     this.#idBodyTied = -1;
+    //     this.disconnect();
+    //     this.dirtyStatus();
+    //     this.#connection = _node;
+    //   }
+
+    //   if (this.connectNode(_node)) {
+    //     this.#connection = _node;
+    //     return;
+    //   }
+    // }
 
     /**
      * Connect a child node with the given name to the joint.
@@ -128,9 +176,9 @@ namespace FudgeCore {
       if (!this.node)
         return;
 
-      let children: Node[] = this.node.getChildrenByName(_name);
-      if (children.length == 1)
-        this.connectNode(children.pop());
+      let child: Node = this.node.getChildByName(_name);
+      if (child)
+        this.connectNode(child);
       else
         Debug.warn(`${this.constructor.name} at ${this.node.name} fails to connect child with non existent or ambigous name ${_name}`);
     }
@@ -138,9 +186,9 @@ namespace FudgeCore {
     /**
      * Connect the given node to the joint. Tieing its rigidbody to the nodes rigidbody this component is attached to.
      */
-    public connectNode(_node: Node): void {
+    public connectNode(_node: Node): boolean {
       if (!_node || !this.node)
-        return;
+        return false;
 
       Debug.fudge(`${this.constructor.name} connected ${this.node.name} and ${_node.name}`);
 
@@ -148,12 +196,13 @@ namespace FudgeCore {
       let thisBody: ComponentRigidbody = this.node.getComponent(ComponentRigidbody);
 
       if (!connectBody || !thisBody) {
-        Debug.warn(`${this.constructor.name} at ${this.node.name} fails due to missing rigidbodies on ${this.node.name} or ${_node.name}`);
-        return;
+        Debug.warn(`${this.constructor.name}: Connecting node "${this.node.name}" to node "${_node.name}" failed. ${!connectBody ? `"${_node.name}" has no rigidbody attached.` : ""} ${!thisBody ? `"${this.node.name}" has no rigidbody attached.` : ""}`);
+        return false;
       }
 
       this.bodyAnchor = thisBody;
       this.bodyTied = connectBody;
+      return true;
     }
 
     /** Check if connection is dirty, so when either rb is changed disconnect and reconnect. Internally used no user interaction needed. */
@@ -199,36 +248,22 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      let serialization: Serialization = this.#getMutator();
-      serialization.anchor = this.anchor.serialize();
+      let serialization: Serialization = this.getMutator();
       serialization[super.constructor.name] = super.serialize();
+      serialization.anchor = this.anchor.serialize();
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.anchor = await new Vector3().deserialize(_serialization.anchor);
-      this.#mutate(_serialization);
+      this.anchor = new Vector3().deserialize(_serialization.anchor);
+      this.mutate(_serialization);
       await super.deserialize(_serialization[super.constructor.name]);
       this.connectChild(_serialization.nameChildToConnect);
       return this;
     }
 
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      Object.assign(mutator, this.#getMutator());
-      mutator.anchor = this.anchor.getMutator();
-      return mutator;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.anchor) !== "undefined")
-        this.anchor = new Vector3(...<number[]>(Object.values(_mutator.anchor)));
-      delete _mutator.anchor;
-      if (typeof (_mutator.nameChildToConnect) !== "undefined")
-        this.connectChild(_mutator.nameChildToConnect);
-      this.#mutate(_mutator);
-      this.deleteFromMutator(_mutator, this.#getMutator());
-      await super.mutate(_mutator, _selection, _dispatchMutate);
+    public getMutator(): Mutator { // TODO: remove!
+      return super.getMutator(true);
     }
 
     protected reduceMutator(_mutator: Mutator): void {
@@ -265,7 +300,7 @@ namespace FudgeCore {
       this.joint.setAllowCollision(this.#internalCollision);
     }
 
-    protected deleteFromMutator(_mutator: Mutator, _delete: Mutator): void {
+    protected deleteFromMutator(_mutator: Mutator, _delete: Mutator): void { // TODO: remove
       for (let key in _delete)
         delete _mutator[key];
     }
@@ -281,20 +316,6 @@ namespace FudgeCore {
           this.removeJoint();
           break;
       }
-    };
-
-    #getMutator = (): Mutator => {
-      let mutator: Mutator = {
-        nameChildToConnect: this.#nameChildToConnect,
-        internalCollision: this.#internalCollision,
-        breakForce: this.#breakForce,
-        breakTorque: this.#breakTorque
-      };
-      return mutator;
-    };
-
-    #mutate = (_mutator: Mutator): void => {
-      this.mutateBase(_mutator, ["internalCollision", "breakForce", "breakTorque"]);
     };
   }
 }
