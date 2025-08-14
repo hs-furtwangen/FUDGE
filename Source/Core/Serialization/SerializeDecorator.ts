@@ -6,7 +6,9 @@ namespace FudgeCore {
    * Specify the type of a property within a class's {@link Metadata | metadata}.
    * This allows the intended type of the property to be known by the editor (at runtime), making it:
    * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-   * - Display the appropriate input element, even if the property has not been set (`undefined`).
+   * - Display the appropriate input element, even if the property has not been set (is `undefined`).
+   * 
+   * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
    * 
    * **Serialization:**
    * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
@@ -49,7 +51,7 @@ namespace FudgeCore {
    * ```
    * 
    * **Side effects:**
-   * Invokes the {@link type} decorator on the property.
+   * - Invokes the {@link type} decorator on the property.
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
@@ -84,6 +86,10 @@ namespace FudgeCore {
    *   someFunction: typeof someFunction;
    * }
    * ```
+   * 
+   * **Side effects:**
+   * - Invokes the {@link typeF} decorator on the property.
+   * 
    * @author Jonas Plotzky, HFU, 2025
    */
   export function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
