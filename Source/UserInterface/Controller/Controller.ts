@@ -48,7 +48,7 @@ namespace FudgeUserInterface {
      * Recursive method taking the a [[ƒ.Mutable]] as a template to create a [[ƒ.Mutator]] or update the given [[ƒ.Mutator]] 
      * with the values in the given UI-domElement
      */
-    public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray<unknown>, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
+    public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
 
       for (let key in mutator) {

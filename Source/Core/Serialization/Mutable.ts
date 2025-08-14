@@ -12,7 +12,7 @@ namespace FudgeCore {
    */
   export abstract class Mutable extends EventTargetUnified {
 
-    public static getMutableFromPath(_mutable: Mutable | MutableArray<unknown>, _path: string[]): Mutable | MutableArray<unknown> {
+    public static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray {
       for (let i: number = 0; i < _path.length; i++)
         _mutable = Reflect.get(_mutable, _path[i]);
 

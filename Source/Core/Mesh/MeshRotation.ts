@@ -58,7 +58,7 @@ namespace FudgeCore {
 
     protected rotate(_shape: Vector2[], _longitudes: number): void {
       this.clear();
-      this.shape = <MutableArray<Vector2>>MutableArray.from(_shape.map(_vertex => _vertex.clone));
+      this.shape = new MutableArray(Vector2, ..._shape.map(_vertex => _vertex.clone));
       this.longitudes = Math.round(_longitudes);
       let angle: number = 360 / this.longitudes;
       let mtxRotate: Matrix4x4 = Matrix4x4.ROTATION_Y(angle);

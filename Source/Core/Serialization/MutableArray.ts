@@ -3,7 +3,7 @@ namespace FudgeCore {
    * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
    * @author Jirka Dell'Oro-Friedl, HFU, 2021
    */
-  export class MutableArray<T extends Mutable> extends Array<T> {
+  export class MutableArray<T extends Mutable = Mutable> extends Array<T> {
     #type: new () => T;
 
     public constructor(_type: new () => T, ..._args: T[]) {

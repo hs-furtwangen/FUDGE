@@ -33,7 +33,7 @@ namespace FudgeCore {
      * Create this mesh from the given vertices.
      */
     public create(_shape: Vector2[] = [], _fitTexture: boolean = true): void {
-      this.shape = <MutableArray<Vector2>>MutableArray.from(_shape.map(_vertex => _vertex.clone));
+      this.shape = new MutableArray(Vector2, ..._shape.map(_vertex => _vertex.clone));
       this.clear();
       this.fitTexture = _fitTexture;
 
