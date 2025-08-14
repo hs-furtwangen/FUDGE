@@ -39,7 +39,7 @@ namespace FudgeCore {
     #breakTorque: number = 0;
 
     #nameChildToConnect: string = "";
-    #connection: Node;
+    // #connection: Node;
 
     protected abstract joint: OIMO.Joint;
     protected abstract config: OIMO.JointConfig;
@@ -250,12 +250,10 @@ namespace FudgeCore {
     public serialize(): Serialization {
       let serialization: Serialization = this.getMutator();
       serialization[super.constructor.name] = super.serialize();
-      serialization.anchor = this.anchor.serialize();
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.anchor = new Vector3().deserialize(_serialization.anchor);
       this.mutate(_serialization);
       await super.deserialize(_serialization[super.constructor.name]);
       this.connectChild(_serialization.nameChildToConnect);
@@ -264,6 +262,12 @@ namespace FudgeCore {
 
     public getMutator(): Mutator { // TODO: remove!
       return super.getMutator(true);
+    }
+
+    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
+      await super.mutate(_mutator, _selection, _dispatchMutate);
+      if (_mutator.anchor)
+        this.anchor = this.anchor;
     }
 
     protected reduceMutator(_mutator: Mutator): void {
