@@ -5,12 +5,12 @@ namespace FudgeCore {
    */
   export abstract class JointAxial extends Joint {
     protected springDamper: OIMO.SpringDamper;
-    
+
     //Internal Variables
     #maxMotor: number = 10;
     #minMotor: number = -10;
     #motorSpeed: number = 0;
-    #axis: OIMO.Vec3;
+    #axis: Vector3;
     #springFrequency: number = 0;
     #springDamping: number = 0;
 
@@ -28,11 +28,12 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
+    @type(Vector3)
     public get axis(): Vector3 {
-      return new Vector3(this.#axis.x, this.#axis.y, this.#axis.z);
+      return this.#axis;
     }
     public set axis(_value: Vector3) {
-      this.#axis = new OIMO.Vec3(_value.x, _value.y, _value.z);
+      this.#axis = _value;
       this.disconnect();
       this.dirtyStatus();
     }
@@ -40,6 +41,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
      */
+    @type(Number)
     public get maxMotor(): number {
       return this.#maxMotor;
     }
@@ -54,6 +56,7 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
      */
+    @type(Number)
     public get minMotor(): number {
       return this.#minMotor;
     }
@@ -67,6 +70,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
+    @type(Number)
     public get springDamping(): number {
       return this.#springDamping;
     }
@@ -80,6 +84,7 @@ namespace FudgeCore {
     /**
       * The target speed of the motor in m/s.
      */
+    @type(Number)
     public get motorSpeed(): number {
       return this.#motorSpeed;
     }
@@ -94,6 +99,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
+    @type(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }
@@ -107,55 +113,29 @@ namespace FudgeCore {
 
     //#region Saving/Loading
     public serialize(): Serialization {
-      let serialization: Serialization = this.#getMutator();
-      serialization.axis = this.axis.serialize();
+      let serialization: Serialization = this.getMutator();
       serialization[super.constructor.name] = super.serialize();
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.axis = await new Vector3().deserialize(_serialization.axis);
-      this.#mutate(_serialization);
       super.deserialize(_serialization[super.constructor.name]);
+      this.mutate(_serialization);
       return this;
     }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.axis) !== "undefined")
-        this.axis = new Vector3(...<number[]>(Object.values(_mutator.axis)));
-      delete _mutator.axis;
-      this.#mutate(_mutator);
-      this.deleteFromMutator(_mutator, this.#getMutator());
       await super.mutate(_mutator, _selection, _dispatchMutate);
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      mutator.axis = this.axis.getMutator();
-      Object.assign(mutator, this.#getMutator());
-      return mutator;
+      if (_mutator.axis)
+        this.axis = this.axis;
     }
 
     //#endregion
-    
+
     protected constructJoint(): void {
       this.springDamper = new OIMO.SpringDamper().setSpring(this.#springFrequency, this.#springDamping);
-      super.constructJoint(this.#axis);
+      const worldAxis: OIMO.Vec3 = new OIMO.Vec3(this.#axis.x, this.#axis.y, this.#axis.z);
+      super.constructJoint(worldAxis);
     }
-
-    #getMutator = (): Mutator => {
-      let mutator: Mutator = {
-        springDamping: this.#springDamping,
-        springFrequency: this.#springFrequency,
-        maxMotor: this.#maxMotor,
-        minMotor: this.#minMotor,
-        motorSpeed: this.#motorSpeed
-      };
-      return mutator;
-    };
-
-    #mutate = (_mutator: Mutator): void => {
-      this.mutateBase(_mutator, ["springDamping", "springFrequency", "maxMotor", "minMotor", "motorSpeed"]);
-    };
   }
 }

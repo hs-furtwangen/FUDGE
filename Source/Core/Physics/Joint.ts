@@ -254,8 +254,8 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
       await super.deserialize(_serialization[super.constructor.name]);
+      this.mutate(_serialization);
       this.connectChild(_serialization.nameChildToConnect);
       return this;
     }
