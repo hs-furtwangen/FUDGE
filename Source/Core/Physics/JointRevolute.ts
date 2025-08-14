@@ -36,7 +36,10 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
-    public set maxMotor(_value: number) {
+    public override get maxMotor(): number {
+      return super.maxMotor;
+    }
+    public override set maxMotor(_value: number) {
       super.maxMotor = _value;
       _value *= Calc.deg2rad;
       if (this.joint)
@@ -45,7 +48,10 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    public set minMotor(_value: number) {
+    public override get minMotor(): number {
+      return super.minMotor;
+    }
+    public override set minMotor(_value: number) {
       super.minMotor = _value;
       if (this.joint)
         this.joint.getLimitMotor().lowerLimit = _value * Calc.deg2rad;

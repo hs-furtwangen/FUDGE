@@ -43,7 +43,10 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    public set springDamping(_value: number) {
+    public override get springDamping(): number {
+      return super.springDamping;
+    }
+    public override set springDamping(_value: number) {
       super.springDamping = _value;
       if (this.joint != null) this.joint.getTranslationalSpringDamper().dampingRatio = _value;
     }
@@ -51,7 +54,10 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    public set springFrequency(_value: number) {
+    public override get springFrequency(): number {
+      return super.springFrequency;
+    }
+    public override set springFrequency(_value: number) {
       super.springFrequency = _value;
       if (this.joint != null) this.joint.getTranslationalSpringDamper().frequency = _value;
     }
@@ -123,7 +129,10 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
      */
-    public set maxMotor(_value: number) {
+    public override get maxMotor(): number {
+      return super.maxMotor;
+    }
+    public override set maxMotor(_value: number) {
       super.maxMotor = _value;
       if (this.joint != null)
         this.joint.getTranslationalLimitMotor().upperLimit = _value;
@@ -131,13 +140,19 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
      */
-    public set minMotor(_value: number) {
+    public override get minMotor(): number {
+      return super.minMotor;
+    }
+    public override set minMotor(_value: number) {
       super.minMotor = _value;
       if (this.joint != null)
         this.joint.getTranslationalLimitMotor().lowerLimit = _value;
     }
 
-    public set motorSpeed(_value: number) {
+    public override get motorSpeed(): number {
+      return super.motorSpeed;
+    }
+    public override set motorSpeed(_value: number) {
       super.motorSpeed = _value;
       if (this.joint != null)
         this.joint.getTranslationalLimitMotor().motorSpeed = _value;
