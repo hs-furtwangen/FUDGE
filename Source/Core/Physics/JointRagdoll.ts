@@ -33,7 +33,7 @@ namespace FudgeCore {
     #springDampingSwing: number = 0;
     #springFrequencySwing: number = 0;
 
-    #maxMotorTwist: number = 360;
+    #maxMotorTwist: number = 360 * Calc.deg2rad;
     #minMotorTwist: number = 0;
     #motorTorqueTwist: number = 0;
     #motorSpeedTwist: number = 0;
@@ -218,15 +218,15 @@ namespace FudgeCore {
     }
 
     protected constructJoint(): void {
-      this.#springDamperTwist = new OIMO.SpringDamper().setSpring(this.springFrequencyTwist, this.springDampingTwist);
-      this.#springDamperSwing = new OIMO.SpringDamper().setSpring(this.springFrequencySwing, this.springDampingSwing);
+      this.#springDamperTwist = new OIMO.SpringDamper().setSpring(this.#springFrequencyTwist, this.#springDampingTwist);
+      this.#springDamperSwing = new OIMO.SpringDamper().setSpring(this.#springFrequencySwing, this.#springDampingSwing);
 
-      this.#motorTwist = new OIMO.RotationalLimitMotor().setLimits(this.minMotorTwist, this.maxMotorTwist);
-      this.#motorTwist.setMotor(this.motorSpeedTwist, this.motorTorqueTwist);
+      this.#motorTwist = new OIMO.RotationalLimitMotor().setLimits(this.#minMotorTwist, this.#maxMotorTwist);
+      this.#motorTwist.setMotor(this.#motorSpeedTwist, this.#motorTorqueTwist);
 
       this.config = new OIMO.RagdollJointConfig();
-      const axisFirst: OIMO.Vec3 = new OIMO.Vec3(this.axisFirst.x, this.axisFirst.y, this.axisFirst.z);
-      const axisSecond: OIMO.Vec3 = new OIMO.Vec3(this.axisSecond.x, this.axisSecond.y, this.axisSecond.z);
+      const axisFirst: OIMO.Vec3 = new OIMO.Vec3(this.#axisFirst.x, this.#axisFirst.y, this.#axisFirst.z);
+      const axisSecond: OIMO.Vec3 = new OIMO.Vec3(this.#axisSecond.x, this.#axisSecond.y, this.#axisSecond.z);
       super.constructJoint(axisFirst, axisSecond);
       this.config.swingSpringDamper = this.#springDamperSwing;
       this.config.twistSpringDamper = this.#springDamperTwist;
