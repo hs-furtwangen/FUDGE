@@ -66,20 +66,7 @@ namespace FudgeCore {
     }
 
     /**
-     * The damping of the spring. 1 equals completly damped.
-     */
-    @type(Number)
-    public get springDamping(): number {
-      return this.#springDamping;
-    }
-    public set springDamping(_value: number) {
-      this.#springDamping = _value;
-      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
-        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getSpringDamper().dampingRatio = _value;
-    }
-
-    /**
-      * The target speed of the motor in m/s.
+     * The target speed of the motor in m/s.
      */
     @type(Number)
     public get motorSpeed(): number {
@@ -90,6 +77,19 @@ namespace FudgeCore {
       this.#motorSpeed = _value;
       if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
         (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().motorSpeed = _value;
+    }
+
+    /**
+     * The damping of the spring. 1 equals completly damped.
+     */
+    @type(Number)
+    public get springDamping(): number {
+      return this.#springDamping;
+    }
+    public set springDamping(_value: number) {
+      this.#springDamping = _value;
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getSpringDamper().dampingRatio = _value;
     }
 
     /**

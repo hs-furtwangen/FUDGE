@@ -155,7 +155,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The target rotational speed of the motor in m/s. 
+      * The target rotational speed of the motor in radians/s. 
      */
     @type(Number)
     public get rotorSpeedFirst(): number {
@@ -167,7 +167,7 @@ namespace FudgeCore {
     }
 
     /**
-     * The maximum motor torque in Newton. force <= 0 equals disabled. 
+     * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
     @type(Number)
     public get rotorTorqueFirst(): number {
@@ -203,7 +203,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The target rotational speed of the motor in m/s. 
+      * The target rotational speed of the motor in radians/s. 
      */
     @type(Number)
     public get rotorSpeedSecond(): number {
@@ -215,7 +215,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The maximum motor torque in Newton. force <= 0 equals disabled. 
+      * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
     @type(Number)
     public get rotorTorqueSecond(): number {

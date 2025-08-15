@@ -121,7 +121,7 @@ namespace FudgeCore {
       if (this.joint != null) this.joint.getRotationalLimitMotor().motorSpeed = _value;
     }
     /**
-      * The maximum motor torque in Newton. force <= 0 equals disabled. 
+      * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
     @type(Number)
     public get rotorTorque(): number {
