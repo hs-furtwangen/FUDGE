@@ -48,9 +48,8 @@ namespace FudgeCore {
 
     public set maxMotor(_value: number) {
       this.#maxMotor = _value;
-      try {
-        (<OIMO.PrismaticJoint><unknown>this.joint).getLimitMotor().upperLimit = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().upperLimit = _value;
     }
 
     /**
@@ -62,9 +61,8 @@ namespace FudgeCore {
     }
     public set minMotor(_value: number) {
       this.#minMotor = _value;
-      try {
-        (<OIMO.PrismaticJoint><unknown>this.joint).getLimitMotor().lowerLimit = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().lowerLimit = _value;
     }
 
     /**
@@ -76,9 +74,8 @@ namespace FudgeCore {
     }
     public set springDamping(_value: number) {
       this.#springDamping = _value;
-      try {
-        (<OIMO.PrismaticJoint><unknown>this.joint).getSpringDamper().dampingRatio = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getSpringDamper().dampingRatio = _value;
     }
 
     /**
@@ -91,9 +88,8 @@ namespace FudgeCore {
 
     public set motorSpeed(_value: number) {
       this.#motorSpeed = _value;
-      try {
-        (<OIMO.PrismaticJoint>this.joint).getLimitMotor().motorSpeed = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().motorSpeed = _value;
     }
 
     /**
@@ -105,12 +101,10 @@ namespace FudgeCore {
     }
     public set springFrequency(_value: number) {
       this.#springFrequency = _value;
-      try {
-        (<OIMO.PrismaticJoint>this.joint).getSpringDamper().frequency = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getSpringDamper().frequency = _value;
     }
     //#endregion
-
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       await super.mutate(_mutator, _selection, _dispatchMutate);
