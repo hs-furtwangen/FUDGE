@@ -111,26 +111,12 @@ namespace FudgeCore {
     }
     //#endregion
 
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      super.deserialize(_serialization[super.constructor.name]);
-      this.mutate(_serialization);
-      return this;
-    }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       await super.mutate(_mutator, _selection, _dispatchMutate);
       if (_mutator.axis)
         this.axis = this.axis;
     }
-
-    //#endregion
 
     protected constructJoint(): void {
       this.springDamper = new OIMO.SpringDamper().setSpring(this.#springFrequency, this.#springDamping);

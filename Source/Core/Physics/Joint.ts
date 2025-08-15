@@ -248,13 +248,10 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
+      return this.getMutator();
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
       this.mutate(_serialization);
       this.connectChild(_serialization.nameChildToConnect);
       return this;
