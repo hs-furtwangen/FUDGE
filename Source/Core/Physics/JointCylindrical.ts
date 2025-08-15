@@ -65,6 +65,7 @@ namespace FudgeCore {
     /**
     * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
     */
+    @type(Number)
     public get springDampingRotation(): number {
       return this.#springDampingRotation;
     }
@@ -76,6 +77,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. Influencing TORQUE / ROTATION
     */
+    @type(Number)
     public get springFrequencyRotation(): number {
       return this.#springFrequencyRotation;
     }
@@ -88,6 +90,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
+    @type(Number)
     public get maxRotor(): number {
       return this.#maxRotor;
     }
@@ -98,6 +101,7 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
+    @type(Number)
     public get minRotor(): number {
       return this.#minRotor;
     }
@@ -108,6 +112,7 @@ namespace FudgeCore {
     /**
       * The target rotational speed of the motor in m/s. 
      */
+    @type(Number)
     public get rotorSpeed(): number {
       return this.#rotorSpeed;
     }
@@ -118,6 +123,7 @@ namespace FudgeCore {
     /**
       * The maximum motor torque in Newton. force <= 0 equals disabled. 
      */
+    @type(Number)
     public get rotorTorque(): number {
       return this.#rotorTorque;
     }
@@ -157,9 +163,11 @@ namespace FudgeCore {
       if (this.joint != null)
         this.joint.getTranslationalLimitMotor().motorSpeed = _value;
     }
+
     /**
       * The maximum motor force in Newton. force <= 0 equals disabled. 
      */
+    @type(Number)
     public get motorForce(): number {
       return this.#motorForce;
     }
@@ -167,34 +175,6 @@ namespace FudgeCore {
       this.#motorForce = _value;
       if (this.joint != null) this.joint.getTranslationalLimitMotor().motorForce = _value;
     }
-
-    //#endregion
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = this.#getMutator();
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.#mutate(_serialization);
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      this.#mutate(_mutator);
-      this.deleteFromMutator(_mutator, this.#getMutator());
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      Object.assign(mutator, this.#getMutator());
-      return mutator;
-    }
-
 
     //#endregion
 
@@ -217,22 +197,5 @@ namespace FudgeCore {
       this.joint = new OIMO.CylindricalJoint(this.config);
       this.configureJoint();
     }
-
-    #getMutator = (): Mutator => {
-      let mutator: Mutator = {
-        motorForce: this.motorForce,
-        springDampingRotation: this.springDampingRotation,
-        springFrequencyRotation: this.springFrequencyRotation,
-        maxRotor: this.maxRotor,
-        minRotor: this.minRotor,
-        rotorTorque: this.rotorTorque,
-        rotorSpeed: this.rotorSpeed
-      };
-      return mutator;
-    };
-
-    #mutate = (_mutator: Mutator): void => {
-      this.mutateBase(_mutator, ["motorForce", "rotorTorque", "rotorSpeed", "maxRotor", "minRotor", "springDampingRotation", "springFrequencyRotation", "springFrequency"]);
-    };
   }
 }

@@ -35,41 +35,13 @@ namespace FudgeCore {
     /**
       * The maximum motor force in Newton. force <= 0 equals disabled. This is the force that the motor is using to hold the position, or reach it if a motorSpeed is defined.
      */
+    @type(Number)
     public get motorForce(): number {
       return this.#motorForce;
     }
     public set motorForce(_value: number) {
       this.#motorForce = _value;
       if (this.joint != null) this.joint.getLimitMotor().motorForce = _value;
-    }
-    //#endregion
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        motorForce: this.motorForce,
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.motorForce = _serialization.motorForce;
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      mutator.motorForce = this.motorForce;
-      return mutator;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.motorForce) !== "undefined")
-        this.motorForce = _mutator.motorForce;
-      delete _mutator.motorForce;
-      await super.mutate(_mutator, _selection, _dispatchMutate);
     }
     //#endregion
 

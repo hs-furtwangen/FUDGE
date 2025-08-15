@@ -60,6 +60,7 @@ namespace FudgeCore {
     /**
       * The maximum motor force in Newton. force <= 0 equals disabled. 
      */
+    @type(Number)
     public get motorTorque(): number {
       return this.#motorTorque;
     }
@@ -68,39 +69,6 @@ namespace FudgeCore {
       if (this.joint != null) this.joint.getLimitMotor().motorTorque = _value;
     }
 
-    /**
-      * If the two connected RigidBodies collide with eath other. (Default = false)
-     */
-
-    //#endregion
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        motorTorque: this.motorTorque,
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.motorTorque = _serialization.motorTorque;
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      mutator.motorTorque = this.motorTorque;
-      return mutator;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.motorTorque) !== "undefined")
-        this.motorTorque = _mutator.motorTorque;
-      delete _mutator.motorTorque;
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-    }
     //#endregion
 
     protected constructJoint(): void {

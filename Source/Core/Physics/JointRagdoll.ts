@@ -41,8 +41,8 @@ namespace FudgeCore {
     #motorTwist: OIMO.RotationalLimitMotor;
     #springDamperTwist: OIMO.SpringDamper;
     #springDamperSwing: OIMO.SpringDamper;
-    #axisFirst: OIMO.Vec3;
-    #axisSecond: OIMO.Vec3;
+    #axisFirst: Vector3;
+    #axisSecond: Vector3;
 
     #maxAngleFirst: number = 0;
     #maxAngleSecond: number = 0;
@@ -59,11 +59,12 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
+    @type(Vector3)
     public get axisFirst(): Vector3 {
-      return new Vector3(this.#axisFirst.x, this.#axisFirst.y, this.#axisFirst.z);
+      return this.#axisFirst;
     }
     public set axisFirst(_value: Vector3) {
-      this.#axisFirst = new OIMO.Vec3(_value.x, _value.y, _value.z);
+      this.#axisFirst = _value;
       this.disconnect();
       this.dirtyStatus();
     }
@@ -72,11 +73,12 @@ namespace FudgeCore {
     * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
     *  When changed after initialization the joint needs to be reconnected.
     */
+    @type(Vector3)
     public get axisSecond(): Vector3 {
-      return new Vector3(this.#axisSecond.x, this.#axisSecond.y, this.#axisSecond.z);
+      return this.#axisSecond;
     }
     public set axisSecond(_value: Vector3) {
-      this.#axisSecond = new OIMO.Vec3(_value.x, _value.y, _value.z);
+      this.#axisSecond = _value;
       this.disconnect();
       this.dirtyStatus();
     }
@@ -84,6 +86,7 @@ namespace FudgeCore {
     /**
      * The maximum angle of rotation along the first axis. Value needs to be positive. Changes do rebuild the joint
      */
+    @type(Number)
     public get maxAngleFirstAxis(): number {
       return this.#maxAngleFirst * Calc.rad2deg;
     }
@@ -96,6 +99,7 @@ namespace FudgeCore {
     /**
      * The maximum angle of rotation along the second axis. Value needs to be positive. Changes do rebuild the joint
      */
+    @type(Number)
     public get maxAngleSecondAxis(): number {
       return this.#maxAngleSecond * Calc.rad2deg;
     }
@@ -108,6 +112,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
+    @type(Number)
     public get springDampingTwist(): number {
       return this.#springDampingTwist;
     }
@@ -119,6 +124,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
+    @type(Number)
     public get springFrequencyTwist(): number {
       return this.#springFrequencyTwist;
     }
@@ -130,6 +136,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
+    @type(Number)
     public get springDampingSwing(): number {
       return this.#springDampingSwing;
     }
@@ -141,6 +148,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
+    @type(Number)
     public get springFrequencySwing(): number {
       return this.#springFrequencySwing;
     }
@@ -152,6 +160,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
+    @type(Number)
     public get maxMotorTwist(): number {
       return this.#maxMotorTwist * Calc.rad2deg;
     }
@@ -164,6 +173,7 @@ namespace FudgeCore {
     /**
      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
+    @type(Number)
     public get minMotorTwist(): number {
       return this.#minMotorTwist * Calc.rad2deg;
     }
@@ -176,6 +186,7 @@ namespace FudgeCore {
     /**
       * The target rotational speed of the motor in m/s. 
      */
+    @type(Number)
     public get motorSpeedTwist(): number {
       return this.#motorSpeedTwist;
     }
@@ -187,6 +198,7 @@ namespace FudgeCore {
     /**
       * The maximum motor torque in Newton. force <= 0 equals disabled. 
      */
+    @type(Number)
     public get motorTorqueTwist(): number {
       return this.#motorTorqueTwist;
     }
@@ -195,49 +207,15 @@ namespace FudgeCore {
       if (this.joint != null) this.joint.getTwistLimitMotor().motorTorque = _value;
     }
 
-    /**
-      * If the two connected RigidBodies collide with eath other. (Default = false)
-     */
-
     //#endregion
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = this.#getMutator();
-      serialization.axisFirst = this.axisFirst.serialize();
-      serialization.axisSecond = this.axisSecond.serialize();
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await this.axisFirst.deserialize(_serialization.axisFirst);
-      await this.axisSecond.deserialize(_serialization.axisSecond);
-      this.#mutate(_serialization);
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.axisFirst) !== "undefined")
-        this.axisFirst = new Vector3(...<number[]>(Object.values(_mutator.axisFirst)));
-      if (typeof (_mutator.axisSecond) !== "undefined")
-        this.axisSecond = new Vector3(...<number[]>(Object.values(_mutator.axisSecond)));
-      delete _mutator.axisFirst;
-      delete _mutator.axisSecond;
-      this.#mutate(_mutator);
-      this.deleteFromMutator(_mutator, this.#getMutator());
       await super.mutate(_mutator, _selection, _dispatchMutate);
+      if (_mutator.axisFirst)
+        this.axisFirst = this.axisFirst;
+      if (_mutator.axisSecond)
+        this.axisSecond = this.axisSecond;
     }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      Object.assign(mutator, this.#getMutator());
-      mutator.axisFirst = this.axisFirst.getMutator();
-      mutator.axisSecond = this.axisSecond.getMutator();
-      return mutator;
-    }
-    //#endregion
 
     protected constructJoint(): void {
       this.#springDamperTwist = new OIMO.SpringDamper().setSpring(this.springFrequencyTwist, this.springDampingTwist);
@@ -247,7 +225,9 @@ namespace FudgeCore {
       this.#motorTwist.setMotor(this.motorSpeedTwist, this.motorTorqueTwist);
 
       this.config = new OIMO.RagdollJointConfig();
-      super.constructJoint(this.axisFirst, this.axisSecond);
+      const axisFirst: OIMO.Vec3 = new OIMO.Vec3(this.axisFirst.x, this.axisFirst.y, this.axisFirst.z);
+      const axisSecond: OIMO.Vec3 = new OIMO.Vec3(this.axisSecond.x, this.axisSecond.y, this.axisSecond.z);
+      super.constructJoint(axisFirst, axisSecond);
       this.config.swingSpringDamper = this.#springDamperSwing;
       this.config.twistSpringDamper = this.#springDamperTwist;
       this.config.twistLimitMotor = this.#motorTwist;
@@ -257,31 +237,5 @@ namespace FudgeCore {
       this.joint = new OIMO.RagdollJoint(this.config);
       super.configureJoint();
     }
-
-    #getMutator = (): Mutator => {
-      let mutator: Mutator = {
-        maxAngleFirst: this.#maxAngleFirst,
-        maxAngleSecond: this.#maxAngleSecond,
-        springDampingTwist: this.springDampingTwist,
-        springFrequencyTwist: this.springFrequencyTwist,
-        springDampingSwing: this.springDampingSwing,
-        springFrequencySwing: this.springFrequencySwing,
-        maxMotorTwist: this.#maxMotorTwist,
-        minMotorTwist: this.#minMotorTwist,
-        motorSpeedTwist: this.motorSpeedTwist,
-        motorTorqueTwist: this.motorTorqueTwist
-      };
-      return mutator;
-    };
-
-    #mutate = (_mutator: Mutator): void => {
-      if (typeof (_mutator.maxAngleFirst) !== "undefined")
-        this.#maxAngleFirst = _mutator.maxAngleFirst;
-      if (typeof (_mutator.maxAngleSecond) !== "undefined")
-        this.#maxAngleSecond = _mutator.maxAngleSecond;
-      this.mutateBase(_mutator, [
-        "springDampingTwist", "springFrequencyTwist", "springDampingSwing", "springFrequencySwing", "maxMotorTwist", "minMotorTwist", "motorSpeedTwist", "motorTorqueTwist"
-      ]);
-    };
   }
 }

@@ -105,7 +105,7 @@ namespace FudgeCore {
     }
     public set breakTorque(_value: number) {
       this.#breakTorque = _value;
-      if (this.joint != null) this.joint.setBreakTorque(this.#breakTorque);
+      this.joint?.setBreakTorque(this.#breakTorque);
     }
 
     /**
@@ -117,7 +117,7 @@ namespace FudgeCore {
     }
     public set breakForce(_value: number) {
       this.#breakForce = _value;
-      if (this.joint != null) this.joint.setBreakForce(this.#breakForce);
+      this.joint?.setBreakForce(this.#breakForce);
     }
 
     /**
@@ -131,7 +131,7 @@ namespace FudgeCore {
     }
     public set internalCollision(_value: boolean) {
       this.#internalCollision = _value;
-      if (this.joint != null) this.joint.setAllowCollision(this.#internalCollision);
+      this.joint?.setAllowCollision(this.#internalCollision);
     }
 
     @type(String)
@@ -252,13 +252,9 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
+      await this.mutate(_serialization);
       this.connectChild(_serialization.nameChildToConnect);
       return this;
-    }
-
-    public getMutator(): Mutator { // TODO: remove!
-      return super.getMutator(true);
     }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
@@ -299,11 +295,6 @@ namespace FudgeCore {
       this.joint.setBreakForce(this.breakForce);
       this.joint.setBreakTorque(this.breakTorque);
       this.joint.setAllowCollision(this.#internalCollision);
-    }
-
-    protected deleteFromMutator(_mutator: Mutator, _delete: Mutator): void { // TODO: remove
-      for (let key in _delete)
-        delete _mutator[key];
     }
 
     private hndEvent = (_event: Event): void => {

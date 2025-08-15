@@ -19,22 +19,6 @@ namespace FudgeCore {
     }
     //#endregion
 
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-    //#endregion
-
-
     protected constructJoint(): void {
       this.config = new OIMO.GenericJointConfig();
       super.constructJoint(new OIMO.Mat3(), new OIMO.Mat3());

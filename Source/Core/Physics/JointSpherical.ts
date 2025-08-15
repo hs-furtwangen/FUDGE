@@ -36,6 +36,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
+    @type(Number)
     public get springDamping(): number {
       return this.#springDamping;
     }
@@ -47,44 +48,13 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
+    @type(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }
     public set springFrequency(_value: number) {
       this.#springFrequency = _value;
       if (this.joint != null) this.joint.getSpringDamper().frequency = _value;
-    }
-    //#endregion
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        springDamping: this.springDamping,
-        springFrequency: this.springFrequency,
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.springDamping = _serialization.springDamping;
-      this.springFrequency = _serialization.springFrequency;
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      mutator.springDamping = this.springDamping;
-      mutator.springFrequency = this.springFrequency;
-      return mutator;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      this.mutateBase(_mutator, ["springDamping", "springFrequency"]);
-      delete _mutator.springDamping;
-      delete _mutator.springFrequency;
-      await super.mutate(_mutator, _selection, _dispatchMutate);
     }
     //#endregion
 
