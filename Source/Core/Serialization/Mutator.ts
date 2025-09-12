@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  
+
   /**
    * Interface describing the datatypes of the attributes a mutator as strings 
    */
@@ -37,6 +37,9 @@ namespace FudgeCore {
       return <ReadonlySet<K>>(getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
 
+    /**
+     * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
+     */
     export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
       return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyKeys);
     }
@@ -108,18 +111,39 @@ namespace FudgeCore {
       return mutator;
     }
 
+    /**
+     * **WIP** TODO: add array support
+     * 
+     * Copy the {@link type decorated properties} of the given instance into a {@link Mutator} object.
+     * @param _instance The instance to copy the decorated properties from.
+     * @param _out - (optional) the receiving mutator.
+     * @returns `_out` or a new mutator if none is provided.
+     */
+    export function fromDecorations(_instance: object, _out: Mutator = {}): Mutator {
+      const references: ReadonlySet<string> = Mutator.references(_instance);
+      for (const key of Mutator.keys(_instance)) {
+        const value: unknown = _instance[key];
+        if (!references.has(key) && (value instanceof Mutable || value instanceof MutableArray))
+          _out[key] = value.getMutator();
+        else
+          _out[key] = value;
+      }
+
+      return _out;
+    }
+
     // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
     /**
-     * Updates the values of the given mutator according to the current state of the given mutable.
-     * @param _mutable The mutable to update the state from.
+     * Updates the values of the given {@link Mutator} according to the current state of the given instance.
+     * @param _instance The instance to update from.
      * @param _mutator The mutator to update.
      * @returns `_mutator`.
      */
-    export function update(_mutable: Mutable | MutableArray<unknown>, _mutator: Mutator): Mutator {
-      const references: ReadonlySet<string> = Mutator.references(_mutable);
+    export function update(_instance: object, _mutator: Mutator): Mutator {
+      const references: ReadonlySet<string> = Mutator.references(_instance);
       for (const key in _mutator) {
-        const value: Object = Reflect.get(_mutable, key);
-        if ((value instanceof Mutable || value instanceof MutableArray) && !references.has(key))
+        const value: Object = Reflect.get(_instance, key);
+        if (!references.has(key) && (value instanceof Mutable || value instanceof MutableArray))
           Mutator.update(value, _mutator[key]);
         else
           _mutator[key] = value;
@@ -127,6 +151,30 @@ namespace FudgeCore {
 
       return _mutator;
     }
+
+    /**
+     * **WIP** TODO: add array support
+     * 
+     * Update the {@link type decorated properties} of the given instance according to the state of the given {@link Mutator}.
+     * @param _instance The instance to update.
+     * @param _mutator The mutator to update from.
+     * @returns `_instance`.
+     */
+    export async function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T> {
+      const references: ReadonlySet<string> = Mutator.references(_instance);
+      for (const key in Mutator.keys(_instance)) {
+        const mutant: unknown = Reflect.get(_instance, key);
+        const value: unknown = _mutator[key];
+
+        if (value != null && !references.has(key) && (mutant instanceof MutableArray || mutant instanceof Mutable))
+          await mutant.mutate(value);
+        else
+          Reflect.set(_instance, key, value);
+      }
+
+      return _instance;
+    }
+
 
     /**
      * Creates and returns an empty mutator for the given value.

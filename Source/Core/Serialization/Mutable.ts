@@ -36,7 +36,7 @@ namespace FudgeCore {
       const mutator: Mutator = {};
       // opt-in for decorated properties. Maybe this should be the default behavior instead of the old opt-out solution?
       for (const key of Mutator.keys(this))
-        mutator[key] = this[key];
+        mutator[key] = Reflect.get(this, key);
 
       // collect primitive and mutable attributes
       for (let attribute in this) {

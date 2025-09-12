@@ -178,8 +178,7 @@ declare namespace Fudge {
     enum HISTORY {
         MUTATE = 0,
         ADD = 1,
-        REMOVE = 2,
-        LINK = 3
+        REMOVE = 2
     }
     /**
      * Static class to record the history of manipulations of various entities. Enables undo and redo.
@@ -262,7 +261,7 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    class Project extends ƒ.Mutable {
+    class Project extends ƒ.Mutable implements ƒ.Serializable {
         #private;
         base: URL;
         name: string;
@@ -283,9 +282,9 @@ declare namespace Fudge {
         getSettingsJSON(): string;
         getProjectCSS(): string;
         getProjectHTML(_title: string): string;
-        getMutatorAttributeTypes(_mutator: ƒ.Mutator): ƒ.MutatorAttributeTypes;
+        serialize(): ƒ.Serialization;
+        deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable>;
         protected reduceMutator(_mutator: ƒ.Mutator): void;
-        private getGraphs;
         private createProjectHTML;
         private settingsStringify;
         private stringifyHTML;

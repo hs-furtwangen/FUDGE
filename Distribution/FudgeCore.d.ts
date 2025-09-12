@@ -336,9 +336,15 @@ declare namespace FudgeCore {
     /**
      * Map from each property of a mutator to a function that returns a map of possible options for the property.
      */
-    type MutatorReferences = {
-        [key: string]: (this: unknown, _key: string) => Record<string, unknown>;
+    type MutatorOptions = {
+        [key: string]: MutatorOptionsGetter;
     };
+    /**
+     * A function that returns a map of possible select options for a mutator property.
+     * @param this The instance containing the property.
+     * @param _key The key of the property for which options are requested.
+     */
+    type MutatorOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
     /**
      * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
@@ -350,6 +356,10 @@ declare namespace FudgeCore {
          */
         mutatorKeys?: Set<string>;
         /**
+         * Keys of properties of the class's {@link Mutator} that are references to other objects.
+         */
+        mutatorReferences?: Set<string>;
+        /**
          * A map from property keys to their specified types for the class's {@link Mutator}.
          * Use the {@link type} or {@link serialize} decorator to add type information to this map.
          */
@@ -358,123 +368,123 @@ declare namespace FudgeCore {
          * A map from property keys to functions that return a map of possible options for the property.
          * Use the {@link serialize} or the {@link type} and {@link reference} decorator to add to this map.
          */
-        mutatorReferences?: MutatorReferences;
+        mutatorOptions?: MutatorOptions;
         /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
          */
         serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
     }
-    /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-    type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
-    /**
-     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
-     */
-    function getMutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
-    /**
-     * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
-     */
-    function getMutatorTypes(_from: Object): Readonly<MutatorTypes>;
-    /**
-     * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
-     */
-    function getMutatorReferences(_from: Object): Readonly<MutatorReferences>;
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
      */
     function getMetadata(_from: Object): Readonly<Metadata>;
+    /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+    type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
      * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
      *
-     * **Usage**: Apply this decorator to a property.
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function mutate(_value: unknown, _context: ClassPropertyContext<Mutable>): void;
+    /**
+     * Decorator to specify a type for a property of a {@link Mutable}.
+     *
+     * This allows the intended type of the property to be known by the editor (at runtime), making it:
+     * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+     * - Display the appropriate input element, even if the property has not been set (is `undefined`).
+     *
+     * To specify a function type (typeof `_type`) use the {@link typeF} decorator.
+     *
+     * **Side effects:**
+     * - Invokes the {@link mutate} decorator.
+     * - Invokes the {@link reference} decorator for `_type` {@link SerializableResource} or {@link Node}.
+     * - Invokes the {@link select} decorator with default options for `_type` {@link SerializableResource}, {@link Node}.
+     * @author Jonas Plotzky, HFU, 2024-2025
+     */
+    function type<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
+    function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function type<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    /**
+     * Decorator to specify a function type (typeof `_type`) for a property of a {@link Mutable}.
+     * See {@link type} decorator for more information.
+     *
+     * If the given `_type` has an iterable property `subclasses`, a combo select containing the subclasses will be displayed in the editor.
      *
      * **Example**:
      * ```typescript
-     * export class SomeScript extends ƒ.ComponentScript {
-     *   #size: number = 1;
+     * import ƒ = FudgeCore;
      *
-     *   @ƒ.mutate // apply the decorator to the getter
-     *   public get size(): number {
-     *     return this.#size;
-     *   }
+     * export class MyClass {
+     *   public static subclasses: typeof MyClass[] = [];
+     * }
      *
-     *   // define a setter to allow writing, or omit it to leave the property read-only
-     *   public set size(_size: number) {
-     *     this.#size = _size;
-     *   }
+     * export class MySubClassA extends MyClass {}
+     * export class MySubClassB extends MyClass {}
+     * MyClass.subclasses.push(MySubClassA, MySubClassB); // add subclasses
+     *
+     * export class MyScript extends ƒ.ComponentScript {
+     *   @ƒ.typeF(MyClass) // display a combo select with the subclasses of MyClass in the editor
+     *   public myClass: typeof MyClass;
      * }
      * ```
+     *
+     * **Side effects:**
+     * - Invokes the {@link mutate} decorator.
+     * - Invokes the {@link reference} decorator.
+     * - Invokes the {@link select} decorator with default options.
      * @author Jonas Plotzky, HFU, 2025
      */
-    function mutate(_value: unknown, _context: ClassPropertyContext): void;
+    function typeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
-     * Decorator to specify a type for a property within a class's {@link Metadata | metadata}.
-     * This allows the intended type of a property to be known at runtime, making it a valid drop target in the editor.
+     * Decorator to mark properties of a {@link Mutable} as references. Reference properties are included in the {@link Mutator} (via {@link Mutable.getMutator}) as direct references to other objects regardless of their own type.
+     * {@link Mutable.mutate} simply sets references similarly to how primitive values are set.
      *
-     * **Note:** Properties with a specified meta-type will always be included in the {@link Mutator base-mutator}
-     * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
-     * will be displayed via their {@link toString} method in the editor.
-     * @author Jonas Plotzky, HFU, 2024-2025
+     * @author Jonas Plotzky, HFU, 2025
      */
-    function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>) => void;
-    function type<T extends Boolean | Number | String>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
-    function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T>) => void;
-    function reference(_value: unknown, _context: ClassPropertyContext): void;
+    function reference<T extends object>(_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T>): void;
+    /**
+     * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
+     * The provided function will be executed to retrieve the options.
+     *
+     * The combo select displays properties via their `name` property or {@link toString}.
+     *
+     * **Example**:
+     * ```typescript
+     * import ƒ = FudgeCore;
+     *
+     * export class MyClass {
+     *   public name: string; // MyClass instances will be displayed using their name
+     *
+     *   public constructor(_name: string) {
+     *     this.name = _name;
+     *   }
+     * }
+     *
+     * const instanceA: MyClass = new MyClass("Instance A");
+     * const instanceB: MyClass = new MyClass("Instance B");
+     *
+     * function getOptions(this: MyScript, _key: string): Record<string, MyClass> { // create an select options getter
+     *   return {
+     *     [instanceA.name]: instanceA,
+     *     [instanceB.name]: instanceB
+     *   };
+     * }
+     *
+     * export class MyScript extends ƒ.ComponentScript {
+     *   @ƒ.select(getOptions) // display a combo select with the options returned by getOptions
+     *   @ƒ.type(MyClass) // no default select options for MyClass
+     *   public myOption: MyClass;
+     * }
+     * ```
+     *
+     * @param _getOptions A function that returns a map of display names to values.
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function select<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
 }
 declare namespace FudgeCore {
-    /**
-     * Interface describing the datatypes of the attributes a mutator as strings
-     */
-    interface MutatorAttributeTypes {
-        [attribute: string]: string | object;
-    }
-    /**
-     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
-     */
-    interface Mutator {
-        [attribute: string]: General;
-    }
-    /**
-     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
-     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
-     */
-    interface AnimationMutator {
-        [attribute: string]: Float32Array;
-    }
-    interface MutatorForAnimation extends Mutator {
-        readonly forAnimation: null;
-    }
-    interface MutatorForUserInterface extends Mutator {
-        readonly forUserInterface: null;
-    }
-    abstract class Mutator {
-        /**
-         * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
-         * @param _mutator The mutator to clone. Must be a plain object or array.
-         * @returns A clone of `_mutator` or null if it is not a plain object or array.
-         */
-        static clone(_mutator: Mutator): Mutator | null;
-        /**
-         * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
-         */
-        static fromPath(_mutator: Mutator, _path: string[], _index?: number): Mutator;
-        /**
-         * Collect applicable attributes of the given instance and copies of their values in a mutator.
-         */
-        static from(_object: object): Mutator;
-        /**
-         * Updates the values of the given mutator according to the current state of the given mutable.
-         * @param _mutable The mutable to update the state from.
-         * @param _mutator The mutator to update.
-         * @returns `_mutator`.
-         */
-        static update(_mutable: Mutable | MutableArray<Mutable>, _mutator: Mutator): Mutator;
-        /**
-         * Creates and returns an empty mutator for the given value.
-         * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
-         */
-        private static create;
-    }
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -486,11 +496,7 @@ declare namespace FudgeCore {
      * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
     abstract class Mutable extends EventTargetUnified {
-        static getMutableFromPath(_mutable: Mutable | MutableArray<Mutable>, _path: string[]): Mutable | MutableArray<Mutable>;
-        /**
-         * @deprecated use {@link cloneMutatorFromPath}
-         */
-        static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator;
+        static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray;
         /**
          * Retrieves the type of this mutable subclass as the name of the runtime class
          * @returns The type of the mutable
@@ -518,11 +524,6 @@ declare namespace FudgeCore {
          */
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
-         * Updates the values of the given mutator according to the current state of the instance
-         * @deprecated Use {@link updateMutator} instead.
-         */
-        updateMutator(_mutator: Mutator): void;
-        /**
          * Updates the attribute values of the instance according to the state of the mutator.
          * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
          * Uses mutateBase, but can be overwritten in subclasses
@@ -532,11 +533,6 @@ declare namespace FudgeCore {
          * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
          */
         animate(_mutator: AnimationMutator): void;
-        /**
-         * Synchronous implementation of {@link mutate}.
-         * Override {@link mutate} with a sync implementation and call this method from it to mutate synchronously.
-         */
-        protected mutateSync(_mutator: Mutator, _dispatchMutate?: boolean): void;
         /**
          * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
          */
@@ -550,70 +546,91 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
-       *
-       * **Editor Configuration:**
-       * Specify the type of a property within a class's {@link Metadata | metadata}.
-       * This allows the intended type of the property to be known by the editor (at runtime), making it:
-       * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-       * - Display the appropriate input element, even if the property has not been set (`undefined`).
-       *
-       * **Serialization:**
-       * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
-       * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
-       * - Primitives and enums will be serialized as is.
-       * - {@link Serializable}s will be serialized nested.
-       * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
-       * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
-       *
-       * **Example:**
-       * ```typescript
-       * import ƒ = FudgeCore;
-       *
-       * @ƒ.serialize
-       * export class MyScript extends ƒ.ComponentScript {
-       *   #size: number = 1;
-       *
-       *   @ƒ.serialize(String) // display a string in the editor
-       *   public info: string;
-       *
-       *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
-       *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
-       *
-       *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
-       *   public resource: ƒ.Material;
-       *
-       *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
-       *   public reference: ƒ.Node
-       *
-       *   @ƒ.serialize(Number) // display a number in the editor
-       *   public get size(): number {
-       *     return this.#size;
-       *   }
-       *
-       *   // define a setter to allow writing to size, or omit it to leave the property read-only
-       *   public set size(_size: number) {
-       *     this.#size = _size;
-       *   }
-       * }
-       * ```
-       *
-       * **Side effects:**
-       * * Attributes with a specified type will always be included in the {@link Mutator base-mutator}
-       * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects
-       * will be displayed via their {@link toString} method in the editor.
-       * * Decorated getters will be made enumerable, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Enumerability_and_ownership_of_properties
-       *
-       * @author Jonas Plotzky, HFU, 2024-2025
-       */
-    function serialize<T extends Number | String | Boolean>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
-    function serialize<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T[]>) => void;
-    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-    function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
-    function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-    function serialize<T extends Function>(_type: T, _array: typeof Array, _function: typeof Function): (_value: unknown, _context: ClassPropertyContext<Serializable, T[]>) => void;
-    function serialize<T extends Function>(_type: T, _array: typeof Function): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
+     * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
+     *
+     * **Editor Configuration:**
+     * Specify the type of a property within a class's {@link Metadata | metadata}.
+     * This allows the intended type of the property to be known by the editor (at runtime), making it:
+     * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
+     * - Display the appropriate input element, even if the property has not been set (is `undefined`).
+     *
+     * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
+     *
+     * **Serialization:**
+     * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
+     * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+     * - Primitives and enums will be serialized as is.
+     * - {@link Serializable}s will be serialized nested.
+     * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+     * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
+     *
+     * **Example:**
+     * ```typescript
+     * import ƒ = FudgeCore;
+     *
+     * @ƒ.serialize
+     * export class MyScript extends ƒ.ComponentScript {
+     *   #size: number = 1;
+     *
+     *   @ƒ.serialize(String) // display a string in the editor
+     *   public info: string;
+     *
+     *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+     *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+     *
+     *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+     *   public resource: ƒ.Material;
+     *
+     *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+     *   public reference: ƒ.Node
+     *
+     *   @ƒ.serialize(Number) // display a number in the editor
+     *   public get size(): number {
+     *     return this.#size;
+     *   }
+     *
+     *   // define a setter to allow writing to size, or omit it to leave the property read-only
+     *   public set size(_size: number) {
+     *     this.#size = _size;
+     *   }
+     * }
+     * ```
+     *
+     * **Side effects:**
+     * - Invokes the {@link type} decorator on the property.
+     *
+     * @author Jonas Plotzky, HFU, 2024-2025
+     */
+    function serialize<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
+    function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T | T[]>) => void;
+    function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
+    /**
+     * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for automatic serialization and editor configuration.
+     * See {@link serialize} decorator for more information.
+     *
+     * **Example**:
+     * ```typescript
+     * import ƒ = FudgeCore;
+     *
+     * export class SomeClass { }
+     *
+     * export function someFunction(): void { }
+     *
+     * export class SomeScript extends ƒ.ComponentScript {
+     *   @ƒ.serializeF(SomeClass)
+     *   someClass: typeof SomeClass;
+     *
+     *   @ƒ.serializeF(someFunction)
+     *   someFunction: typeof someFunction;
+     * }
+     * ```
+     *
+     * **Side effects:**
+     * - Invokes the {@link typeF} decorator on the property.
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
     /**
      * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
      */
@@ -1654,7 +1671,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>;
-        protected mutateSync(_mutator: Mutator, _dispatchMutate?: boolean): void;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }
@@ -1882,6 +1898,8 @@ declare namespace FudgeCore {
          */
         get internalCollision(): boolean;
         set internalCollision(_value: boolean);
+        protected get nameChildToConnect(): string;
+        protected set nameChildToConnect(_name: string);
         /**
          * Connect a child node with the given name to the joint.
          */
@@ -1889,7 +1907,7 @@ declare namespace FudgeCore {
         /**
          * Connect the given node to the joint. Tieing its rigidbody to the nodes rigidbody this component is attached to.
          */
-        connectNode(_node: Node): void;
+        connectNode(_node: Node): boolean;
         /** Check if connection is dirty, so when either rb is changed disconnect and reconnect. Internally used no user interaction needed. */
         isConnected(): boolean;
         /**
@@ -1909,7 +1927,6 @@ declare namespace FudgeCore {
         getOimoJoint(): OIMO.Joint;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
         /** Tell the FudgePhysics system that this joint needs to be handled in the next frame. */
@@ -1918,7 +1935,6 @@ declare namespace FudgeCore {
         protected removeJoint(): void;
         protected constructJoint(..._configParams: Object[]): void;
         protected configureJoint(): void;
-        protected deleteFromMutator(_mutator: Mutator, _delete: Mutator): void;
         private hndEvent;
     }
 }
@@ -1949,24 +1965,21 @@ declare namespace FudgeCore {
         get minMotor(): number;
         set minMotor(_value: number);
         /**
+         * The target speed of the motor in m/s.
+         */
+        get motorSpeed(): number;
+        set motorSpeed(_value: number);
+        /**
          * The damping of the spring. 1 equals completly damped.
          */
         get springDamping(): number;
         set springDamping(_value: number);
         /**
-          * The target speed of the motor in m/s.
-         */
-        get motorSpeed(): number;
-        set motorSpeed(_value: number);
-        /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
         */
         get springFrequency(): number;
         set springFrequency(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        getMutator(): Mutator;
         protected constructJoint(): void;
     }
 }
@@ -4587,6 +4600,77 @@ declare namespace FudgeCore {
             private hndRenderPrepare;
             private onComponentAdd;
             private onComponentRemove;
+        }
+    }
+}
+declare namespace FudgeCore {
+    namespace Experimental {
+        namespace Edit {
+            interface Mutable {
+                readonly isMutable: true;
+                mutator(): Mutator;
+                mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Mutable> | Mutable;
+            }
+            function isMutable(_object: Object): _object is Mutable;
+            interface Serializable {
+                readonly isSerializable: true;
+                serialize(): Serialization;
+                deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
+            }
+            function isSerializable(_object: Object): _object is Serializable;
+            interface SerializableResource extends Serializable {
+                readonly isSerializableResource: true;
+                idResource: string;
+                name: string;
+            }
+            function isSerializableResource(_object: Object): _object is SerializableResource;
+            function mutatorFromDecorations(_instance: object, _out?: Mutator): Mutator;
+            function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
+            /**
+             * Base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the serialization and mutator decorators.
+             */
+            abstract class Editable extends EventTargetUnified implements Mutable, Serializable {
+                get isMutable(): true;
+                get isSerializable(): true;
+                serialize(): Serialization;
+                deserialize(_serialization: Serialization): Promise<Editable> | Editable;
+                mutator(): Mutator;
+                mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Editable> | Editable;
+            }
+            /**
+             * Base class for all resources. Implements {@link SerializableResource}.
+             */
+            abstract class Resource extends Editable implements SerializableResource {
+                /** subclasses get a iSubclass number for identification */
+                static readonly iSubclass: number;
+                /** refers back to this class from any subclass e.g. in order to find compatible other resources */
+                static readonly baseClass: typeof Resource;
+                /** list of all the subclasses derived from this class, if they registered properly */
+                static readonly subclasses: typeof Resource[];
+                idResource: string;
+                name: string;
+                protected static registerSubclass(_subclass: typeof Resource): number;
+                get isSerializableResource(): true;
+            }
+            abstract class Component extends Editable {
+                /** subclasses get a iSubclass number for identification */
+                static readonly iSubclass: number;
+                /** refers back to this class from any subclass e.g. in order to find compatible other resources */
+                static readonly baseClass: typeof Component;
+                /** list of all the subclasses derived from this class, if they registered properly*/
+                static readonly subclasses: typeof Component[];
+                protected static registerSubclass(_subclass: typeof Component): number;
+            }
+            class Node extends EventTargetUnified implements Serializable {
+                get isSerializable(): true;
+                serialize(): Serialization;
+                deserialize(_serialization: Serialization): Promise<Serializable>;
+            }
+            class Graph extends Node implements SerializableResource {
+                idResource: string;
+                name: string;
+                get isSerializableResource(): true;
+            }
         }
     }
 }
@@ -7723,10 +7807,12 @@ declare namespace FudgeCore {
         /**
          * The damping of the spring. 1 equals completly damped.
          */
+        get springDamping(): number;
         set springDamping(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
         */
+        get springFrequency(): number;
         set springFrequency(_value: number);
         /**
         * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
@@ -7754,28 +7840,27 @@ declare namespace FudgeCore {
         get rotorSpeed(): number;
         set rotorSpeed(_value: number);
         /**
-          * The maximum motor torque in Newton. force <= 0 equals disabled.
+          * The maximum motor torque in newton meters. force <= 0 equals disabled.
          */
         get rotorTorque(): number;
         set rotorTorque(_value: number);
         /**
           * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
          */
+        get maxMotor(): number;
         set maxMotor(_value: number);
         /**
           * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
          */
+        get minMotor(): number;
         set minMotor(_value: number);
+        get motorSpeed(): number;
         set motorSpeed(_value: number);
         /**
           * The maximum motor force in Newton. force <= 0 equals disabled.
          */
         get motorForce(): number;
         set motorForce(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        getMutator(): Mutator;
         protected constructJoint(): void;
     }
 }
@@ -7808,10 +7893,6 @@ declare namespace FudgeCore {
          */
         get motorForce(): number;
         set motorForce(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         /** Actual creation of a joint in the OimoPhysics system */
         protected constructJoint(): void;
     }
@@ -7898,22 +7979,16 @@ declare namespace FudgeCore {
         get minMotorTwist(): number;
         set minMotorTwist(_value: number);
         /**
-          * The target rotational speed of the motor in m/s.
+          * The target rotational speed of the motor in radians/s.
          */
         get motorSpeedTwist(): number;
         set motorSpeedTwist(_value: number);
         /**
-          * The maximum motor torque in Newton. force <= 0 equals disabled.
+          * The maximum motor torque in  newton meters. force <= 0 equals disabled.
          */
         get motorTorqueTwist(): number;
         set motorTorqueTwist(_value: number);
-        /**
-          * If the two connected RigidBodies collide with eath other. (Default = false)
-         */
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        getMutator(): Mutator;
         protected constructJoint(): void;
     }
 }
@@ -7945,23 +8020,18 @@ declare namespace FudgeCore {
         /**
           * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
          */
+        get maxMotor(): number;
         set maxMotor(_value: number);
         /**
           * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
          */
+        get minMotor(): number;
         set minMotor(_value: number);
         /**
-          * The maximum motor force in Newton. force <= 0 equals disabled.
+          * The maximum motor force in newton meters. force <= 0 equals disabled.
          */
         get motorTorque(): number;
         set motorTorque(_value: number);
-        /**
-          * If the two connected RigidBodies collide with eath other. (Default = false)
-         */
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected constructJoint(): void;
     }
 }
@@ -7999,10 +8069,6 @@ declare namespace FudgeCore {
         */
         get springFrequency(): number;
         set springFrequency(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected constructJoint(): void;
     }
 }
@@ -8075,12 +8141,12 @@ declare namespace FudgeCore {
         get minRotorFirst(): number;
         set minRotorFirst(_value: number);
         /**
-          * The target rotational speed of the motor in m/s.
+          * The target rotational speed of the motor in radians/s.
          */
         get rotorSpeedFirst(): number;
         set rotorSpeedFirst(_value: number);
         /**
-         * The maximum motor torque in Newton. force <= 0 equals disabled.
+         * The maximum motor torque in newton meters. force <= 0 equals disabled.
          */
         get rotorTorqueFirst(): number;
         set rotorTorqueFirst(_value: number);
@@ -8095,22 +8161,16 @@ declare namespace FudgeCore {
         get minRotorSecond(): number;
         set minRotorSecond(_value: number);
         /**
-          * The target rotational speed of the motor in m/s.
+          * The target rotational speed of the motor in radians/s.
          */
         get rotorSpeedSecond(): number;
         set rotorSpeedSecond(_value: number);
         /**
-          * The maximum motor torque in Newton. force <= 0 equals disabled.
+          * The maximum motor torque in newton meters. force <= 0 equals disabled.
          */
         get rotorTorqueSecond(): number;
         set rotorTorqueSecond(_value: number);
-        /**
-          * If the two connected RigidBodies collide with eath other. (Default = false)
-         */
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        getMutator(): Mutator;
         protected constructJoint(): void;
     }
 }
@@ -8127,8 +8187,6 @@ declare namespace FudgeCore {
         protected joint: OIMO.GenericJoint;
         protected config: OIMO.GenericJointConfig;
         constructor(_bodyAnchor?: ComponentRigidbody, _bodyTied?: ComponentRigidbody, _localAnchor?: Vector3);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         protected constructJoint(): void;
     }
 }
@@ -8771,7 +8829,7 @@ declare namespace FudgeCore {
      * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
      * @author Jirka Dell'Oro-Friedl, HFU, 2021
      */
-    class MutableArray<T extends Mutable> extends Array<T> {
+    class MutableArray<T extends Mutable = Mutable> extends Array<T> {
         #private;
         constructor(_type: new () => T, ..._args: T[]);
         get type(): new () => T;
@@ -8799,6 +8857,95 @@ declare namespace FudgeCore {
          * Updates the values of the given mutator according to the current state of the instance
          */
         updateMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Interface describing the datatypes of the attributes a mutator as strings
+     */
+    interface MutatorAttributeTypes {
+        [attribute: string]: string | object;
+    }
+    /**
+     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
+     */
+    interface Mutator {
+        [attribute: string]: General;
+    }
+    /**
+     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
+     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
+     */
+    interface AnimationMutator {
+        [attribute: string]: Float32Array;
+    }
+    interface MutatorForAnimation extends Mutator {
+        readonly forAnimation: null;
+    }
+    interface MutatorForUserInterface extends Mutator {
+        readonly forUserInterface: null;
+    }
+    namespace Mutator {
+        /**
+         * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
+         */
+        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
+         */
+        function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+         */
+        function types(_from: Object): Readonly<MutatorTypes>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+         */
+        function options(_from: Object): Readonly<MutatorOptions>;
+        /**
+         * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
+         * @param _mutator The mutator to clone. Must be a plain object or array.
+         * @returns A clone of `_mutator` or null if it is not a plain object or array.
+         */
+        function clone(_mutator: Mutator): Mutator | null;
+        /**
+         * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
+         */
+        function fromPath(_mutator: Mutator, _path: string[], _index?: number): Mutator;
+        /**
+         * Collect applicable attributes of the given instance and copies of their values in a mutator.
+         */
+        function from(_object: object): Mutator;
+        /**
+         * **WIP** TODO: add array support
+         *
+         * Copy the {@link type decorated properties} of the given instance into a {@link Mutator} object.
+         * @param _instance The instance to copy the decorated properties from.
+         * @param _out - (optional) the receiving mutator.
+         * @returns `_out` or a new mutator if none is provided.
+         */
+        function fromDecorations(_instance: object, _out?: Mutator): Mutator;
+        /**
+         * Updates the values of the given {@link Mutator} according to the current state of the given instance.
+         * @param _instance The instance to update from.
+         * @param _mutator The mutator to update.
+         * @returns `_mutator`.
+         */
+        function update(_instance: object, _mutator: Mutator): Mutator;
+        /**
+         * **WIP** TODO: add array support
+         *
+         * Update the {@link type decorated properties} of the given instance according to the state of the given {@link Mutator}.
+         * @param _instance The instance to update.
+         * @param _mutator The mutator to update from.
+         * @returns `_instance`.
+         */
+        function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
+        /**
+         * Creates and returns an empty mutator for the given value.
+         * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
+         */
+        function create(_mutator: Mutator): Mutator | null;
     }
 }
 declare namespace FBX {

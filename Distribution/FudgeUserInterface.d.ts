@@ -36,7 +36,7 @@ declare namespace FudgeUserInterface {
          * Recursive method taking the a [[ƒ.Mutable]] as a template to create a [[ƒ.Mutator]] or update the given [[ƒ.Mutator]]
          * with the values in the given UI-domElement
          */
-        static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
+        static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         /**
          * Recursive method taking the [[ƒ.Mutator]] of a [[ƒ.Mutable]] and updating the UI-domElement accordingly.
          * If an additional [[ƒ.Mutator]] is passed, its values are used instead of those of the [[ƒ.Mutable]].
@@ -55,7 +55,6 @@ declare namespace FudgeUserInterface {
         protected rearrangeArray: (_event: Event) => Promise<void>;
         protected refresh: (_event: Event) => void;
         protected hndChange: (_event: Event) => Promise<void>;
-        private hndRequestOptions;
         private getMutatorPath;
     }
 }
@@ -190,6 +189,26 @@ declare namespace FudgeUserInterface {
     }
 }
 declare namespace FudgeUserInterface {
+    class CustomElementComboSelect extends CustomElement {
+        #private;
+        private static customElement;
+        constructor(_attributes: CustomElementAttributes, _mutable: object, _get: (this: object, _key: string) => Record<string, unknown>);
+        /**
+         * Creates the content of the element when connected the first time
+         */
+        connectedCallback(): void;
+        getMutatorValue(): unknown;
+        setMutatorValue(_value: {
+            name?: string;
+        }): void;
+        private hndClick;
+        private hndFocus;
+        private hndInput;
+        private hndKey;
+        private getOptions;
+    }
+}
+declare namespace FudgeUserInterface {
     /**
      * Represents a single digit number to be used in groups to represent a multidigit value.
      * Is tabbable and in-/decreases previous sibling when flowing over/under.
@@ -263,29 +282,6 @@ declare namespace FudgeUserInterface {
          * Sets the content of the input element
          */
         setMutatorValue(_value: FudgeCore.General): void;
-    }
-}
-declare namespace FudgeUserInterface {
-    /**
-     * TODO:
-     */
-    class CustomElementReference extends CustomElement {
-        #private;
-        private static customElement;
-        /**
-         * Creates the content of the element when connected the first time
-         */
-        connectedCallback(): void;
-        setOptions(_options: Record<string, unknown>): void;
-        getMutatorValue(): unknown;
-        setMutatorValue(_value: {
-            name?: string;
-        }): void;
-        private hndClick;
-        private hndFocus;
-        private hndInput;
-        private hndKey;
-        private getOptions;
     }
 }
 declare namespace FudgeUserInterface {
@@ -844,7 +840,6 @@ declare namespace FudgeUserInterface {
         POINTER_MOVE = "pointermove",
         INSERT = "insert",
         SELECT_ALL = "selectAll",
-        SAVE_HISTORY = "saveHistory",
-        REQUEST_OPTIONS = "requestOptions"
+        SAVE_HISTORY = "saveHistory"
     }
 }
