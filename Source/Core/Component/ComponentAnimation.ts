@@ -7,16 +7,19 @@ namespace FudgeCore {
   export class ComponentAnimation extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
 
-    @type(Animation)
+    @edit(Animation)
     public animation: Animation;
 
-    @type(ANIMATION_PLAYMODE)
+    @edit(ANIMATION_PLAYMODE)
     public playmode: ANIMATION_PLAYMODE;
 
-    @type(ANIMATION_QUANTIZATION)
+    @edit(ANIMATION_QUANTIZATION)
     public quantization: ANIMATION_QUANTIZATION;
+
+    @edit(Boolean)
     public scaleWithGameTime: boolean = true;
-    public animateInEditor: boolean = false;
+
+    #animateInEditor: boolean = false;
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -40,13 +43,14 @@ namespace FudgeCore {
       });
     }
 
+    @edit(Number)
+    public get scale(): number {
+      return this.#scale;
+    }
+
     public set scale(_scale: number) {
       this.#scale = _scale;
       this.updateScale();
-    }
-
-    public get scale(): number {
-      return this.#scale;
     }
 
     /** 
@@ -59,6 +63,18 @@ namespace FudgeCore {
 
     public set time(_time: number) {
       this.jumpTo(_time);
+    }
+
+    @edit(Boolean)
+    public get animateInEditor(): boolean {
+      return this.#animateInEditor;
+    }
+
+    public set animateInEditor(_on: boolean) {
+      this.#animateInEditor = _on;
+
+      this.updateAnimation(0);
+      this.activateListeners(this.active);
     }
 
     public activate(_on: boolean): void {
@@ -95,46 +111,17 @@ namespace FudgeCore {
      * @returns the Mutator for Animation. 
      */
     public updateAnimation(_time: number): Mutator {
+      if (!this.animation)
+        return null;
+
       this.#previous = undefined;
       return this.updateAnimationLoop(null, _time);
     }
 
-    //#region transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {};
-      serialization[super.constructor.name] = super.serialize();
-      serialization.idAnimation = this.animation.idResource;
-      serialization.playmode = this.playmode;
-      serialization.quantization = this.quantization;
-      serialization.scale = this.scale;
-      serialization.scaleWithGameTime = this.scaleWithGameTime;
-      serialization.animateInEditor = this.animateInEditor;
-
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
-      this.animation = <Animation>await Project.getResource(_serialization.idAnimation);
-      this.playmode = _serialization.playmode;
-      this.quantization = _serialization.quantization;
-      this.scale = _serialization.scale;
-      this.scaleWithGameTime = _serialization.scaleWithGameTime;
-      this.animateInEditor = _serialization.animateInEditor;
-
-      return this;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-      if (typeof (_mutator.animateInEditor) !== "undefined") {
-        this.updateAnimation(0);
-        this.activateListeners(this.active);
-      }
-    }
-    //#endregion
-
     private activateListeners(_on: boolean): void {
+      if (!this.node)
+        return;
+
       if (_on && (Project.mode != MODE.EDITOR || Project.mode == MODE.EDITOR && this.animateInEditor)) {
         Time.game.addEventListener(EVENT.TIME_SCALED, this.updateScale);
         this.node.addEventListener(EVENT.RENDER_PREPARE, this.updateAnimationLoop);
@@ -170,10 +157,10 @@ namespace FudgeCore {
         time = time % this.animation.totalTime;
 
         const mutator: Mutator = this.animation.getState(time, direction, this.quantization);
-        
-        if (this.node) 
+
+        if (this.node)
           this.node.applyAnimation(mutator);
-        
+
         return mutator;
       }
       return null;

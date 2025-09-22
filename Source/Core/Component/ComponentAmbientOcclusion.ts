@@ -6,10 +6,19 @@ namespace FudgeCore {
   export class ComponentAmbientOcclusion extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAmbientOcclusion);
 
+    @edit(Number)
     public sampleRadius: number;
+
+    @edit(Number)
     public bias: number;
+
+    @edit(Number)
     public attenuationConstant: number;
+
+    @edit(Number)
     public attenuationLinear: number;
+    
+    @edit(Number)
     public attenuationQuadratic: number;
 
     public constructor(_sampleRadius: number = 16, _bias: number = 0.07, _attenuationConstant: number = 2.5, _attenuationLinear: number = 1, _attenuationQuadratic: number = 1) {
@@ -19,29 +28,6 @@ namespace FudgeCore {
       this.attenuationConstant = _attenuationConstant;
       this.attenuationLinear = _attenuationLinear;
       this.attenuationQuadratic = _attenuationQuadratic;
-    }
-
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        sampleRadius: this.sampleRadius,
-        bias: this.bias,
-        attenuationConstant: this.attenuationConstant,
-        attenuationLinear: this.attenuationLinear,
-        attenuationQuadratic: this.attenuationQuadratic
-      };
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.sampleRadius = _serialization.sampleRadius;
-      this.bias = _serialization.bias;
-      this.attenuationConstant = _serialization.attenuationConstant;
-      this.attenuationLinear = _serialization.attenuationLinear;
-      this.attenuationQuadratic = _serialization.attenuationQuadratic;
-      await super.deserialize(_serialization[super.constructor.name]);
-      return this;
     }
   }
 }

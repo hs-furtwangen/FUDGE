@@ -1693,7 +1693,6 @@ declare namespace FudgeCore {
         set active(_on: boolean);
         /**
          * De- / Activate this component. Inactive components will not be processed by the renderer.
-         * @deprecated use {@link active} instead.
          */
         activate(_on: boolean): void;
         /**
@@ -3163,8 +3162,6 @@ declare namespace FudgeCore {
         attenuationLinear: number;
         attenuationQuadratic: number;
         constructor(_sampleRadius?: number, _bias?: number, _attenuationConstant?: number, _attenuationLinear?: number, _attenuationQuadratic?: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -3179,16 +3176,17 @@ declare namespace FudgeCore {
         playmode: ANIMATION_PLAYMODE;
         quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
-        animateInEditor: boolean;
         constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
-        set scale(_scale: number);
         get scale(): number;
+        set scale(_scale: number);
         /**
          * - get: return the current sample time of the animation
          * - set: jump to a certain sample time in the animation
          */
         get time(): number;
         set time(_time: number);
+        get animateInEditor(): boolean;
+        set animateInEditor(_on: boolean);
         activate(_on: boolean): void;
         /**
          * Jumps to a certain time in the animation to play from there.
@@ -3204,9 +3202,6 @@ declare namespace FudgeCore {
          * @returns the Mutator for Animation.
          */
         updateAnimation(_time: number): Mutator;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         private activateListeners;
         /**
          * Updates the Animation.
