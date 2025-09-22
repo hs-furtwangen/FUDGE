@@ -15,7 +15,8 @@ namespace FudgeCore {
     public static readonly subclasses: typeof Component[] = [];
 
     protected singleton: boolean = true;
-    protected active: boolean = true;
+
+    #active: boolean = true;
     #node: Node | null = null;
 
     public constructor() {
@@ -33,6 +34,9 @@ namespace FudgeCore {
 
     protected static registerSubclass(_subclass: typeof Component): number { return Component.subclasses.push(_subclass) - 1; }
 
+    /**
+     * @deprecated use {@link active} instead.
+     */
     public get isActive(): boolean {
       return this.active;
     }
@@ -54,11 +58,24 @@ namespace FudgeCore {
     /**
      * De- / Activate this component. Inactive components will not be processed by the renderer.
      */
-    public activate(_on: boolean): void {
-      this.active = _on;
+    @edit(Boolean)
+    public get active(): boolean {
+      return this.#active;
+    }
+
+    public set active(_on: boolean) {
+      this.#active = _on;
       const event: RecyclableEvent = RecyclableEvent.get(_on ? EVENT.COMPONENT_ACTIVATE : EVENT.COMPONENT_DEACTIVATE);
       this.dispatchEvent(event);
       RecyclableEvent.store(event);
+    }
+
+    /**
+     * De- / Activate this component. Inactive components will not be processed by the renderer.
+     * @deprecated use {@link active} instead.
+     */
+    public activate(_on: boolean): void {
+      this.active = _on;
     }
 
     /**
@@ -91,22 +108,11 @@ namespace FudgeCore {
 
     //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        active: this.active
-      };
-      return serialization;
+      return serializeDecorations(this);
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.activate(_serialization.active);
-      return this;
-    }
-
-    public mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-      if (_mutator.active != undefined)
-        this.activate(_mutator.active);
+    public deserialize(_serialization: Serialization): Promise<Serializable> {
+      return deserializeDecorations(this, _serialization);
     }
 
     protected reduceMutator(_mutator: Mutator): void {

@@ -1672,9 +1672,11 @@ declare namespace FudgeCore {
         /** list of all the subclasses derived from this class, if they registered properly*/
         static readonly subclasses: typeof Component[];
         protected singleton: boolean;
-        protected active: boolean;
         constructor();
         protected static registerSubclass(_subclass: typeof Component): number;
+        /**
+         * @deprecated use {@link active} instead.
+         */
         get isActive(): boolean;
         /**
          * Is true, when only one instance of the component class can be attached to a node
@@ -1686,6 +1688,12 @@ declare namespace FudgeCore {
         get node(): Node | null;
         /**
          * De- / Activate this component. Inactive components will not be processed by the renderer.
+         */
+        get active(): boolean;
+        set active(_on: boolean);
+        /**
+         * De- / Activate this component. Inactive components will not be processed by the renderer.
+         * @deprecated use {@link active} instead.
          */
         activate(_on: boolean): void;
         /**
@@ -1702,7 +1710,6 @@ declare namespace FudgeCore {
         drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }
@@ -7404,7 +7411,6 @@ declare namespace FudgeCore {
          * @param _bothWays If true, creates a connection in both directions. Default: false
          */
         static addConnection(_start: ComponentWaypoint, _end: ComponentWaypoint, _cost: number, _speedModifier?: number, _bothWays?: boolean): void;
-        get isActive(): boolean;
         get connections(): Connection[];
         /** The current world position of the Waypoint. Returns a new Matrix without connection to the Waypoint */
         get mtxWorld(): Matrix4x4;

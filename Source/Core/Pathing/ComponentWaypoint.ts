@@ -56,10 +56,6 @@ namespace FudgeCore {
         _end.addConnection({ cost: _cost, end: _start, start: _end, speedModifier: _speedModifier });
     }
 
-    public get isActive(): boolean {
-      return this.active;
-    }
-
     public get connections(): Connection[] {
       return this.#connections;
     }
