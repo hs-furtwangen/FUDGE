@@ -96,7 +96,10 @@ namespace FudgeCore {
     return serializeFactory(_type, true);
   }
 
-  function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  /**
+   * @internal
+   */
+  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
