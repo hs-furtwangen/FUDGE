@@ -1,34 +1,47 @@
 namespace FudgeCore {
   export namespace Experimental {
     export namespace Edit {
+      // #region Contracts
       export interface Mutable {
-        readonly isMutable: true;
         mutator(): Mutator;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Mutable> | Mutable;
       }
 
       export function isMutable(_object: Object): _object is Mutable {
-        return (_object && (<Mutable>_object).isMutable);
+        return (_object && Reflect.has(_object, "mutator") && Reflect.has(_object, "mutate"));
       }
 
       export interface Serializable {
-        readonly isSerializable: true;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
       }
 
       export function isSerializable(_object: Object): _object is Serializable {
-        return (_object && (<Serializable>_object).isSerializable);
+        return (_object && Reflect.has(_object, "serialize") && Reflect.has(_object, "deserialize"));
       }
 
-      export interface SerializableResource extends Serializable {
-        readonly isSerializableResource: true;
+      /**
+       * Interface for resources, identified by a unique id and a human readable name. Extends {@link Serializable}.
+       * Resource constructors should be parameterless and need to be registered using {@link registerResourceClass} to appear in the resource list of the editor.
+       */
+      export interface Resource extends Serializable {
         idResource: string;
         name: string;
       }
 
-      export function isSerializableResource(_object: Object): _object is SerializableResource {
-        return (_object && (<SerializableResource>_object).isSerializableResource);
+      export function isResource(_object: Object): _object is Resource {
+        return (_object && Reflect.has(_object, "idResource") && Reflect.has(_object, "name"));
+      }
+      // #endregion
+
+
+      //
+      export function registerComponentClass(_class: () => Component) {
+        return;
+      }
+
+      export function registerResourceClass(_class: () => Resource) {
+        return;
       }
 
       export function mutatorFromDecorations(_instance: object, _out: Mutator = {}): Mutator {
@@ -39,7 +52,7 @@ namespace FudgeCore {
             _out[key] = value.mutator();
           else if (!references.has(key) && (value instanceof MutableArray || value instanceof Mutable))
             _out[key] = value.getMutator();
-          else if (Array.isArray(value)) 
+          else if (Array.isArray(value))
             _out[key] = mutatorFromArray(value);
           else
             _out[key] = value;
@@ -95,18 +108,12 @@ namespace FudgeCore {
         }
       }
 
+      // #region Base
       /**
-       * Base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the serialization and mutator decorators.
+       * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link type mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
+       * Use this class if you want to implement {@link Mutable} and {@link Serializable} without writing boilerplate code. Copy the implementation to your class if you are unable to extend this class.
        */
       export abstract class Editable extends EventTargetUnified implements Mutable, Serializable {
-        public get isMutable(): true {
-          return true;
-        }
-
-        public get isSerializable(): true {
-          return true;
-        }
-
         public serialize(): Serialization {
           return serializeDecorations(this);
         }
@@ -126,43 +133,14 @@ namespace FudgeCore {
         }
       }
 
-      /**
-       * Base class for all resources. Implements {@link SerializableResource}.
-       */
-      export abstract class Resource extends Editable implements SerializableResource {
-        /** subclasses get a iSubclass number for identification */
-        public static readonly iSubclass: number;
-        /** refers back to this class from any subclass e.g. in order to find compatible other resources */
-        public static readonly baseClass: typeof Resource = Resource;
-        /** list of all the subclasses derived from this class, if they registered properly */
-        public static readonly subclasses: typeof Resource[] = [];
-
-        public idResource: string;
-        public name: string;
-
-        protected static registerSubclass(_subclass: typeof Resource): number { return this.subclasses.push(_subclass) - 1; }
-
-        public get isSerializableResource(): true {
-          return true;
-        }
-      }
+      // #endregion
 
       export abstract class Component extends Editable {
-        /** subclasses get a iSubclass number for identification */
-        public static readonly iSubclass: number;
-        /** refers back to this class from any subclass e.g. in order to find compatible other resources */
-        public static readonly baseClass: typeof Component = Component;
-        /** list of all the subclasses derived from this class, if they registered properly*/
-        public static readonly subclasses: typeof Component[] = [];
-
-        protected static registerSubclass(_subclass: typeof Component): number { return this.subclasses.push(_subclass) - 1; }
       }
 
-      export class Node extends EventTargetUnified implements Serializable {
-        public get isSerializable(): true {
-          return true;
-        }
 
+
+      export class Node extends EventTargetUnified implements Serializable {
         public serialize(): Serialization {
           throw new Error("Method not implemented.");
         }
@@ -172,13 +150,9 @@ namespace FudgeCore {
         }
       }
 
-      export class Graph extends Node implements SerializableResource {
+      export class Graph extends Node implements Resource {
         public idResource: string;
         public name: string;
-
-        public get isSerializableResource(): true {
-          return true;
-        }
       }
     }
   }
