@@ -382,6 +382,51 @@ declare namespace FudgeCore {
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
     type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
     /**
+     * Decorator to mark instance properties of a class for editor configuration and automatic serialization.
+     *
+     * **Example:**
+     * ```typescript
+     * import ƒ = FudgeCore;
+     *
+     * export class MyScript extends ƒ.ComponentScript {
+     *   #size: number = 1;
+     *
+     *   @ƒ.edit(String) // display and serialize a string
+     *   public info: string;
+     *
+     *   @ƒ.edit(ƒ.Vector3) // display and serialize a vector
+     *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+     *
+     *   @ƒ.edit(ƒ.Material) // display a material combo select element inside the editor and enable drag & drop to reference a material from the project. Serialize the material by referencing it in the project.
+     *   public resource: ƒ.Material;
+     *
+     *   @ƒ.edit(ƒ.Node) // display a node combo select element inside the editor and enable drag & drop to reference a node from the hierarchy. Serialize the node by its path in the hierarchy.
+     *   public reference: ƒ.Node
+     *
+     *   @ƒ.edit(Number) // display and serialize a number
+     *   public get size(): number {
+     *     return this.#size;
+     *   }
+     *
+     *   // define a setter to allow writing to size, or omit it to leave the property read-only
+     *   public set size(_size: number) {
+     *     this.#size = _size;
+     *   }
+     * }
+     * ```
+     *
+     * **Side effects:**
+     * - Invokes the {@link type} decorator on the property.
+     * - Invokes the {@link serialize} decorator on the property.
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function edit<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    function edit<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void;
+    function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    function edit<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    function editF(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void);
+    /**
      * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
      *
      * @author Jonas Plotzky, HFU, 2025
@@ -546,19 +591,13 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
-     *
-     * **Editor Configuration:**
-     * Specify the type of a property within a class's {@link Metadata | metadata}.
-     * This allows the intended type of the property to be known by the editor (at runtime), making it:
-     * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-     * - Display the appropriate input element, even if the property has not been set (is `undefined`).
+     * Decorator to mark properties of a {@link Serializable} for automatic serialization.
      *
      * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
      *
      * **Serialization:**
      * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
-     * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+     * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
      * - Primitives and enums will be serialized as is.
      * - {@link Serializable}s will be serialized nested.
      * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
@@ -568,36 +607,31 @@ declare namespace FudgeCore {
      * ```typescript
      * import ƒ = FudgeCore;
      *
-     * @ƒ.serialize
      * export class MyScript extends ƒ.ComponentScript {
      *   #size: number = 1;
      *
-     *   @ƒ.serialize(String) // display a string in the editor
+     *   @ƒ.serialize(String) // serialize a string
      *   public info: string;
      *
-     *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+     *   @ƒ.serialize(ƒ.Vector3) // serialize a vector
      *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
      *
-     *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+     *   @ƒ.serialize(ƒ.Material) // serialize a material by referencing it in the project
      *   public resource: ƒ.Material;
      *
-     *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+     *   @ƒ.serialize(ƒ.Node) // serialize a node by its path in the hierarchy
      *   public reference: ƒ.Node
      *
-     *   @ƒ.serialize(Number) // display a number in the editor
+     *   @ƒ.serialize(Number) // serialize a number
      *   public get size(): number {
      *     return this.#size;
      *   }
      *
-     *   // define a setter to allow writing to size, or omit it to leave the property read-only
      *   public set size(_size: number) {
      *     this.#size = _size;
      *   }
      * }
      * ```
-     *
-     * **Side effects:**
-     * - Invokes the {@link type} decorator on the property.
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
@@ -624,9 +658,6 @@ declare namespace FudgeCore {
      *   someFunction: typeof someFunction;
      * }
      * ```
-     *
-     * **Side effects:**
-     * - Invokes the {@link typeF} decorator on the property.
      *
      * @author Jonas Plotzky, HFU, 2025
      */
@@ -665,6 +696,7 @@ declare namespace FudgeCore {
          */
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
     }
+    function isSerializable(_object: Object): _object is Serializable;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -4607,69 +4639,47 @@ declare namespace FudgeCore {
     namespace Experimental {
         namespace Edit {
             interface Mutable {
-                readonly isMutable: true;
                 mutator(): Mutator;
                 mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Mutable> | Mutable;
             }
             function isMutable(_object: Object): _object is Mutable;
             interface Serializable {
-                readonly isSerializable: true;
                 serialize(): Serialization;
                 deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
             }
             function isSerializable(_object: Object): _object is Serializable;
-            interface SerializableResource extends Serializable {
-                readonly isSerializableResource: true;
+            /**
+             * Interface for resources, identified by a unique id and a human readable name. Extends {@link Serializable}.
+             * Resource constructors should be parameterless and need to be registered using {@link registerResourceClass} to appear in the resource list of the editor.
+             */
+            interface Resource extends Serializable {
                 idResource: string;
                 name: string;
             }
-            function isSerializableResource(_object: Object): _object is SerializableResource;
+            function isResource(_object: Object): _object is Resource;
+            function registerComponentClass(_class: () => Component): void;
+            function registerResourceClass(_class: () => Resource): void;
             function mutatorFromDecorations(_instance: object, _out?: Mutator): Mutator;
             function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
             /**
-             * Base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the serialization and mutator decorators.
+             * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link type mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
+             * Use this class if you want to implement {@link Mutable} and {@link Serializable} without writing boilerplate code. Copy the implementation to your class if you are unable to extend this class.
              */
             abstract class Editable extends EventTargetUnified implements Mutable, Serializable {
-                get isMutable(): true;
-                get isSerializable(): true;
                 serialize(): Serialization;
                 deserialize(_serialization: Serialization): Promise<Editable> | Editable;
                 mutator(): Mutator;
                 mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Editable> | Editable;
             }
-            /**
-             * Base class for all resources. Implements {@link SerializableResource}.
-             */
-            abstract class Resource extends Editable implements SerializableResource {
-                /** subclasses get a iSubclass number for identification */
-                static readonly iSubclass: number;
-                /** refers back to this class from any subclass e.g. in order to find compatible other resources */
-                static readonly baseClass: typeof Resource;
-                /** list of all the subclasses derived from this class, if they registered properly */
-                static readonly subclasses: typeof Resource[];
-                idResource: string;
-                name: string;
-                protected static registerSubclass(_subclass: typeof Resource): number;
-                get isSerializableResource(): true;
-            }
             abstract class Component extends Editable {
-                /** subclasses get a iSubclass number for identification */
-                static readonly iSubclass: number;
-                /** refers back to this class from any subclass e.g. in order to find compatible other resources */
-                static readonly baseClass: typeof Component;
-                /** list of all the subclasses derived from this class, if they registered properly*/
-                static readonly subclasses: typeof Component[];
-                protected static registerSubclass(_subclass: typeof Component): number;
             }
             class Node extends EventTargetUnified implements Serializable {
-                get isSerializable(): true;
                 serialize(): Serialization;
                 deserialize(_serialization: Serialization): Promise<Serializable>;
             }
-            class Graph extends Node implements SerializableResource {
+            class Graph extends Node implements Resource {
                 idResource: string;
                 name: string;
-                get isSerializableResource(): true;
             }
         }
     }

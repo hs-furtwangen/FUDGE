@@ -26,6 +26,10 @@ namespace FudgeCore {
     deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
   }
 
+  export function isSerializable(_object: Object): _object is Serializable {
+    return (_object && Reflect.has(_object, "serialize") && Reflect.has(_object, "deserialize"));
+  }
+
   interface NamespaceRegister {
     [name: string]: {
       [name: string]: General;

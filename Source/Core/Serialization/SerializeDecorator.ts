@@ -1,18 +1,12 @@
 namespace FudgeCore {
   /**
-   * Decorator to mark properties of a {@link Serializable} for automatic serialization and editor configuration.
-   * 
-   * **Editor Configuration:**
-   * Specify the type of a property within a class's {@link Metadata | metadata}.
-   * This allows the intended type of the property to be known by the editor (at runtime), making it:
-   * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
-   * - Display the appropriate input element, even if the property has not been set (is `undefined`).
+   * Decorator to mark properties of a {@link Serializable} for automatic serialization.
    * 
    * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
    * 
    * **Serialization:**
    * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
-   * For builtin classes like {@link ComponentScript}, the serialization occurs automatically after an instance's {@link Serializable.serialize} / {@link Serializable.deserialize} method was called.
+   * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
    * - Primitives and enums will be serialized as is.
    * - {@link Serializable}s will be serialized nested. 
    * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
@@ -22,36 +16,31 @@ namespace FudgeCore {
    * ```typescript
    * import ƒ = FudgeCore;
    *
-   * @ƒ.serialize
    * export class MyScript extends ƒ.ComponentScript {
    *   #size: number = 1;
    * 
-   *   @ƒ.serialize(String) // display a string in the editor
+   *   @ƒ.serialize(String) // serialize a string
    *   public info: string;
    *
-   *   @ƒ.serialize(ƒ.Vector3) // display a vector in the editor
+   *   @ƒ.serialize(ƒ.Vector3) // serialize a vector
    *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
    *
-   *   @ƒ.serialize(ƒ.Material) // drop a material inside the editor to reference it
+   *   @ƒ.serialize(ƒ.Material) // serialize a material by referencing it in the project
    *   public resource: ƒ.Material;
    *
-   *   @ƒ.serialize(ƒ.Node) // drop a node inside the editor to reference it
+   *   @ƒ.serialize(ƒ.Node) // serialize a node by its path in the hierarchy
    *   public reference: ƒ.Node
-   * 
-   *   @ƒ.serialize(Number) // display a number in the editor
+   *
+   *   @ƒ.serialize(Number) // serialize a number
    *   public get size(): number {
    *     return this.#size;
    *   }
    * 
-   *   // define a setter to allow writing to size, or omit it to leave the property read-only
    *   public set size(_size: number) {
    *     this.#size = _size;
    *   }
    * }
    * ```
-   * 
-   * **Side effects:**
-   * - Invokes the {@link type} decorator on the property.
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
@@ -87,9 +76,6 @@ namespace FudgeCore {
    * }
    * ```
    * 
-   * **Side effects:**
-   * - Invokes the {@link typeF} decorator on the property.
-   * 
    * @author Jonas Plotzky, HFU, 2025
    */
   export function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
@@ -109,9 +95,6 @@ namespace FudgeCore {
         throw new Error("@serialize decorator can't serialize symbol-named properties");
 
       const metadata: Metadata = _context.metadata;
-
-      // invoke type decorator
-      typeFactory(_type, _function)(_value, _context);
 
       // determine serialization type
       let strategy: Metadata["serializables"][string];

@@ -86,14 +86,55 @@ namespace FudgeCore {
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
+  //#region @edit
+  /**
+   * Decorator to mark instance properties of a class for editor configuration and automatic serialization.
+   * 
+   * **Example:**
+   * ```typescript
+   * import ƒ = FudgeCore;
+   *
+   * export class MyScript extends ƒ.ComponentScript {
+   *   #size: number = 1;
+   * 
+   *   @ƒ.edit(String) // display and serialize a string
+   *   public info: string;
+   *
+   *   @ƒ.edit(ƒ.Vector3) // display and serialize a vector
+   *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+   *
+   *   @ƒ.edit(ƒ.Material) // display a material combo select element inside the editor and enable drag & drop to reference a material from the project. Serialize the material by referencing it in the project.
+   *   public resource: ƒ.Material;
+   *
+   *   @ƒ.edit(ƒ.Node) // display a node combo select element inside the editor and enable drag & drop to reference a node from the hierarchy. Serialize the node by its path in the hierarchy.
+   *   public reference: ƒ.Node
+   * 
+   *   @ƒ.edit(Number) // display and serialize a number
+   *   public get size(): number {
+   *     return this.#size;
+   *   }
+   * 
+   *   // define a setter to allow writing to size, or omit it to leave the property read-only
+   *   public set size(_size: number) {
+   *     this.#size = _size;
+   *   }
+   * }
+   * ```
+   * 
+   * **Side effects:**
+   * - Invokes the {@link type} decorator on the property.
+   * - Invokes the {@link serialize} decorator on the property.
+   * 
+   * @author Jonas Plotzky, HFU, 2025
+   */
   // primitive type
-  export function edit<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  export function edit<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
   // object type
-  export function edit<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
+  export function edit<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void;
   // enum type
-  export function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  export function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
   // function type
-  export function edit<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  export function edit<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
 
   export function edit(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
     return editFactory(_type, false);
@@ -109,8 +150,9 @@ namespace FudgeCore {
       typeFactory(_type, _function)(_value, _context);
     };
   }
+  //#endregion
 
-  //#region Mutate
+  //#region @mutate
   /**
    * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
    *
@@ -127,7 +169,7 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region Type
+  //#region @type
   /**
    * Decorator to specify a type for a property of a {@link Mutable}.
    * 
@@ -228,7 +270,7 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region Reference
+  //#region @reference
   /**
    * Decorator to mark properties of a {@link Mutable} as references. Reference properties are included in the {@link Mutator} (via {@link Mutable.getMutator}) as direct references to other objects regardless of their own type. 
    * {@link Mutable.mutate} simply sets references similarly to how primitive values are set.
@@ -246,7 +288,7 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region Select
+  //#region @select
   /**
    * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
    * The provided function will be executed to retrieve the options.
