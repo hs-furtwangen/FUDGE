@@ -64,18 +64,17 @@ namespace FudgeCore {
     }
 
     public set active(_on: boolean) {
-      this.#active = _on;
-      const event: RecyclableEvent = RecyclableEvent.get(_on ? EVENT.COMPONENT_ACTIVATE : EVENT.COMPONENT_DEACTIVATE);
-      this.dispatchEvent(event);
-      RecyclableEvent.store(event);
+      this.activate(_on);
     }
 
     /**
      * De- / Activate this component. Inactive components will not be processed by the renderer.
-     * @deprecated use {@link active} instead.
      */
     public activate(_on: boolean): void {
-      this.active = _on;
+      this.#active = _on;
+      const event: RecyclableEvent = RecyclableEvent.get(_on ? EVENT.COMPONENT_ACTIVATE : EVENT.COMPONENT_DEACTIVATE);
+      this.dispatchEvent(event);
+      RecyclableEvent.store(event);
     }
 
     /**
