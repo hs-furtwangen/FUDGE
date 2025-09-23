@@ -978,6 +978,390 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Stores a 4x4 transformation matrix and provides operations for it.
+     * ```text
+     * [ 0, 1, 2, 3 ] ← row vector x
+     * [ 4, 5, 6, 7 ] ← row vector y
+     * [ 8, 9,10,11 ] ← row vector z
+     * [12,13,14,15 ] ← translation
+     *            ↑  homogeneous column
+     * ```
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2023-2025
+     */
+    class Matrix4x4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        #private;
+        private data;
+        private mutator;
+        constructor(_data?: Float32Array);
+        /**
+         * Retrieve a new identity matrix
+         */
+        static IDENTITY(): Matrix4x4;
+        /**
+         * Composes a new matrix according to the given translation, rotation and scaling.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Multiplies two matrices.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _out - (optional) the receiving matrix.
+         * @returns `_out` or a new matrix if none is provided.
+         * @source https://github.com/toji/gl-matrix
+         */
+        static PRODUCT(_a: Matrix4x4, _b: Matrix4x4, _out?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns the transpose of a passed matrix.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static TRANSPOSE(_mtx: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns the inverse of a passed matrix.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static INVERSE(_mtx: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns a matrix with the given translation, its z-axis pointing directly at the given target,
+         * and a minimal angle between its y-axis and the given up-{@link Vector3}, respetively calculating yaw and pitch.
+         * The pitch may be restricted to the up-vector to only calculate yaw. Optionally pass a desired scaling.
+         * @param _up A unit vector indicating the up-direction.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static LOOK_AT(_translation: Vector3, _target: Vector3, _up?: Vector3, _restrict?: boolean, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns a matrix with its z-axis pointing directly in the given forward direction,
+         * and a minimal angle between its y-axis and the given up direction. The pitch may be restricted to the up-vector to only calculate yaw.
+         * Optionally pass a desired translation and/or scaling.
+         * @param _forward A unit vector indicating the desired forward-direction.
+         * @param _up A unit vector indicating the up-direction.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static LOOK_IN(_forward: Vector3, _up?: Vector3, _restrict?: boolean, _translation?: Vector3, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static TRANSLATION(_translate: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that rotates coordinates on the x-axis when multiplied by.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static ROTATION_X(_angleInDegrees: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that rotates coordinates on the y-axis when multiplied by.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static ROTATION_Y(_angleInDegrees: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that rotates coordinates on the z-axis when multiplied by.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static ROTATION_Z(_angleInDegrees: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that rotates coordinates when multiplied by, using the rotation euler angles or unit quaternion given.
+         * Rotation occurs around the axis in the order Z-Y-X.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static ROTATION(_rotation: Vector3 | Quaternion, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that rotates coordinates around an arbitrary axis when multiplied by.
+         * @param _axis The axis to rotate around as a unit vector.
+         * @param _angle The angle in degrees.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static ROTATION_AXIS_ANGLE(_axis: Vector3, _angle: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static SCALING(_scalar: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a representation of the given matrix relative to the given base.
+         * If known, pass the inverse of the base to avoid unneccesary calculation.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static RELATIVE(_mtx: Matrix4x4, _mtxBase: Matrix4x4, _mtxInverse?: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns a matrix that applies perspective to an object, if its transform is multiplied by it.
+         * @param _aspect The aspect ratio between width and height of projectionspace.(Default = canvas.clientWidth / canvas.ClientHeight)
+         * @param _fieldOfViewInDegrees The field of view in Degrees. (Default = 45)
+         * @param _near The near clipspace border on the z-axis.
+         * @param _far The far clipspace border on the z-axis.
+         * @param _direction The plane on which the fieldOfView-Angle is given
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static PROJECTION_CENTRAL(_aspect: number, _fieldOfViewInDegrees: number, _near: number, _far: number, _direction: FIELD_OF_VIEW, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns a matrix that applies orthographic projection to an object, if its transform is multiplied by it.
+         * @param _left The positionvalue of the projectionspace's left border.
+         * @param _right The positionvalue of the projectionspace's right border.
+         * @param _bottom The positionvalue of the projectionspace's bottom border.
+         * @param _top The positionvalue of the projectionspace's top border.
+         * @param _near The positionvalue of the projectionspace's near border.
+         * @param _far The positionvalue of the projectionspace's far border
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near?: number, _far?: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        get isArrayConvertible(): true;
+        /**
+         * - get: return a vector representation of the translation {@link Vector3}.
+         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
+         * - set: effect the matrix ignoring its rotation and scaling
+         */
+        get translation(): Vector3;
+        set translation(_translation: Vector3);
+        /**
+         * - get: return a vector representation of the rotation {@link Vector3}.
+         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
+         * - set: effect the matrix
+         */
+        get rotation(): Vector3;
+        set rotation(_rotation: Quaternion | Vector3);
+        /**
+         * - get: return a vector representation of the scaling {@link Vector3}.
+         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
+         * - set: effect the matrix
+         */
+        get scaling(): Vector3;
+        set scaling(_scaling: Vector3);
+        /**
+         * - get: return a unit quaternion representing the rotation of this matrix.
+         * **Caution!** Use immediately and readonly, since the quaternion is going to be reused internally. Create a clone to keep longer and manipulate.
+         * - set: effect the matrix
+         */
+        get quaternion(): Quaternion;
+        set quaternion(_quaternion: Quaternion);
+        /**
+         * Returns the determinant of this matrix. Computational heavy operation, not cached so use with care.
+         * @deprecated Use {@link Matrix4x4.getDeterminant} instead.
+         */
+        get determinant(): number;
+        /**
+         * Returns the normalized cardinal x-axis.
+         * @deprecated use {@link getRight} instead.
+         */
+        get right(): Vector3;
+        /**
+         * Returns the normalized cardinal y-axis.
+         * @deprecated use {@link getUp} instead.
+         */
+        get up(): Vector3;
+        /**
+         * Returns the normalized cardinal z-axis.
+         * @deprecated use {@link getForward} instead.
+         */
+        get forward(): Vector3;
+        /**
+         * Creates and returns a clone of this matrix.
+         */
+        get clone(): Matrix4x4;
+        /**
+         * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
+         */
+        recycle(): void;
+        /**
+         * Resets the matrix to the identity-matrix and clears cache.
+         * @returns A reference to this matrix.
+         */
+        reset(): Matrix4x4;
+        /**
+         * Transpose this matrix.
+         * @returns A reference to this matrix.
+         */
+        transpose(): Matrix4x4;
+        /**
+         * Invert this matrix.
+         * @returns A reference to this matrix.
+         */
+        invert(): Matrix4x4;
+        /**
+         * Adds a translation by the given {@link Vector3} to this matrix.
+         * If _local is true, the translation occurs according to the current rotation and scaling of this matrix,
+         * otherwise, it occurs according to the parent.
+         * @returns A reference to this matrix.
+         */
+        translate(_by: Vector3, _local?: boolean): Matrix4x4;
+        /**
+         * Adds a translation along the x-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        translateX(_x: number, _local?: boolean): Matrix4x4;
+        /**
+         * Adds a translation along the y-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        translateY(_y: number, _local?: boolean): Matrix4x4;
+        /**
+         * Adds a translation along the z-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        translateZ(_z: number, _local?: boolean): Matrix4x4;
+        /**
+         * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
+         * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
+         * @returns A reference to this matrix.
+         */
+        rotate(_by: Vector3 | Quaternion, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a rotation around the x-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        rotateX(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a rotation around the y-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        rotateY(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a rotation around the z-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        rotateZ(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adjusts the rotation of this matrix to point the z-axis directly at the given target and tilts it to accord with the given up-{@link Vector3},
+         * respectively calculating yaw and pitch. If no up-{@link Vector3} is given, the previous up-{@link Vector3} is used.
+         * The pitch may be restricted to the up-vector to only calculate yaw.
+         * @param _up A unit vector indicating the up-direction.
+         * @returns A reference to this matrix.
+         */ lookAt(_target: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
+        /**
+         * Adjusts the rotation of this matrix to align the z-axis with the given forward-direction and tilts it to accord with the given up-{@link Vector3}.
+         * If no up-vector is provided, the local {@link Matrix4x4.getUp} is used.
+         * The pitch may be restricted to the up-vector to only calculate yaw.
+         * @param _forward A unit vector indicating the desired forward-direction.
+         * @param _up A unit vector indicating the up-direction.
+         * @returns A reference to this matrix.
+         */ lookIn(_forward: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
+        /**
+         * Same as {@link Matrix4x4.lookAt}, but optimized and needs testing
+         */
+        /**
+         * Adds a scaling by the given {@link Vector3} to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scale(_by: Vector3, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Adds a scaling along the x-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scaleX(_by: number): Matrix4x4;
+        /**
+         * Adds a scaling along the y-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scaleY(_by: number): Matrix4x4;
+        /**
+         * Adds a scaling along the z-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scaleZ(_by: number): Matrix4x4;
+        /**
+         * Multiply this matrix by the given matrix.
+         * @returns A reference to this matrix.
+         */
+        multiply(_matrix: Matrix4x4, _fromLeft?: boolean): Matrix4x4;
+        /**
+         * Premultiply this matrix with the given matrix.
+         * @returns A reference to this matrix.
+         */
+        premultiply(_mtxLeft: Matrix4x4): Matrix4x4;
+        /**
+         * (Re-)Compose this matrix from the given translation, rotation and scaling.
+         * Missing values will be decompsed from the current matrix state if necessary.
+         * @returns A reference to this matrix.
+         */
+        compose(_translation?: Partial<Vector3>, _rotation?: Partial<Vector3> | Partial<Quaternion>, _scaling?: Partial<Vector3>): Matrix4x4;
+        animate(_mutator: {
+            translation?: Float32Array;
+            rotation?: Float32Array;
+            quaternion?: Float32Array;
+            scaling?: Float32Array;
+        }): Matrix4x4;
+        /**
+         * Sets the elements of this matrix to the given values.
+         * @returns A reference to this matrix.
+         */
+        set(_m00: number, _m01: number, _m02: number, _m03: number, _m10: number, _m11: number, _m12: number, _m13: number, _m20: number, _m21: number, _m22: number, _m23: number, _m30: number, _m31: number, _m32: number, _m33: number): Matrix4x4;
+        /**
+         * Copies the state of the given matrix into this matrix.
+         * @returns A reference to this matrix.
+         */
+        copy(_original: Matrix4x4): Matrix4x4;
+        /**
+         * Returns a formatted string representation of this matrix
+         */
+        toString(): string;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+        /**
+         * Returns the array of the elements of this matrix.
+         * @returns A readonly view of the internal array.
+         */
+        getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView;
+        /**
+          * Returns the determinant of this matrix.
+          */
+        getDeterminant(): number;
+        /**
+         * Return cardinal x-axis.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getX(_vctOut?: Vector3): Vector3;
+        /**
+         * Return cardinal y-axis.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getY(_vctOut?: Vector3): Vector3;
+        /**
+         * Return cardinal z-axis.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getZ(_vctOut?: Vector3): Vector3;
+        /**
+         * Returns the normalized cardinal x-axis.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getRight(_vctOut?: Vector3): Vector3;
+        /**
+         * Returns the normalized cardinal y-axis.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getUp(_vctOut?: Vector3): Vector3;
+        /**
+         * Returns the normalized cardinal z-axis.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getForward(_vctOut?: Vector3): Vector3;
+        /**
+         * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
+         */
+        swapXY(): void;
+        /**
+         * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
+         */
+        swapXZ(): void;
+        /**
+         * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
+         */
+        swapYZ(): void;
+        /**
+         * Returns the tranlation from this matrix to the target matrix.
+         * @param _vctOut Optional vector to store the result in.
+         */
+        getTranslationTo(_mtxTarget: Matrix4x4, _vctOut?: Vector3): Vector3;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Matrix4x4;
+        getMutator(): Mutator;
+        mutate(_mutator: Mutator): void;
+        protected reduceMutator(_mutator: Mutator): void;
+        private resetCache;
+    }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -3291,12 +3675,12 @@ declare namespace FudgeCore {
         private playing;
         private listened;
         constructor(_audio?: Audio, _loop?: boolean, _start?: boolean, _audioManager?: AudioManager);
-        set volume(_value: number);
         get volume(): number;
-        set loop(_on: boolean);
+        set volume(_value: number);
         get loop(): boolean;
-        set playbackRate(_value: number);
+        set loop(_on: boolean);
         get playbackRate(): number;
+        set playbackRate(_value: number);
         get isPlaying(): boolean;
         get isAttached(): boolean;
         get isListened(): boolean;
@@ -3350,9 +3734,7 @@ declare namespace FudgeCore {
          */
         connect(_on: boolean): void;
         drawGizmos(): void;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
         private hndAudioReady;
         private hndAudioEnded;
@@ -5679,390 +6061,6 @@ declare namespace FudgeCore {
         getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Matrix3x3;
-        getMutator(): Mutator;
-        mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
-        private resetCache;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Stores a 4x4 transformation matrix and provides operations for it.
-     * ```text
-     * [ 0, 1, 2, 3 ] ← row vector x
-     * [ 4, 5, 6, 7 ] ← row vector y
-     * [ 8, 9,10,11 ] ← row vector z
-     * [12,13,14,15 ] ← translation
-     *            ↑  homogeneous column
-     * ```
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2023-2025
-     */
-    class Matrix4x4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        #private;
-        private data;
-        private mutator;
-        constructor(_data?: Float32Array);
-        /**
-         * Retrieve a new identity matrix
-         */
-        static IDENTITY(): Matrix4x4;
-        /**
-         * Composes a new matrix according to the given translation, rotation and scaling.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static COMPOSITION(_translation?: Vector3, _rotation?: Vector3 | Quaternion, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Multiplies two matrices.
-         * @param _a - the first operand.
-         * @param _b - the second operand.
-         * @param _out - (optional) the receiving matrix.
-         * @returns `_out` or a new matrix if none is provided.
-         * @source https://github.com/toji/gl-matrix
-         */
-        static PRODUCT(_a: Matrix4x4, _b: Matrix4x4, _out?: Matrix4x4): Matrix4x4;
-        /**
-         * Computes and returns the transpose of a passed matrix.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static TRANSPOSE(_mtx: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Computes and returns the inverse of a passed matrix.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static INVERSE(_mtx: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Computes and returns a matrix with the given translation, its z-axis pointing directly at the given target,
-         * and a minimal angle between its y-axis and the given up-{@link Vector3}, respetively calculating yaw and pitch.
-         * The pitch may be restricted to the up-vector to only calculate yaw. Optionally pass a desired scaling.
-         * @param _up A unit vector indicating the up-direction.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static LOOK_AT(_translation: Vector3, _target: Vector3, _up?: Vector3, _restrict?: boolean, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Computes and returns a matrix with its z-axis pointing directly in the given forward direction,
-         * and a minimal angle between its y-axis and the given up direction. The pitch may be restricted to the up-vector to only calculate yaw.
-         * Optionally pass a desired translation and/or scaling.
-         * @param _forward A unit vector indicating the desired forward-direction.
-         * @param _up A unit vector indicating the up-direction.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static LOOK_IN(_forward: Vector3, _up?: Vector3, _restrict?: boolean, _translation?: Vector3, _scaling?: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that translates coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static TRANSLATION(_translate: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that rotates coordinates on the x-axis when multiplied by.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static ROTATION_X(_angleInDegrees: number, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that rotates coordinates on the y-axis when multiplied by.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static ROTATION_Y(_angleInDegrees: number, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that rotates coordinates on the z-axis when multiplied by.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static ROTATION_Z(_angleInDegrees: number, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that rotates coordinates when multiplied by, using the rotation euler angles or unit quaternion given.
-         * Rotation occurs around the axis in the order Z-Y-X.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static ROTATION(_rotation: Vector3 | Quaternion, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that rotates coordinates around an arbitrary axis when multiplied by.
-         * @param _axis The axis to rotate around as a unit vector.
-         * @param _angle The angle in degrees.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static ROTATION_AXIS_ANGLE(_axis: Vector3, _angle: number, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a matrix that scales coordinates along the x-, y- and z-axis according to the given {@link Vector3}.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static SCALING(_scalar: Vector3, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a representation of the given matrix relative to the given base.
-         * If known, pass the inverse of the base to avoid unneccesary calculation.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static RELATIVE(_mtx: Matrix4x4, _mtxBase: Matrix4x4, _mtxInverse?: Matrix4x4, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Computes and returns a matrix that applies perspective to an object, if its transform is multiplied by it.
-         * @param _aspect The aspect ratio between width and height of projectionspace.(Default = canvas.clientWidth / canvas.ClientHeight)
-         * @param _fieldOfViewInDegrees The field of view in Degrees. (Default = 45)
-         * @param _near The near clipspace border on the z-axis.
-         * @param _far The far clipspace border on the z-axis.
-         * @param _direction The plane on which the fieldOfView-Angle is given
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static PROJECTION_CENTRAL(_aspect: number, _fieldOfViewInDegrees: number, _near: number, _far: number, _direction: FIELD_OF_VIEW, _mtxOut?: Matrix4x4): Matrix4x4;
-        /**
-         * Computes and returns a matrix that applies orthographic projection to an object, if its transform is multiplied by it.
-         * @param _left The positionvalue of the projectionspace's left border.
-         * @param _right The positionvalue of the projectionspace's right border.
-         * @param _bottom The positionvalue of the projectionspace's bottom border.
-         * @param _top The positionvalue of the projectionspace's top border.
-         * @param _near The positionvalue of the projectionspace's near border.
-         * @param _far The positionvalue of the projectionspace's far border
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near?: number, _far?: number, _mtxOut?: Matrix4x4): Matrix4x4;
-        get isArrayConvertible(): true;
-        /**
-         * - get: return a vector representation of the translation {@link Vector3}.
-         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
-         * - set: effect the matrix ignoring its rotation and scaling
-         */
-        get translation(): Vector3;
-        set translation(_translation: Vector3);
-        /**
-         * - get: return a vector representation of the rotation {@link Vector3}.
-         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
-         * - set: effect the matrix
-         */
-        get rotation(): Vector3;
-        set rotation(_rotation: Quaternion | Vector3);
-        /**
-         * - get: return a vector representation of the scaling {@link Vector3}.
-         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
-         * - set: effect the matrix
-         */
-        get scaling(): Vector3;
-        set scaling(_scaling: Vector3);
-        /**
-         * - get: return a unit quaternion representing the rotation of this matrix.
-         * **Caution!** Use immediately and readonly, since the quaternion is going to be reused internally. Create a clone to keep longer and manipulate.
-         * - set: effect the matrix
-         */
-        get quaternion(): Quaternion;
-        set quaternion(_quaternion: Quaternion);
-        /**
-         * Returns the determinant of this matrix. Computational heavy operation, not cached so use with care.
-         * @deprecated Use {@link Matrix4x4.getDeterminant} instead.
-         */
-        get determinant(): number;
-        /**
-         * Returns the normalized cardinal x-axis.
-         * @deprecated use {@link getRight} instead.
-         */
-        get right(): Vector3;
-        /**
-         * Returns the normalized cardinal y-axis.
-         * @deprecated use {@link getUp} instead.
-         */
-        get up(): Vector3;
-        /**
-         * Returns the normalized cardinal z-axis.
-         * @deprecated use {@link getForward} instead.
-         */
-        get forward(): Vector3;
-        /**
-         * Creates and returns a clone of this matrix.
-         */
-        get clone(): Matrix4x4;
-        /**
-         * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
-         */
-        recycle(): void;
-        /**
-         * Resets the matrix to the identity-matrix and clears cache.
-         * @returns A reference to this matrix.
-         */
-        reset(): Matrix4x4;
-        /**
-         * Transpose this matrix.
-         * @returns A reference to this matrix.
-         */
-        transpose(): Matrix4x4;
-        /**
-         * Invert this matrix.
-         * @returns A reference to this matrix.
-         */
-        invert(): Matrix4x4;
-        /**
-         * Adds a translation by the given {@link Vector3} to this matrix.
-         * If _local is true, the translation occurs according to the current rotation and scaling of this matrix,
-         * otherwise, it occurs according to the parent.
-         * @returns A reference to this matrix.
-         */
-        translate(_by: Vector3, _local?: boolean): Matrix4x4;
-        /**
-         * Adds a translation along the x-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        translateX(_x: number, _local?: boolean): Matrix4x4;
-        /**
-         * Adds a translation along the y-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        translateY(_y: number, _local?: boolean): Matrix4x4;
-        /**
-         * Adds a translation along the z-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        translateZ(_z: number, _local?: boolean): Matrix4x4;
-        /**
-         * Rotates this matrix by given {@link Vector3} in the order Z, Y, X. Right hand rotation is used, thumb points in axis direction, fingers curling indicate rotation
-         * The rotation is appended to already applied transforms, thus multiplied from the right. Set _fromLeft to true to switch and put it in front.
-         * @returns A reference to this matrix.
-         */
-        rotate(_by: Vector3 | Quaternion, _fromLeft?: boolean): Matrix4x4;
-        /**
-         * Adds a rotation around the x-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        rotateX(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
-        /**
-         * Adds a rotation around the y-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        rotateY(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
-        /**
-         * Adds a rotation around the z-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        rotateZ(_angleInDegrees: number, _fromLeft?: boolean): Matrix4x4;
-        /**
-         * Adjusts the rotation of this matrix to point the z-axis directly at the given target and tilts it to accord with the given up-{@link Vector3},
-         * respectively calculating yaw and pitch. If no up-{@link Vector3} is given, the previous up-{@link Vector3} is used.
-         * The pitch may be restricted to the up-vector to only calculate yaw.
-         * @param _up A unit vector indicating the up-direction.
-         * @returns A reference to this matrix.
-         */ lookAt(_target: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
-        /**
-         * Adjusts the rotation of this matrix to align the z-axis with the given forward-direction and tilts it to accord with the given up-{@link Vector3}.
-         * If no up-vector is provided, the local {@link Matrix4x4.getUp} is used.
-         * The pitch may be restricted to the up-vector to only calculate yaw.
-         * @param _forward A unit vector indicating the desired forward-direction.
-         * @param _up A unit vector indicating the up-direction.
-         * @returns A reference to this matrix.
-         */ lookIn(_forward: Vector3, _up?: Vector3, _restrict?: boolean): Matrix4x4;
-        /**
-         * Same as {@link Matrix4x4.lookAt}, but optimized and needs testing
-         */
-        /**
-         * Adds a scaling by the given {@link Vector3} to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scale(_by: Vector3, _fromLeft?: boolean): Matrix4x4;
-        /**
-         * Adds a scaling along the x-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scaleX(_by: number): Matrix4x4;
-        /**
-         * Adds a scaling along the y-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scaleY(_by: number): Matrix4x4;
-        /**
-         * Adds a scaling along the z-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scaleZ(_by: number): Matrix4x4;
-        /**
-         * Multiply this matrix by the given matrix.
-         * @returns A reference to this matrix.
-         */
-        multiply(_matrix: Matrix4x4, _fromLeft?: boolean): Matrix4x4;
-        /**
-         * Premultiply this matrix with the given matrix.
-         * @returns A reference to this matrix.
-         */
-        premultiply(_mtxLeft: Matrix4x4): Matrix4x4;
-        /**
-         * (Re-)Compose this matrix from the given translation, rotation and scaling.
-         * Missing values will be decompsed from the current matrix state if necessary.
-         * @returns A reference to this matrix.
-         */
-        compose(_translation?: Partial<Vector3>, _rotation?: Partial<Vector3> | Partial<Quaternion>, _scaling?: Partial<Vector3>): Matrix4x4;
-        animate(_mutator: {
-            translation?: Float32Array;
-            rotation?: Float32Array;
-            quaternion?: Float32Array;
-            scaling?: Float32Array;
-        }): Matrix4x4;
-        /**
-         * Sets the elements of this matrix to the given values.
-         * @returns A reference to this matrix.
-         */
-        set(_m00: number, _m01: number, _m02: number, _m03: number, _m10: number, _m11: number, _m12: number, _m13: number, _m20: number, _m21: number, _m22: number, _m23: number, _m30: number, _m31: number, _m32: number, _m33: number): Matrix4x4;
-        /**
-         * Copies the state of the given matrix into this matrix.
-         * @returns A reference to this matrix.
-         */
-        copy(_original: Matrix4x4): Matrix4x4;
-        /**
-         * Returns a formatted string representation of this matrix
-         */
-        toString(): string;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
-        /**
-         * Returns the array of the elements of this matrix.
-         * @returns A readonly view of the internal array.
-         */
-        getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView;
-        /**
-          * Returns the determinant of this matrix.
-          */
-        getDeterminant(): number;
-        /**
-         * Return cardinal x-axis.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getX(_vctOut?: Vector3): Vector3;
-        /**
-         * Return cardinal y-axis.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getY(_vctOut?: Vector3): Vector3;
-        /**
-         * Return cardinal z-axis.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getZ(_vctOut?: Vector3): Vector3;
-        /**
-         * Returns the normalized cardinal x-axis.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getRight(_vctOut?: Vector3): Vector3;
-        /**
-         * Returns the normalized cardinal y-axis.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getUp(_vctOut?: Vector3): Vector3;
-        /**
-         * Returns the normalized cardinal z-axis.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getForward(_vctOut?: Vector3): Vector3;
-        /**
-         * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
-         */
-        swapXY(): void;
-        /**
-         * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
-         */
-        swapXZ(): void;
-        /**
-         * Swaps the two cardinal axis and reverses the third, effectively rotating the transform 180 degrees around one and 90 degrees around a second axis
-         */
-        swapYZ(): void;
-        /**
-         * Returns the tranlation from this matrix to the target matrix.
-         * @param _vctOut Optional vector to store the result in.
-         */
-        getTranslationTo(_mtxTarget: Matrix4x4, _vctOut?: Vector3): Vector3;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Matrix4x4;
         getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
         protected reduceMutator(_mutator: Mutator): void;

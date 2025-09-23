@@ -48,6 +48,14 @@
       "latitudes": 8
     }
   },
+  "Audio|2022-12-14T14:05:13.067Z|67547": {
+    "ƒ.Audio": {
+      "url": "Audios\\BloomR.mp3",
+      "idResource": "Audio|2022-12-14T14:05:13.067Z|67547",
+      "name": "Audios\\BloomR.mp3",
+      "type": "Audio"
+    }
+  },
   "Graph|2022-12-14T14:00:48.574Z|80970": {
     "ƒ.Graph": {
       "name": "Audio",
@@ -217,10 +225,15 @@
                 {
                   "ƒ.ComponentAudio": {
                     "active": true,
-                    "idResource": "Audio|2022-12-14T14:05:09.942Z|60208",
-                    "playing": false,
+                    "volume": 1,
                     "loop": true,
-                    "volume": 1
+                    "mtxPivot": {
+                      "translation": "[0, 0, 0]",
+                      "rotation": "[0, 0, 0]",
+                      "scaling": "[1, 1, 1]"
+                    },
+                    "audio": "Audio|2022-12-14T14:05:29.113Z|41053",
+                    "playing": false
                   }
                 }
               ],
@@ -294,10 +307,15 @@
                 {
                   "ƒ.ComponentAudio": {
                     "active": true,
-                    "idResource": "Audio|2022-12-14T14:05:29.113Z|41053",
-                    "playing": false,
+                    "volume": 1,
                     "loop": true,
-                    "volume": 1
+                    "mtxPivot": {
+                      "translation": "[0, 0, 0]",
+                      "rotation": "[0, 0, 0]",
+                      "scaling": "[1, 1, 1]"
+                    },
+                    "audio": "Audio|2022-12-14T14:05:13.067Z|67547",
+                    "playing": false
                   }
                 }
               ],
@@ -589,14 +607,6 @@
       ],
       "idResource": "Graph|2022-12-14T14:00:48.574Z|80970",
       "type": "Graph"
-    }
-  },
-  "Audio|2022-12-14T14:05:13.067Z|67547": {
-    "ƒ.Audio": {
-      "url": "Audios\\BloomR.mp3",
-      "idResource": "Audio|2022-12-14T14:05:13.067Z|67547",
-      "name": "Audios\\BloomR.mp3",
-      "type": "Audio"
     }
   }
 }

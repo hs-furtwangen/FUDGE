@@ -28,19 +28,27 @@ namespace FudgeCore {
    * ```
    * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
    */
+  @orderFlat
   export class ComponentAudio extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAudio);
     /** places and directs the panner relative to the world transform of the {@link Node}  */
+
+    @order(1)
+    @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
     protected singleton: boolean = false;
 
-    @mutate(Audio)
+    @order(2)
+    @edit(Audio)
     private audio: Audio;
     private gain: GainNode;
     private panner: PannerNode;
     private source: AudioBufferSourceNode;
     private audioManager: AudioManager;
+
+    @order(4)
+    @edit(Boolean)
     private playing: boolean = false;
     private listened: boolean = false;
 
@@ -56,30 +64,33 @@ namespace FudgeCore {
         this.play(_start);
     }
 
+    @order(3)
+    @edit(Number)
+    public get volume(): number {
+      return this.gain.gain.value;
+    }
+
     public set volume(_value: number) {
       this.gain.gain.value = _value;
     }
 
-    public get volume(): number {
-      return this.gain.gain.value;
+    @order(5)
+    @edit(Boolean) 
+    public get loop(): boolean {
+      return this.source.loop;
     }
 
     public set loop(_on: boolean) {
       this.source.loop = _on;
     }
 
-    public get loop(): boolean {
-      return this.source.loop;
+    public get playbackRate(): number {
+      return this.source.playbackRate.value;
     }
 
     public set playbackRate(_value: number) {
       this.source.playbackRate.value = _value;
     }
-
-    public get playbackRate(): number {
-      return this.source.playbackRate.value;
-    }
-
 
     public get isPlaying(): boolean {
       return this.playing;
@@ -207,48 +218,17 @@ namespace FudgeCore {
       Recycler.store(color);
     };
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.idResource = this.audio?.idResource;
-      serialization.playing = this.playing;
-      serialization.loop = this.loop;
-      serialization.volume = this.volume;
-      // console.log(this.getMutatorOfNode(AUDIO_NODE_TYPE.PANNER));
-      // TODO: serialize panner parameters
-      return serialization;
-    }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      let audio: Audio = <Audio>await Project.getResource(_serialization.idResource);
-      this.createSource(audio, _serialization.loop);
-      this.volume = _serialization.volume;
-      this.play(_serialization.playing);
+      this.createSource(this.audio, this.loop);
+      this.play(this.playing);
       return this;
     }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      let audio: Mutator = mutator.audio;
-      delete mutator.audio; // just to rearrange in interfaces...
-      mutator.loop = this.loop;
-      mutator.volume = this.volume;
-      mutator.audio = audio; //... so audio comes last
-      return mutator;
-    }
-
-    // public async mutate(_mutator: Mutator): Promise<void> {
-    //   await super.mutate(_mutator);
-    //   // this.volume = _mutator.volume;
-    //   // this.loop = _mutator.loop;
-    // }
 
     protected reduceMutator(_mutator: Mutator): void {
       super.reduceMutator(_mutator);
       delete _mutator.listened;
     }
-    //#endregion
-
 
     private hndAudioReady: EventListener = (_event: Event) => {
       Debug.fudge("Audio start", Reflect.get(_event.target, "url"));

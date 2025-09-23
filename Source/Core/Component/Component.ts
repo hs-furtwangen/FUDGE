@@ -58,7 +58,8 @@ namespace FudgeCore {
     /**
      * De- / Activate this component. Inactive components will not be processed by the renderer.
      */
-    @edit(Boolean)
+    @order(0)
+    @edit(Boolean) 
     public get active(): boolean {
       return this.#active;
     }

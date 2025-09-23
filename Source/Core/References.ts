@@ -8,6 +8,7 @@
 /// <reference path="Serialization/Metadata.ts"/>
 /// <reference path="Serialization/SerializeDecorator.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
+/// <reference path="Math/Matrix4x4.ts"/>
 /// <reference path="Render/RenderWebGL.ts"/>
 /// <reference path="Graph/Node.ts"/>
 /// <reference path="Component/Component.ts"/>
@@ -15,7 +16,6 @@
 /// <reference path="Physics/HelpersPhysics.ts"/>
 /// <reference path="Physics/Joint.ts"/>
 /// <reference path="Physics/JointAxial.ts"/>
-/// <reference path="Serialization/Project.ts"/>
 /// <reference path="Texture/Texture.ts"/>
 /// <reference path="Mesh/Mesh.ts"/>
 /// <reference path="Material/Material.ts"/>
