@@ -58,7 +58,7 @@ namespace FudgeCore {
       if (mesh == null || cmpMaterial == null)
         return;
 
-      Gizmos.drawWireMesh(mesh, this.mtxWorld, cmpMaterial.clrPrimary);
+      Gizmos.drawWireMesh(mesh, this.mtxWorld, cmpMaterial.color);
     }
 
     protected reduceMutator(_mutator: Mutator): void {

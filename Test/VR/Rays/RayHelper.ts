@@ -63,13 +63,13 @@ namespace RaySceneVR {
         if (!this.pick) {
           this.node.getComponent(f.ComponentMesh).mtxPivot.scaling = new f.Vector3(0.025, this.maxLength, 0.025);
           this.node.getComponent(f.ComponentMesh).mtxPivot.translation = new f.Vector3(0, 0, -this.maxLength / 2 + 0.2);
-          this.node.getComponent(f.ComponentMaterial).clrPrimary = new f.Color(100, 100, 100, 0.5);
+          this.node.getComponent(f.ComponentMaterial).color = new f.Color(100, 100, 100, 0.5);
         } else {
           let distance: f.Vector3 = f.Vector3.DIFFERENCE(this.pick.mtxLocal.translation, this.controller.cmpTransform.mtxLocal.translation);
           this.node.getComponent(f.ComponentMesh).mtxPivot.scaling = new f.Vector3(0.025, distance.magnitude, 0.025);
           this.node.getComponent(f.ComponentMesh).mtxPivot.translation = new f.Vector3(0, 0, -distance.magnitude / 2 + 0.2);
-          this.node.getComponent(f.ComponentMaterial).clrPrimary = this.pick.getComponent(f.ComponentMaterial).clrPrimary;
-          this.node.getComponent(f.ComponentMaterial).clrPrimary.a = 0.5;
+          this.node.getComponent(f.ComponentMaterial).color = this.pick.getComponent(f.ComponentMaterial).color;
+          this.node.getComponent(f.ComponentMaterial).color.a = 0.5;
         }
 
         let picker: f.Pick[] = f.Picker.pickRay(this.pickableObjects, this.ray, -0.01, 1000);

@@ -80,7 +80,7 @@ namespace AudioSceneVR {
     if (cmpAudio) 
       cmpAudio.play(!cmpAudio.isPlaying);
     if (color)
-      cmpAudio.node.getComponent(f.ComponentMaterial).clrPrimary = cmpAudio.isPlaying ? color : f.Color.CSS("white");
+      cmpAudio.node.getComponent(f.ComponentMaterial).color = cmpAudio.isPlaying ? color : f.Color.CSS("white");
     
   }
   function onSqueeze(_event: XRInputSourceEvent): void {

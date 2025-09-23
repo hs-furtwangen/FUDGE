@@ -26,7 +26,7 @@ namespace ScreenToRay {
     let root: ƒ.Node = new ƒ.Node("Root");
     let cosys: ƒAid.Node = new ƒAid.NodeCoordinateSystem("CoSys", ƒ.Matrix4x4.SCALING(ƒ.Vector3.ONE(100)));
     cosys.getChildrenByName("ArrowBlue")[0].mtxLocal.rotateZ(45, true);
-    cosys.getChildrenByName("ArrowBlue")[0].getChildrenByName("ArrowBlueShaft")[0].getComponent(ƒ.ComponentMaterial).clrPrimary.a = 0.5; // = ƒ.Color.CSS("white", 0.9);
+    cosys.getChildrenByName("ArrowBlue")[0].getChildrenByName("ArrowBlueShaft")[0].getComponent(ƒ.ComponentMaterial).color.a = 0.5; // = ƒ.Color.CSS("white", 0.9);
 
 
     let object: ƒAid.Node = new ƒAid.Node(

@@ -91,7 +91,7 @@ namespace PhysicsVR {
                 Translator.speed += 0.0002;
                 spawnTrigger -= 4;
                 for (let i = 0; i <= spawnAmount; i++) {
-                    cubeInstances[increment].getComponent(f.ComponentMaterial).clrPrimary = new f.Color(f.Random.default.getRange(0, 1), f.Random.default.getRange(0, 1), f.Random.default.getRange(0, 1), 1);
+                    cubeInstances[increment].getComponent(f.ComponentMaterial).color = new f.Color(f.Random.default.getRange(0, 1), f.Random.default.getRange(0, 1), f.Random.default.getRange(0, 1), 1);
                     cubeInstances[increment].mtxLocal.translation = new f.Vector3(f.Random.default.getRange(-2, 2), f.Random.default.getRange(-0.5, 0.5), f.Random.default.getRange(-2, 2));
                     cubeContainer.appendChild(cubeInstances[increment]);
                     increment++;

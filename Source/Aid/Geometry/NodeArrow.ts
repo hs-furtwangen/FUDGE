@@ -15,8 +15,8 @@ namespace FudgeAid {
       head.mtxLocal.scale(new ƒ.Vector3(0.05, 0.05, 0.1));
       head.mtxLocal.rotateX(90);
 
-      shaft.getComponent(ƒ.ComponentMaterial).clrPrimary = _color;
-      head.getComponent(ƒ.ComponentMaterial).clrPrimary = _color;
+      shaft.getComponent(ƒ.ComponentMaterial).color = _color;
+      head.getComponent(ƒ.ComponentMaterial).color = _color;
 
       this.addChild(shaft);
       this.addChild(head);
@@ -35,7 +35,7 @@ namespace FudgeAid {
 
     public set color(_color: ƒ.Color) {
       for (let child of this.getChildren()) {
-        child.getComponent(ƒ.ComponentMaterial).clrPrimary.copy(_color);
+        child.getComponent(ƒ.ComponentMaterial).color.copy(_color);
       }
     }
   }

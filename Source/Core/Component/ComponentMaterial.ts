@@ -6,8 +6,8 @@ namespace FudgeCore {
   export class ComponentMaterial extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMaterial);
 
-    public clrPrimary: Color = Color.CSS("white");
-    public clrSecondary: Color = Color.CSS("white");
+    public color: Color = Color.CSS("white");
+
     public mtxPivot: Matrix3x3 = Matrix3x3.IDENTITY();
 
     @mutate(Material)
@@ -25,8 +25,7 @@ namespace FudgeCore {
     public serialize(): Serialization {
       let serialization: Serialization = {
         sortForAlpha: this.sortForAlpha,
-        clrPrimary: this.clrPrimary.serialize(),
-        clrSecondary: this.clrSecondary.serialize(),
+        clrPrimary: this.color.serialize(),
         pivot: this.mtxPivot.serialize(),
         [super.constructor.name]: super.serialize(),
         idMaterial: this.material.idResource
@@ -37,8 +36,7 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       this.material = <Material>await Project.getResource(_serialization.idMaterial);
-      this.clrPrimary.deserialize(_serialization.clrPrimary);
-      this.clrSecondary.deserialize(_serialization.clrSecondary);
+      this.color.deserialize(_serialization.clrPrimary);
       this.sortForAlpha = _serialization.sortForAlpha;
       this.mtxPivot.deserialize(_serialization.pivot);
       await super.deserialize(_serialization[super.constructor.name]);

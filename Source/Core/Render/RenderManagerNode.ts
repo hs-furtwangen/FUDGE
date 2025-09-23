@@ -36,7 +36,7 @@ namespace FudgeCore {
       // data[offsetPivot + 27] = padding
 
       // color
-      _cmpMaterial.clrPrimary.toArray(data, offset + 28);
+      _cmpMaterial.color.toArray(data, offset + 28);
 
       if (_cmpParticleSystem) {
         const dataUint: Uint32Array = RenderManagerNode.dataUInt;
