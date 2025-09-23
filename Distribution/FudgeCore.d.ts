@@ -4600,6 +4600,7 @@ declare namespace FudgeCore {
          * @returns the Mutator for Animation.
          */
         updateAnimation(_time: number): Mutator;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
         private activateListeners;
         /**
          * Updates the Animation.
