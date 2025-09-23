@@ -1,6 +1,8 @@
 import { getuid } from "process";
 import WebSocket from "ws";
+import https from "https";
 import { FudgeNet } from "./Message.js";
+import * as fs from 'fs';
 
 /**
  * Keeps information about the connected clients
@@ -39,10 +41,24 @@ export class FudgeServer {
   /**
    * Starts the server on the given port, installs the appropriate event-listeners and starts the heartbeat
    */
-  public startUp = (_port: number = 8080): void => {
+  public startUp = (_port: number = 8080, _privateKeyPath?: string | undefined, _certPath?: string | undefined): void => {
+    if (_privateKeyPath != undefined && _certPath != undefined) {
+      const certs = {
+        key: fs.readFileSync(_privateKeyPath),
+        cert: fs.readFileSync(_certPath)
+      }
+
+      let httpsServer: https.Server = https.createServer(certs).listen(_port)
+
+      this.socket = new WebSocket.Server({ server: httpsServer })
+    }
+    else {
+      this.socket = new WebSocket.Server({ port: _port });
+    }
+
     this.rooms[this.idLobby] = { id: this.idLobby, clients: {}, idHost: undefined }; // create lobby to collect newly connected clients
     console.log(_port);
-    this.socket = new WebSocket.Server({ port: _port });
+
     this.addEventListeners();
     setInterval(this.heartbeat, 1000);
   };
