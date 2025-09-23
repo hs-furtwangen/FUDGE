@@ -333,6 +333,6 @@ namespace ScreenToRay {
     let relativeRect: DOMRect = new DOMRect(canvasRect.left - parentRect.left, canvasRect.top - parentRect.top, canvasRect.width, canvasRect.height);
     uiClient.set(ƒ.Rectangle.GET(relativeRect.left, relativeRect.top, relativeRect.width, relativeRect.height));
 
-    uiCamera.set({ aspect: cmpCamera.getAspect(), fieldOfView: cmpCamera.getFieldOfView(), near: cmpCamera.getNear(), far: cmpCamera.getFar() });
+    uiCamera.set({ aspect: cmpCamera.aspectRatio, fieldOfView: cmpCamera.fieldOfView, near: cmpCamera.near, far: cmpCamera.far });
   }
 }

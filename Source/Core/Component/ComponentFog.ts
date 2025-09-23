@@ -7,12 +7,19 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentFog);
 
     @edit(Color)
-    public color: Color = new Color(1, 1, 1, 1);
+    public color: Color;
 
     @edit(Number)
-    public near: number = 1;
+    public near: number;
 
     @edit(Number)
-    public far: number = 50;
+    public far: number;
+
+    public constructor(_color: Color = new Color(1, 1, 1, 1), _near: number = 1, _far: number = 50) {
+      super();
+      this.color = _color;
+      this.near = _near;
+      this.far = _far;
+    }
   }
 }

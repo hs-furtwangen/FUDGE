@@ -978,6 +978,206 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Stores and manipulates a twodimensional vector comprised of the components x and y
+     * ```text
+     *            +y
+     *             |__ +x
+     * ```
+     * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
+     */
+    class Vector2 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        x: number;
+        y: number;
+        constructor(_x?: number, _y?: number);
+        /**
+         * A shorthand for writing `new Vector2(0, 0)`.
+         * @returns A new vector with the values (0, 0)
+         */
+        static ZERO(): Vector2;
+        /**
+         * A shorthand for writing `new Vector2(_scale, _scale)`.
+         * @param _scale the scale of the vector. Default: 1
+         */
+        static ONE(_scale?: number): Vector2;
+        /**
+         * A shorthand for writing `new Vector2(x, 0)`.
+         * @param _scale The number to write in the x coordinate. Default: 1
+         * @returns A new vector with the values (_scale, 0)
+         */
+        static X(_scale?: number): Vector2;
+        /**
+         * A shorthand for writing `new Vector2(0, y)`.
+         * @param _scale The number to write in the y coordinate. Default: 1
+         * @returns A new vector with the values (0, _scale)
+         */
+        static Y(_scale?: number): Vector2;
+        /**
+         * Creates and returns a vector through transformation of the given vector by the given matrix
+         * @param _out Optional vector to store the result in.
+         */
+        static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation?: boolean, _out?: Vector2): Vector2;
+        /**
+         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
+         * @param _out Optional vector to store the result in.
+         */
+        static NORMALIZATION(_vector: Vector2, _length?: number, _out?: Vector2): Vector2;
+        /**
+         * Returns a new vector representing the given vector scaled by the given scaling factor
+         * @param _out Optional vector to store the result in.
+         */
+        static SCALE(_vector: Vector2, _scale: number, _out?: Vector2): Vector2;
+        /**
+         * Returns the result of the addition of two vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static SUM(_a: Vector2, _b: Vector2, _out?: Vector2): Vector2;
+        /**
+         * Returns the result of the subtraction of two vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static DIFFERENCE(_minuend: Vector2, _subtrahend: Vector2, _out?: Vector2): Vector2;
+        /**
+         * Returns a new vector representing the given vector scaled by the given scaling factor.
+         * @param _out Optional vector to store the result in.
+         */
+        static NEGATION(_vector: Vector2, _out?: Vector2): Vector2;
+        /**
+         * Calculates the cross product of two Vectors. Due to them being only 2 Dimensional, the result is a single number,
+         * which implicitly is on the Z axis. It is also the signed magnitude of the result.
+         */
+        static CROSS(_a: Vector2, _b: Vector2): number;
+        /**
+         * Computes the dotproduct of 2 vectors.
+         */
+        static DOT(_a: Vector2, _b: Vector2): number;
+        /**
+         * Calculates the orthogonal vector to the given vector. Rotates counterclockwise by default.
+         * ```text
+         * ↑ => ← => ↓ => → => ↑
+         * ```
+         * @param _vector Vector to get the orthogonal equivalent of
+         * @param _clockwise Should the rotation be clockwise instead of the default counterclockwise? default: false
+         * @param _out Optional vector to store the result in.
+         * @returns A Vector that is orthogonal to and has the same magnitude as the given Vector.
+         */
+        static ORTHOGONAL(_vector: Vector2, _clockwise?: boolean, _out?: Vector2): Vector2;
+        /**
+         * Creates a cartesian vector from polar coordinates.
+         * @param _out Optional vector to store the result in.
+         */
+        static GEO(_angle?: number, _magnitude?: number, _out?: Vector2): Vector2;
+        get isArrayConvertible(): true;
+        /**
+         * Returns the length of the vector
+         */
+        get magnitude(): number;
+        /**
+         * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
+         */
+        get magnitudeSquared(): number;
+        /**
+         * - get: Returns a polar representation of this vector
+         * - set: Adjusts the cartesian values of this vector to represent the given as polar coordinates
+         */
+        get geo(): Geo2;
+        set geo(_geo: Geo2);
+        /**
+         * Creates and returns a clone of this vector.
+         */
+        get clone(): Vector2;
+        /**
+         * Copies the components of the given vector into this vector.
+         * @returns A reference to this vector.
+         */
+        copy(_original: Vector2): Vector2;
+        /**
+         * Sets the components of this vector.
+         * @returns A reference to this vector.
+         */
+        set(_x?: number, _y?: number): Vector2;
+        recycle(): void;
+        /**
+         * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
+         * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
+         */
+        equals(_compare: Vector2, _tolerance?: number): boolean;
+        /**
+         * Returns the distance bewtween this vector and the given vector.
+         */
+        getDistance(_to: Vector2): number;
+        /**
+         * Adds the given vector to this vector.
+         * @returns A reference to this vector.
+         */
+        add(_addend: Vector2): Vector2;
+        /**
+         * Subtracts the given vector from this vector.
+         * @returns A reference to this vector.
+         */
+        subtract(_subtrahend: Vector2): Vector2;
+        /**
+         * Scales the Vector by the given _scalar.
+         * @returns A reference to this vector.
+         */
+        scale(_scalar: number): Vector2;
+        /**
+         * Negates this vector by flipping the signs of its components
+         * @returns A reference to this vector.
+         */
+        negate(): Vector2;
+        /**
+         * Normalizes this to the given length, 1 by default
+         * @returns A reference to this vector.
+         */
+        normalize(_length?: number): Vector2;
+        /**
+         * Transforms this vector by the given matrix, including or exluding the translation.
+         * Including is the default, excluding will only rotate and scale this vector.
+         * @returns A reference to this vector.
+         */
+        transform(_mtxTransform: Matrix3x3, _includeTranslation?: boolean): Vector2;
+        /**
+         * For each dimension, moves the component to the minimum of this and the given vector.
+         * @returns A reference to this vector.
+         */
+        min(_compare: Vector2): Vector2;
+        /**
+         * For each dimension, moves the component to the maximum of this and the given vector.
+         * @returns A reference to this vector.
+         */
+        max(_compare: Vector2): Vector2;
+        /**
+         * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
+         * @param _out Optional vector to store the result in.
+         */
+        map(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number, _out?: Vector2): Vector2;
+        /**
+         * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector2.map} but mutates this vector instead of creating a new one.
+         * @returns A reference to this vector.
+         */
+        apply(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+        /**
+         * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3.
+         * @param _out Optional vector to store the result in.
+         */
+        toVector3(_z?: number, _out?: Vector3): Vector3;
+        /**
+         * Returns a formatted string representation of this vector.
+         */
+        toString(): string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Vector2;
+        getMutator(): Mutator;
+        mutate(_mutator: Mutator): void;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
     interface Vector3Like {
         x: number;
         y: number;
@@ -1261,6 +1461,535 @@ declare namespace FudgeCore {
         mutate(_mutator: Mutator): void;
         getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Stores and manipulates a fourdimensional vector comprised of the components x, y, z and w.
+     * @authors Jonas Plotzky, HFU, 2023
+     */
+    class Vector4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+        constructor(_x?: number, _y?: number, _z?: number, _w?: number);
+        /**
+         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
+         * @param _out Optional vector to store the result in.
+         */
+        static NORMALIZATION(_vector: Vector4, _length?: number, _out?: Vector4): Vector4;
+        /**
+         * Returns the result of the addition of two vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static SUM(_a: Vector4, _b: Vector4, _out?: Vector4): Vector4;
+        /**
+         * Returns the result of the subtraction of two vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static DIFFERENCE(_minuend: Vector4, _subtrahend: Vector4, _out?: Vector4): Vector4;
+        /**
+         * Returns a new vector representing the given vector scaled by the given scaling factor.
+         * @param _out Optional vector to store the result in.
+         */
+        static SCALE(_vector: Vector4, _scaling: number, _out?: Vector4): Vector4;
+        /**
+         * Returns a new vector representing the given vector scaled by the given scaling factor.
+         * @param _out Optional vector to store the result in.
+         */
+        static NEGATION(_vector: Vector4, _out?: Vector4): Vector4;
+        /**
+         * Computes the dotproduct of 2 vectors.
+         */
+        static DOT(_a: Vector4, _b: Vector4): number;
+        get isArrayConvertible(): true;
+        /**
+         * The magnitude (length) of the vector.
+         */
+        get magnitude(): number;
+        /**
+         * The squared magnitude (length) of the vector. Faster for simple proximity evaluation.
+         */
+        get magnitudeSquared(): number;
+        /**
+         * Creates and returns a clone of this vector.
+         */
+        get clone(): Vector4;
+        /**
+         * Copies the components of the given vector into this vector.
+         * @returns A reference to this vector.
+         */
+        copy(_original: Vector4): Vector4;
+        /**
+         * Sets the components of this vector and returns it.
+         * @returns A reference to this vector.
+         */
+        set(_x: number, _y: number, _z: number, _w: number): Vector4;
+        recycle(): void;
+        /**
+         * Returns true if this vector is equal to the given vector within the given tolerance.
+         */
+        equals(_compare: Vector4, _tolerance?: number): boolean;
+        /**
+         * Adds the given vector to this vector.
+         * @returns A reference to this vector.
+         */
+        add(_addend: Vector4): Vector4;
+        /**
+         * Subtracts the given vector from this vector.
+         * @returns A reference to this vector.
+         */
+        subtract(_subtrahend: Vector4): Vector4;
+        /**
+         * Scales this vector by the given scalar.
+         * @returns A reference to this vector.
+         */
+        scale(_scalar: number): Vector4;
+        /**
+         * Negates this vector by flipping the signs of its components
+         * @returns A reference to this vector.
+         */
+        negate(): Vector4;
+        /**
+         * Normalizes this vector to the given length, 1 by default.
+         * @returns A reference to this vector.
+         */
+        normalize(_length?: number): Vector4;
+        /**
+         * For each dimension, moves the component to the minimum of this and the given vector.
+         * @returns A reference to this vector.
+         */
+        min(_compare: Vector4): Vector4;
+        /**
+         * For each dimension, moves the component to the maximum of this and the given vector.
+         * @returns A reference to this vector.
+         */
+        max(_compare: Vector4): Vector4;
+        /**
+         * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
+         * @param _out Optional vector to store the result in.
+         */
+        map(_function: (_value: number, _index: number, _component: "x" | "y" | "z" | "w", _vector: Vector4) => number, _out?: Vector4): Vector4;
+        /**
+         * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector4.map} but mutates this vector instead of creating a new one.
+         * @returns A reference to this vector.
+         */
+        apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z" | "w", _vector: Vector4) => number): Vector4;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        }>(_out?: T, _offset?: number): T;
+        /**
+         * Drops the z-component and w-component and returns a Vector2 consisting of the x- and y-components.
+         * @param _out Optional vector to store the result in.
+         */
+        toVector2(_out?: Vector2): Vector2;
+        /**
+         * Drops the w-component and returns a Vector3 consisting of the x-, y- and z-components.
+         * @param _out Optional vector to store the result in.
+         */
+        toVector3(_out?: Vector3): Vector3;
+        /**
+         * Returns a formatted string representation of this vector.
+         */
+        toString(): string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Vector4;
+        mutate(_mutator: Mutator): void;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    interface QuaternionLike {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+    }
+    /**
+      * Storing and manipulating rotations in the form of quaternions.
+      * Constructed out of the 4 components: (x, y, z, w). Mathematical notation: w + xi + yj + zk.
+      * A Quaternion can be described with an axis and angle: (x, y, z) = sin(angle/2)*axis; w = cos(angle/2).
+      * roll: x, pitch: y, yaw: z. Note that operations are adapted to work with vectors where y is up and z is forward.
+      * @authors Matthias Roming, HFU, 2023 | Marko Fehrenbach, HFU, 2020 | Jonas Plotzky, HFU, 2023
+      */
+    class Quaternion extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        #private;
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+        constructor(_x?: number, _y?: number, _z?: number, _w?: number);
+        /**
+         * Retrieve a new identity quaternion
+         */
+        static IDENTITY(): Quaternion;
+        /**
+         * Normalize a quaternion making it a valid rotation representation.
+         * @param _q - quaternion to normalize
+         * @param _out - (optional) the receiving quaternion.
+         * @returns `_out` or a new quaternion if none is provided.
+         */
+        static NORMALIZATION(_q: Readonly<Quaternion>, _out?: Quaternion): Quaternion;
+        static NORMALIZATION<T extends QuaternionLike>(_q: Readonly<T>, _out: T): T;
+        /**
+         * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
+         * Rotation occurs around the axis in the order Z-Y-X.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static ROTATION_EULER_ANGLES(_eulerAngles: Vector3, _out?: Quaternion): Quaternion;
+        /**
+         * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
+         * Axis must be normalized. Angle is in degrees.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static ROTATION_AXIS_ANGLE(_axis: Vector3, _angle: number, _out?: Quaternion): Quaternion;
+        /**
+         * Returns a quaternion with the given forward and up direction.
+         * @param _forward A unit vector indicating the desired forward-direction.
+         * @param _up A unit vector indicating the up-direction.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static ROTATION_LOOK_IN(_forward: Vector3, _up: Vector3, _out?: Quaternion): Quaternion;
+        /**
+         * Returns a quaternion that will rotate one vector to align with another.
+         * @param _from The normalized direction vector to rotate from.
+         * @param _to The normalized direction vector to rotate to.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static ROTATION_FROM_TO(_from: Vector3, _to: Vector3, _out?: Quaternion): Quaternion;
+        /**
+         * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
+         * Rotation occurs around the axis in the order Z-Y-X.
+         * @deprecated Use {@link ROTATION_EULER_ANGLES} instead.
+         */
+        static ROTATION(_eulerAngles: Vector3): Quaternion;
+        /**
+         * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
+         * Axis must be normalized. Angle is in degrees.
+         * @deprecated Use {@link ROTATION_AXIS_ANGLE} instead.
+         */
+        static ROTATION(_axis: Vector3, _angle: number): Quaternion;
+        /**
+         * Returns a quaternion that rotates coordinates when multiplied by, using the forward and up direction given.
+         * @deprecated Use {@link ROTATION_LOOK_IN} instead.
+         */
+        static ROTATION(_forward: Vector3, _up: Vector3): Quaternion;
+        /**
+         * Computes and returns the product of two passed quaternions.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static PRODUCT(_left: Quaternion, _right: Quaternion, _out?: Quaternion): Quaternion;
+        /**
+         * Computes and returns the inverse of a passed quaternion.
+         * Quaternion is assumed to be normalized.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static INVERSE(_quaternion: Quaternion, _out?: Quaternion): Quaternion;
+        /**
+         * Computes and returns the conjugate of a passed quaternion.
+         * @param _out Optional quaternion to store the result in.
+         */
+        static CONJUGATE(_quaternion: Quaternion, _out?: Quaternion): Quaternion;
+        /**
+         * Returns the dot product of two quaternions.
+         */
+        static DOT(_a: Quaternion, _b: Quaternion): number;
+        /**
+         * Performs a linear interpolation between two quaternions. Result should be normalized afterwards to represent a valid rotation.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving quaternion.
+         * @returns `_out` or a new quaternion if none is provided.
+         * @source https://github.com/toji/gl-matrix
+         */
+        static LERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
+        static LERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+        /**
+         * Performs a spherical linear interpolation between two quaternions.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving quaternion.
+         * @returns `_out` or a new quaternion if none is provided.
+         * @source https://github.com/toji/gl-matrix
+         */
+        static SLERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
+        static SLERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+        /**
+         * Return the angle in degrees between the two given quaternions.
+         */
+        static ANGLE(_from: Quaternion, _to: Quaternion): number;
+        /**
+         * Performs a spherical linear interpolation between two quaternion arrays.
+         * @param _a - the first operand.
+         * @param _aOffset - the offset into the first operand.
+         * @param _b - the second operand.
+         * @param _bOffset - the offset into the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - the receiving quaternion array.
+         * @param _outOffset - the offset into the receiving quaternion array.
+         * @returns `out`
+         * @source https://github.com/toji/gl-matrix
+         */
+        static SLERP_ARRAY<T extends {
+            [n: number]: number;
+        }>(_a: Readonly<T>, _aOffset: number, _b: Readonly<T>, _bOffset: number, _t: number, _out: T, _outOffset: number): T;
+        /**
+         * Normalize a quaternion array.
+         * @param _a - quaternion array to normalize.
+         * @param _aOffset - the offset into the quaternion array.
+         * @param _out - the receiving quaternion array.
+         * @param _outOffset - the offset into the receiving quaternion array.
+         * @returns `out`
+         * @source https://github.com/toji/gl-matrix
+         */
+        static NORMALIZE_ARRAY<T extends {
+            [n: number]: number;
+        }>(_a: Readonly<T>, _aOffset: number, _out: T, _outOffset: number): T;
+        /**
+         * Negates the given quaternion.
+         */
+        static negate(_q: Quaternion): void;
+        get isArrayConvertible(): true;
+        /**
+         * Creates and returns a clone of this quaternion.
+         */
+        get clone(): Quaternion;
+        /**
+         * - get: return the euler angle representation of the rotation in degrees.
+         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
+         * - set: set the euler angle representation of the rotation in degrees.
+         */
+        get eulerAngles(): Vector3;
+        set eulerAngles(_eulerAngles: Vector3);
+        /**
+         * Copies the given quaternion.
+         * @returns A reference to this quaternion.
+         */
+        copy(_original: Quaternion): Quaternion;
+        /**
+         * Resets the quaternion to the identity-quaternion and clears cache. Used by the recycler to reset.
+         */
+        recycle(): void;
+        /**
+         * Sets the components of this quaternion.
+         * @returns A reference to this quaternion.
+         */
+        set(_x: number, _y: number, _z: number, _w: number): Quaternion;
+        /**
+         * Returns true if this quaternion is equal to the given quaternion within the given tolerance.
+         */
+        equals(_compare: Quaternion, _tolerance?: number): boolean;
+        /**
+         * Normalizes this quaternion to a length of 1 (a unit quaternion) making it a valid rotation representation.
+         * @returns A reference to this quaternion.
+         */
+        normalize(): Quaternion;
+        /**
+         * Negates this quaternion.
+         * @returns A reference to this quaternion.
+         */
+        negate(): Quaternion;
+        /**
+         * Invert this quaternion.
+         * Quaternion is assumed to be normalized.
+         * @returns A reference to this quaternion.
+         */
+        invert(): Quaternion;
+        /**
+         * Conjugates this quaternion and returns it.
+         * @returns A reference to this quaternion.
+         */
+        conjugate(): Quaternion;
+        /**
+         * Multiply this quaternion with the given quaternion.
+         * @returns A reference to this quaternion.
+         */
+        multiply(_quaternion: Quaternion, _fromLeft?: boolean): Quaternion;
+        /**
+         * Premultiply this quaternion with the given quaternion.
+         * @returns A reference to this quaternion.
+         */
+        premultiply(_quaternion: Quaternion): Quaternion;
+        /**
+         * Returns a formatted string representation of this quaternion
+         */
+        toString(): string;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Quaternion;
+        mutate(_mutator: Mutator): void;
+        protected reduceMutator(_mutator: Mutator): void;
+        private resetCache;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Simple class for 3x3 matrix operations
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020 | Jonas Plotzky, HFU, 2025
+     */
+    class Matrix3x3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        #private;
+        private data;
+        private mutator;
+        constructor();
+        /** TODO: describe! */
+        static PROJECTION(_width: number, _height: number, _mtxOut?: Matrix3x3): Matrix3x3;
+        /**
+         * Retrieve a new identity matrix.
+         */
+        static IDENTITY(): Matrix3x3;
+        /**
+         * Composes a new matrix according to the given translation, rotation and scaling.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static COMPOSITION(_translation?: Vector2, _rotation?: number, _scaling?: Vector2, _mtxOut?: Matrix3x3): Matrix3x3;
+        /**
+         * Returns a matrix that translates coordinates along the x- and y-axis according to the given {@link Vector2}.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static TRANSLATION(_translate: Vector2, _mtxOut?: Matrix3x3): Matrix3x3;
+        /**
+         * Returns a matrix that rotates coordinates on the z-axis when multiplied by.
+         * @param _angleInDegrees The value of the rotation.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static ROTATION(_angleInDegrees: number, _mtxOut?: Matrix3x3): Matrix3x3;
+        /**
+         * Returns a matrix that scales coordinates along the x- and y-axis according to the given {@link Vector2}.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static SCALING(_scalar: Vector2, _mtxOut?: Matrix3x3): Matrix3x3;
+        /**
+         * Computes and returns the product of two passed matrices.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3, _mtxOut?: Matrix3x3): Matrix3x3;
+        /**
+         * Computes and returns the inverse of a passed matrix.
+         * @param _mtx The matrix to compute the inverse of.
+         * @param _mtxOut Optional matrix to store the result in.
+         */
+        static INVERSE(_mtx: Matrix3x3, _mtxOut?: Matrix3x3): Matrix3x3;
+        get isArrayConvertible(): true;
+        /**
+         * - get: return a vector representation of the translation {@link Vector2}.
+         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
+         * - set: effect the matrix ignoring its rotation and scaling
+         */
+        get translation(): Vector2;
+        set translation(_translation: Vector2);
+        /**
+         * - get: a copy of the calculated rotation {@link Vector2}
+         * - set: effect the matrix
+         */
+        get rotation(): number;
+        set rotation(_rotation: number);
+        /**
+         * - get: return a vector representation of the scale {@link Vector3}.
+         * **Caution!** Do not manipulate result, instead create a clone!
+         * - set: effect the matrix
+         */
+        get scaling(): Vector2;
+        set scaling(_scaling: Vector2);
+        /**
+         * Creates and returns a clone of this matrix.
+         */
+        get clone(): Matrix3x3;
+        /**
+         * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
+         */
+        recycle(): void;
+        /**
+         * Resets the matrix to the identity-matrix and clears cache.
+         */
+        reset(): void;
+        /**
+         * Adds a translation by the given {@link Vector2} to this matrix.
+         * @returns A reference to this matrix.
+         */
+        translate(_by: Vector2): Matrix3x3;
+        /**
+         * Adds a translation along the x-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        translateX(_by: number): Matrix3x3;
+        /**
+         * Adds a translation along the y-axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        translateY(_by: number): Matrix3x3;
+        /**
+         * Adds a rotation around the z-Axis to this matrix
+         * @returns A reference to this matrix.
+         */
+        rotate(_angleInDegrees: number): Matrix3x3;
+        /**
+         * Adds a scaling by the given {@link Vector2} to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scale(_by: Vector2): Matrix3x3;
+        /**
+         * Adds a scaling along the x-Axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scaleX(_by: number): Matrix3x3;
+        /**
+         * Adds a scaling along the y-Axis to this matrix.
+         * @returns A reference to this matrix.
+         */
+        scaleY(_by: number): Matrix3x3;
+        /**
+         * Multiply this matrix with the given matrix.
+         * @returns A reference to this matrix.
+         */
+        multiply(_mtxRight: Matrix3x3): Matrix3x3;
+        /**
+         * Premultiply this matrix with the given matrix.
+         * @returns A reference to this matrix.
+         */
+        premultiply(_mtxLeft: Matrix3x3): Matrix3x3;
+        /**
+         * (Re-)Compose this matrix from the given translation, rotation and scaling.
+         * Missing values will be decompsed from the current matrix state if necessary.
+         * @returns A reference to this matrix.
+         */
+        compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): Matrix3x3;
+        /**
+         * Sets the elements of this matrix to the given values.
+         * @returns A reference to this matrix.
+         */
+        set(_m00: number, _m01: number, _m02: number, _m10: number, _m11: number, _m12: number, _m20: number, _m21: number, _m22: number): Matrix3x3;
+        /**
+         * Copies the elements of the given matrix into this matrix.
+         * @returns A reference to this matrix.
+         */
+        copy(_original: Matrix3x3): Matrix3x3;
+        /**
+         * Returns a formatted string representation of this matrix
+         */
+        toString(): string;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+        /**
+         * Returns the array of the elements of this matrix.
+         * @returns A readonly view of the internal array.
+         */
+        getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Matrix3x3;
+        getMutator(): Mutator;
+        mutate(_mutator: Mutator): void;
+        protected reduceMutator(_mutator: Mutator): void;
+        private resetCache;
     }
 }
 declare namespace FudgeCore {
@@ -1922,206 +2651,6 @@ declare namespace FudgeCore {
          * Emptys all depots, leaving all objects to the garbage collector. May result in a short stall when many objects were in
          */
         static dumpAll(): void;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Stores and manipulates a twodimensional vector comprised of the components x and y
-     * ```text
-     *            +y
-     *             |__ +x
-     * ```
-     * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
-     */
-    class Vector2 extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        x: number;
-        y: number;
-        constructor(_x?: number, _y?: number);
-        /**
-         * A shorthand for writing `new Vector2(0, 0)`.
-         * @returns A new vector with the values (0, 0)
-         */
-        static ZERO(): Vector2;
-        /**
-         * A shorthand for writing `new Vector2(_scale, _scale)`.
-         * @param _scale the scale of the vector. Default: 1
-         */
-        static ONE(_scale?: number): Vector2;
-        /**
-         * A shorthand for writing `new Vector2(x, 0)`.
-         * @param _scale The number to write in the x coordinate. Default: 1
-         * @returns A new vector with the values (_scale, 0)
-         */
-        static X(_scale?: number): Vector2;
-        /**
-         * A shorthand for writing `new Vector2(0, y)`.
-         * @param _scale The number to write in the y coordinate. Default: 1
-         * @returns A new vector with the values (0, _scale)
-         */
-        static Y(_scale?: number): Vector2;
-        /**
-         * Creates and returns a vector through transformation of the given vector by the given matrix
-         * @param _out Optional vector to store the result in.
-         */
-        static TRANSFORMATION(_vector: Vector2, _mtxTransform: Matrix3x3, _includeTranslation?: boolean, _out?: Vector2): Vector2;
-        /**
-         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
-         * @param _out Optional vector to store the result in.
-         */
-        static NORMALIZATION(_vector: Vector2, _length?: number, _out?: Vector2): Vector2;
-        /**
-         * Returns a new vector representing the given vector scaled by the given scaling factor
-         * @param _out Optional vector to store the result in.
-         */
-        static SCALE(_vector: Vector2, _scale: number, _out?: Vector2): Vector2;
-        /**
-         * Returns the result of the addition of two vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static SUM(_a: Vector2, _b: Vector2, _out?: Vector2): Vector2;
-        /**
-         * Returns the result of the subtraction of two vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static DIFFERENCE(_minuend: Vector2, _subtrahend: Vector2, _out?: Vector2): Vector2;
-        /**
-         * Returns a new vector representing the given vector scaled by the given scaling factor.
-         * @param _out Optional vector to store the result in.
-         */
-        static NEGATION(_vector: Vector2, _out?: Vector2): Vector2;
-        /**
-         * Calculates the cross product of two Vectors. Due to them being only 2 Dimensional, the result is a single number,
-         * which implicitly is on the Z axis. It is also the signed magnitude of the result.
-         */
-        static CROSS(_a: Vector2, _b: Vector2): number;
-        /**
-         * Computes the dotproduct of 2 vectors.
-         */
-        static DOT(_a: Vector2, _b: Vector2): number;
-        /**
-         * Calculates the orthogonal vector to the given vector. Rotates counterclockwise by default.
-         * ```text
-         * ↑ => ← => ↓ => → => ↑
-         * ```
-         * @param _vector Vector to get the orthogonal equivalent of
-         * @param _clockwise Should the rotation be clockwise instead of the default counterclockwise? default: false
-         * @param _out Optional vector to store the result in.
-         * @returns A Vector that is orthogonal to and has the same magnitude as the given Vector.
-         */
-        static ORTHOGONAL(_vector: Vector2, _clockwise?: boolean, _out?: Vector2): Vector2;
-        /**
-         * Creates a cartesian vector from polar coordinates.
-         * @param _out Optional vector to store the result in.
-         */
-        static GEO(_angle?: number, _magnitude?: number, _out?: Vector2): Vector2;
-        get isArrayConvertible(): true;
-        /**
-         * Returns the length of the vector
-         */
-        get magnitude(): number;
-        /**
-         * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
-         */
-        get magnitudeSquared(): number;
-        /**
-         * - get: Returns a polar representation of this vector
-         * - set: Adjusts the cartesian values of this vector to represent the given as polar coordinates
-         */
-        get geo(): Geo2;
-        set geo(_geo: Geo2);
-        /**
-         * Creates and returns a clone of this vector.
-         */
-        get clone(): Vector2;
-        /**
-         * Copies the components of the given vector into this vector.
-         * @returns A reference to this vector.
-         */
-        copy(_original: Vector2): Vector2;
-        /**
-         * Sets the components of this vector.
-         * @returns A reference to this vector.
-         */
-        set(_x?: number, _y?: number): Vector2;
-        recycle(): void;
-        /**
-         * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
-         * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
-         */
-        equals(_compare: Vector2, _tolerance?: number): boolean;
-        /**
-         * Returns the distance bewtween this vector and the given vector.
-         */
-        getDistance(_to: Vector2): number;
-        /**
-         * Adds the given vector to this vector.
-         * @returns A reference to this vector.
-         */
-        add(_addend: Vector2): Vector2;
-        /**
-         * Subtracts the given vector from this vector.
-         * @returns A reference to this vector.
-         */
-        subtract(_subtrahend: Vector2): Vector2;
-        /**
-         * Scales the Vector by the given _scalar.
-         * @returns A reference to this vector.
-         */
-        scale(_scalar: number): Vector2;
-        /**
-         * Negates this vector by flipping the signs of its components
-         * @returns A reference to this vector.
-         */
-        negate(): Vector2;
-        /**
-         * Normalizes this to the given length, 1 by default
-         * @returns A reference to this vector.
-         */
-        normalize(_length?: number): Vector2;
-        /**
-         * Transforms this vector by the given matrix, including or exluding the translation.
-         * Including is the default, excluding will only rotate and scale this vector.
-         * @returns A reference to this vector.
-         */
-        transform(_mtxTransform: Matrix3x3, _includeTranslation?: boolean): Vector2;
-        /**
-         * For each dimension, moves the component to the minimum of this and the given vector.
-         * @returns A reference to this vector.
-         */
-        min(_compare: Vector2): Vector2;
-        /**
-         * For each dimension, moves the component to the maximum of this and the given vector.
-         * @returns A reference to this vector.
-         */
-        max(_compare: Vector2): Vector2;
-        /**
-         * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
-         * @param _out Optional vector to store the result in.
-         */
-        map(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number, _out?: Vector2): Vector2;
-        /**
-         * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector2.map} but mutates this vector instead of creating a new one.
-         * @returns A reference to this vector.
-         */
-        apply(_function: (_value: number, _index: number, _component: "x" | "y", _vector: Vector2) => number): Vector2;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
-        /**
-         * Adds a z-component of the given magnitude (default=0) to the vector and returns a new Vector3.
-         * @param _out Optional vector to store the result in.
-         */
-        toVector3(_z?: number, _out?: Vector3): Vector3;
-        /**
-         * Returns a formatted string representation of this vector.
-         */
-        toString(): string;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Vector2;
-        getMutator(): Mutator;
-        mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4370,6 +4899,7 @@ declare namespace FudgeCore {
         upLocal: boolean;
         up: Vector3;
         restrict: boolean;
+        constructor(_upLocal?: boolean, _up?: Vector3, _restrict?: boolean);
     }
 }
 declare namespace FudgeCore {
@@ -4382,6 +4912,7 @@ declare namespace FudgeCore {
         color: Color;
         near: number;
         far: number;
+        constructor(_color?: Color, _near?: number, _far?: number);
     }
 }
 declare namespace FudgeCore {
@@ -4413,11 +4944,10 @@ declare namespace FudgeCore {
     class ComponentLight extends Component {
         static readonly iSubclass: number;
         lightType: LIGHT_TYPE;
-        mtxPivot: Matrix4x4;
         color: Color;
         intensity: number;
+        mtxPivot: Matrix4x4;
         constructor(_lightType?: LIGHT_TYPE, _color?: Color, _intensity?: number);
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         drawGizmos(): void;
         drawGizmosSelected(): void;
@@ -6138,169 +6668,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Simple class for 3x3 matrix operations
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020 | Jonas Plotzky, HFU, 2025
-     */
-    class Matrix3x3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        #private;
-        private data;
-        private mutator;
-        constructor();
-        /** TODO: describe! */
-        static PROJECTION(_width: number, _height: number, _mtxOut?: Matrix3x3): Matrix3x3;
-        /**
-         * Retrieve a new identity matrix.
-         */
-        static IDENTITY(): Matrix3x3;
-        /**
-         * Composes a new matrix according to the given translation, rotation and scaling.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static COMPOSITION(_translation?: Vector2, _rotation?: number, _scaling?: Vector2, _mtxOut?: Matrix3x3): Matrix3x3;
-        /**
-         * Returns a matrix that translates coordinates along the x- and y-axis according to the given {@link Vector2}.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static TRANSLATION(_translate: Vector2, _mtxOut?: Matrix3x3): Matrix3x3;
-        /**
-         * Returns a matrix that rotates coordinates on the z-axis when multiplied by.
-         * @param _angleInDegrees The value of the rotation.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static ROTATION(_angleInDegrees: number, _mtxOut?: Matrix3x3): Matrix3x3;
-        /**
-         * Returns a matrix that scales coordinates along the x- and y-axis according to the given {@link Vector2}.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static SCALING(_scalar: Vector2, _mtxOut?: Matrix3x3): Matrix3x3;
-        /**
-         * Computes and returns the product of two passed matrices.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static PRODUCT(_mtxLeft: Matrix3x3, _mtxRight: Matrix3x3, _mtxOut?: Matrix3x3): Matrix3x3;
-        /**
-         * Computes and returns the inverse of a passed matrix.
-         * @param _mtx The matrix to compute the inverse of.
-         * @param _mtxOut Optional matrix to store the result in.
-         */
-        static INVERSE(_mtx: Matrix3x3, _mtxOut?: Matrix3x3): Matrix3x3;
-        get isArrayConvertible(): true;
-        /**
-         * - get: return a vector representation of the translation {@link Vector2}.
-         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
-         * - set: effect the matrix ignoring its rotation and scaling
-         */
-        get translation(): Vector2;
-        set translation(_translation: Vector2);
-        /**
-         * - get: a copy of the calculated rotation {@link Vector2}
-         * - set: effect the matrix
-         */
-        get rotation(): number;
-        set rotation(_rotation: number);
-        /**
-         * - get: return a vector representation of the scale {@link Vector3}.
-         * **Caution!** Do not manipulate result, instead create a clone!
-         * - set: effect the matrix
-         */
-        get scaling(): Vector2;
-        set scaling(_scaling: Vector2);
-        /**
-         * Creates and returns a clone of this matrix.
-         */
-        get clone(): Matrix3x3;
-        /**
-         * Resets the matrix to the identity-matrix and clears cache. Used by the recycler to reset.
-         */
-        recycle(): void;
-        /**
-         * Resets the matrix to the identity-matrix and clears cache.
-         */
-        reset(): void;
-        /**
-         * Adds a translation by the given {@link Vector2} to this matrix.
-         * @returns A reference to this matrix.
-         */
-        translate(_by: Vector2): Matrix3x3;
-        /**
-         * Adds a translation along the x-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        translateX(_by: number): Matrix3x3;
-        /**
-         * Adds a translation along the y-axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        translateY(_by: number): Matrix3x3;
-        /**
-         * Adds a rotation around the z-Axis to this matrix
-         * @returns A reference to this matrix.
-         */
-        rotate(_angleInDegrees: number): Matrix3x3;
-        /**
-         * Adds a scaling by the given {@link Vector2} to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scale(_by: Vector2): Matrix3x3;
-        /**
-         * Adds a scaling along the x-Axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scaleX(_by: number): Matrix3x3;
-        /**
-         * Adds a scaling along the y-Axis to this matrix.
-         * @returns A reference to this matrix.
-         */
-        scaleY(_by: number): Matrix3x3;
-        /**
-         * Multiply this matrix with the given matrix.
-         * @returns A reference to this matrix.
-         */
-        multiply(_mtxRight: Matrix3x3): Matrix3x3;
-        /**
-         * Premultiply this matrix with the given matrix.
-         * @returns A reference to this matrix.
-         */
-        premultiply(_mtxLeft: Matrix3x3): Matrix3x3;
-        /**
-         * (Re-)Compose this matrix from the given translation, rotation and scaling.
-         * Missing values will be decompsed from the current matrix state if necessary.
-         * @returns A reference to this matrix.
-         */
-        compose(_translation?: Partial<Vector2>, _rotation?: number, _scaling?: Partial<Vector2>): Matrix3x3;
-        /**
-         * Sets the elements of this matrix to the given values.
-         * @returns A reference to this matrix.
-         */
-        set(_m00: number, _m01: number, _m02: number, _m10: number, _m11: number, _m12: number, _m20: number, _m21: number, _m22: number): Matrix3x3;
-        /**
-         * Copies the elements of the given matrix into this matrix.
-         * @returns A reference to this matrix.
-         */
-        copy(_original: Matrix3x3): Matrix3x3;
-        /**
-         * Returns a formatted string representation of this matrix
-         */
-        toString(): string;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
-        /**
-         * Returns the array of the elements of this matrix.
-         * @returns A readonly view of the internal array.
-         */
-        getArray(): ArrayLike<number> & Iterable<number> & ArrayBufferView;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Matrix3x3;
-        getMutator(): Mutator;
-        mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
-        private resetCache;
-    }
-}
-declare namespace FudgeCore {
-    /**
      * Baseclass for Noise2, Noise3 and Noise4
      * @authors Jirka Dell'Oro-Friedl, HFU, 2021
      * This is an adaption of https://www.npmjs.com/package/fast-simplex-noise
@@ -6376,235 +6743,6 @@ declare namespace FudgeCore {
         private static gradient;
         constructor(_random?: Function);
         sample: (_x: number, _y: number, _z: number, _w: number) => number;
-    }
-}
-declare namespace FudgeCore {
-    interface QuaternionLike {
-        x: number;
-        y: number;
-        z: number;
-        w: number;
-    }
-    /**
-      * Storing and manipulating rotations in the form of quaternions.
-      * Constructed out of the 4 components: (x, y, z, w). Mathematical notation: w + xi + yj + zk.
-      * A Quaternion can be described with an axis and angle: (x, y, z) = sin(angle/2)*axis; w = cos(angle/2).
-      * roll: x, pitch: y, yaw: z. Note that operations are adapted to work with vectors where y is up and z is forward.
-      * @authors Matthias Roming, HFU, 2023 | Marko Fehrenbach, HFU, 2020 | Jonas Plotzky, HFU, 2023
-      */
-    class Quaternion extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        #private;
-        x: number;
-        y: number;
-        z: number;
-        w: number;
-        constructor(_x?: number, _y?: number, _z?: number, _w?: number);
-        /**
-         * Retrieve a new identity quaternion
-         */
-        static IDENTITY(): Quaternion;
-        /**
-         * Normalize a quaternion making it a valid rotation representation.
-         * @param _q - quaternion to normalize
-         * @param _out - (optional) the receiving quaternion.
-         * @returns `_out` or a new quaternion if none is provided.
-         */
-        static NORMALIZATION(_q: Readonly<Quaternion>, _out?: Quaternion): Quaternion;
-        static NORMALIZATION<T extends QuaternionLike>(_q: Readonly<T>, _out: T): T;
-        /**
-         * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
-         * Rotation occurs around the axis in the order Z-Y-X.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static ROTATION_EULER_ANGLES(_eulerAngles: Vector3, _out?: Quaternion): Quaternion;
-        /**
-         * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
-         * Axis must be normalized. Angle is in degrees.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static ROTATION_AXIS_ANGLE(_axis: Vector3, _angle: number, _out?: Quaternion): Quaternion;
-        /**
-         * Returns a quaternion with the given forward and up direction.
-         * @param _forward A unit vector indicating the desired forward-direction.
-         * @param _up A unit vector indicating the up-direction.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static ROTATION_LOOK_IN(_forward: Vector3, _up: Vector3, _out?: Quaternion): Quaternion;
-        /**
-         * Returns a quaternion that will rotate one vector to align with another.
-         * @param _from The normalized direction vector to rotate from.
-         * @param _to The normalized direction vector to rotate to.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static ROTATION_FROM_TO(_from: Vector3, _to: Vector3, _out?: Quaternion): Quaternion;
-        /**
-         * Returns a quaternion that rotates coordinates when multiplied by, using the angles given.
-         * Rotation occurs around the axis in the order Z-Y-X.
-         * @deprecated Use {@link ROTATION_EULER_ANGLES} instead.
-         */
-        static ROTATION(_eulerAngles: Vector3): Quaternion;
-        /**
-         * Returns a quaternion that rotates coordinates when multiplied by, using the axis and angle given.
-         * Axis must be normalized. Angle is in degrees.
-         * @deprecated Use {@link ROTATION_AXIS_ANGLE} instead.
-         */
-        static ROTATION(_axis: Vector3, _angle: number): Quaternion;
-        /**
-         * Returns a quaternion that rotates coordinates when multiplied by, using the forward and up direction given.
-         * @deprecated Use {@link ROTATION_LOOK_IN} instead.
-         */
-        static ROTATION(_forward: Vector3, _up: Vector3): Quaternion;
-        /**
-         * Computes and returns the product of two passed quaternions.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static PRODUCT(_left: Quaternion, _right: Quaternion, _out?: Quaternion): Quaternion;
-        /**
-         * Computes and returns the inverse of a passed quaternion.
-         * Quaternion is assumed to be normalized.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static INVERSE(_quaternion: Quaternion, _out?: Quaternion): Quaternion;
-        /**
-         * Computes and returns the conjugate of a passed quaternion.
-         * @param _out Optional quaternion to store the result in.
-         */
-        static CONJUGATE(_quaternion: Quaternion, _out?: Quaternion): Quaternion;
-        /**
-         * Returns the dot product of two quaternions.
-         */
-        static DOT(_a: Quaternion, _b: Quaternion): number;
-        /**
-         * Performs a linear interpolation between two quaternions. Result should be normalized afterwards to represent a valid rotation.
-         * @param _a - the first operand.
-         * @param _b - the second operand.
-         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
-         * @param _out - (optional) the receiving quaternion.
-         * @returns `_out` or a new quaternion if none is provided.
-         * @source https://github.com/toji/gl-matrix
-         */
-        static LERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
-        static LERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
-        /**
-         * Performs a spherical linear interpolation between two quaternions.
-         * @param _a - the first operand.
-         * @param _b - the second operand.
-         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
-         * @param _out - (optional) the receiving quaternion.
-         * @returns `_out` or a new quaternion if none is provided.
-         * @source https://github.com/toji/gl-matrix
-         */
-        static SLERP(_a: Readonly<Quaternion>, _b: Readonly<Quaternion>, _t: number, _out?: Quaternion): Quaternion;
-        static SLERP<T extends QuaternionLike>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
-        /**
-         * Return the angle in degrees between the two given quaternions.
-         */
-        static ANGLE(_from: Quaternion, _to: Quaternion): number;
-        /**
-         * Performs a spherical linear interpolation between two quaternion arrays.
-         * @param _a - the first operand.
-         * @param _aOffset - the offset into the first operand.
-         * @param _b - the second operand.
-         * @param _bOffset - the offset into the second operand.
-         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
-         * @param _out - the receiving quaternion array.
-         * @param _outOffset - the offset into the receiving quaternion array.
-         * @returns `out`
-         * @source https://github.com/toji/gl-matrix
-         */
-        static SLERP_ARRAY<T extends {
-            [n: number]: number;
-        }>(_a: Readonly<T>, _aOffset: number, _b: Readonly<T>, _bOffset: number, _t: number, _out: T, _outOffset: number): T;
-        /**
-         * Normalize a quaternion array.
-         * @param _a - quaternion array to normalize.
-         * @param _aOffset - the offset into the quaternion array.
-         * @param _out - the receiving quaternion array.
-         * @param _outOffset - the offset into the receiving quaternion array.
-         * @returns `out`
-         * @source https://github.com/toji/gl-matrix
-         */
-        static NORMALIZE_ARRAY<T extends {
-            [n: number]: number;
-        }>(_a: Readonly<T>, _aOffset: number, _out: T, _outOffset: number): T;
-        /**
-         * Negates the given quaternion.
-         */
-        static negate(_q: Quaternion): void;
-        get isArrayConvertible(): true;
-        /**
-         * Creates and returns a clone of this quaternion.
-         */
-        get clone(): Quaternion;
-        /**
-         * - get: return the euler angle representation of the rotation in degrees.
-         * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate.
-         * - set: set the euler angle representation of the rotation in degrees.
-         */
-        get eulerAngles(): Vector3;
-        set eulerAngles(_eulerAngles: Vector3);
-        /**
-         * Copies the given quaternion.
-         * @returns A reference to this quaternion.
-         */
-        copy(_original: Quaternion): Quaternion;
-        /**
-         * Resets the quaternion to the identity-quaternion and clears cache. Used by the recycler to reset.
-         */
-        recycle(): void;
-        /**
-         * Sets the components of this quaternion.
-         * @returns A reference to this quaternion.
-         */
-        set(_x: number, _y: number, _z: number, _w: number): Quaternion;
-        /**
-         * Returns true if this quaternion is equal to the given quaternion within the given tolerance.
-         */
-        equals(_compare: Quaternion, _tolerance?: number): boolean;
-        /**
-         * Normalizes this quaternion to a length of 1 (a unit quaternion) making it a valid rotation representation.
-         * @returns A reference to this quaternion.
-         */
-        normalize(): Quaternion;
-        /**
-         * Negates this quaternion.
-         * @returns A reference to this quaternion.
-         */
-        negate(): Quaternion;
-        /**
-         * Invert this quaternion.
-         * Quaternion is assumed to be normalized.
-         * @returns A reference to this quaternion.
-         */
-        invert(): Quaternion;
-        /**
-         * Conjugates this quaternion and returns it.
-         * @returns A reference to this quaternion.
-         */
-        conjugate(): Quaternion;
-        /**
-         * Multiply this quaternion with the given quaternion.
-         * @returns A reference to this quaternion.
-         */
-        multiply(_quaternion: Quaternion, _fromLeft?: boolean): Quaternion;
-        /**
-         * Premultiply this quaternion with the given quaternion.
-         * @returns A reference to this quaternion.
-         */
-        premultiply(_quaternion: Quaternion): Quaternion;
-        /**
-         * Returns a formatted string representation of this quaternion
-         */
-        toString(): string;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Quaternion;
-        mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
-        private resetCache;
     }
 }
 declare namespace FudgeCore {
@@ -6684,143 +6822,6 @@ declare namespace FudgeCore {
      * Standard {@link Random}-instance using Math.random().
      */
     const random: Random;
-}
-declare namespace FudgeCore {
-    /**
-     * Stores and manipulates a fourdimensional vector comprised of the components x, y, z and w.
-     * @authors Jonas Plotzky, HFU, 2023
-     */
-    class Vector4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        x: number;
-        y: number;
-        z: number;
-        w: number;
-        constructor(_x?: number, _y?: number, _z?: number, _w?: number);
-        /**
-         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
-         * @param _out Optional vector to store the result in.
-         */
-        static NORMALIZATION(_vector: Vector4, _length?: number, _out?: Vector4): Vector4;
-        /**
-         * Returns the result of the addition of two vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static SUM(_a: Vector4, _b: Vector4, _out?: Vector4): Vector4;
-        /**
-         * Returns the result of the subtraction of two vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static DIFFERENCE(_minuend: Vector4, _subtrahend: Vector4, _out?: Vector4): Vector4;
-        /**
-         * Returns a new vector representing the given vector scaled by the given scaling factor.
-         * @param _out Optional vector to store the result in.
-         */
-        static SCALE(_vector: Vector4, _scaling: number, _out?: Vector4): Vector4;
-        /**
-         * Returns a new vector representing the given vector scaled by the given scaling factor.
-         * @param _out Optional vector to store the result in.
-         */
-        static NEGATION(_vector: Vector4, _out?: Vector4): Vector4;
-        /**
-         * Computes the dotproduct of 2 vectors.
-         */
-        static DOT(_a: Vector4, _b: Vector4): number;
-        get isArrayConvertible(): true;
-        /**
-         * The magnitude (length) of the vector.
-         */
-        get magnitude(): number;
-        /**
-         * The squared magnitude (length) of the vector. Faster for simple proximity evaluation.
-         */
-        get magnitudeSquared(): number;
-        /**
-         * Creates and returns a clone of this vector.
-         */
-        get clone(): Vector4;
-        /**
-         * Copies the components of the given vector into this vector.
-         * @returns A reference to this vector.
-         */
-        copy(_original: Vector4): Vector4;
-        /**
-         * Sets the components of this vector and returns it.
-         * @returns A reference to this vector.
-         */
-        set(_x: number, _y: number, _z: number, _w: number): Vector4;
-        recycle(): void;
-        /**
-         * Returns true if this vector is equal to the given vector within the given tolerance.
-         */
-        equals(_compare: Vector4, _tolerance?: number): boolean;
-        /**
-         * Adds the given vector to this vector.
-         * @returns A reference to this vector.
-         */
-        add(_addend: Vector4): Vector4;
-        /**
-         * Subtracts the given vector from this vector.
-         * @returns A reference to this vector.
-         */
-        subtract(_subtrahend: Vector4): Vector4;
-        /**
-         * Scales this vector by the given scalar.
-         * @returns A reference to this vector.
-         */
-        scale(_scalar: number): Vector4;
-        /**
-         * Negates this vector by flipping the signs of its components
-         * @returns A reference to this vector.
-         */
-        negate(): Vector4;
-        /**
-         * Normalizes this vector to the given length, 1 by default.
-         * @returns A reference to this vector.
-         */
-        normalize(_length?: number): Vector4;
-        /**
-         * For each dimension, moves the component to the minimum of this and the given vector.
-         * @returns A reference to this vector.
-         */
-        min(_compare: Vector4): Vector4;
-        /**
-         * For each dimension, moves the component to the maximum of this and the given vector.
-         * @returns A reference to this vector.
-         */
-        max(_compare: Vector4): Vector4;
-        /**
-         * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
-         * @param _out Optional vector to store the result in.
-         */
-        map(_function: (_value: number, _index: number, _component: "x" | "y" | "z" | "w", _vector: Vector4) => number, _out?: Vector4): Vector4;
-        /**
-         * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector4.map} but mutates this vector instead of creating a new one.
-         * @returns A reference to this vector.
-         */
-        apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z" | "w", _vector: Vector4) => number): Vector4;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        }>(_out?: T, _offset?: number): T;
-        /**
-         * Drops the z-component and w-component and returns a Vector2 consisting of the x- and y-components.
-         * @param _out Optional vector to store the result in.
-         */
-        toVector2(_out?: Vector2): Vector2;
-        /**
-         * Drops the w-component and returns a Vector3 consisting of the x-, y- and z-components.
-         * @param _out Optional vector to store the result in.
-         */
-        toVector3(_out?: Vector3): Vector3;
-        /**
-         * Returns a formatted string representation of this vector.
-         */
-        toString(): string;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Vector4;
-        mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
-    }
 }
 declare namespace FudgeCore {
     /**

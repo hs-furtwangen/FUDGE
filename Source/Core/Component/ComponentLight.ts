@@ -17,11 +17,17 @@ namespace FudgeCore {
   export class ComponentLight extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentLight);
 
-    @mutate(LIGHT_TYPE)
+    @edit(LIGHT_TYPE)
     public lightType: LIGHT_TYPE;
-    public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
+
+    @edit(Color)
     public color: Color;
+
+    @edit(Number)
     public intensity: number;
+
+    @edit(Matrix4x4)
+    public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
     public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
       super();
@@ -35,28 +41,14 @@ namespace FudgeCore {
     @RenderWebGLComponentLight.decorate
     public static updateRenderbuffer(_lights: MapLightTypeToLightList): void { /* injected */ };
 
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        lightType: this.lightType,
-        pivot: this.mtxPivot.serialize(),
-        color: this.color.serialize(),
-        intensity: this.intensity
-      };
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
+    // TODO: backwards compatibility, remove in future versions
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
-      if (_serialization.lightType != undefined)
-        this.lightType = _serialization.lightType;
-      await this.mtxPivot.deserialize(_serialization.pivot);
-      if (_serialization.color != undefined)
-        await this.color.deserialize(_serialization.color);
-      if (_serialization.intensity != undefined)
-        this.intensity = _serialization.intensity;
+      await super.deserialize(_serialization);
 
-      // backwards compatibility, remove in future versions
+      let mtxPivot: Serialization = _serialization.pivot;
+      if (mtxPivot != undefined)
+        this.mtxPivot.deserialize(mtxPivot);
+
       let light: Serialization = _serialization.light;
       if (light != undefined) {
         for (const path in light) {
