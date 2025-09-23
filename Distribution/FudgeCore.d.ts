@@ -1,29 +1,3 @@
-/// <reference path="OimoPhysics.d.ts" />
-/// <reference types="webxr" />
-declare namespace FudgeCore {
-    interface PerformanceMeasurement {
-        start?: number;
-        frameTimeMin: number;
-        frameTimeMax: number;
-        frameTimeAvg: number;
-        callsPerFrame: number;
-        time: number;
-        calls: number;
-    }
-    class PerformanceMonitor {
-        #private;
-        static canvas: HTMLCanvasElement;
-        static context: CanvasRenderingContext2D;
-        static measurements: {
-            [key: string]: PerformanceMeasurement;
-        };
-        static startMeasure(_label: string): void;
-        static endMeasure(_label: string): number;
-        static startFrame(): void;
-        static endFrame(): void;
-        private static resize;
-    }
-}
 declare namespace FudgeCore {
     /**
      * Base class for the different DebugTargets, mainly for technical purpose of inheritance
@@ -2593,7 +2567,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const AnimationGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Animation;
+    const AnimationGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Animation;
     /**
      * An {@link Animation} loaded from a glTF-File.
      * @authors Jonas Plotzky
@@ -4512,7 +4486,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const GraphGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Graph;
+    const GraphGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Graph;
     /**
      * A {@link Graph} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -4659,7 +4633,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const CoatToon_base: (abstract new (...args: any[]) => {
+    const CoatToon_base: (abstract new (...args: General[]) => {
         texToon: Texture;
     }) & typeof CoatRemissive;
     /**
@@ -4668,7 +4642,7 @@ declare namespace FudgeCore {
     export class CoatToon extends CoatToon_base {
         constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
     }
-    const CoatToonTextured_base: (abstract new (...args: any[]) => {
+    const CoatToonTextured_base: (abstract new (...args: General[]) => {
         texToon: Texture;
     }) & typeof CoatRemissiveTextured;
     /**
@@ -4862,7 +4836,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MaterialGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Material;
+    const MaterialGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Material;
     /**
      * A {@link Material} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -6479,7 +6453,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshFBX_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshFBX_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Mesh;
     /**
      * A mesh loaded from an FBX-File.
      * @authors Matthias Roming, HFU, 2023 | Jonas Plotzky, HFU, 2023
@@ -6509,7 +6483,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    const MeshGLTF_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshGLTF_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Mesh;
     /**
      * A {@link Mesh} loaded from a glTF-File.
      * @authors Jonas Plotzky, HFU, 2024
@@ -6523,7 +6497,7 @@ declare namespace FudgeCore {
     export {};
 }
 declare namespace FudgeCore {
-    const MeshOBJ_base: (abstract new (...args: any[]) => SerializableResourceExternal) & typeof Mesh;
+    const MeshOBJ_base: (abstract new (...args: General[]) => SerializableResourceExternal) & typeof Mesh;
     /**
      * A mesh loaded from an OBJ-file.
      * Simple Wavefront OBJ import. Takes a wavefront obj string. To Load from a file url, use the
