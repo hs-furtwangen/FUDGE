@@ -79,7 +79,7 @@ namespace FudgeCore {
     private hndEvent = (_event: TouchEvent): void => {
       _event.preventDefault();
       let touchFirst: Touch = _event.touches[0];
-      let position: Vector2 = this.calcAveragePosition(_event.touches); //new Vector2(touchFirst?.clientX, touchFirst?.clientY);
+      let position: Vector2 = _event.touches.length == 0 ? this.posPrev : this.calcAveragePosition(_event.touches); //new Vector2(touchFirst?.clientX, touchFirst?.clientY);
       let offset: Vector2;
 
       switch (_event.type) {
@@ -94,6 +94,8 @@ namespace FudgeCore {
           }
 
           let dispatchLong: TimerHandler = (_eventTimer: EventTimer): void => {
+            if (this.moved)
+              return;
             this.moved = true;
             this.target.dispatchEvent(
               new CustomEvent<EventTouchDetail>(EVENT_TOUCH.LONG, {
@@ -138,7 +140,7 @@ namespace FudgeCore {
         case "touchmove":
           this.detectPinch(_event, position);
           offset = Vector2.DIFFERENCE(this.posPrev, this.posStart);
-          this.moved ||= (offset.magnitude < this.radiusTap); // remember that touch moved over tap radius
+          this.moved ||= (offset.magnitude > this.radiusTap); // remember that touch moved over tap radius
           let movement: Vector2 = Vector2.DIFFERENCE(position, this.posPrev);
           this.target.dispatchEvent(
             new CustomEvent<EventTouchDetail>(EVENT_TOUCH.MOVE, {
