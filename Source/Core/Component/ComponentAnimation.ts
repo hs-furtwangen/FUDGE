@@ -4,18 +4,23 @@ namespace FudgeCore {
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022-2025
    */
+  @orderFlat
   export class ComponentAnimation extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
 
+    @order(1)
     @edit(Animation)
     public animation: Animation;
 
+    @order(2)
     @edit(ANIMATION_PLAYMODE)
     public playmode: ANIMATION_PLAYMODE;
 
+    @order(3)
     @edit(ANIMATION_QUANTIZATION)
     public quantization: ANIMATION_QUANTIZATION;
 
+    @order(5)
     @edit(Boolean)
     public scaleWithGameTime: boolean = true;
 
@@ -43,6 +48,7 @@ namespace FudgeCore {
       });
     }
 
+    @order(4)
     @edit(Number)
     public get scale(): number {
       return this.#scale;
@@ -65,6 +71,7 @@ namespace FudgeCore {
       this.jumpTo(_time);
     }
 
+    @order(6)
     @edit(Boolean)
     public get animateInEditor(): boolean {
       return this.#animateInEditor;
