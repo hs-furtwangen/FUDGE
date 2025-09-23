@@ -1362,6 +1362,188 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Defines a color as values in the range of 0 to 1 for the four channels red, green, blue and alpha (for opacity)
+     */
+    class Color extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        #private;
+        static crc2: CanvasRenderingContext2D;
+        r: number;
+        g: number;
+        b: number;
+        a: number;
+        constructor(_r?: number, _g?: number, _b?: number, _a?: number);
+        /**
+         * Converts the given HSL values to RGB and returns the result in the given object.
+         * @param _hue Hue as an angle in degrees in range [0, 360].
+         * @param _saturation Saturation in range [0, 1]
+         * @param _lightness Lightness in range [0, 1]
+         * @param _out Optional color to store the result in.
+         * @returns The RGB values in range [0, 1].
+         * @source https://www.w3.org/TR/css-color-4/#hsl-to-rgb
+         */
+        static hsl2rgb<T extends {
+            r: number;
+            g: number;
+            b: number;
+        } = {
+            r: number;
+            g: number;
+            b: number;
+        }>(_hue: number, _saturation: number, _lightness: number, _out: T): T;
+        /**
+         * @param _red Red value  [0, 1]
+         * @param _green Green component [0, 1]
+         * @param _blue Blue component [0, 1]
+         * @param _out Optional color to store the result in.
+         * @returns The HSL values. Hue as an angle in degrees in range [0, 360]. Saturation and lightness in range [0, 1].
+         * @source https://www.w3.org/TR/css-color-4/#rgb-to-hsl
+         */
+        static rgb2hsl<T extends {
+            h: number;
+            s: number;
+            l: number;
+        } = {
+            h: number;
+            s: number;
+            l: number;
+        }>(_red: number, _green: number, _blue: number, _out: T): T;
+        /**
+         * Returns a new {@link Color} object created from the given css color keyword.
+         * Passing an _alpha value will override the alpha value specified in the keyword.
+         * Supported color formats are:
+         * - named colors (e.g. "red", "blue", "green")
+         * - hex colors (e.g. "#f00" "#ff0000", "#ff0000ff")
+         * - srgb colors (e.g. "rgb(255 0 0 / 1)", "rgb(255, 0, 0)", "rgba(0, 0, 255, 1))
+         * - hsl colors (e.g. "hsl(90deg 100% 50% / 1)", "hsl(90, 100%, 50%)", hsla(90, 100%, 50%, 1))
+         *
+         * **Note:** If possibile try to avoid invoking this method frequently, as it might cause major garbage collection depending on the keyword and browser.
+         * @param _out Optional color to store the result in.
+         */
+        static CSS(_keyword: string, _alpha?: number, _out?: Color): Color;
+        /**
+         * Computes and returns the sum of two colors.
+         * @param _out Optional color to store the result in.
+         */
+        static SUM(_clrA: Color, _clrB: Color, _out?: Color): Color;
+        /**
+         * Computes and returns the sum of two colors.
+         * @param _out Optional color to store the result in.
+         */
+        static DIFFERENCE(_clrA: Color, _clrB: Color, _out?: Color): Color;
+        /**
+         * Computes and returns the product of two colors.
+         * @param _out Optional color to store the result in.
+         */
+        static PRODUCT(_clrA: Color, _clrB: Color, _out?: Color): Color;
+        /**
+         * Returns a new color representing the given color scaled by the given scaling factor.
+         * @param _out Optional color to store the result in.
+         */
+        static SCALE(_vector: Color, _scaling: number, _out?: Color): Color;
+        get isArrayConvertible(): true;
+        /**
+         * Creates and returns a clone of this color.
+         */
+        get clone(): Color;
+        /**
+         * Copies the color channels of the given color into this color and returns it.
+         * @returns A reference to this color.
+         */
+        copy(_color: Color): Color;
+        /**
+         * Sets the color channels of this color.
+         * @returns A reference to this color.
+         */
+        set(_r: number, _g: number, _b: number, _a: number): Color;
+        recycle(): void;
+        /**
+         * Returns true if this vector is equal to the given vector within the given tolerance.
+         */
+        equals(_compare: Color, _tolerance?: number): boolean;
+        /**
+         * Sets this color from the given css color keyword. Optinally sets the alpha value to the given value.
+         * @returns A reference to this color.
+         */
+        setCSS(_keyword: string, _alpha?: number): Color;
+        /**
+         * Sets the color channels of this color and clamps them between 0 and 1.
+         * @returns A reference to this color.
+         */
+        setClamped(_r: number, _g: number, _b: number, _a: number): Color;
+        /**
+         * Sets this color from the given hsl values.
+         */
+        setHSL(_hue: number, _saturation: number, _lightness: number, _alpha?: number): Color;
+        /**
+         * Sets this color from the given 8-bit values for the color channels.
+         * @returns A reference to this color.
+         */
+        setBytes(_r: number, _g: number, _b: number, _a: number): Color;
+        /**
+         * Sets this color from the given hex string color.
+         * @returns A reference to this color.
+         */
+        setHex(_hex: string): Color;
+        /**
+         * Returns the css color keyword representing this color.
+         * @deprecated Use {@link toCSS} instead.
+         */
+        getCSS(): string;
+        /**
+         * Returns the hex string representation of this color.
+         * @deprecated Use {@link toHex} instead.
+         */
+        getHex(): string;
+        /**
+         * Adds the given color to this.
+         */
+        add(_color: Color): Color;
+        /**
+         * Adds the given color to this.
+         */
+        subtract(_color: Color): Color;
+        /**
+         * Multiplies this with the given color.
+         */
+        multiply(_color: Color): Color;
+        /**
+         * Scales this color by the given factor.
+         */
+        scale(_scaling: number): Color;
+        /**
+         * Calls a defined callback function on each channel of the color, and returns a new color that contains the results. Similar to {@link Array.map}.
+         * @param _out Optional color to store the result in.
+         */
+        map(_function: (_value: number, _index: number, _channel: "r" | "g" | "b" | "a", _color: Color) => number, _out?: Color): Color;
+        /**
+         * Calls a defined callback function on each channel of the color and assigns the result to the channel. Similar to {@link Color.map} but mutates this color instead of creating a new one.
+         * @returns A reference to this color.
+         */
+        apply(_function: (_value: number, _index: number, _channel: "r" | "g" | "b" | "a", _color: Color) => number): Color;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+        /**
+         * Returns a formatted string representation of this color
+         */
+        toString(): string;
+        /**
+         * Returns the hex string representation of this color. // TODO: maybe this should return a number instead of a string?
+         */
+        toHex(): string;
+        /**
+         * Returns the css color keyword representing this color.
+         */
+        toCSS(): string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Color;
+        mutate(_mutator: Mutator): void;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
 }
@@ -3815,87 +3997,45 @@ declare namespace FudgeCore {
         mtxPivot: Matrix4x4;
         readonly mtxWorld: Matrix4x4;
         clrBackground: Color;
+        backgroundEnabled: boolean;
         /**
          * Returns {@link mtxProjection} * {@link mtxCameraInverse}
          * yielding the worldspace to viewspace matrix
          */
         get mtxWorldToView(): Matrix4x4;
         /**
-         * Returns the inversion of this cameras worldtransformation
+         * Returns the inversion of this cameras worldtransformation.
          */
         get mtxCameraInverse(): Matrix4x4;
         /**
-         * Returns the projectionmatrix of this camera.
+         * Returns the projection matrix of this camera.
          */
         get mtxProjection(): Matrix4x4;
-        /**
-         * Returns true if the background of the camera should be rendered, false if not.
-         */
-        get backgroundEnabled(): boolean;
-        /**
-         * Returns the cameras {@link PROJECTION} mode.
-         */
+        /** the projection mode */
         get projection(): PROJECTION;
-        /**
-         * Returns the cameras aspect ratio.
-         */
+        set projection(_value: PROJECTION);
+        /** the aspect ratio between width and height of projection space */
         get aspectRatio(): number;
-        /**
-         * Returns the cameras field of view in degrees.
-         */
-        get fieldOfView(): number;
-        /**
-         * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
-         */
+        set aspectRatio(_value: number);
+        /** the plane on which the field of view angle is applied */
         get direction(): FIELD_OF_VIEW;
-        /**
-         * Returns the cameras near value i.e. the minimum distance to render objects at.
-         */
+        set direction(_value: FIELD_OF_VIEW);
+        /** the field of view angle in degrees */
+        get fieldOfView(): number;
+        set fieldOfView(_value: number);
+        /** the minimum distance to render objects at */
         get near(): number;
-        /**
-         * Returns the cameras far value i.e. the maximum distance to render objects at.
-         */
+        set near(_value: number);
+        /** the maximum distance to render objects at */
         get far(): number;
-        /**
-         * Returns the cameras {@link PROJECTION} mode.
-         * @deprecated Use {@link projection} instead.
-         */
-        getProjection(): PROJECTION;
-        /**
-         * Returns true if the background of the camera should be rendered, false if not.
-         * @deprecated Use {@link backgroundEnabled} instead.
-         */
-        getBackgroundEnabled(): boolean;
-        /**
-         * Returns the cameras aspect ratio.
-         * @deprecated Use {@link aspectRatio} instead.
-         */
-        getAspect(): number;
-        /**
-         * Returns the cameras field of view in degrees.
-         * @deprecated Use {@link fieldOfView} instead.
-         */
-        getFieldOfView(): number;
-        /**
-         * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
-         * @deprecated Use {@link direction} instead.
-         */
-        getDirection(): FIELD_OF_VIEW;
-        /**
-         * Returns the cameras near value i.e. the minimum distance to render objects at.
-         * @deprecated Use {@link near} instead.
-         */
-        getNear(): number;
-        /**
-         * Returns the cameras far value i.e. the maximum distance to render objects at.
-         * @deprecated Use {@link far} instead.
-         */
-        getFar(): number;
+        set far(_value: number);
         /**
          * Set the camera to perspective projection. The world origin is in the center of the canvaselement.
-         * @param _aspect The aspect ratio between width and height of projectionspace.(Default = canvas.clientWidth / canvas.ClientHeight)
-         * @param _fieldOfView The field of view in Degrees. (Default = 45)
-         * @param _direction The plane on which the fieldOfView-Angle is given
+         * @param _aspect The aspect ratio between width and height of the projection space.
+         * @param _fieldOfView The field of view agnle in degrees.
+         * @param _direction The plane on which the field of view angle is applied.
+         * @param _near The minimum distance to render objects at.
+         * @param _far The maximum distance to render objects at.
          */
         projectCentral(_aspect?: number, _fieldOfView?: number, _direction?: FIELD_OF_VIEW, _near?: number, _far?: number): void;
         /**
@@ -3928,9 +4068,6 @@ declare namespace FudgeCore {
          * e.g., after setting the scaling, 1 unit in the world equals one (logical) pixel on the screen.
          */
         getWorldToPixelScale(_posWorld: Vector3): number;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         drawGizmos(): void;
         drawGizmosSelected(): void;
         protected reduceMutator(_mutator: Mutator): void;
@@ -5103,188 +5240,6 @@ declare namespace FudgeCore {
     }
     abstract class RenderWebGLMaterialPropertyTextureToon extends RenderWebGLMaterialProperty {
         static useRenderData(this: Experimental.MaterialPropertyTextureToon): void;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Defines a color as values in the range of 0 to 1 for the four channels red, green, blue and alpha (for opacity)
-     */
-    class Color extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        #private;
-        static crc2: CanvasRenderingContext2D;
-        r: number;
-        g: number;
-        b: number;
-        a: number;
-        constructor(_r?: number, _g?: number, _b?: number, _a?: number);
-        /**
-         * Converts the given HSL values to RGB and returns the result in the given object.
-         * @param _hue Hue as an angle in degrees in range [0, 360].
-         * @param _saturation Saturation in range [0, 1]
-         * @param _lightness Lightness in range [0, 1]
-         * @param _out Optional color to store the result in.
-         * @returns The RGB values in range [0, 1].
-         * @source https://www.w3.org/TR/css-color-4/#hsl-to-rgb
-         */
-        static hsl2rgb<T extends {
-            r: number;
-            g: number;
-            b: number;
-        } = {
-            r: number;
-            g: number;
-            b: number;
-        }>(_hue: number, _saturation: number, _lightness: number, _out: T): T;
-        /**
-         * @param _red Red value  [0, 1]
-         * @param _green Green component [0, 1]
-         * @param _blue Blue component [0, 1]
-         * @param _out Optional color to store the result in.
-         * @returns The HSL values. Hue as an angle in degrees in range [0, 360]. Saturation and lightness in range [0, 1].
-         * @source https://www.w3.org/TR/css-color-4/#rgb-to-hsl
-         */
-        static rgb2hsl<T extends {
-            h: number;
-            s: number;
-            l: number;
-        } = {
-            h: number;
-            s: number;
-            l: number;
-        }>(_red: number, _green: number, _blue: number, _out: T): T;
-        /**
-         * Returns a new {@link Color} object created from the given css color keyword.
-         * Passing an _alpha value will override the alpha value specified in the keyword.
-         * Supported color formats are:
-         * - named colors (e.g. "red", "blue", "green")
-         * - hex colors (e.g. "#f00" "#ff0000", "#ff0000ff")
-         * - srgb colors (e.g. "rgb(255 0 0 / 1)", "rgb(255, 0, 0)", "rgba(0, 0, 255, 1))
-         * - hsl colors (e.g. "hsl(90deg 100% 50% / 1)", "hsl(90, 100%, 50%)", hsla(90, 100%, 50%, 1))
-         *
-         * **Note:** If possibile try to avoid invoking this method frequently, as it might cause major garbage collection depending on the keyword and browser.
-         * @param _out Optional color to store the result in.
-         */
-        static CSS(_keyword: string, _alpha?: number, _out?: Color): Color;
-        /**
-         * Computes and returns the sum of two colors.
-         * @param _out Optional color to store the result in.
-         */
-        static SUM(_clrA: Color, _clrB: Color, _out?: Color): Color;
-        /**
-         * Computes and returns the sum of two colors.
-         * @param _out Optional color to store the result in.
-         */
-        static DIFFERENCE(_clrA: Color, _clrB: Color, _out?: Color): Color;
-        /**
-         * Computes and returns the product of two colors.
-         * @param _out Optional color to store the result in.
-         */
-        static PRODUCT(_clrA: Color, _clrB: Color, _out?: Color): Color;
-        /**
-         * Returns a new color representing the given color scaled by the given scaling factor.
-         * @param _out Optional color to store the result in.
-         */
-        static SCALE(_vector: Color, _scaling: number, _out?: Color): Color;
-        get isArrayConvertible(): true;
-        /**
-         * Creates and returns a clone of this color.
-         */
-        get clone(): Color;
-        /**
-         * Copies the color channels of the given color into this color and returns it.
-         * @returns A reference to this color.
-         */
-        copy(_color: Color): Color;
-        /**
-         * Sets the color channels of this color.
-         * @returns A reference to this color.
-         */
-        set(_r: number, _g: number, _b: number, _a: number): Color;
-        recycle(): void;
-        /**
-         * Returns true if this vector is equal to the given vector within the given tolerance.
-         */
-        equals(_compare: Color, _tolerance?: number): boolean;
-        /**
-         * Sets this color from the given css color keyword. Optinally sets the alpha value to the given value.
-         * @returns A reference to this color.
-         */
-        setCSS(_keyword: string, _alpha?: number): Color;
-        /**
-         * Sets the color channels of this color and clamps them between 0 and 1.
-         * @returns A reference to this color.
-         */
-        setClamped(_r: number, _g: number, _b: number, _a: number): Color;
-        /**
-         * Sets this color from the given hsl values.
-         */
-        setHSL(_hue: number, _saturation: number, _lightness: number, _alpha?: number): Color;
-        /**
-         * Sets this color from the given 8-bit values for the color channels.
-         * @returns A reference to this color.
-         */
-        setBytes(_r: number, _g: number, _b: number, _a: number): Color;
-        /**
-         * Sets this color from the given hex string color.
-         * @returns A reference to this color.
-         */
-        setHex(_hex: string): Color;
-        /**
-         * Returns the css color keyword representing this color.
-         * @deprecated Use {@link toCSS} instead.
-         */
-        getCSS(): string;
-        /**
-         * Returns the hex string representation of this color.
-         * @deprecated Use {@link toHex} instead.
-         */
-        getHex(): string;
-        /**
-         * Adds the given color to this.
-         */
-        add(_color: Color): Color;
-        /**
-         * Adds the given color to this.
-         */
-        subtract(_color: Color): Color;
-        /**
-         * Multiplies this with the given color.
-         */
-        multiply(_color: Color): Color;
-        /**
-         * Scales this color by the given factor.
-         */
-        scale(_scaling: number): Color;
-        /**
-         * Calls a defined callback function on each channel of the color, and returns a new color that contains the results. Similar to {@link Array.map}.
-         * @param _out Optional color to store the result in.
-         */
-        map(_function: (_value: number, _index: number, _channel: "r" | "g" | "b" | "a", _color: Color) => number, _out?: Color): Color;
-        /**
-         * Calls a defined callback function on each channel of the color and assigns the result to the channel. Similar to {@link Color.map} but mutates this color instead of creating a new one.
-         * @returns A reference to this color.
-         */
-        apply(_function: (_value: number, _index: number, _channel: "r" | "g" | "b" | "a", _color: Color) => number): Color;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
-        /**
-         * Returns a formatted string representation of this color
-         */
-        toString(): string;
-        /**
-         * Returns the hex string representation of this color. // TODO: maybe this should return a number instead of a string?
-         */
-        toHex(): string;
-        /**
-         * Returns the css color keyword representing this color.
-         */
-        toCSS(): string;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Color;
-        mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {

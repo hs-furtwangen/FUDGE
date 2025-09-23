@@ -21,22 +21,34 @@ namespace FudgeCore {
    * The camera component holds the projection-matrix and other data needed to render a scene from the perspective of the node it is attached to.
    * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export class ComponentCamera extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentCamera);
 
+    @order(9)
+    @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
+
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
+    @order(2)
+    @edit(Color)
     public clrBackground: Color = new Color(0, 0, 0, 1); // The color of the background the camera will render.
+
+    @order(1)
+    @edit(Boolean)
+    public backgroundEnabled: boolean = true; // Determines whether or not the background of this camera will be rendered. // TODO: seems to be unused, remove?
+    // TODO: examine, if background should be an attribute of Camera or Viewport
+
     //private orthographic: boolean = false; // Determines whether the image will be rendered with perspective or orthographic projection.
     #projection: PROJECTION = PROJECTION.CENTRAL;
     #fieldOfView: number = 45; // The camera's sensorangle.
     #aspectRatio: number = 1.0;
     #direction: FIELD_OF_VIEW = FIELD_OF_VIEW.DIAGONAL;
-    #near: number = 1;
-    #far: number = 2000;
-    #backgroundEnabled: boolean = true; // Determines whether or not the background of this camera will be rendered. // TODO: seems to be unused, remove?
-    // TODO: examine, if background should be an attribute of Camera or Viewport
+    #near: number = 0.01;
+    #far: number = 1000;
+
+    #projectionDirty: boolean = true;
 
     readonly #mtxWorldToView: Matrix4x4 = Matrix4x4.IDENTITY();
     readonly #mtxCameraInverse: Matrix4x4 = Matrix4x4.IDENTITY();
@@ -57,7 +69,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the inversion of this cameras worldtransformation
+     * Returns the inversion of this cameras worldtransformation.
      */
     public get mtxCameraInverse(): Matrix4x4 {
       if (this.mtxWorld.modified) {
@@ -69,129 +81,103 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the projectionmatrix of this camera.
+     * Returns the projection matrix of this camera.
      */
     public get mtxProjection(): Matrix4x4 {
+      if (this.#projectionDirty) {
+        switch (this.#projection) {
+          case PROJECTION.ORTHOGRAPHIC:
+            this.projectOrthographic(); // TODO: serialize and deserialize parameters
+            break;
+          case PROJECTION.CENTRAL:
+            this.projectCentral();
+            break;
+        }
+        this.#projectionDirty = false;
+      }
+
       return this.#mtxProjection;
     }
 
-    /**
-     * Returns true if the background of the camera should be rendered, false if not.
-     */
-    @mutate(Boolean)
-    public get backgroundEnabled(): boolean {
-      return this.#backgroundEnabled;
-    }
-
-    /**
-     * Returns the cameras {@link PROJECTION} mode.
-     */
-    @mutate(PROJECTION)
+    /** the projection mode */
+    @order(3)
+    @edit(PROJECTION)
     public get projection(): PROJECTION {
       return this.#projection;
     }
 
-    /**
-     * Returns the cameras aspect ratio.
-     */
-    @mutate(Number)
+    public set projection(_value: PROJECTION) {
+      this.#projection = _value;
+      this.#projectionDirty = true;
+    }
+
+    /** the aspect ratio between width and height of projection space */
+    @order(4)
+    @edit(Number)
     public get aspectRatio(): number {
       return this.#aspectRatio;
     }
 
-    /**
-     * Returns the cameras field of view in degrees.
-     */
-    @mutate(Number)
-    public get fieldOfView(): number {
-      return this.#fieldOfView;
+    public set aspectRatio(_value: number) {
+      this.#aspectRatio = _value;
+      this.#projectionDirty = true;
     }
 
-    /**
-     * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
-     */
-    @mutate(FIELD_OF_VIEW)
+    /** the plane on which the field of view angle is applied */
+    @order(5)
+    @edit(FIELD_OF_VIEW)
     public get direction(): FIELD_OF_VIEW {
       return this.#direction;
     }
 
-    /**
-     * Returns the cameras near value i.e. the minimum distance to render objects at.
-     */
-    @mutate(Number)
+    public set direction(_value: FIELD_OF_VIEW) {
+      this.#direction = _value;
+      this.#projectionDirty = true;
+    }
+
+    /** the field of view angle in degrees */
+    @order(6)
+    @edit(Number)
+    public get fieldOfView(): number {
+      return this.#fieldOfView;
+    }
+
+    public set fieldOfView(_value: number) {
+      this.#fieldOfView = _value;
+      this.#projectionDirty = true;
+    }
+
+    /** the minimum distance to render objects at */
+    @order(7)
+    @edit(Number)
     public get near(): number {
       return this.#near;
     }
 
-    /**
-     * Returns the cameras far value i.e. the maximum distance to render objects at.
-     */
-    @mutate(Number)
+    public set near(_value: number) {
+      this.#near = _value;
+      this.#projectionDirty = true;
+    }
+
+    /** the maximum distance to render objects at */
+    @order(8)
+    @edit(Number)
     public get far(): number {
       return this.#far;
     }
 
-    /**
-     * Returns the cameras {@link PROJECTION} mode.
-     * @deprecated Use {@link projection} instead.
-     */
-    public getProjection(): PROJECTION {
-      return this.#projection;
-    }
-
-    /**
-     * Returns true if the background of the camera should be rendered, false if not.
-     * @deprecated Use {@link backgroundEnabled} instead.
-     */
-    public getBackgroundEnabled(): boolean {
-      return this.#backgroundEnabled;
-    }
-
-    /**
-     * Returns the cameras aspect ratio.
-     * @deprecated Use {@link aspectRatio} instead.
-     */
-    public getAspect(): number {
-      return this.#aspectRatio;
-    }
-
-    /**
-     * Returns the cameras field of view in degrees.
-     * @deprecated Use {@link fieldOfView} instead.
-     */
-    public getFieldOfView(): number {
-      return this.#fieldOfView;
-    }
-
-    /**
-     * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
-     * @deprecated Use {@link direction} instead.
-     */
-    public getDirection(): FIELD_OF_VIEW {
-      return this.#direction;
-    }
-
-    /**
-     * Returns the cameras near value i.e. the minimum distance to render objects at.
-     * @deprecated Use {@link near} instead.
-     */
-    public getNear(): number {
-      return this.#near;
-    }
-
-    /**
-     * Returns the cameras far value i.e. the maximum distance to render objects at.
-     * @deprecated Use {@link far} instead.
-     */
-    public getFar(): number {
-      return this.#far;
+    public set far(_value: number) {
+      this.#far = _value;
+      this.#projectionDirty = true;
     }
 
     /**
      * Set the camera to perspective projection. The world origin is in the center of the canvaselement.
-     * @param _aspect The aspect ratio between width and height of projectionspace.(Default = canvas.clientWidth / canvas.ClientHeight)
-     * @param _fieldOfView The field of view in Degrees. (Default = 45)
-     * @param _direction The plane on which the fieldOfView-Angle is given 
+     * @param _aspect The aspect ratio between width and height of the projection space.
+     * @param _fieldOfView The field of view agnle in degrees.
+     * @param _direction The plane on which the field of view angle is applied.
+     * @param _near The minimum distance to render objects at.
+     * @param _far The maximum distance to render objects at.
      */
     public projectCentral(_aspect: number = this.#aspectRatio, _fieldOfView: number = this.#fieldOfView, _direction: FIELD_OF_VIEW = this.#direction, _near: number = this.#near, _far: number = this.#far): void {
       this.#aspectRatio = _aspect;
@@ -295,55 +281,6 @@ namespace FudgeCore {
       return scale * distance;
     }
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        backgroundColor: this.clrBackground,
-        backgroundEnabled: this.#backgroundEnabled,
-        projection: this.#projection,
-        fieldOfView: this.#fieldOfView,
-        direction: this.#direction,
-        near: this.#near,
-        far: this.#far,
-        aspect: this.#aspectRatio,
-        pivot: this.mtxPivot.serialize(),
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await this.clrBackground.deserialize(_serialization.backgroundColor);
-      this.#backgroundEnabled = _serialization.backgroundEnabled;
-      this.#projection = _serialization.projection;
-      this.#fieldOfView = _serialization.fieldOfView;
-      this.#aspectRatio = _serialization.aspect;
-      this.#direction = _serialization.direction;
-      this.#near = _serialization.near ?? this.#near;
-      this.#far = _serialization.far ?? this.#far;
-      await this.mtxPivot.deserialize(_serialization.pivot);
-      await super.deserialize(_serialization[super.constructor.name]);
-      switch (this.#projection) {
-        case PROJECTION.ORTHOGRAPHIC:
-          this.projectOrthographic(); // TODO: serialize and deserialize parameters
-          break;
-        case PROJECTION.CENTRAL:
-          this.projectCentral();
-          break;
-      }
-      return this;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-
-      switch (this.#projection) {
-        case PROJECTION.CENTRAL:
-          this.projectCentral(this.#aspectRatio, this.#fieldOfView, this.#direction, this.#near, this.#far);
-          break;
-      }
-    }
-
     public drawGizmos(): void {
       const mtxWorld: Matrix4x4 = this.mtxWorld.clone;
       mtxWorld.scaling = mtxWorld.scaling.set(0.5, 0.5, 0.5);
@@ -361,6 +298,5 @@ namespace FudgeCore {
       delete _mutator.transform;
       super.reduceMutator(_mutator);
     }
-    //#endregion
   }
 }
