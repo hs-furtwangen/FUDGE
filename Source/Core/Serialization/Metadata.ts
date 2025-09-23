@@ -31,7 +31,13 @@ namespace FudgeCore {
      * Keys of properties to be included in the class's {@link Mutator}.
      * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
      */
-    mutatorKeys?: Set<string>;
+    mutatorOrder?: Record<string, number>;
+
+    /**
+     * Keys of properties to be included in the class's {@link Mutator}.
+     * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+     */
+    mutatorKeys?: string[];
 
     /**
      * Keys of properties of the class's {@link Mutator} that are references to other objects.
@@ -87,6 +93,10 @@ namespace FudgeCore {
   export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 
   //#region @edit
+  export interface EditDecoratorOptions {
+    order?: number;
+  }
+
   /**
    * Decorator to mark instance properties of a class for editor configuration and automatic serialization.
    * 
@@ -133,18 +143,16 @@ namespace FudgeCore {
   export function edit<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void;
   // enum type
   export function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
-  // function type
-  export function edit<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
 
-  export function edit(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
+  export function edit(_type: Function | Record<string, unknown>): (_value: unknown, _context: ClassPropertyContext<General, General>) => void {
     return editFactory(_type, false);
   }
 
-  export function editF(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
+  export function editF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
     return editFactory(_type, true);
   }
 
-  function editFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  function editFactory(_type: Function | Record<string, unknown>, _function?: boolean, _order?: number): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
       serializeFactory(_type, _function)(_value, _context);
       typeFactory(_type, _function)(_value, _context);
@@ -152,20 +160,67 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region @mutate
+  //#region @order
   /**
-   * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
+   * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor. 
+   * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
+   * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
+   * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link type} decorators to take effect.
    *
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function mutate(_value: unknown, _context: ClassPropertyContext<Mutable>): void {
+  export function order(_order: number): (_value: unknown, _context: ClassPropertyContext<Mutable>) => void {
+    return (_value, _context) => {
+      if (_context.static || _context.private)
+        throw new Error("@order decorator can only order public instance members.");
+
+      const key: PropertyKey = _context.name;
+      if (typeof key === "symbol")
+        throw new Error("@order decorator can't order symbol-named properties");
+
+      const metadata: Metadata = _context.metadata;
+      const order: Record<string, number> = getOwnProperty(metadata, "mutatorOrder") ?? (metadata.mutatorOrder = { ...metadata.mutatorOrder });
+      order[key] = _order;
+    };
+  }
+
+  /**
+   * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
+   *
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function orderFlat(_class: unknown, _context: ClassDecoratorContext): void {
+    const metadata: Metadata = _context.metadata;
+    const order: Record<string, number> = getOwnProperty(metadata, "mutatorOrder");
+    if (!order)
+      throw new Error("No mutator order specified. Use the @order decorator to specify an order for mutator keys.");
+
+    const keys: string[] = getOwnProperty(metadata, "mutatorKeys");
+    if (!keys)
+      throw new Error("No mutator keys specified. Use the @mutate decorator to specify mutator keys.");
+
+    keys.sort((_a, _b) => {
+      const orderA: number = order[_a] ?? Number.POSITIVE_INFINITY;
+      const orderB: number = order[_b] ?? Number.POSITIVE_INFINITY;
+      return orderA - orderB;
+    });
+  }
+  //#endregion
+
+  //#region @mutate
+  /**
+   * Decorator to include properties of a class in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
+   *
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function mutate(_value: unknown, _context: ClassPropertyContext): void {
     const key: PropertyKey = _context.name;
     if (typeof key === "symbol")
       return;
 
     const metadata: Metadata = _context.metadata;
-    const keys: Set<string> = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = new Set<string>(metadata.mutatorKeys));
-    keys.add(key);
+    const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
+    keys.push(key);
   }
   //#endregion
 
@@ -191,8 +246,6 @@ namespace FudgeCore {
   export function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
   // enum type
   export function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
-  // function type
-  export function type<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
 
   export function type(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
     return typeFactory(_type, false);

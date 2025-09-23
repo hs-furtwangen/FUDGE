@@ -354,7 +354,12 @@ declare namespace FudgeCore {
          * Keys of properties to be included in the class's {@link Mutator}.
          * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
          */
-        mutatorKeys?: Set<string>;
+        mutatorOrder?: Record<string, number>;
+        /**
+         * Keys of properties to be included in the class's {@link Mutator}.
+         * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+         */
+        mutatorKeys?: string[];
         /**
          * Keys of properties of the class's {@link Mutator} that are references to other objects.
          */
@@ -381,6 +386,9 @@ declare namespace FudgeCore {
     function getMetadata(_from: Object): Readonly<Metadata>;
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
     type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+    interface EditDecoratorOptions {
+        order?: number;
+    }
     /**
      * Decorator to mark instance properties of a class for editor configuration and automatic serialization.
      *
@@ -424,14 +432,28 @@ declare namespace FudgeCore {
     function edit<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     function edit<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void;
     function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
-    function edit<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
-    function editF(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void);
+    function editF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     /**
-     * Decorator to include properties of a {@link Mutable} in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
+     * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
+     * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
+     * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
+     * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link type} decorators to take effect.
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function mutate(_value: unknown, _context: ClassPropertyContext<Mutable>): void;
+    function order(_order: number): (_value: unknown, _context: ClassPropertyContext<Mutable>) => void;
+    /**
+     * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
+    /**
+     * Decorator to include properties of a class in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function mutate(_value: unknown, _context: ClassPropertyContext): void;
     /**
      * Decorator to specify a type for a property of a {@link Mutable}.
      *
@@ -450,7 +472,6 @@ declare namespace FudgeCore {
     function type<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
     function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
-    function type<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to specify a function type (typeof `_type`) for a property of a {@link Mutable}.
      * See {@link type} decorator for more information.
@@ -8900,7 +8921,7 @@ declare namespace FudgeCore {
         /**
          * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
          */
-        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
+        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
         /**
          * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
          */

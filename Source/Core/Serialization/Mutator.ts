@@ -29,19 +29,20 @@ namespace FudgeCore {
   export interface MutatorForUserInterface extends Mutator { readonly forUserInterface: null }
 
   export namespace Mutator {
-    const emptyKeys: ReadonlySet<string> = Object.freeze(new Set<string>());
+    const emptyKeys: readonly string[] = Object.freeze([] as string[]);
     /**
      * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
      */
-    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorKeys ?? emptyKeys);
+    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
+      return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
 
+    const emptyRefs: ReadonlySet<string> = Object.freeze(new Set<string>());
     /**
      * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
      */
     export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyKeys);
+      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyRefs);
     }
 
     const emptyTypes: MutatorTypes = Object.freeze({});
