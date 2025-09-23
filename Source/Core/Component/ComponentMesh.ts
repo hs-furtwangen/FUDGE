@@ -3,11 +3,14 @@ namespace FudgeCore {
    * Attaches a {@link Mesh} to the node
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
+  @orderFlat
   export class ComponentMesh extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMesh);
+
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
-    @mutate(Mesh)
+    @order(1)
+    @edit(Mesh)
     public mesh: Mesh;
     public skeleton: ComponentSkeleton;
 
@@ -19,7 +22,8 @@ namespace FudgeCore {
       this.skeleton = _skeleton;
     }
 
-    @mutate(Matrix4x4)
+    @order(2)
+    @edit(Matrix4x4)
     public get mtxPivot(): Matrix4x4 {
       return this.#mtxPivot;
     }
@@ -77,31 +81,24 @@ namespace FudgeCore {
     //   return box;
     // }
 
-    //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization;
-      /* at this point of time, serialization as resource and as inline object is possible. TODO: check if inline becomes obsolete */
-      let idMesh: string = this.mesh.idResource;
-      if (idMesh)
-        serialization = { idMesh: idMesh };
-      else
-        serialization = { mesh: Serializer.serialize(this.mesh) };
+      let serialization: Serialization = super.serialize();
 
       if (this.skeleton)
         serialization.skeleton = Node.PATH_FROM_TO(this, this.skeleton);
 
-      serialization.pivot = this.mtxPivot.serialize();
-      serialization[super.constructor.name] = super.serialize();
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      let mesh: Mesh;
-      if (_serialization.idMesh)
-        mesh = <Mesh>await Project.getResource(_serialization.idMesh);
-      else
-        mesh = <Mesh>await Serializer.deserialize(_serialization.mesh);
-      this.mesh = mesh;
+      await super.deserialize(_serialization);
+
+      // TODO: backwards compatibility, remove in future versions
+      if (_serialization.idMesh != undefined)
+        this.mesh = <Mesh>await Project.getResource(_serialization.idMesh);
+
+      if (_serialization.pivot != undefined)
+        this.mtxPivot.deserialize(_serialization.pivot);
 
       if (_serialization.skeleton) {
         const hndNodeDeserialized: EventListenerUnified = () => {
@@ -115,12 +112,8 @@ namespace FudgeCore {
         this.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
       }
 
-      await this.mtxPivot.deserialize(_serialization.pivot);
-      await super.deserialize(_serialization[super.constructor.name]);
       return this;
     }
-
-    //#endregion
 
     public drawGizmosSelected(): void {
       if (!this.mesh)
