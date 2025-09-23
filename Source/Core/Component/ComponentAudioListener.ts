@@ -6,6 +6,8 @@ namespace FudgeCore {
    */
   export class ComponentAudioListener extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAudioListener);
+
+    @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
     /**

@@ -17,52 +17,35 @@ namespace FudgeCore {
       this.#highlightDesaturation = _desaturateHighlights;
     }
 
+    @edit(Number)
     public get threshold(): number {
       return this.#threshold;
     }
+
     public set threshold(_value: number) {
       this.#threshold = Calc.clamp(_value, 0, 1);
     }
 
+    @edit(Number)
     public get intensity(): number {
       return this.#intensity;
     }
+
     public set intensity(_value: number) {
       this.#intensity = Math.max(0, _value);
     }
 
+    @edit(Number)
     public get highlightDesaturation(): number {
       return this.#highlightDesaturation;
     }
+
     public set highlightDesaturation(_value: number) {
       this.#highlightDesaturation = Calc.clamp(_value, 0, 1);
     }
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        threshold: this.#threshold,
-        intensity: this.#intensity,
-        desaturateHighlights: this.#highlightDesaturation,
-      };
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.#threshold = _serialization.threshold;
-      this.#intensity = _serialization.intensity;
-      this.#highlightDesaturation = _serialization.desaturateHighlights;
-      await super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.threshold = this.threshold;
-      mutator.intensity = this.intensity;
-      mutator.highlightDesaturation = this.highlightDesaturation;
-      return mutator;
+    public getMutator(_extendable?: boolean): Mutator {
+      return super.getMutator(_extendable);
     }
   }
 }

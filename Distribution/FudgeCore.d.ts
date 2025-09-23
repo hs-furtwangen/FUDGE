@@ -3786,9 +3786,7 @@ declare namespace FudgeCore {
         set intensity(_value: number);
         get highlightDesaturation(): number;
         set highlightDesaturation(_value: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
+        getMutator(_extendable?: boolean): Mutator;
     }
 }
 declare namespace FudgeCore {
