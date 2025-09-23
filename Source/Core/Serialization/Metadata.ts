@@ -28,16 +28,16 @@ namespace FudgeCore {
    */
   export interface Metadata extends DecoratorMetadata {
     /**
-     * A map from property keys to their specified order in the class's {@link Mutator}.
-     * Use the {@link order} decorator to add to this map.
-     */
-    mutatorOrder?: Record<string, number>;
-
-    /**
      * Keys of properties to be included in the class's {@link Mutator}.
      * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
      */
     mutatorKeys?: string[];
+
+    /**
+     * A map from property keys to their specified types for the class's {@link Mutator}.
+     * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
+     */
+    mutatorTypes?: MutatorTypes;
 
     /**
      * Keys of properties of the class's {@link Mutator} that are references to other objects.
@@ -45,10 +45,10 @@ namespace FudgeCore {
     mutatorReferences?: Set<string>;
 
     /**
-     * A map from property keys to their specified types for the class's {@link Mutator}.
-     * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
+     * A map from property keys to their specified order in the class's {@link Mutator}.
+     * Use the {@link order} decorator to add to this map.
      */
-    mutatorTypes?: MutatorTypes;
+    mutatorOrder?: Record<string, number>;
 
     /**
      * A map from property keys to functions that return a map of possible options for the property.
@@ -305,7 +305,7 @@ namespace FudgeCore {
       const isFunction: boolean = _function;
       const isConstructor: boolean = typeof _type === "function";
       const isNode: boolean = isConstructor && _type === Node;
-      const isResource: boolean = isConstructor && (<SerializableResource>(_type).prototype).isSerializableResource;
+      const isResource: boolean = isConstructor && isSerializableResource(_type.prototype);
 
       if (isFunction || isNode || isResource) {
         reference(_value, <ClassPropertyContext<Mutable, object>>_context);

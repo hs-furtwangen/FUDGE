@@ -1,3 +1,5 @@
+
+
 namespace FudgeCore {
   /**
    * Decorator to mark properties of a {@link Serializable} for automatic serialization.
@@ -105,9 +107,9 @@ namespace FudgeCore {
         strategy = "primitive";
       } else if (_type == Node) {
         strategy = "node";
-      } else if ((<SerializableResource>_type.prototype).isSerializableResource) {
+      } else if (isSerializableResource(<SerializableResource>_type.prototype)) {
         strategy = "resource";
-      } else if ((<Serializable>_type.prototype).serialize && (<Serializable>_type.prototype).deserialize) {
+      } else if (isSerializable(_type.prototype)) {
         strategy = "serializable";
       }
 

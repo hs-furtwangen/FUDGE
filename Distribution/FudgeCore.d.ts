@@ -326,6 +326,296 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    type General = any;
+    /**
+     * Holds information needed to recreate an object identical to the one it originated from.
+     * A serialization is used to create copies of existing objects at runtime or to store objects as strings or recreate them.
+     */
+    interface Serialization {
+        [type: string]: General;
+    }
+    /**
+     * Generic type for a {@link Serialization} of a specific {@link Serializable} object.
+     */
+    type SerializationOf<T extends Serializable> = {
+        [K in keyof T]?: General;
+    };
+    interface Serializable {
+        /**
+         * Returns a {@link Serialization} of this object.
+         */
+        serialize(): Serialization;
+        /**
+         * Recreates this instance of {@link Serializable} with the information from the given {@link Serialization}.
+         */
+        deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
+    }
+    function isSerializable(_object: Object): _object is Serializable;
+    /**
+     * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
+     * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
+     * Vice versa, a JSON-String can be parsed to a {@link Serialization} which can be deserialized to a {@link Serializable} object.
+     * ```text
+     *  [Serializable] → (serialize) → [Serialization] → (stringify) → [String] → (save or send)
+     *                                        ↓                            ↓                  ↓
+     *                [Serializable] ← (deserialize) ← [Serialization] ← (parse) ← (load) ← [Medium]
+     * ```
+     * While the internal serialize/deserialize method1s of the objects care of the selection of information needed to recreate the object and its structure,
+     * the {@link Serializer} keeps track of the namespaces and classes in order to recreate {@link Serializable} objects. The general structure of a {@link Serialization} is as follows
+     * ```text
+     * {
+     *      namespaceName.className: {
+     *          propertyName: propertyValue,
+     *          ...,
+     *          propertyNameOfReference: SerializationOfTheReferencedObject,
+     *          ...,
+     *          constructorNameOfSuperclass: SerializationOfSuperClass
+     *      }
+     * }
+     * ```
+     * Since the instance of the superclass is created automatically when an object is created,
+     * the SerializationOfSuperClass omits the the namespaceName.className key and consists only of its value.
+     * The constructorNameOfSuperclass is given instead as a property name in the serialization of the subclass.
+     */
+    abstract class Serializer {
+        /** In order for the Serializer to create class instances, it needs access to the appropriate namespaces */
+        private static namespaces;
+        /**
+         * Registers a namespace to the {@link Serializer}, to enable automatic instantiation of classes defined within.
+         */
+        static registerNamespace(_namespace: Object): string;
+        /**
+         * Returns a javascript object representing the serializable FUDGE-object given,
+         * including attached components, children, superclass-objects all information needed for reconstruction
+         * @param _object An object to serialize, implementing the {@link Serializable} interface
+         */
+        static serialize(_object: Serializable): Serialization;
+        /**
+         * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
+         * including attached components, children, superclass-objects
+         */
+        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T>;
+        /**
+        * Serializes an array of {@link Serializable} objects.
+        * By default, the method creates an array of {@link Serialization}s, each with type information.
+        * If all objects are of the same type, pass the constructor to create a more compact serialization.
+        * @param _constructor If given, all objects are expected to be of this type.
+        */
+        static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _constructor?: new () => T): Serialization[];
+        /**
+         * Deserializes an array of {@link Serializable} objects from an array of {@link Serialization}s.
+         * By default, the method expects an array of {@link Serialization}s, each with type information.
+         * If all objects are of the same type and serialized without type information, pass the constructor to deserialize them.
+         * @param _constructor If given, all objects are expected to be of this type and the serializations are expected to be without type information.
+         */
+        static deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]>;
+        /**
+         * @deprecated Use {@link Serializer.deserializeArray} instead.
+         */
+        static deserializeArrayLegacy<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]>;
+        /**
+         * Returns an array of resource IDs representing the given resources.
+         */
+        static serializeResources(_resources: SerializableResource[]): string[];
+        /**
+         * Returns an array of resources retrieved with the given resource IDs.
+         */
+        static deserializeResources<T extends SerializableResource = SerializableResource>(_resourceIds: string[]): Promise<T[]>;
+        /**
+         * Returns an array of paths to the given functions (constructors), if found in the {@link Serializer.registerNamespace registered namespaces}.
+         */
+        static serializeFunctions(_functions: Function[]): string[];
+        /**
+         * Returns an array of functions (constructors) from the given paths to functions, if found in the {@link Serializer.registerNamespace registered namespaces}.
+         */
+        static deserializeFunctions<T extends Function = Function>(_paths: string[]): T[];
+        /**
+         * Prettify a JSON-String, to make it more readable.
+         * not implemented yet
+         */
+        static prettify(_json: string): string;
+        /**
+         * Returns a formatted, human readable JSON-String, representing the given {@link Serialization} that may have been created by {@link Serializer}.serialize
+         * @param _serialization
+         */
+        static stringify(_serialization: Serialization): string;
+        /**
+         * Returns a {@link Serialization} created from the given JSON-String. Result may be passed to {@link Serializer.deserialize}
+         * @param _json
+         */
+        static parse(_json: string): Serialization;
+        /**
+         * Creates an object of the class defined with the full path including the namespaceName(s) and the className seperated by dots(.)
+         * @param _path
+         */
+        static reconstruct(_path: string): Serializable;
+        /**
+         * Returns the function (constructor) from the given path to a function, if found in the {@link registerNamespace registered namespaces}.
+         */
+        static getFunction<T extends Function>(_path: string): T;
+        /**
+         * Returns the full path to a function (constructor), if found in the {@link registerNamespace registered namespaces}.
+         * e.g. "FudgeCore.ComponentScript" or "MyNameSpace.MyScript"
+         */
+        static getFunctionPath(_to: Serializable | Function): string;
+        /**
+         * Returns the namespace-object defined within the full path, if registered
+         * @param _path
+         */
+        private static getNamespace;
+        /**
+         * Finds the namespace-object in properties of the parent-object (e.g. window), if present
+         * @param _namespace
+         * @param _parent
+         */
+        private static findNamespaceIn;
+    }
+}
+declare namespace FudgeCore {
+    export enum MODE {
+        EDITOR = 0,
+        RUNTIME = 1
+    }
+    export enum RESOURCE_STATUS {
+        PENDING = 0,
+        READY = 1,
+        ERROR = 2
+    }
+    /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
+    export interface SerializableResource extends Serializable {
+        readonly isSerializableResource: true;
+        name: string;
+        idResource: string;
+        readonly type: string;
+    }
+    export function isSerializableResource(_object: Object): _object is SerializableResource;
+    /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
+    export interface SerializableResourceExternal extends SerializableResource {
+        url: RequestInfo;
+        status: RESOURCE_STATUS;
+        load(): Promise<SerializableResourceExternal>;
+    }
+    export interface Resources {
+        [idResource: string]: SerializableResource;
+    }
+    export interface SerializationOfResources {
+        [idResource: string]: Serialization;
+    }
+    export interface ScriptNamespaces {
+        [name: string]: Object;
+    }
+    export interface ComponentScripts {
+        [namespace: string]: ComponentScript[];
+    }
+    interface GraphInstancesToResync {
+        [idResource: string]: GraphInstance[];
+    }
+    /**
+     * Static class handling the resources used with the current FUDGE-instance.
+     * Keeps a list of the resources and generates ids to retrieve them.
+     * Resources are objects referenced multiple times but supposed to be stored only once
+     */
+    export abstract class Project extends EventTargetStatic {
+        static resources: Resources;
+        static serialization: SerializationOfResources;
+        static scriptNamespaces: ScriptNamespaces;
+        static baseURL: URL;
+        static mode: MODE;
+        static graphInstancesToResync: GraphInstancesToResync;
+        /**
+         * Registers the resource and generates an id for it by default.
+         * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
+         * It's possible to pass an id, but should not be done except by the Serializer.
+         */
+        static register(_resource: SerializableResource, _idResource?: string): void;
+        /**
+         * Removes the resource from the list of resources.
+         */
+        static deregister(_resource: SerializableResource): void;
+        /**
+         * Clears the list of resources and their serialization, thus removing all resources.
+         */
+        static clear(): void;
+        /**
+         * Returns an array of all resources of the requested type.
+         */
+        static getResourcesByType<T>(_type: abstract new (..._args: General[]) => T): SerializableResource[];
+        /**
+         * Returns an array of all resources with the requested name.
+         */
+        static getResourcesByName(_name: string): SerializableResource[];
+        /**
+         * Generate a user readable and unique id using the type of the resource, the date and random numbers
+         * @param _resource
+         */
+        static generateId(_resource: SerializableResource): string;
+        /**
+         * Tests, if an object is a {@link SerializableResource}
+         * @param _object The object to examine
+         */
+        static isResource(_object: Serializable): boolean;
+        /**
+         * Retrieves the resource stored with the given id.
+         */
+        static getResource<T extends SerializableResource>(_idResource: string): Promise<T>;
+        static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
+        /**
+         * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
+         * @param _node A node to create the resource from
+         * @param _replaceWithInstance if true (default), the node used as origin is replaced by a {@link GraphInstance} of the {@link Graph} created
+         */
+        static registerAsGraph(_node: Node, _replaceWithInstance?: boolean): Promise<Graph>;
+        /**
+         * Creates and returns a {@link GraphInstance} of the given {@link Graph}
+         * and connects it to the graph for synchronisation of mutation.
+         */
+        static createGraphInstance(_graph: Graph): Promise<GraphInstance>;
+        /**
+         * Register the given {@link GraphInstance} to be resynced
+         */
+        static registerGraphInstanceForResync(_instance: GraphInstance): void;
+        /**
+         * Resync all {@link GraphInstance} registered to the given {@link Graph}
+         */
+        static resyncGraphInstances(_graph: Graph): Promise<void>;
+        /**
+         * Register the given namespace to the list of script-namespaces.
+         */
+        static registerScriptNamespace(_namespace: Object): void;
+        /**
+         * Clear the list of script-namespaces.
+         */
+        static clearScriptNamespaces(): void;
+        /**
+         * Collects all {@link ComponentScript}s registered in {@link Project.scriptNamespaces} and returns them.
+         */
+        static getComponentScripts(): ComponentScripts;
+        /**
+         * Loads a script from the given URL and integrates it into a {@link HTMLScriptElement} in the {@link document.head}
+         */
+        static loadScript(_url: RequestInfo): Promise<void>;
+        /**
+         * Load {@link Resources} from the given url
+         */
+        static loadResources(_url: RequestInfo): Promise<Resources>;
+        /**
+         * Load all resources from the {@link document.head}
+         */
+        static loadResourcesFromHTML(): Promise<void>;
+        /**
+         * Serialize all resources
+         */
+        static serialize(): SerializationOfResources;
+        /**
+         * Create resources from a serialization, deleting all resources previously registered
+         * @param _serialization
+         */
+        static deserialize(_serialization: SerializationOfResources): Promise<Resources>;
+        private static deserializeResource;
+    }
+    export {};
+}
+declare namespace FudgeCore {
     /**
      * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
      * @see {@link Metadata}.
@@ -351,24 +641,24 @@ declare namespace FudgeCore {
      */
     interface Metadata extends DecoratorMetadata {
         /**
-         * A map from property keys to their specified order in the class's {@link Mutator}.
-         * Use the {@link order} decorator to add to this map.
-         */
-        mutatorOrder?: Record<string, number>;
-        /**
          * Keys of properties to be included in the class's {@link Mutator}.
          * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
          */
         mutatorKeys?: string[];
         /**
-         * Keys of properties of the class's {@link Mutator} that are references to other objects.
-         */
-        mutatorReferences?: Set<string>;
-        /**
          * A map from property keys to their specified types for the class's {@link Mutator}.
          * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
          */
         mutatorTypes?: MutatorTypes;
+        /**
+         * Keys of properties of the class's {@link Mutator} that are references to other objects.
+         */
+        mutatorReferences?: Set<string>;
+        /**
+         * A map from property keys to their specified order in the class's {@link Mutator}.
+         * Use the {@link order} decorator to add to this map.
+         */
+        mutatorOrder?: Record<string, number>;
         /**
          * A map from property keys to functions that return a map of possible options for the property.
          * Use the {@link edit} or the {@link mutate} decorator to add to this map.
@@ -547,66 +837,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
-     *
-     * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
-     * Using the {@link mutate}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
-     *
-     * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
-     * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
-     * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
-     */
-    abstract class Mutable extends EventTargetUnified {
-        static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray;
-        /**
-         * Retrieves the type of this mutable subclass as the name of the runtime class
-         * @returns The type of the mutable
-         */
-        get type(): string;
-        /**
-         * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
-         * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
-         * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
-         */
-        getMutator(_extendable?: boolean): Mutator;
-        /**
-         * Collect the attributes of the instance and their values applicable for animation.
-         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-         */
-        getMutatorForAnimation(_extendable?: boolean): MutatorForAnimation;
-        /**
-         * Collect the attributes of the instance and their values applicable for the user interface.
-         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-         */
-        getMutatorForUserInterface(_extendable?: boolean): MutatorForUserInterface;
-        /**
-         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
-         * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
-         */
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        /**
-         * Updates the attribute values of the instance according to the state of the mutator.
-         * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
-         * Uses mutateBase, but can be overwritten in subclasses
-         */
-        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>;
-        /**
-         * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
-         */
-        animate(_mutator: AnimationMutator): void;
-        /**
-         * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
-         */
-        protected mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void>;
-        /**
-         * Reduces the attributes of the general mutator according to desired options for mutation. To be implemented in subclasses
-         * @param _mutator
-         */
-        protected abstract reduceMutator(_mutator: Mutator): void;
-    }
-}
-declare namespace FudgeCore {
-    /**
      * Decorator to mark properties of a {@link Serializable} for automatic serialization.
      *
      * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
@@ -688,149 +918,63 @@ declare namespace FudgeCore {
     function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T>;
 }
 declare namespace FudgeCore {
-    type General = any;
     /**
-     * Holds information needed to recreate an object identical to the one it originated from.
-     * A serialization is used to create copies of existing objects at runtime or to store objects as strings or recreate them.
+     * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
+     *
+     * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
+     * Using the {@link mutate}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
+     *
+     * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
+     * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
+     * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
-    interface Serialization {
-        [type: string]: General;
-    }
-    /**
-     * Generic type for a {@link Serialization} of a specific {@link Serializable} object.
-     */
-    type SerializationOf<T extends Serializable> = {
-        [K in keyof T]?: General;
-    };
-    interface Serializable {
+    abstract class Mutable extends EventTargetUnified {
+        static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray;
         /**
-         * Returns a {@link Serialization} of this object.
+         * Retrieves the type of this mutable subclass as the name of the runtime class
+         * @returns The type of the mutable
          */
-        serialize(): Serialization;
+        get type(): string;
         /**
-         * Recreates this instance of {@link Serializable} with the information from the given {@link Serialization}.
+         * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
+         * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
+         * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
          */
-        deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
-    }
-    function isSerializable(_object: Object): _object is Serializable;
-    /**
-     * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
-     * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
-     * Vice versa, a JSON-String can be parsed to a {@link Serialization} which can be deserialized to a {@link Serializable} object.
-     * ```text
-     *  [Serializable] → (serialize) → [Serialization] → (stringify) → [String] → (save or send)
-     *                                        ↓                            ↓                  ↓
-     *                [Serializable] ← (deserialize) ← [Serialization] ← (parse) ← (load) ← [Medium]
-     * ```
-     * While the internal serialize/deserialize method1s of the objects care of the selection of information needed to recreate the object and its structure,
-     * the {@link Serializer} keeps track of the namespaces and classes in order to recreate {@link Serializable} objects. The general structure of a {@link Serialization} is as follows
-     * ```text
-     * {
-     *      namespaceName.className: {
-     *          propertyName: propertyValue,
-     *          ...,
-     *          propertyNameOfReference: SerializationOfTheReferencedObject,
-     *          ...,
-     *          constructorNameOfSuperclass: SerializationOfSuperClass
-     *      }
-     * }
-     * ```
-     * Since the instance of the superclass is created automatically when an object is created,
-     * the SerializationOfSuperClass omits the the namespaceName.className key and consists only of its value.
-     * The constructorNameOfSuperclass is given instead as a property name in the serialization of the subclass.
-     */
-    abstract class Serializer {
-        /** In order for the Serializer to create class instances, it needs access to the appropriate namespaces */
-        private static namespaces;
+        getMutator(_extendable?: boolean): Mutator;
         /**
-         * Registers a namespace to the {@link Serializer}, to enable automatic instantiation of classes defined within.
+         * Collect the attributes of the instance and their values applicable for animation.
+         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
          */
-        static registerNamespace(_namespace: Object): string;
+        getMutatorForAnimation(_extendable?: boolean): MutatorForAnimation;
         /**
-         * Returns a javascript object representing the serializable FUDGE-object given,
-         * including attached components, children, superclass-objects all information needed for reconstruction
-         * @param _object An object to serialize, implementing the {@link Serializable} interface
+         * Collect the attributes of the instance and their values applicable for the user interface.
+         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
          */
-        static serialize(_object: Serializable): Serialization;
+        getMutatorForUserInterface(_extendable?: boolean): MutatorForUserInterface;
         /**
-         * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
-         * including attached components, children, superclass-objects
+         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
+         * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
          */
-        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T>;
+        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
-        * Serializes an array of {@link Serializable} objects.
-        * By default, the method creates an array of {@link Serialization}s, each with type information.
-        * If all objects are of the same type, pass the constructor to create a more compact serialization.
-        * @param _constructor If given, all objects are expected to be of this type.
-        */
-        static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _constructor?: new () => T): Serialization[];
-        /**
-         * Deserializes an array of {@link Serializable} objects from an array of {@link Serialization}s.
-         * By default, the method expects an array of {@link Serialization}s, each with type information.
-         * If all objects are of the same type and serialized without type information, pass the constructor to deserialize them.
-         * @param _constructor If given, all objects are expected to be of this type and the serializations are expected to be without type information.
+         * Updates the attribute values of the instance according to the state of the mutator.
+         * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
+         * Uses mutateBase, but can be overwritten in subclasses
          */
-        static deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]>;
+        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>;
         /**
-         * @deprecated Use {@link Serializer.deserializeArray} instead.
+         * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
          */
-        static deserializeArrayLegacy<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]>;
+        animate(_mutator: AnimationMutator): void;
         /**
-         * Returns an array of resource IDs representing the given resources.
+         * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
          */
-        static serializeResources(_resources: SerializableResource[]): string[];
+        protected mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void>;
         /**
-         * Returns an array of resources retrieved with the given resource IDs.
+         * Reduces the attributes of the general mutator according to desired options for mutation. To be implemented in subclasses
+         * @param _mutator
          */
-        static deserializeResources<T extends SerializableResource = SerializableResource>(_resourceIds: string[]): Promise<T[]>;
-        /**
-         * Returns an array of paths to the given functions (constructors), if found in the {@link Serializer.registerNamespace registered namespaces}.
-         */
-        static serializeFunctions(_functions: Function[]): string[];
-        /**
-         * Returns an array of functions (constructors) from the given paths to functions, if found in the {@link Serializer.registerNamespace registered namespaces}.
-         */
-        static deserializeFunctions<T extends Function = Function>(_paths: string[]): T[];
-        /**
-         * Prettify a JSON-String, to make it more readable.
-         * not implemented yet
-         */
-        static prettify(_json: string): string;
-        /**
-         * Returns a formatted, human readable JSON-String, representing the given {@link Serialization} that may have been created by {@link Serializer}.serialize
-         * @param _serialization
-         */
-        static stringify(_serialization: Serialization): string;
-        /**
-         * Returns a {@link Serialization} created from the given JSON-String. Result may be passed to {@link Serializer.deserialize}
-         * @param _json
-         */
-        static parse(_json: string): Serialization;
-        /**
-         * Creates an object of the class defined with the full path including the namespaceName(s) and the className seperated by dots(.)
-         * @param _path
-         */
-        static reconstruct(_path: string): Serializable;
-        /**
-         * Returns the function (constructor) from the given path to a function, if found in the {@link registerNamespace registered namespaces}.
-         */
-        static getFunction<T extends Function>(_path: string): T;
-        /**
-         * Returns the full path to a function (constructor), if found in the {@link registerNamespace registered namespaces}.
-         * e.g. "FudgeCore.ComponentScript" or "MyNameSpace.MyScript"
-         */
-        static getFunctionPath(_to: Serializable | Function): string;
-        /**
-         * Returns the namespace-object defined within the full path, if registered
-         * @param _path
-         */
-        private static getNamespace;
-        /**
-         * Finds the namespace-object in properties of the parent-object (e.g. window), if present
-         * @param _namespace
-         * @param _parent
-         */
-        private static findNamespaceIn;
+        protected abstract reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -2036,149 +2180,6 @@ declare namespace FudgeCore {
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected constructJoint(): void;
     }
-}
-declare namespace FudgeCore {
-    export enum MODE {
-        EDITOR = 0,
-        RUNTIME = 1
-    }
-    export enum RESOURCE_STATUS {
-        PENDING = 0,
-        READY = 1,
-        ERROR = 2
-    }
-    /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
-    export interface SerializableResource extends Serializable {
-        readonly isSerializableResource: true;
-        name: string;
-        idResource: string;
-        readonly type: string;
-    }
-    /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
-    export interface SerializableResourceExternal extends SerializableResource {
-        url: RequestInfo;
-        status: RESOURCE_STATUS;
-        load(): Promise<SerializableResourceExternal>;
-    }
-    export interface Resources {
-        [idResource: string]: SerializableResource;
-    }
-    export interface SerializationOfResources {
-        [idResource: string]: Serialization;
-    }
-    export interface ScriptNamespaces {
-        [name: string]: Object;
-    }
-    export interface ComponentScripts {
-        [namespace: string]: ComponentScript[];
-    }
-    interface GraphInstancesToResync {
-        [idResource: string]: GraphInstance[];
-    }
-    /**
-     * Static class handling the resources used with the current FUDGE-instance.
-     * Keeps a list of the resources and generates ids to retrieve them.
-     * Resources are objects referenced multiple times but supposed to be stored only once
-     */
-    export abstract class Project extends EventTargetStatic {
-        static resources: Resources;
-        static serialization: SerializationOfResources;
-        static scriptNamespaces: ScriptNamespaces;
-        static baseURL: URL;
-        static mode: MODE;
-        static graphInstancesToResync: GraphInstancesToResync;
-        /**
-         * Registers the resource and generates an id for it by default.
-         * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
-         * It's possible to pass an id, but should not be done except by the Serializer.
-         */
-        static register(_resource: SerializableResource, _idResource?: string): void;
-        /**
-         * Removes the resource from the list of resources.
-         */
-        static deregister(_resource: SerializableResource): void;
-        /**
-         * Clears the list of resources and their serialization, thus removing all resources.
-         */
-        static clear(): void;
-        /**
-         * Returns an array of all resources of the requested type.
-         */
-        static getResourcesByType<T>(_type: abstract new (..._args: General[]) => T): SerializableResource[];
-        /**
-         * Returns an array of all resources with the requested name.
-         */
-        static getResourcesByName(_name: string): SerializableResource[];
-        /**
-         * Generate a user readable and unique id using the type of the resource, the date and random numbers
-         * @param _resource
-         */
-        static generateId(_resource: SerializableResource): string;
-        /**
-         * Tests, if an object is a {@link SerializableResource}
-         * @param _object The object to examine
-         */
-        static isResource(_object: Serializable): boolean;
-        /**
-         * Retrieves the resource stored with the given id.
-         */
-        static getResource<T extends SerializableResource>(_idResource: string): Promise<T>;
-        static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
-        /**
-         * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
-         * @param _node A node to create the resource from
-         * @param _replaceWithInstance if true (default), the node used as origin is replaced by a {@link GraphInstance} of the {@link Graph} created
-         */
-        static registerAsGraph(_node: Node, _replaceWithInstance?: boolean): Promise<Graph>;
-        /**
-         * Creates and returns a {@link GraphInstance} of the given {@link Graph}
-         * and connects it to the graph for synchronisation of mutation.
-         */
-        static createGraphInstance(_graph: Graph): Promise<GraphInstance>;
-        /**
-         * Register the given {@link GraphInstance} to be resynced
-         */
-        static registerGraphInstanceForResync(_instance: GraphInstance): void;
-        /**
-         * Resync all {@link GraphInstance} registered to the given {@link Graph}
-         */
-        static resyncGraphInstances(_graph: Graph): Promise<void>;
-        /**
-         * Register the given namespace to the list of script-namespaces.
-         */
-        static registerScriptNamespace(_namespace: Object): void;
-        /**
-         * Clear the list of script-namespaces.
-         */
-        static clearScriptNamespaces(): void;
-        /**
-         * Collects all {@link ComponentScript}s registered in {@link Project.scriptNamespaces} and returns them.
-         */
-        static getComponentScripts(): ComponentScripts;
-        /**
-         * Loads a script from the given URL and integrates it into a {@link HTMLScriptElement} in the {@link document.head}
-         */
-        static loadScript(_url: RequestInfo): Promise<void>;
-        /**
-         * Load {@link Resources} from the given url
-         */
-        static loadResources(_url: RequestInfo): Promise<Resources>;
-        /**
-         * Load all resources from the {@link document.head}
-         */
-        static loadResourcesFromHTML(): Promise<void>;
-        /**
-         * Serialize all resources
-         */
-        static serialize(): SerializationOfResources;
-        /**
-         * Create resources from a serialization, deleting all resources previously registered
-         * @param _serialization
-         */
-        static deserialize(_serialization: SerializationOfResources): Promise<Resources>;
-        private static deserializeResource;
-    }
-    export {};
 }
 declare namespace FudgeCore {
 }

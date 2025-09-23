@@ -3,10 +3,11 @@
 // / <reference path="Time/Time.ts"/>
 /// <reference path="Event/Event.ts"/>
 /// <reference path="Recycle/RecyclableEvent.ts"/>
-/// <reference path="Serialization/Metadata.ts"/>
-/// <reference path="Serialization/Mutable.ts"/>
-/// <reference path="Serialization/SerializeDecorator.ts"/>
 /// <reference path="Serialization/Serializer.ts"/>
+/// <reference path="Serialization/Project.ts"/>
+/// <reference path="Serialization/Metadata.ts"/>
+/// <reference path="Serialization/SerializeDecorator.ts"/>
+/// <reference path="Serialization/Mutable.ts"/>
 /// <reference path="Render/RenderWebGL.ts"/>
 /// <reference path="Graph/Node.ts"/>
 /// <reference path="Component/Component.ts"/>

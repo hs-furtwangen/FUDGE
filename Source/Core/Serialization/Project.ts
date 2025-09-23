@@ -15,6 +15,10 @@ namespace FudgeCore {
     readonly type: string;
   }
 
+  export function isSerializableResource(_object: Object): _object is SerializableResource {
+    return isSerializable(_object) && Reflect.has(_object, "isSerializableResource");
+  }
+
   /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
   export interface SerializableResourceExternal extends SerializableResource {
     url: RequestInfo;
