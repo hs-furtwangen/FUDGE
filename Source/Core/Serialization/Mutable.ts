@@ -4,7 +4,7 @@ namespace FudgeCore {
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
    * 
    * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
-   * Using the {@link type}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
+   * Using the {@link mutate}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
    * 
    * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
    * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.

@@ -12,7 +12,7 @@ namespace FudgeCore {
   export class ComponentPick extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentPick);
 
-    @type(PICK)
+    @mutate(PICK)
     public pick: PICK = PICK.RADIUS;
 
     /**

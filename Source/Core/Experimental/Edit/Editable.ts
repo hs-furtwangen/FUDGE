@@ -110,7 +110,7 @@ namespace FudgeCore {
 
       // #region Base
       /**
-       * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link type mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
+       * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link mutate mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
        * Use this class if you want to implement {@link Mutable} and {@link Serializable} without writing boilerplate code. Copy the implementation to your class if you are unable to extend this class.
        */
       export abstract class Editable extends EventTargetUnified implements Mutable, Serializable {

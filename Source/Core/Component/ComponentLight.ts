@@ -17,7 +17,7 @@ namespace FudgeCore {
   export class ComponentLight extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentLight);
 
-    @type(LIGHT_TYPE)
+    @mutate(LIGHT_TYPE)
     public lightType: LIGHT_TYPE;
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
     public color: Color;

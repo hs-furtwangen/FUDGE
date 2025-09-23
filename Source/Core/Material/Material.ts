@@ -34,7 +34,7 @@ namespace FudgeCore {
     /**
      * Returns the currently referenced {@link Coat} instance
      */
-    @type(Coat)
+    @mutate(Coat)
     public get coat(): Coat {
       return this.#coat;
     }

@@ -65,7 +65,7 @@ namespace FudgeCore {
     /**
     * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
     */
-    @type(Number)
+    @mutate(Number)
     public get springDampingRotation(): number {
       return this.#springDampingRotation;
     }
@@ -77,7 +77,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. Influencing TORQUE / ROTATION
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequencyRotation(): number {
       return this.#springFrequencyRotation;
     }
@@ -90,7 +90,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get maxRotor(): number {
       return this.#maxRotor;
     }
@@ -101,7 +101,7 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get minRotor(): number {
       return this.#minRotor;
     }
@@ -112,7 +112,7 @@ namespace FudgeCore {
     /**
       * The target rotational speed of the motor in m/s. 
      */
-    @type(Number)
+    @mutate(Number)
     public get rotorSpeed(): number {
       return this.#rotorSpeed;
     }
@@ -123,7 +123,7 @@ namespace FudgeCore {
     /**
       * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
-    @type(Number)
+    @mutate(Number)
     public get rotorTorque(): number {
       return this.#rotorTorque;
     }
@@ -167,7 +167,7 @@ namespace FudgeCore {
     /**
       * The maximum motor force in Newton. force <= 0 equals disabled. 
      */
-    @type(Number)
+    @mutate(Number)
     public get motorForce(): number {
       return this.#motorForce;
     }

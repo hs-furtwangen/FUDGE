@@ -28,14 +28,14 @@ namespace FudgeCore {
    */
   export interface Metadata extends DecoratorMetadata {
     /**
-     * Keys of properties to be included in the class's {@link Mutator}.
-     * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+     * A map from property keys to their specified order in the class's {@link Mutator}.
+     * Use the {@link order} decorator to add to this map.
      */
     mutatorOrder?: Record<string, number>;
 
     /**
      * Keys of properties to be included in the class's {@link Mutator}.
-     * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+     * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
      */
     mutatorKeys?: string[];
 
@@ -46,17 +46,15 @@ namespace FudgeCore {
 
     /**
      * A map from property keys to their specified types for the class's {@link Mutator}.
-     * Use the {@link type} or {@link serialize} decorator to add type information to this map.
+     * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
      */
     mutatorTypes?: MutatorTypes;
 
     /**
      * A map from property keys to functions that return a map of possible options for the property.
-     * Use the {@link serialize} or the {@link type} and {@link reference} decorator to add to this map.
+     * Use the {@link edit} or the {@link mutate} decorator to add to this map.
      */
     mutatorOptions?: MutatorOptions;
-
-    // mutatorInfo?: Record<string, { type: Function | Record<string, unknown>; getOptions: (this: unknown, _key: string) => Record<string, unknown> }>;
 
     /**
      * A map of property keys to their serialization strategy.
@@ -132,7 +130,7 @@ namespace FudgeCore {
    * ```
    * 
    * **Side effects:**
-   * - Invokes the {@link type} decorator on the property.
+   * - Invokes the {@link mutate} decorator on the property.
    * - Invokes the {@link serialize} decorator on the property.
    * 
    * @author Jonas Plotzky, HFU, 2025
@@ -155,7 +153,7 @@ namespace FudgeCore {
   function editFactory(_type: Function | Record<string, unknown>, _function?: boolean, _order?: number): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
       serializeFactory(_type, _function)(_value, _context);
-      typeFactory(_type, _function)(_value, _context);
+      mutateFactory(_type, _function)(_value, _context);
     };
   }
   //#endregion
@@ -165,7 +163,7 @@ namespace FudgeCore {
    * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor. 
    * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
    * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
-   * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link type} decorators to take effect.
+   * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link mutate} decorators to take effect.
    *
    * @author Jonas Plotzky, HFU, 2025
    */
@@ -208,31 +206,30 @@ namespace FudgeCore {
   //#endregion
 
   //#region @mutate
-  /**
-   * Decorator to include properties of a class in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
-   *
-   * @author Jonas Plotzky, HFU, 2025
-   */
-  export function mutate(_value: unknown, _context: ClassPropertyContext): void {
-    const key: PropertyKey = _context.name;
-    if (typeof key === "symbol")
-      return;
+  // /**
+  //  * Decorator to include properties of a class in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
+  //  *
+  //  * @author Jonas Plotzky, HFU, 2025
+  //  */
+  // export function mutate(_value: unknown, _context: ClassPropertyContext): void {
+  //   const key: PropertyKey = _context.name;
+  //   if (typeof key === "symbol")
+  //     return;
 
-    const metadata: Metadata = _context.metadata;
-    const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
-    keys.push(key);
-  }
-  //#endregion
+  //   const metadata: Metadata = _context.metadata;
+  //   const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
+  //   keys.push(key);
+  // }
 
-  //#region @type
   /**
+   * Decorator to include properties in the {@link Mutator} of a class with explicit type information.
    * Decorator to specify a type for a property of a {@link Mutable}.
    * 
    * This allows the intended type of the property to be known by the editor (at runtime), making it:
    * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
    * - Display the appropriate input element, even if the property has not been set (is `undefined`).
    *
-   * To specify a function type (typeof `_type`) use the {@link typeF} decorator.
+   * To specify a function type (typeof `_type`) use the {@link mutateF} decorator.
    *
    * **Side effects:**
    * - Invokes the {@link mutate} decorator.
@@ -241,19 +238,19 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2024-2025
    */
   // primitive type
-  export function type<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  export function mutate<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
   // object type
-  export function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
+  export function mutate<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
   // enum type
-  export function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  export function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
 
-  export function type(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
-    return typeFactory(_type, false);
+  export function mutate(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
+    return mutateFactory(_type, false);
   }
 
   /**
    * Decorator to specify a function type (typeof `_type`) for a property of a {@link Mutable}.
-   * See {@link type} decorator for more information.
+   * See {@link mutate} decorator for more information.
    *
    * If the given `_type` has an iterable property `subclasses`, a combo select containing the subclasses will be displayed in the editor.
    * 
@@ -281,14 +278,14 @@ namespace FudgeCore {
    * - Invokes the {@link select} decorator with default options.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function typeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
-    return typeFactory(_type, true);
+  export function mutateF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
+    return mutateFactory(_type, true);
   }
 
   /**
    * @internal
    */
-  export function typeFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function mutateFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
@@ -296,15 +293,19 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
+      // include in mutator
+      const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
+      keys.push(key);
+
+      // add type information
       const types: Metadata["mutatorTypes"] = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
       types[key] = _type;
 
+      // auto reference and select for applicable types
       const isFunction: boolean = _function;
       const isConstructor: boolean = typeof _type === "function";
       const isNode: boolean = isConstructor && _type === Node;
       const isResource: boolean = isConstructor && (<SerializableResource>(_type).prototype).isSerializableResource;
-
-      mutate(_value, _context);
 
       if (isFunction || isNode || isResource) {
         reference(_value, <ClassPropertyContext<Mutable, object>>_context);

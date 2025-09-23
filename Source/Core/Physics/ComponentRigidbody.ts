@@ -52,7 +52,7 @@ namespace FudgeCore {
     /** 
      * Automatic adjustment of the pivot when {@link Render.prepare} is called according to {@link BODY_INIT}
      */
-    @type(BODY_INIT)
+    @mutate(BODY_INIT)
     public initialization: BODY_INIT = BODY_INIT.TO_PIVOT;
     /** Marks if collider was initialized. Reset to false to initialize again e.g. after manipulation of mtxPivot */
     public isInitialized: boolean = false;
@@ -112,7 +112,7 @@ namespace FudgeCore {
     }
 
     /** Retrieve the body type. See {@link BODY_TYPE} */
-    @type(BODY_TYPE)
+    @mutate(BODY_TYPE)
     public get typeBody(): BODY_TYPE {
       return this.#typeBody;
     }
@@ -125,7 +125,7 @@ namespace FudgeCore {
     }
 
     /** The shape that represents the {@link Node} in the physical world. Default is a Cube. */
-    @type(COLLIDER_TYPE)
+    @mutate(COLLIDER_TYPE)
     public get typeCollider(): COLLIDER_TYPE {
       return this.#typeCollider;
     }

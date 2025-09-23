@@ -78,7 +78,7 @@ namespace FudgeCore {
     /**
      * Returns true if the background of the camera should be rendered, false if not.
      */
-    @mutate
+    @mutate(Boolean)
     public get backgroundEnabled(): boolean {
       return this.#backgroundEnabled;
     }
@@ -86,8 +86,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras {@link PROJECTION} mode.
      */
-    @mutate
-    @type(PROJECTION)
+    @mutate(PROJECTION)
     public get projection(): PROJECTION {
       return this.#projection;
     }
@@ -95,7 +94,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras aspect ratio.
      */
-    @mutate
+    @mutate(Number)
     public get aspectRatio(): number {
       return this.#aspectRatio;
     }
@@ -103,7 +102,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras field of view in degrees.
      */
-    @mutate
+    @mutate(Number)
     public get fieldOfView(): number {
       return this.#fieldOfView;
     }
@@ -111,7 +110,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras direction i.e. the plane on which the fieldOfView-Angle is given.
      */
-    @type(FIELD_OF_VIEW)
+    @mutate(FIELD_OF_VIEW)
     public get direction(): FIELD_OF_VIEW {
       return this.#direction;
     }
@@ -119,7 +118,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras near value i.e. the minimum distance to render objects at.
      */
-    @mutate
+    @mutate(Number)
     public get near(): number {
       return this.#near;
     }
@@ -127,7 +126,7 @@ namespace FudgeCore {
     /**
      * Returns the cameras far value i.e. the maximum distance to render objects at.
      */
-    @mutate
+    @mutate(Number)
     public get far(): number {
       return this.#far;
     }

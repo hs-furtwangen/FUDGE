@@ -15,15 +15,15 @@ namespace FudgeCore {
    */
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
-    @type(ParticleSystem)
+    @mutate(ParticleSystem)
     public particleSystem: ParticleSystem;
     /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */
     public depthMask: boolean;
 
-    @type(BLEND)
+    @mutate(BLEND)
     public blendMode: BLEND;
 
-    @type(PARTICLE_SYSTEM_PLAYMODE)
+    @mutate(PARTICLE_SYSTEM_PLAYMODE)
     public playMode: PARTICLE_SYSTEM_PLAYMODE;
     
     public duration: number;
@@ -54,7 +54,7 @@ namespace FudgeCore {
     /**
      * Get the number of particles
      */
-    @mutate
+    @mutate(Number)
     public get size(): number {
       return this.#size;
     }

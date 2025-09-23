@@ -59,7 +59,7 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
-    @type(Vector3)
+    @mutate(Vector3)
     public get axisFirst(): Vector3 {
       return this.#axisFirst;
     }
@@ -72,7 +72,7 @@ namespace FudgeCore {
     * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
     *  When changed after initialization the joint needs to be reconnected.
     */
-    @type(Vector3)
+    @mutate(Vector3)
     public get axisSecond(): Vector3 {
       return this.#axisSecond;
     }
@@ -85,7 +85,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @type(Number)
+    @mutate(Number)
     public get springDampingFirst(): number {
       return this.#springDampingFirst;
     }
@@ -97,7 +97,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequencyFirst(): number {
       return this.#springFrequencyFirst;
     }
@@ -109,7 +109,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @type(Number)
+    @mutate(Number)
     public get springDampingSecond(): number {
       return this.#springDampingSecond;
     }
@@ -121,7 +121,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequencySecond(): number {
       return this.#springFrequencySecond;
     }
@@ -133,7 +133,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get maxRotorFirst(): number {
       return this.#maxRotorFirst;
     }
@@ -145,7 +145,7 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get minRotorFirst(): number {
       return this.#minRotorFirst;
     }
@@ -157,7 +157,7 @@ namespace FudgeCore {
     /**
       * The target rotational speed of the motor in radians/s. 
      */
-    @type(Number)
+    @mutate(Number)
     public get rotorSpeedFirst(): number {
       return this.#rotorSpeedFirst;
     }
@@ -169,7 +169,7 @@ namespace FudgeCore {
     /**
      * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
-    @type(Number)
+    @mutate(Number)
     public get rotorTorqueFirst(): number {
       return this.#rotorTorqueFirst;
     }
@@ -181,7 +181,7 @@ namespace FudgeCore {
     /**
      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get maxRotorSecond(): number {
       return this.#maxRotorSecond;
     }
@@ -193,7 +193,7 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get minRotorSecond(): number {
       return this.#minRotorSecond;
     }
@@ -205,7 +205,7 @@ namespace FudgeCore {
     /**
       * The target rotational speed of the motor in radians/s. 
      */
-    @type(Number)
+    @mutate(Number)
     public get rotorSpeedSecond(): number {
       return this.#rotorSpeedSecond;
     }
@@ -217,7 +217,7 @@ namespace FudgeCore {
     /**
       * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
-    @type(Number)
+    @mutate(Number)
     public get rotorTorqueSecond(): number {
       return this.#rotorTorqueSecond;
     }

@@ -86,7 +86,7 @@ namespace FudgeCore {
     /**
      * The exact position where the two {@link Node}s are connected. When changed after initialization the joint needs to be reconnected.
      */
-    @type(Vector3)
+    @mutate(Vector3)
     public get anchor(): Vector3 {
       return this.#anchor;
     }
@@ -99,7 +99,7 @@ namespace FudgeCore {
     /**
      * The amount of force needed to break the JOINT, while rotating, in Newton. 0 equals unbreakable (default) 
     */
-    @type(Number)
+    @mutate(Number)
     public get breakTorque(): number {
       return this.#breakTorque;
     }
@@ -111,7 +111,7 @@ namespace FudgeCore {
     /**
      * The amount of force needed to break the JOINT, in Newton. 0 equals unbreakable (default) 
      */
-    @type(Number)
+    @mutate(Number)
     public get breakForce(): number {
       return this.#breakForce;
     }
@@ -125,7 +125,7 @@ namespace FudgeCore {
       * On a welding joint the connected bodies should not be colliding with each other,
       * for best results
      */
-    @type(Boolean)
+    @mutate(Boolean)
     public get internalCollision(): boolean {
       return this.#internalCollision;
     }
@@ -134,7 +134,7 @@ namespace FudgeCore {
       this.joint?.setAllowCollision(this.#internalCollision);
     }
 
-    @type(String)
+    @mutate(String)
     protected get nameChildToConnect(): string {
       return this.#nameChildToConnect;
     }

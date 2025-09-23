@@ -35,7 +35,7 @@ namespace FudgeCore {
 
     protected singleton: boolean = false;
 
-    @type(Audio)
+    @mutate(Audio)
     private audio: Audio;
     private gain: GainNode;
     private panner: PannerNode;

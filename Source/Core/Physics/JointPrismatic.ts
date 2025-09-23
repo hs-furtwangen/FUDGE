@@ -35,7 +35,7 @@ namespace FudgeCore {
     /**
       * The maximum motor force in Newton. force <= 0 equals disabled. This is the force that the motor is using to hold the position, or reach it if a motorSpeed is defined.
      */
-    @type(Number)
+    @mutate(Number)
     public get motorForce(): number {
       return this.#motorForce;
     }

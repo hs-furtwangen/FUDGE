@@ -59,7 +59,7 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
-    @type(Vector3)
+    @mutate(Vector3)
     public get axisFirst(): Vector3 {
       return this.#axisFirst;
     }
@@ -73,7 +73,7 @@ namespace FudgeCore {
     * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
     *  When changed after initialization the joint needs to be reconnected.
     */
-    @type(Vector3)
+    @mutate(Vector3)
     public get axisSecond(): Vector3 {
       return this.#axisSecond;
     }
@@ -86,7 +86,7 @@ namespace FudgeCore {
     /**
      * The maximum angle of rotation along the first axis. Value needs to be positive. Changes do rebuild the joint
      */
-    @type(Number)
+    @mutate(Number)
     public get maxAngleFirstAxis(): number {
       return this.#maxAngleFirst * Calc.rad2deg;
     }
@@ -99,7 +99,7 @@ namespace FudgeCore {
     /**
      * The maximum angle of rotation along the second axis. Value needs to be positive. Changes do rebuild the joint
      */
-    @type(Number)
+    @mutate(Number)
     public get maxAngleSecondAxis(): number {
       return this.#maxAngleSecond * Calc.rad2deg;
     }
@@ -112,7 +112,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @type(Number)
+    @mutate(Number)
     public get springDampingTwist(): number {
       return this.#springDampingTwist;
     }
@@ -124,7 +124,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequencyTwist(): number {
       return this.#springFrequencyTwist;
     }
@@ -136,7 +136,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @type(Number)
+    @mutate(Number)
     public get springDampingSwing(): number {
       return this.#springDampingSwing;
     }
@@ -148,7 +148,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequencySwing(): number {
       return this.#springFrequencySwing;
     }
@@ -160,7 +160,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get maxMotorTwist(): number {
       return this.#maxMotorTwist * Calc.rad2deg;
     }
@@ -173,7 +173,7 @@ namespace FudgeCore {
     /**
      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    @type(Number)
+    @mutate(Number)
     public get minMotorTwist(): number {
       return this.#minMotorTwist * Calc.rad2deg;
     }
@@ -186,7 +186,7 @@ namespace FudgeCore {
     /**
       * The target rotational speed of the motor in radians/s. 
      */
-    @type(Number)
+    @mutate(Number)
     public get motorSpeedTwist(): number {
       return this.#motorSpeedTwist;
     }
@@ -198,7 +198,7 @@ namespace FudgeCore {
     /**
       * The maximum motor torque in  newton meters. force <= 0 equals disabled. 
      */
-    @type(Number)
+    @mutate(Number)
     public get motorTorqueTwist(): number {
       return this.#motorTorqueTwist;
     }

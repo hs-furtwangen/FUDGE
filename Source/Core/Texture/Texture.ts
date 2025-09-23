@@ -45,7 +45,7 @@ namespace FudgeCore {
       return true;
     }
 
-    @type(MIPMAP)
+    @mutate(MIPMAP)
     public get mipmap(): MIPMAP {
       return this.#mipmap;
     }
@@ -55,7 +55,7 @@ namespace FudgeCore {
       this.mipmapDirty = true;
     }
 
-    @type(WRAP)
+    @mutate(WRAP)
     public get wrap(): WRAP {
       return this.#wrap;
     }

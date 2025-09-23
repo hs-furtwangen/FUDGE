@@ -351,13 +351,13 @@ declare namespace FudgeCore {
      */
     interface Metadata extends DecoratorMetadata {
         /**
-         * Keys of properties to be included in the class's {@link Mutator}.
-         * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+         * A map from property keys to their specified order in the class's {@link Mutator}.
+         * Use the {@link order} decorator to add to this map.
          */
         mutatorOrder?: Record<string, number>;
         /**
          * Keys of properties to be included in the class's {@link Mutator}.
-         * Use the {@link mutate}, {@link type} or {@link serialize} decorator to add keys to this list.
+         * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
          */
         mutatorKeys?: string[];
         /**
@@ -366,12 +366,12 @@ declare namespace FudgeCore {
         mutatorReferences?: Set<string>;
         /**
          * A map from property keys to their specified types for the class's {@link Mutator}.
-         * Use the {@link type} or {@link serialize} decorator to add type information to this map.
+         * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
          */
         mutatorTypes?: MutatorTypes;
         /**
          * A map from property keys to functions that return a map of possible options for the property.
-         * Use the {@link serialize} or the {@link type} and {@link reference} decorator to add to this map.
+         * Use the {@link edit} or the {@link mutate} decorator to add to this map.
          */
         mutatorOptions?: MutatorOptions;
         /**
@@ -424,7 +424,7 @@ declare namespace FudgeCore {
      * ```
      *
      * **Side effects:**
-     * - Invokes the {@link type} decorator on the property.
+     * - Invokes the {@link mutate} decorator on the property.
      * - Invokes the {@link serialize} decorator on the property.
      *
      * @author Jonas Plotzky, HFU, 2025
@@ -437,7 +437,7 @@ declare namespace FudgeCore {
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
      * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
-     * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link type} decorators to take effect.
+     * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link mutate} decorators to take effect.
      *
      * @author Jonas Plotzky, HFU, 2025
      */
@@ -449,19 +449,14 @@ declare namespace FudgeCore {
      */
     function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
     /**
-     * Decorator to include properties of a class in its {@link Mutator} (via {@link Mutable.getMutator}). Use on getters to include them in the mutator and display them in the editor.
-     *
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    function mutate(_value: unknown, _context: ClassPropertyContext): void;
-    /**
+     * Decorator to include properties in the {@link Mutator} of a class with explicit type information.
      * Decorator to specify a type for a property of a {@link Mutable}.
      *
      * This allows the intended type of the property to be known by the editor (at runtime), making it:
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
      * - Display the appropriate input element, even if the property has not been set (is `undefined`).
      *
-     * To specify a function type (typeof `_type`) use the {@link typeF} decorator.
+     * To specify a function type (typeof `_type`) use the {@link mutateF} decorator.
      *
      * **Side effects:**
      * - Invokes the {@link mutate} decorator.
@@ -469,12 +464,12 @@ declare namespace FudgeCore {
      * - Invokes the {@link select} decorator with default options for `_type` {@link SerializableResource}, {@link Node}.
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function type<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
-    function type<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
-    function type<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function mutate<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function mutate<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void;
+    function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to specify a function type (typeof `_type`) for a property of a {@link Mutable}.
-     * See {@link type} decorator for more information.
+     * See {@link mutate} decorator for more information.
      *
      * If the given `_type` has an iterable property `subclasses`, a combo select containing the subclasses will be displayed in the editor.
      *
@@ -502,7 +497,7 @@ declare namespace FudgeCore {
      * - Invokes the {@link select} decorator with default options.
      * @author Jonas Plotzky, HFU, 2025
      */
-    function typeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function mutateF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to mark properties of a {@link Mutable} as references. Reference properties are included in the {@link Mutator} (via {@link Mutable.getMutator}) as direct references to other objects regardless of their own type.
      * {@link Mutable.mutate} simply sets references similarly to how primitive values are set.
@@ -555,7 +550,7 @@ declare namespace FudgeCore {
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
      * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
-     * Using the {@link type}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
+     * Using the {@link mutate}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
      *
      * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
      * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
@@ -4685,7 +4680,7 @@ declare namespace FudgeCore {
             function mutatorFromDecorations(_instance: object, _out?: Mutator): Mutator;
             function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
             /**
-             * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link type mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
+             * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link mutate mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
              * Use this class if you want to implement {@link Mutable} and {@link Serializable} without writing boilerplate code. Copy the implementation to your class if you are unable to extend this class.
              */
             abstract class Editable extends EventTargetUnified implements Mutable, Serializable {
@@ -8951,7 +8946,7 @@ declare namespace FudgeCore {
         /**
          * **WIP** TODO: add array support
          *
-         * Copy the {@link type decorated properties} of the given instance into a {@link Mutator} object.
+         * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
          * @param _instance The instance to copy the decorated properties from.
          * @param _out - (optional) the receiving mutator.
          * @returns `_out` or a new mutator if none is provided.
@@ -8967,7 +8962,7 @@ declare namespace FudgeCore {
         /**
          * **WIP** TODO: add array support
          *
-         * Update the {@link type decorated properties} of the given instance according to the state of the given {@link Mutator}.
+         * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
          * @param _instance The instance to update.
          * @param _mutator The mutator to update from.
          * @returns `_instance`.

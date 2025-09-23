@@ -60,7 +60,7 @@ namespace FudgeCore {
     /**
       * The maximum motor force in newton meters. force <= 0 equals disabled. 
      */
-    @type(Number)
+    @mutate(Number)
     public get motorTorque(): number {
       return this.#motorTorque;
     }

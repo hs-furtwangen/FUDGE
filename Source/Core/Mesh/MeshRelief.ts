@@ -39,7 +39,7 @@ namespace FudgeCore {
      * The texture to be used as the heightmap.
      * **Caution!** Setting this causes the mesh to be recreated which can be an expensive operation.
      */
-    @type(TextureImage)
+    @mutate(TextureImage)
     public get texture(): TextureImage {
       return this.#texture;
     }

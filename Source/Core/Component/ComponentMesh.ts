@@ -7,7 +7,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMesh);
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
-    @type(Mesh)
+    @mutate(Mesh)
     public mesh: Mesh;
     public skeleton: ComponentSkeleton;
 
@@ -19,7 +19,7 @@ namespace FudgeCore {
       this.skeleton = _skeleton;
     }
 
-    @mutate
+    @mutate(Matrix4x4)
     public get mtxPivot(): Matrix4x4 {
       return this.#mtxPivot;
     }

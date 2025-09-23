@@ -17,7 +17,7 @@ namespace FudgeCore {
       this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
     }
     
-    @type(Texture)
+    @mutate(Texture)
     public get texture(): Texture {
       return this.#texture;
     }

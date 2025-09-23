@@ -28,7 +28,7 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
-    @type(Vector3)
+    @mutate(Vector3)
     public get axis(): Vector3 {
       return this.#axis;
     }
@@ -41,7 +41,7 @@ namespace FudgeCore {
     /**
       * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
      */
-    @type(Number)
+    @mutate(Number)
     public get maxMotor(): number {
       return this.#maxMotor;
     }
@@ -55,7 +55,7 @@ namespace FudgeCore {
     /**
       * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
      */
-    @type(Number)
+    @mutate(Number)
     public get minMotor(): number {
       return this.#minMotor;
     }
@@ -68,7 +68,7 @@ namespace FudgeCore {
     /**
      * The target speed of the motor in m/s.
      */
-    @type(Number)
+    @mutate(Number)
     public get motorSpeed(): number {
       return this.#motorSpeed;
     }
@@ -82,7 +82,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @type(Number)
+    @mutate(Number)
     public get springDamping(): number {
       return this.#springDamping;
     }
@@ -95,7 +95,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }

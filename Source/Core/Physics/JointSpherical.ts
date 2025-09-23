@@ -36,7 +36,7 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @type(Number)
+    @mutate(Number)
     public get springDamping(): number {
       return this.#springDamping;
     }
@@ -48,7 +48,7 @@ namespace FudgeCore {
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
     */
-    @type(Number)
+    @mutate(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }

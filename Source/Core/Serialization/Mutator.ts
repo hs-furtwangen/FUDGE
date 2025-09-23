@@ -115,7 +115,7 @@ namespace FudgeCore {
     /**
      * **WIP** TODO: add array support
      * 
-     * Copy the {@link type decorated properties} of the given instance into a {@link Mutator} object.
+     * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
      * @param _instance The instance to copy the decorated properties from.
      * @param _out - (optional) the receiving mutator.
      * @returns `_out` or a new mutator if none is provided.
@@ -156,7 +156,7 @@ namespace FudgeCore {
     /**
      * **WIP** TODO: add array support
      * 
-     * Update the {@link type decorated properties} of the given instance according to the state of the given {@link Mutator}.
+     * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
      * @param _instance The instance to update.
      * @param _mutator The mutator to update from.
      * @returns `_instance`.
