@@ -1,7 +1,7 @@
 namespace FudgeCore {
   /**
    * Attaches a {@link Mesh} to the node
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+   * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   @orderFlat
   export class ComponentMesh extends Component {

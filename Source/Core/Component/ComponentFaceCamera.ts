@@ -1,7 +1,7 @@
 namespace FudgeCore {
   /**
    * Makes the node face the camera when rendering, respecting restrictions for rotation around specific axis
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2022
+   * @authors Jirka Dell'Oro-Friedl, HFU, 2022 | Jonas Plotzky, HFU, 2025
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
    */
   export class ComponentFaceCamera extends Component {

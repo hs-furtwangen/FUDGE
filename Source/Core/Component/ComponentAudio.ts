@@ -26,7 +26,7 @@ namespace FudgeCore {
    * │ └───────────────────────────────────┘          │
    * └────────────────────────────────────────────────┘
    * ```
-   * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
+   * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   @orderFlat
   export class ComponentAudio extends Component {

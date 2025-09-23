@@ -3,7 +3,7 @@
 namespace FudgeCore {
   /** 
    * Superclass for all {@link Component}s that can be attached to {@link Node}s.
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019  
+   * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
    */
   export abstract class Component extends Mutable implements Serializable, Gizmo {

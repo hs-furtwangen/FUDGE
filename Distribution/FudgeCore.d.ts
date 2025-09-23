@@ -3201,7 +3201,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Superclass for all {@link Component}s that can be attached to {@link Node}s.
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019
+     * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
     abstract class Component extends Mutable implements Serializable, Gizmo {
@@ -4658,7 +4658,7 @@ declare namespace FudgeCore {
      * │ └───────────────────────────────────┘          │
      * └────────────────────────────────────────────────┘
      * ```
-     * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
+     * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
     class ComponentAudio extends Component {
         static readonly iSubclass: number;
@@ -4758,7 +4758,7 @@ declare namespace FudgeCore {
     /**
      * Serves to set the spatial location and orientation of AudioListeners relative to the
      * world transform of the {@link Node} it is attached to.
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+     * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
     class ComponentAudioListener extends Component {
         static readonly iSubclass: number;
@@ -4772,7 +4772,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Attached to a {@link Node} with an attached {@link ComponentCamera} this causes the rendered image to receive a bloom-effect.
-     * @authors Roland Heer, HFU, 2023
+     * @authors Roland Heer, HFU, 2023 | Jonas Plotzky, HFU, 2025
      */
     class ComponentBloom extends Component {
         #private;
@@ -4892,7 +4892,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Makes the node face the camera when rendering, respecting restrictions for rotation around specific axis
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2022
+     * @authors Jirka Dell'Oro-Friedl, HFU, 2022 | Jonas Plotzky, HFU, 2025
      * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
      */
     class ComponentFaceCamera extends Component {
@@ -4906,7 +4906,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Attached to a {@link Node} with an attached {@link ComponentCamera} this causes the rendered image to receive a fog-effect.
-     * @authors Roland Heer, HFU, 2023
+     * @authors Roland Heer, HFU, 2023 | Jonas Plotzky, HFU, 2025
      */
     class ComponentFog extends Component {
         static readonly iSubclass: number;
@@ -4957,7 +4957,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Attaches a {@link Material} to the node
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2019 - 2021
+     * @authors Jirka Dell'Oro-Friedl, HFU, 2019 - 2021 | Jonas Plotzky, HFU, 2025
      */
     class ComponentMaterial extends Component {
         static readonly iSubclass: number;
@@ -4973,7 +4973,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Attaches a {@link Mesh} to the node
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+     * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
     class ComponentMesh extends Component {
         #private;
@@ -5013,7 +5013,7 @@ declare namespace FudgeCore {
      * Attaches a {@link ParticleSystem} to the node.
      * Works in conjunction with {@link ComponentMesh} and {@link ComponentMaterial} to create a shader particle system.
      * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
-     * @author Jonas Plotzky, HFU, 2022
+     * @author Jonas Plotzky, HFU, 2022-2025
      */
     class ComponentParticleSystem extends Component {
         #private;

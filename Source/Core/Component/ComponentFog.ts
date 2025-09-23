@@ -1,7 +1,7 @@
 namespace FudgeCore {
   /**
    * Attached to a {@link Node} with an attached {@link ComponentCamera} this causes the rendered image to receive a fog-effect.
-   * @authors Roland Heer, HFU, 2023
+   * @authors Roland Heer, HFU, 2023 | Jonas Plotzky, HFU, 2025
    */
   export class ComponentFog extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentFog);
