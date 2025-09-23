@@ -4960,13 +4960,12 @@ declare namespace FudgeCore {
      */
     class ComponentMaterial extends Component {
         static readonly iSubclass: number;
+        material: Material;
         color: Color;
         mtxPivot: Matrix3x3;
-        material: Material;
         /** Support sorting of objects with transparency when rendering, render objects in the back first. When this component is used as a part of a {@link ParticleSystem}, try enabling this when disabling {@link ComponentParticleSystem.depthMask} */
         sortForAlpha: boolean;
-        constructor(_material?: Material);
-        serialize(): Serialization;
+        constructor(_material?: Material, _color?: Color, _sortForAlpha?: boolean);
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
