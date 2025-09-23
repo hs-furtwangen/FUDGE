@@ -5,34 +5,14 @@ namespace FudgeCore {
    */
   export class ComponentFog extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentFog);
-    public color: Color;
-    public near: number;
-    public far: number;
 
-    public constructor(_color: Color = new Color(1, 1, 1, 1), _near: number = 1, _far: number = 50) {
-      super();
-      this.color = _color;
-      this.near = _near;
-      this.far = _far;
-    }
+    @edit(Color)
+    public color: Color = new Color(1, 1, 1, 1);
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        color: this.color.serialize(),
-        near: this.near,
-        far: this.far
-      };
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
+    @edit(Number)
+    public near: number = 1;
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await this.color.deserialize(_serialization.color);
-      this.near = _serialization.near ?? this.near;
-      this.far = _serialization.far ?? this.far;
-      await super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
+    @edit(Number)
+    public far: number = 50;
   }
 }

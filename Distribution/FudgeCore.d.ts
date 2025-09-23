@@ -978,6 +978,292 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    interface Vector3Like {
+        x: number;
+        y: number;
+        z: number;
+    }
+    /**
+     * Stores and manipulates a threedimensional vector comprised of the components x, y and z
+     * ```text
+     *            +y
+     *             |__ +x
+     *            /
+     *          +z
+     * ```
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023-2025
+     */
+    class Vector3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+        /**
+         * Array of the keys of a vector. Allows to translate an index (0, 1, 2) to a key ("x", "y", "z") or to iterate over a vector.
+         */
+        static readonly keys: readonly ["x", "y", "z"];
+        x: number;
+        y: number;
+        z: number;
+        constructor(_x?: number, _y?: number, _z?: number);
+        /**
+         * Creates and returns a vector with the given length pointing in x-direction
+         */
+        static X(_scale?: number): Vector3;
+        /**
+         * Creates and returns a vector with the given length pointing in y-direction
+         */
+        static Y(_scale?: number): Vector3;
+        /**
+         * Creates and returns a vector with the given length pointing in z-direction
+         */
+        static Z(_scale?: number): Vector3;
+        /**
+         * Creates and returns a vector with the value 0 on each axis
+         */
+        static ZERO(): Vector3;
+        /**
+         * Creates and returns a vector of the given size on each of the three axis
+         */
+        static ONE(_scale?: number): Vector3;
+        /**
+         * Creates and returns a vector through transformation of the given vector by the given matrix or rotation quaternion.
+         * @param _out Optional vector to store the result in.
+         */
+        static TRANSFORMATION(_vector: Vector3, _transform: Matrix4x4 | Quaternion, _includeTranslation?: boolean, _out?: Vector3): Vector3;
+        /**
+         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
+         * @param _out Optional vector to store the result in.
+         */
+        static NORMALIZATION(_vector: Vector3, _length?: number, _out?: Vector3): Vector3;
+        /**
+         * Returns the result of the addition of two vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static SUM(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Returns the result of the subtraction of two vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Returns a new vector representing the given vector scaled by the given scaling factor.
+         * @param _out Optional vector to store the result in.
+         */
+        static SCALE(_vector: Vector3, _scaling: number, _out?: Vector3): Vector3;
+        /**
+         * Returns a new vector representing the given vector scaled by the given scaling factor.
+         * @param _out Optional vector to store the result in.
+         */
+        static NEGATION(_vector: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Divides the dividend by the divisor component by component and returns the result.
+         * @param _out Optional vector to store the result in.
+         */
+        static RATIO(_dividend: Vector3, _divisor: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Computes the crossproduct of 2 vectors.
+         * @param _out Optional vector to store the result in.
+         */
+        static CROSS(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Computes the dotproduct of 2 vectors.
+         */
+        static DOT(_a: Readonly<Vector3Like>, _b: Readonly<Vector3Like>): number;
+        /**
+         * Calculates and returns the reflection of the incoming vector at the given normal vector. The length of normal should be 1.
+         * ```text
+         * _________________________
+         *           /|\
+         * incoming / | \ reflection
+         *         /  |  \
+         *          normal
+         * ```
+         * @param _out Optional vector to store the result in.
+         */
+        static REFLECTION(_incoming: Vector3, _normal: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Creates a cartesian vector from geographic coordinates.
+         * @param _out Optional vector to store the result in.
+         */
+        static GEO(_longitude?: number, _latitude?: number, _magnitude?: number, _out?: Vector3): Vector3;
+        /**
+         * Return the angle in degrees between the two given vectors.
+         */
+        static ANGLE(_from: Vector3, _to: Vector3): number;
+        /**
+         * Return the projection of a onto b.
+         * @param _out Optional vector to store the result in.
+         */
+        static PROJECTION(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
+        /**
+         * Performs a linear interpolation between between two vectors. When t is 0 the result is a, when t is 1 the result is b.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving vector.
+         * @returns `_out` or a new vector if none is provided.
+         * @source https://github.com/toji/gl-matrix
+         */
+        static LERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
+        static LERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+        /**
+         * Performs a spherical linear interpolation between two vectors.
+         * @param _a - the first operand.
+         * @param _b - the second operand.
+         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
+         * @param _out - (optional) the receiving vector.
+         * @returns `_out` or a new vector if none is provided.
+         * @source https://github.com/toji/gl-matrix
+         */
+        static SLERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
+        static SLERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
+        /**
+         * Smoothly interpolates between two vectors based on a critically damped spring model.
+         * Allows to smooth toward a moving target with an ease-in/ease-out motion maintaining a continuous velocity.
+         * Does not overshoot.
+         * @param _current - The current value.
+         * @param _target - The target value.
+         * @param _velocity - The velocity at which the value is moving. This value is **modified** by the function and must be maintained in the outside context.
+         * @param _smoothTime - The time it would take for the value to reach the target if it were moving at maximum velocity for the entire duration. When following a moving target the smooth time equals the lag time allowing to calculate the `lag distance = target velocity * smooth time`.
+         * @param _timeFrame - The elapsed time since the last call to the function.
+         * @param _maxSpeed - An optional maximum speed that limits the velocity of the value. Defaults to Infinity.
+         * @param _out Optional vector to store the result in.
+         * @source from Andrew Kirmse, Game Programming Gems 4, Chapter 1.10
+         */
+        static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed?: number, _out?: Vector3): Vector3;
+        get isArrayConvertible(): true;
+        /**
+         * Returns the length of the vector
+         */
+        get magnitude(): number;
+        /**
+         * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
+         */
+        get magnitudeSquared(): number;
+        /**
+         * - get: Returns a geographic representation of this vector
+         * - set: Adjusts the cartesian values of this vector to represent the given as geographic coordinates
+         */
+        get geo(): Geo3;
+        set geo(_geo: Geo3);
+        /**
+         * Creates and returns a clone of this vector.
+         */
+        get clone(): Vector3;
+        /**
+         * Copies the components of the given vector into this vector.
+         * @returns A reference to this vector.
+         */
+        copy(_original: Vector3): Vector3;
+        /**
+         * Sets the components of this vector and returns it.
+         * @returns A reference to this vector.
+         */
+        set(_x?: number, _y?: number, _z?: number): Vector3;
+        recycle(): void;
+        /**
+         * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
+         * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
+         */
+        equals(_compare: Vector3, _tolerance?: number): boolean;
+        /**
+         * Returns true if the position described by this is within a cube with the opposite corners 1 and 2.
+         */
+        isInsideCube(_corner1: Vector3, _corner2: Vector3): boolean;
+        /**
+         * Returns true if the position described by this is within a sphere with the given center and radius.
+         */
+        isInsideSphere(_center: Vector3, _radius: number): boolean;
+        /**
+         * Returns the distance bewtween this vector and the given vector.
+         */
+        getDistance(_to: Vector3): number;
+        /**
+         * Adds the given vector to this vector.
+         * @returns A reference to this vector.
+         */
+        add(_addend: Vector3): Vector3;
+        /**
+         * Subtracts the given vector from this vector.
+         * @returns A reference to this vector.
+         */
+        subtract(_subtrahend: Vector3): Vector3;
+        /**
+         * Scales this vector by the given scalar.
+         * @returns A reference to this vector.
+         */
+        scale(_scalar: number): Vector3;
+        /**
+         * Negates this vector by flipping the signs of its components
+         * @returns A reference to this vector.
+         */
+        negate(): Vector3;
+        /**
+         * Normalizes this to the given length, 1 by default
+         * @returns A reference to this vector.
+         */
+        normalize(_length?: number): Vector3;
+        /**
+         * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}.
+         * @returns A reference to this vector.
+         */
+        reflect(_normal: Vector3): Vector3;
+        /**
+         * Projects this vector onto the given vector.
+         * @returns A reference to this vector.
+         */
+        project(_on: Vector3): Vector3;
+        /**
+         * Transforms this vector by the given matrix or rotation quaternion.
+         * Including or exluding the translation if a matrix is passed.
+         * Including is the default, excluding will only rotate and scale this vector.
+         * @returns A reference to this vector.
+         */
+        transform(_transform: Matrix4x4 | Quaternion, _includeTranslation?: boolean): Vector3;
+        /**
+         * Shuffles the components of this vector.
+         * @returns A reference to this vector.
+         */
+        shuffle(): Vector3;
+        /**
+         * For each dimension, moves the component to the minimum of this and the given vector.
+         * @returns A reference to this vector.
+         */
+        min(_compare: Vector3): Vector3;
+        /**
+         * For each dimension, moves the component to the maximum of this and the given vector.
+         * @returns A reference to this vector.
+         */
+        max(_compare: Vector3): Vector3;
+        /**
+         * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
+         * @param _out - (optional) the receiving vector.
+         * @returns `_out` or a new vector if none is provided.
+         */
+        map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number, _out?: Vector3): Vector3;
+        /**
+         * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector3.map} but mutates this vector instead of creating a new one.
+         * @returns A reference to this vector.
+         */
+        apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3;
+        fromArray(_array: ArrayLike<number>, _offset?: number): this;
+        toArray<T extends {
+            [n: number]: number;
+        } = number[]>(_out?: T, _offset?: number): T;
+        /**
+         * Drops the z-component and returns a Vector2 consisting of the x- and y-components.
+         * @param _out Optional vector to store the result in.
+         */
+        toVector2(_out?: Vector2): Vector2;
+        /**
+         * Returns a formatted string representation of this vector
+         */
+        toString(): string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Vector3;
+        mutate(_mutator: Mutator): void;
+        getMutator(): Mutator;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
     /**
      * Stores a 4x4 transformation matrix and provides operations for it.
      * ```text
@@ -4084,7 +4370,6 @@ declare namespace FudgeCore {
         upLocal: boolean;
         up: Vector3;
         restrict: boolean;
-        constructor();
     }
 }
 declare namespace FudgeCore {
@@ -4097,9 +4382,6 @@ declare namespace FudgeCore {
         color: Color;
         near: number;
         far: number;
-        constructor(_color?: Color, _near?: number, _far?: number);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -4111,9 +4393,6 @@ declare namespace FudgeCore {
      */
     class ComponentGraphFilter extends Component {
         static readonly iSubclass: number;
-        constructor();
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -6405,292 +6684,6 @@ declare namespace FudgeCore {
      * Standard {@link Random}-instance using Math.random().
      */
     const random: Random;
-}
-declare namespace FudgeCore {
-    interface Vector3Like {
-        x: number;
-        y: number;
-        z: number;
-    }
-    /**
-     * Stores and manipulates a threedimensional vector comprised of the components x, y and z
-     * ```text
-     *            +y
-     *             |__ +x
-     *            /
-     *          +z
-     * ```
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019-2022 | Jonas Plotzky, HFU, 2023-2025
-     */
-    class Vector3 extends Mutable implements Serializable, Recycable, ArrayConvertible {
-        /**
-         * Array of the keys of a vector. Allows to translate an index (0, 1, 2) to a key ("x", "y", "z") or to iterate over a vector.
-         */
-        static readonly keys: readonly ["x", "y", "z"];
-        x: number;
-        y: number;
-        z: number;
-        constructor(_x?: number, _y?: number, _z?: number);
-        /**
-         * Creates and returns a vector with the given length pointing in x-direction
-         */
-        static X(_scale?: number): Vector3;
-        /**
-         * Creates and returns a vector with the given length pointing in y-direction
-         */
-        static Y(_scale?: number): Vector3;
-        /**
-         * Creates and returns a vector with the given length pointing in z-direction
-         */
-        static Z(_scale?: number): Vector3;
-        /**
-         * Creates and returns a vector with the value 0 on each axis
-         */
-        static ZERO(): Vector3;
-        /**
-         * Creates and returns a vector of the given size on each of the three axis
-         */
-        static ONE(_scale?: number): Vector3;
-        /**
-         * Creates and returns a vector through transformation of the given vector by the given matrix or rotation quaternion.
-         * @param _out Optional vector to store the result in.
-         */
-        static TRANSFORMATION(_vector: Vector3, _transform: Matrix4x4 | Quaternion, _includeTranslation?: boolean, _out?: Vector3): Vector3;
-        /**
-         * Creates and returns a vector which is a copy of the given vector scaled to the given length.
-         * @param _out Optional vector to store the result in.
-         */
-        static NORMALIZATION(_vector: Vector3, _length?: number, _out?: Vector3): Vector3;
-        /**
-         * Returns the result of the addition of two vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static SUM(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Returns the result of the subtraction of two vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static DIFFERENCE(_minuend: Vector3, _subtrahend: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Returns a new vector representing the given vector scaled by the given scaling factor.
-         * @param _out Optional vector to store the result in.
-         */
-        static SCALE(_vector: Vector3, _scaling: number, _out?: Vector3): Vector3;
-        /**
-         * Returns a new vector representing the given vector scaled by the given scaling factor.
-         * @param _out Optional vector to store the result in.
-         */
-        static NEGATION(_vector: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Divides the dividend by the divisor component by component and returns the result.
-         * @param _out Optional vector to store the result in.
-         */
-        static RATIO(_dividend: Vector3, _divisor: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Computes the crossproduct of 2 vectors.
-         * @param _out Optional vector to store the result in.
-         */
-        static CROSS(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Computes the dotproduct of 2 vectors.
-         */
-        static DOT(_a: Readonly<Vector3Like>, _b: Readonly<Vector3Like>): number;
-        /**
-         * Calculates and returns the reflection of the incoming vector at the given normal vector. The length of normal should be 1.
-         * ```text
-         * _________________________
-         *           /|\
-         * incoming / | \ reflection
-         *         /  |  \
-         *          normal
-         * ```
-         * @param _out Optional vector to store the result in.
-         */
-        static REFLECTION(_incoming: Vector3, _normal: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Creates a cartesian vector from geographic coordinates.
-         * @param _out Optional vector to store the result in.
-         */
-        static GEO(_longitude?: number, _latitude?: number, _magnitude?: number, _out?: Vector3): Vector3;
-        /**
-         * Return the angle in degrees between the two given vectors.
-         */
-        static ANGLE(_from: Vector3, _to: Vector3): number;
-        /**
-         * Return the projection of a onto b.
-         * @param _out Optional vector to store the result in.
-         */
-        static PROJECTION(_a: Vector3, _b: Vector3, _out?: Vector3): Vector3;
-        /**
-         * Performs a linear interpolation between between two vectors. When t is 0 the result is a, when t is 1 the result is b.
-         * @param _a - the first operand.
-         * @param _b - the second operand.
-         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
-         * @param _out - (optional) the receiving vector.
-         * @returns `_out` or a new vector if none is provided.
-         * @source https://github.com/toji/gl-matrix
-         */
-        static LERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
-        static LERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
-        /**
-         * Performs a spherical linear interpolation between two vectors.
-         * @param _a - the first operand.
-         * @param _b - the second operand.
-         * @param _t - interpolation amount, in the range [0-1], between the two inputs.
-         * @param _out - (optional) the receiving vector.
-         * @returns `_out` or a new vector if none is provided.
-         * @source https://github.com/toji/gl-matrix
-         */
-        static SLERP(_a: Readonly<Vector3>, _b: Readonly<Vector3>, _t: number, _out?: Vector3): Vector3;
-        static SLERP<T extends Vector3Like>(_a: Readonly<T>, _b: Readonly<T>, _t: number, _out: T): T;
-        /**
-         * Smoothly interpolates between two vectors based on a critically damped spring model.
-         * Allows to smooth toward a moving target with an ease-in/ease-out motion maintaining a continuous velocity.
-         * Does not overshoot.
-         * @param _current - The current value.
-         * @param _target - The target value.
-         * @param _velocity - The velocity at which the value is moving. This value is **modified** by the function and must be maintained in the outside context.
-         * @param _smoothTime - The time it would take for the value to reach the target if it were moving at maximum velocity for the entire duration. When following a moving target the smooth time equals the lag time allowing to calculate the `lag distance = target velocity * smooth time`.
-         * @param _timeFrame - The elapsed time since the last call to the function.
-         * @param _maxSpeed - An optional maximum speed that limits the velocity of the value. Defaults to Infinity.
-         * @param _out Optional vector to store the result in.
-         * @source from Andrew Kirmse, Game Programming Gems 4, Chapter 1.10
-         */
-        static SMOOTHDAMP(_current: Vector3, _target: Vector3, _velocity: Vector3, _smoothTime: number, _timeFrame: number, _maxSpeed?: number, _out?: Vector3): Vector3;
-        get isArrayConvertible(): true;
-        /**
-         * Returns the length of the vector
-         */
-        get magnitude(): number;
-        /**
-         * Returns the square of the magnitude of the vector without calculating a square root. Faster for simple proximity evaluation.
-         */
-        get magnitudeSquared(): number;
-        /**
-         * - get: Returns a geographic representation of this vector
-         * - set: Adjusts the cartesian values of this vector to represent the given as geographic coordinates
-         */
-        get geo(): Geo3;
-        set geo(_geo: Geo3);
-        /**
-         * Creates and returns a clone of this vector.
-         */
-        get clone(): Vector3;
-        /**
-         * Copies the components of the given vector into this vector.
-         * @returns A reference to this vector.
-         */
-        copy(_original: Vector3): Vector3;
-        /**
-         * Sets the components of this vector and returns it.
-         * @returns A reference to this vector.
-         */
-        set(_x?: number, _y?: number, _z?: number): Vector3;
-        recycle(): void;
-        /**
-         * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
-         * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
-         */
-        equals(_compare: Vector3, _tolerance?: number): boolean;
-        /**
-         * Returns true if the position described by this is within a cube with the opposite corners 1 and 2.
-         */
-        isInsideCube(_corner1: Vector3, _corner2: Vector3): boolean;
-        /**
-         * Returns true if the position described by this is within a sphere with the given center and radius.
-         */
-        isInsideSphere(_center: Vector3, _radius: number): boolean;
-        /**
-         * Returns the distance bewtween this vector and the given vector.
-         */
-        getDistance(_to: Vector3): number;
-        /**
-         * Adds the given vector to this vector.
-         * @returns A reference to this vector.
-         */
-        add(_addend: Vector3): Vector3;
-        /**
-         * Subtracts the given vector from this vector.
-         * @returns A reference to this vector.
-         */
-        subtract(_subtrahend: Vector3): Vector3;
-        /**
-         * Scales this vector by the given scalar.
-         * @returns A reference to this vector.
-         */
-        scale(_scalar: number): Vector3;
-        /**
-         * Negates this vector by flipping the signs of its components
-         * @returns A reference to this vector.
-         */
-        negate(): Vector3;
-        /**
-         * Normalizes this to the given length, 1 by default
-         * @returns A reference to this vector.
-         */
-        normalize(_length?: number): Vector3;
-        /**
-         * Reflects this vector at a given normal. See {@link Vector3.REFLECTION}.
-         * @returns A reference to this vector.
-         */
-        reflect(_normal: Vector3): Vector3;
-        /**
-         * Projects this vector onto the given vector.
-         * @returns A reference to this vector.
-         */
-        project(_on: Vector3): Vector3;
-        /**
-         * Transforms this vector by the given matrix or rotation quaternion.
-         * Including or exluding the translation if a matrix is passed.
-         * Including is the default, excluding will only rotate and scale this vector.
-         * @returns A reference to this vector.
-         */
-        transform(_transform: Matrix4x4 | Quaternion, _includeTranslation?: boolean): Vector3;
-        /**
-         * Shuffles the components of this vector.
-         * @returns A reference to this vector.
-         */
-        shuffle(): Vector3;
-        /**
-         * For each dimension, moves the component to the minimum of this and the given vector.
-         * @returns A reference to this vector.
-         */
-        min(_compare: Vector3): Vector3;
-        /**
-         * For each dimension, moves the component to the maximum of this and the given vector.
-         * @returns A reference to this vector.
-         */
-        max(_compare: Vector3): Vector3;
-        /**
-         * Calls a defined callback function on each component of the vector, and returns a new vector that contains the results. Similar to {@link Array.map}.
-         * @param _out - (optional) the receiving vector.
-         * @returns `_out` or a new vector if none is provided.
-         */
-        map(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number, _out?: Vector3): Vector3;
-        /**
-         * Calls a defined callback function on each component of the vector and assigns the result to the component. Similar to {@link Vector3.map} but mutates this vector instead of creating a new one.
-         * @returns A reference to this vector.
-         */
-        apply(_function: (_value: number, _index: number, _component: "x" | "y" | "z", _vector: Vector3) => number): Vector3;
-        fromArray(_array: ArrayLike<number>, _offset?: number): this;
-        toArray<T extends {
-            [n: number]: number;
-        } = number[]>(_out?: T, _offset?: number): T;
-        /**
-         * Drops the z-component and returns a Vector2 consisting of the x- and y-components.
-         * @param _out Optional vector to store the result in.
-         */
-        toVector2(_out?: Vector2): Vector2;
-        /**
-         * Returns a formatted string representation of this vector
-         */
-        toString(): string;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Vector3;
-        mutate(_mutator: Mutator): void;
-        getMutator(): Mutator;
-        protected reduceMutator(_mutator: Mutator): void;
-    }
 }
 declare namespace FudgeCore {
     /**

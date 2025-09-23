@@ -8,6 +8,7 @@
 /// <reference path="Serialization/Metadata.ts"/>
 /// <reference path="Serialization/SerializeDecorator.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
+/// <reference path="Math/Vector3.ts"/>
 /// <reference path="Math/Matrix4x4.ts"/>
 /// <reference path="Material/Color.ts"/>
 /// <reference path="Render/RenderWebGL.ts"/>
