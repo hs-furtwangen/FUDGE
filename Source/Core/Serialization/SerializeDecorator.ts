@@ -89,9 +89,7 @@ namespace FudgeCore {
 
   /**
    * Decorator to mark {@link SerializableResource resource} properties of a {@link Serializable} for nested serialization.
-   * The resource will be serialized nested within the object rather than stored separately in the project.
-   * 
-   * Use {@link serialize} for reference-based resource serialization.
+   * The resource will be serialized nested within the containing object rather than stored separately in the project.
    *
    * **Example:**
    * ```typescript
