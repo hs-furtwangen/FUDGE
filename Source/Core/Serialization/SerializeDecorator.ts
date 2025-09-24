@@ -16,24 +16,26 @@ namespace FudgeCore {
    * 
    * **Example:**
    * ```typescript
-   * import ƒ = FudgeCore;
+   * import f = FudgeCore;
+   * import serialize = f.serialize;
    *
-   * export class MyScript extends ƒ.ComponentScript {
-   *   #size: number = 1;
+   * export class MyScript extends f.ComponentScript {
    * 
-   *   @ƒ.serialize(String) // serialize a string
+   *   @serialize(String) // serialize a string
    *   public info: string;
    *
-   *   @ƒ.serialize(ƒ.Vector3) // serialize a vector
-   *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+   *   @serialize(f.Vector3) // serialize a vector
+   *   public position: f.Vector3 = new f.Vector3(1, 2, 3);
    *
-   *   @ƒ.serialize(ƒ.Material) // serialize a material by referencing it in the project
-   *   public resource: ƒ.Material;
+   *   @serialize(f.Material) // serialize a material by referencing it in the project
+   *   public resource: f.Material;
    *
-   *   @ƒ.serialize(ƒ.Node) // serialize a node by its path in the hierarchy
-   *   public reference: ƒ.Node
+   *   @serialize(f.Node) // serialize a node by its path in the hierarchy
+   *   public reference: f.Node
+   * 
+   *   #size: number = 1;
    *
-   *   @ƒ.serialize(Number) // serialize a number
+   *   @serialize(Number) // serialize a number
    *   public get size(): number {
    *     return this.#size;
    *   }
@@ -63,18 +65,19 @@ namespace FudgeCore {
    *
    * **Example**:
    * ```typescript
-   * import ƒ = FudgeCore;
+   * import f = FudgeCore;
+   * import serializeF = f.serializeF;
    *
    * export class SomeClass { }
    *
    * export function someFunction(): void { }
    *
-   * export class SomeScript extends ƒ.ComponentScript {
-   *   @ƒ.serializeF(SomeClass)
-   *   someClass: typeof SomeClass;
+   * export class SomeScript extends f.ComponentScript {
+   *   @serializeF(SomeClass)
+   *   public someClass: typeof SomeClass;
    *
-   *   @ƒ.serializeF(someFunction)
-   *   someFunction: typeof someFunction;
+   *   @serializeF(someFunction)
+   *   public someFunction: typeof someFunction;
    * }
    * ```
    * 
@@ -85,9 +88,36 @@ namespace FudgeCore {
   }
 
   /**
+   * Decorator to mark {@link SerializableResource resource} properties of a {@link Serializable} for nested serialization.
+   * The resource will be serialized nested within the object rather than stored separately in the project.
+   * 
+   * Use {@link serialize} for reference-based resource serialization.
+   *
+   * **Example:**
+   * ```typescript
+   * import f = FudgeCore;
+   * import serialize = f.serialize;
+   * import serializeNested = f.serializeNested;
+   * 
+   * export class MyScript extends f.ComponentScript {
+   *   @serialize(f.Material) // serialize by reference (resource ID)
+   *   public sharedMaterial: f.Material;
+   *
+   *   @serializeNested(f.Material) // serialize nested
+   *   public privateMaterial: f.Material;
+   * }
+   * ```
+   * 
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function serializeNested<T extends SerializableResource>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
+    return serializeFactory(_type, false, true);
+  }
+
+  /**
    * @internal
    */
-  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _local?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -107,7 +137,7 @@ namespace FudgeCore {
         strategy = "primitive";
       } else if (_type == Node) {
         strategy = "node";
-      } else if (isSerializableResource(<SerializableResource>_type.prototype)) {
+      } else if (isSerializableResource(<SerializableResource>_type.prototype) && !_local) {
         strategy = "resource";
       } else if (isSerializable(_type.prototype)) {
         strategy = "serializable";
