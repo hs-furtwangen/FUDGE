@@ -79,7 +79,7 @@ namespace FudgeCore {
     //#endregion
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
+      await super.deserialize(_serialization);
 
       // TODO: backward compatibility, remove in future versions
       if (_serialization.local != undefined)
