@@ -57,9 +57,6 @@ namespace FudgeCore {
     /** Marks if collider was initialized. Reset to false to initialize again e.g. after manipulation of mtxPivot */
     public isInitialized: boolean = false;
 
-    /** ID to reference this specific ComponentRigidbody */
-    #id: number = 0;
-
     //Private informations - Mostly OimoPhysics variables that should not be exposed to the FUDGE User and manipulated by them
     #collider: OIMO.Shape;
     #colliderInfo: OIMO.ShapeConfig;
@@ -98,9 +95,6 @@ namespace FudgeCore {
 
 
     //#region Accessors
-    public get id(): number {
-      return this.#id;
-    }
 
     /** Used for calculation of the geometrical relationship of node and collider by {@link Render}*/
     public get mtxPivotInverse(): Matrix4x4 {
@@ -571,7 +565,6 @@ namespace FudgeCore {
       serialization.typeCollider = COLLIDER_TYPE[this.#typeCollider];
       serialization.initialization = BODY_INIT[this.initialization];
 
-      serialization.id = this.#id;
       serialization.pivot = this.mtxPivot.serialize();
       serialization[super.constructor.name] = super.serialize();
       return serialization;
@@ -580,7 +573,6 @@ namespace FudgeCore {
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       super.deserialize(_serialization[super.constructor.name]);
       this.mtxPivot.deserialize(_serialization.pivot);
-      this.#id = _serialization.id;
       this.mass = ifNumber(_serialization.mass, this.mass);
       this.dampTranslation = ifNumber(_serialization.dampTranslation, this.dampTranslation);
       this.dampRotation = ifNumber(_serialization.dampRotation, this.dampRotation);
@@ -693,7 +685,6 @@ namespace FudgeCore {
       this.collisionMask = Physics.settings.defaultCollisionMask;
       //Create the actual rigidbody in the OimoPhysics Space
       this.createRigidbody(_mass, _type, this.#typeCollider, _mtxTransform, this.#collisionGroup);
-      this.#id = Physics.distributeBodyID();
 
       // Event Callbacks directly from OIMO Physics
       this.#callbacks = new OIMO.ContactCallback(); //fehm

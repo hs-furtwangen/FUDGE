@@ -7524,7 +7524,6 @@ declare namespace FudgeCore {
         isInitialized: boolean;
         /** Creating a new rigidbody with a weight in kg, a physics type (default = dynamic), a collider type what physical form has the collider, to what group does it belong, is there a transform Matrix that should be used, and is the collider defined as a group of points that represent a convex mesh. */
         constructor(_mass?: number, _type?: BODY_TYPE, _colliderType?: COLLIDER_TYPE, _group?: COLLISION_GROUP, _mtxTransform?: Matrix4x4, _convexMesh?: Float32Array);
-        get id(): number;
         /** Used for calculation of the geometrical relationship of node and collider by {@link Render}*/
         get mtxPivotInverse(): Matrix4x4;
         /** Used for calculation of the geometrical relationship of node and collider by {@link Render}*/
@@ -8312,8 +8311,6 @@ declare namespace FudgeCore {
         static removeJoint(_cmpJoint: Joint): void;
         /** Returns all the ComponentRigidbodies that are known to the active instance. */
         static getBodyList(): ComponentRigidbody[];
-        /** Giving a ComponentRigidbody a specific identification number so it can be referenced in the loading process. And removed rb's can receive a new id. */
-        static distributeBodyID(): number;
         /**
          * Connect all joints that are not connected yet. Used internally no user interaction needed. This functionality is called and needed to make sure joints connect/disconnect
          * if any of the two paired ComponentRigidbodies change.

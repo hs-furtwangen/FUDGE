@@ -26,8 +26,6 @@ namespace FudgeCore {
     // public static readonly iSubclass: number = Component.registerSubclass(ComponentJoint);
     protected singleton: boolean = false; //Multiple joints can be attached to one Node
 
-    #idBodyAnchor: number = 0;
-    #idBodyTied: number = 0;
     #bodyAnchor: ComponentRigidbody;
     #bodyTied: ComponentRigidbody;
 
@@ -66,7 +64,6 @@ namespace FudgeCore {
     }
 
     public set bodyAnchor(_cmpRB: ComponentRigidbody) {
-      this.#idBodyAnchor = _cmpRB != null ? _cmpRB.id : -1;
       this.#bodyAnchor = _cmpRB;
       this.disconnect();
       this.dirtyStatus();
@@ -77,7 +74,6 @@ namespace FudgeCore {
       return this.#bodyTied;
     }
     public set bodyTied(_cmpRB: ComponentRigidbody) {
-      this.#idBodyTied = _cmpRB != null ? _cmpRB.id : -1;
       this.#bodyTied = _cmpRB;
       this.disconnect();
       this.dirtyStatus();
@@ -216,7 +212,7 @@ namespace FudgeCore {
      */
     public connect(): void {
       if (this.#connected == false) {
-        if (this.#idBodyAnchor == -1 || this.#idBodyTied == -1) {
+        if (!this.#bodyAnchor || !this.#bodyTied) {
           if (this.#nameChildToConnect)
             this.connectChild(this.#nameChildToConnect);
           return;
