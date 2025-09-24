@@ -8,7 +8,7 @@ namespace Fudge {
     // public title: string = "NewProject";
     public base: URL;
 
-    @ƒ.serialize(String)
+    @ƒ.edit(String)
     public name: string;
 
     public fileIndex: string = "index.html";
@@ -18,7 +18,7 @@ namespace Fudge {
     public fileSettings: string = "settings.json";
     public fileStyles: string = "styles.css";
 
-    @ƒ.serialize(ƒ.Graph)
+    @ƒ.edit(ƒ.Graph)
     private graphAutoView: ƒ.Graph;
     // private includeAutoViewScript: boolean = true;
 
