@@ -150,10 +150,14 @@ namespace FudgeCore {
     return editFactory(_type, true);
   }
 
-  function editFactory(_type: Function | Record<string, unknown>, _function?: boolean, _order?: number): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function editNested<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
+    return editFactory(_type, false, true);
+  }
+
+  function editFactory(_type: Function | Record<string, unknown>, _function?: boolean, _nested?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
-      serializeFactory(_type, _function)(_value, _context);
-      mutateFactory(_type, _function)(_value, _context);
+      serializeFactory(_type, _function, _nested)(_value, _context);
+      mutateFactory(_type, _function, _nested)(_value, _context);
     };
   }
   //#endregion
@@ -282,10 +286,14 @@ namespace FudgeCore {
     return mutateFactory(_type, true);
   }
 
+  export function mutateNested<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
+    return mutateFactory(_type, false, true);
+  }
+
   /**
    * @internal
    */
-  export function mutateFactory(_type: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function mutateFactory(_type: Function | Record<string, unknown>, _function?: boolean, _nested?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
@@ -307,7 +315,7 @@ namespace FudgeCore {
       const isNode: boolean = isConstructor && _type === Node;
       const isResource: boolean = isConstructor && isSerializableResource(_type.prototype);
 
-      if (isFunction || isNode || isResource) {
+      if (isFunction || isNode || isResource && !_nested) {
         reference(_value, <ClassPropertyContext<Mutable, object>>_context);
         let get: MutatorOptionsGetter | undefined;
         if (isFunction && (<General>_type).subclasses)

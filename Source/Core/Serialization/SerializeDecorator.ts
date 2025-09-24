@@ -98,13 +98,26 @@ namespace FudgeCore {
    * import f = FudgeCore;
    * import serialize = f.serialize;
    * import serializeNested = f.serializeNested;
-   * 
+   *
    * export class MyScript extends f.ComponentScript {
-   *   @serialize(f.Material) // serialize by reference (resource ID)
-   *   public sharedMaterial: f.Material;
+   *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
+   *
+   *   @serialize(f.Material) // serialize by resource ID (reference)
+   *   public material: f.Material;
    *
    *   @serializeNested(f.Material) // serialize nested
-   *   public privateMaterial: f.Material;
+   *   public nestedMaterial: f.Material;
+   *
+   *   public constructor() {
+   *     super();
+   *
+   *     // create a new resource instance for nested serialization
+   *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
+   *     
+   *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
+   *     f.Project.deregister(this.nestedMaterial);
+   *     delete this.nestedMaterial.idResource;
+   *   }
    * }
    * ```
    * 
@@ -117,7 +130,7 @@ namespace FudgeCore {
   /**
    * @internal
    */
-  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _local?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _nested?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -137,7 +150,7 @@ namespace FudgeCore {
         strategy = "primitive";
       } else if (_type == Node) {
         strategy = "node";
-      } else if (isSerializableResource(<SerializableResource>_type.prototype) && !_local) {
+      } else if (isSerializableResource(<SerializableResource>_type.prototype) && !_nested) {
         strategy = "resource";
       } else if (isSerializable(_type.prototype)) {
         strategy = "serializable";
