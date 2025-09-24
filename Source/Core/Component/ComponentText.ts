@@ -9,12 +9,15 @@ namespace FudgeCore {
   export class ComponentText extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentText);
 
+    @editNested(TextureText)
     public readonly texture: TextureText;
+
     public readonly mtxWorld: Matrix4x4;
 
     /** - on: The texts size is fixed to match the set font size
      *  - off: The font size is stretched to match the attached meshes size
      */
+    @edit(Boolean)
     public fixedSize: boolean;
 
     public constructor(_text?: string, _font?: string) {
@@ -22,15 +25,6 @@ namespace FudgeCore {
       this.texture = new TextureText(ComponentText.name, _text, _font);
       this.mtxWorld = Matrix4x4.IDENTITY();
       this.fixedSize = false;
-    }
-
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
-      return this;
     }
 
     public useRenderData(_mtxMeshToWorld: Matrix4x4, _cmpCamera: ComponentCamera): Matrix4x4 {

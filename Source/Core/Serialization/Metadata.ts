@@ -166,7 +166,7 @@ namespace FudgeCore {
    * export class MyScript extends f.ComponentScript {
    *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
    *   
-   *   @editF(MyClass) // display a combo select with the subclasses of MyClass in the editor and serialize
+   *   @editF(MyClass)
    *   public myClass: typeof MyClass;
    * }
    * ```

@@ -742,7 +742,7 @@ declare namespace FudgeCore {
      * export class MyScript extends f.ComponentScript {
      *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
      *
-     *   @editF(MyClass) // display a combo select with the subclasses of MyClass in the editor and serialize
+     *   @editF(MyClass)
      *   public myClass: typeof MyClass;
      * }
      * ```
@@ -904,7 +904,6 @@ declare namespace FudgeCore {
      * import serialize = f.serialize;
      *
      * export class MyScript extends f.ComponentScript {
-     *
      *   @serialize(String) // serialize a string
      *   public info: string;
      *
@@ -971,7 +970,6 @@ declare namespace FudgeCore {
      * import serializeNested = f.serializeNested;
      *
      * export class MyScript extends f.ComponentScript {
-     *
      *   @serialize(f.Material) // serialize by reference (resource ID)
      *   public material: f.Material;
      *
@@ -5147,8 +5145,6 @@ declare namespace FudgeCore {
          * Picks the node according to the given {@link Ray} and invokes events accordingly
          */
         pickAndDispatch(_ray: Ray, _event: PointerEvent): void;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         drawGizmosSelected(_cmpCamera: ComponentCamera): void;
     }
 }
@@ -5182,8 +5178,6 @@ declare namespace FudgeCore {
          */
         fixedSize: boolean;
         constructor(_text?: string, _font?: string);
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         useRenderData(_mtxMeshToWorld: Matrix4x4, _cmpCamera: ComponentCamera): Matrix4x4;
         drawGizmosSelected(): void;
         protected reduceMutator(_mutator: Mutator): void;
@@ -5213,7 +5207,6 @@ declare namespace FudgeCore {
          * Applies the given transformation relative to the selected base (SELF, PARENT, WORLD) or a particular other node (NODE)
          */
         transform(_mtxTransform: Matrix4x4, _base?: BASE, _node?: Node): void;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void;
         protected reduceMutator(_mutator: Mutator): void;

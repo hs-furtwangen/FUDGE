@@ -12,7 +12,7 @@ namespace FudgeCore {
   export class ComponentPick extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentPick);
 
-    @mutate(PICK)
+    @edit(PICK)
     public pick: PICK = PICK.RADIUS;
 
     /**
@@ -36,15 +36,6 @@ namespace FudgeCore {
           break;
         //TODO: PICK.CAMERA
       }
-    }
-
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
-      return this;
     }
 
     public drawGizmosSelected(_cmpCamera: ComponentCamera): void {

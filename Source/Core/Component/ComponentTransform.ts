@@ -10,6 +10,8 @@ namespace FudgeCore {
    */
   export class ComponentTransform extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentTransform);
+
+    @edit(Matrix4x4)
     public mtxLocal: Matrix4x4;
 
     public constructor(_mtxInit: Matrix4x4 = Matrix4x4.IDENTITY()) {
@@ -76,24 +78,19 @@ namespace FudgeCore {
     }
     //#endregion
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        local: this.mtxLocal.serialize(),
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization[super.constructor.name]);
-      await this.mtxLocal.deserialize(_serialization.local);
+
+      // TODO: backward compatibility, remove in future versions
+      if (_serialization.local != undefined)
+        this.mtxLocal.deserialize(_serialization.local);
+
       return this;
     }
 
     public override mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate: boolean = true): void {
       // inline sync mutate for animation performance
-      if (_mutator.active != undefined) 
+      if (_mutator.active != undefined)
         this.activate(_mutator.active);
       if (_mutator.mtxLocal != undefined)
         this.mtxLocal.mutate(_mutator.mtxLocal);
@@ -105,7 +102,7 @@ namespace FudgeCore {
       delete _mutator.world;
       super.reduceMutator(_mutator);
     }
-    //#endregion
+
   }
 
   // function decorateMutable<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof Coat, M>): M {

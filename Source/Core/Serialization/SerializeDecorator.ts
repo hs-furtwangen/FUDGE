@@ -19,7 +19,6 @@ namespace FudgeCore {
    * import serialize = f.serialize;
    *
    * export class MyScript extends f.ComponentScript {
-   * 
    *   @serialize(String) // serialize a string
    *   public info: string;
    *
@@ -97,7 +96,6 @@ namespace FudgeCore {
    * import serializeNested = f.serializeNested;
    *
    * export class MyScript extends f.ComponentScript {
-   *
    *   @serialize(f.Material) // serialize by reference (resource ID)
    *   public material: f.Material;
    *
