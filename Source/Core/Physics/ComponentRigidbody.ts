@@ -16,8 +16,9 @@ namespace FudgeCore {
    * It's the connection between the FUDGE rendered world and the Physics world.
    * For the physics to correctly get the transformations rotations need to be applied with from left = true.
    * Or rotations need to happen before scaling.
-   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export class ComponentRigidbody extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentRigidbody);
     private static mapBodyType: { [type: number]: number } = (typeof OIMO == "undefined") ?
@@ -30,6 +31,8 @@ namespace FudgeCore {
     /** Transformation of the collider relative to the node's transform. Once set mostly remains constant. 
      * If altered, {@link isInitialized} must be reset to false to recreate the collider in the next {@link Render.prepare}
      */
+    @order(4)
+    @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
     /** 
@@ -47,12 +50,15 @@ namespace FudgeCore {
      * The groups this object collides with. Groups must be writen in form of
      *  e.g. collisionMask = {@link COLLISION_GROUP.DEFAULT} | {@link COLLISION_GROUP}.... and so on to collide with multiple groups. 
      */
+    @order(6)
+    @edit(Number)
     public collisionMask: number;
 
     /** 
      * Automatic adjustment of the pivot when {@link Render.prepare} is called according to {@link BODY_INIT}
      */
-    @mutate(BODY_INIT)
+    @order(3)
+    @edit(BODY_INIT)
     public initialization: BODY_INIT = BODY_INIT.TO_PIVOT;
     /** Marks if collider was initialized. Reset to false to initialize again e.g. after manipulation of mtxPivot */
     public isInitialized: boolean = false;
@@ -106,7 +112,8 @@ namespace FudgeCore {
     }
 
     /** Retrieve the body type. See {@link BODY_TYPE} */
-    @mutate(BODY_TYPE)
+    @order(1)
+    @edit(BODY_TYPE)
     public get typeBody(): BODY_TYPE {
       return this.#typeBody;
     }
@@ -119,7 +126,8 @@ namespace FudgeCore {
     }
 
     /** The shape that represents the {@link Node} in the physical world. Default is a Cube. */
-    @mutate(COLLIDER_TYPE)
+    @order(2)
+    @edit(COLLIDER_TYPE)
     public get typeCollider(): COLLIDER_TYPE {
       return this.#typeCollider;
     }
@@ -132,35 +140,26 @@ namespace FudgeCore {
     }
 
     /** The collision group this {@link Node} belongs to it's the default group normally which means it physically collides with every group besides trigger. */
+    @order(5)
+    @edit(COLLISION_GROUP)
     public get collisionGroup(): COLLISION_GROUP {
       return this.#collisionGroup;
     }
+
     public set collisionGroup(_value: COLLISION_GROUP) {
       this.#collisionGroup = _value;
       if (this.#rigidbody != null)
         this.#rigidbody.getShapeList().setCollisionGroup(this.#collisionGroup);
     }
 
-    /** Marking the Body as a trigger therefore not influencing the collision system but only sending triggerEvents */
-    public get isTrigger(): boolean {
-      return this.#isTrigger;
-    }
-    public set isTrigger(_value: boolean) {
-      this.#isTrigger = _value;
-      if (this.getOimoRigidbody() != null) {
-        this.getOimoRigidbody()._isTrigger = this.#isTrigger;
-      }
-    }
-
     /**
-     * Returns the physical weight of the {@link Node}
+     * The physical weight of the body in kg.
      */
+    @edit(Number)
     public get mass(): number {
       return this.#rigidbody.getMass();
     }
-    /**
-     * Setting the physical weight of the {@link Node} in kg
-     */
+
     public set mass(_value: number) {
       this.#massData.mass = _value;
       if (this.node != null)
@@ -169,51 +168,57 @@ namespace FudgeCore {
     }
 
     /** Drag of linear movement. A Body does slow down even on a surface without friction. */
+    @edit(Number)
     public get dampTranslation(): number {
       return this.#rigidbody.getLinearDamping();
     }
+
     public set dampTranslation(_value: number) {
       this.#dampingLinear = _value;
       this.#rigidbody.setLinearDamping(_value);
     }
 
     /** Drag of rotation. */
+    @edit(Number)
     public get dampRotation(): number {
       return this.#rigidbody.getAngularDamping();
     }
+
     public set dampRotation(_value: number) {
       this.#dampingAngular = _value;
       this.#rigidbody.setAngularDamping(_value);
     }
 
     /** The factor this rigidbody reacts rotations that happen in the physical world. 0 to lock rotation this axis. */
+    @edit(Vector3)
     public get effectRotation(): Vector3 {
       return this.#effectRotation;
     }
+
     public set effectRotation(_effect: Vector3) {
       this.#effectRotation = _effect;
       this.#rigidbody.setRotationFactor(new OIMO.Vec3(this.#effectRotation.x, this.#effectRotation.y, this.#effectRotation.z));
     }
 
     /** The factor this rigidbody reacts to world gravity. Default = 1 e.g. 1*9.81 m/s. */
+    @edit(Number)
     public get effectGravity(): number {
       return this.#effectGravity;
     }
+
     public set effectGravity(_effect: number) {
       this.#effectGravity = _effect;
       if (this.#rigidbody != null) this.#rigidbody.setGravityScale(this.#effectGravity);
     }
 
     /**
-     * Get the friction of the rigidbody, which is the factor of sliding resistance of this rigidbody on surfaces
+     * The friction of the rigidbody, which is the factor of sliding resistance of this rigidbody on surfaces.
      */
+    @edit(Number)
     public get friction(): number {
       return this.#friction;
     }
 
-    /**
-     * Set the friction of the rigidbody, which is the factor of  sliding resistance of this rigidbody on surfaces
-     */
     public set friction(_friction: number) {
       this.#friction = _friction;
       if (this.#rigidbody.getShapeList() != null)
@@ -221,23 +226,33 @@ namespace FudgeCore {
     }
 
     /**
-     * Get the restitution of the rigidbody, which is the factor of bounciness of this rigidbody on surfaces
+     * The restitution of the rigidbody, which is the factor of bounciness of this rigidbody on surfaces
      */
+    @edit(Number)
     public get restitution(): number {
       return this.#restitution;
     }
 
-    /**
-     * Set the restitution of the rigidbody, which is the factor of bounciness of this rigidbody on surfaces
-     */
     public set restitution(_restitution: number) {
       this.#restitution = _restitution;
       if (this.#rigidbody.getShapeList() != null)
         this.#rigidbody.getShapeList().setRestitution(this.#restitution);
     }
+
+    /** Marking the Body as a trigger therefore not influencing the collision system but only sending triggerEvents */
+    @order(0)
+    @edit(Boolean)
+    public get isTrigger(): boolean {
+      return this.#isTrigger;
+    }
+
+    public set isTrigger(_value: boolean) {
+      this.#isTrigger = _value;
+      if (this.getOimoRigidbody() != null) {
+        this.getOimoRigidbody()._isTrigger = this.#isTrigger;
+      }
+    }
     //#endregion
-
-
 
     //#region Transformation
     /**
@@ -555,50 +570,28 @@ namespace FudgeCore {
 
 
     //#region Saving/Loading - Some properties might be missing, e.g. convexMesh (Float32Array)
-    public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-
-      delete serialization.mtxPivot;
-      delete serialization.active;
-
-      serialization.typeBody = BODY_TYPE[this.#typeBody];
-      serialization.typeCollider = COLLIDER_TYPE[this.#typeCollider];
-      serialization.initialization = BODY_INIT[this.initialization];
-
-      serialization.pivot = this.mtxPivot.serialize();
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
-    }
-
+    // TODO: backwards compatibility, remove in future versions
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      super.deserialize(_serialization[super.constructor.name]);
-      this.mtxPivot.deserialize(_serialization.pivot);
-      this.mass = ifNumber(_serialization.mass, this.mass);
-      this.dampTranslation = ifNumber(_serialization.dampTranslation, this.dampTranslation);
-      this.dampRotation = ifNumber(_serialization.dampRotation, this.dampRotation);
-      this.collisionGroup = ifNumber(_serialization.collisionGroup, this.collisionGroup);
-      this.effectRotation = _serialization.effectRotation || this.effectRotation;
-      this.effectGravity = ifNumber(_serialization.effectGravity, this.effectGravity);
-      this.friction = ifNumber(_serialization.friction, this.friction);
-      this.restitution = ifNumber(_serialization.restitution, this.restitution);
-      this.isTrigger = _serialization.isTrigger || this.isTrigger;
-      this.initialization = _serialization.initialization;
+      await super.deserialize(_serialization);
 
-      this.initialization = <number><unknown>BODY_INIT[_serialization.initialization];
-      this.typeBody = <number><unknown>BODY_TYPE[_serialization.typeBody];
-      this.typeCollider = <number><unknown>COLLIDER_TYPE[_serialization.typeCollider];
+      if (_serialization.pivot != undefined)
+        this.mtxPivot.deserialize(_serialization.pivot);
+
+      if (typeof _serialization.initialization == "string")
+        this.initialization = <number>(<General>BODY_INIT)[_serialization.initialization];
+
+      if (typeof _serialization.typeBody == "string")
+        this.typeBody = <number>(<General>BODY_TYPE)[_serialization.typeBody];
+
+      if (typeof _serialization.typeCollider == "string")
+        this.typeCollider = <number>(<General>COLLIDER_TYPE)[_serialization.typeCollider];
+
       // this.create(this.mass, this.#typeBody, this.#typeCollider, this.collisionGroup, null, this.convexMesh);
       return this;
     }
 
     /** Change properties by an associative array */
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (_mutator.typeBody != undefined)
-        _mutator.typeBody = parseInt(_mutator.typeBody);
-      if (_mutator.typeCollider != undefined)
-        _mutator.typeCollider = parseInt(_mutator.typeCollider);
-      if (_mutator.initialization != undefined)
-        _mutator.initialization = parseInt(_mutator.initialization);
       await super.mutate(_mutator, _selection, _dispatchMutate);
       if (_mutator.initialization != undefined && this.isActive)
         this.initialize();
@@ -607,16 +600,6 @@ namespace FudgeCore {
       //   if (_mutator[_key])
       //     _setter(_mutator[_key]);
       // };
-
-      // callIfExist("friction", (_value: number) => this.friction = _value);
-      // callIfExist("restitution", (_value: number) => this.restitution = _value);
-      // callIfExist("mass", (_value: number) => this.mass = _value);
-      // callIfExist("dampTranslation", (_value: number) => this.dampTranslation = _value);
-      // callIfExist("dampRotation", (_value: number) => this.dampRotation = _value);
-      // callIfExist("effectGravity", (_value: number) => this.effectGravity = _value);
-      // callIfExist("collisionGroup", (_value: COLLISION_GROUP) => this.collisionGroup = _value);
-      // callIfExist("typeBody", (_value: string) => this.typeBody = parseInt(_value));
-      // callIfExist("typeCollider", (_value: string) => this.typeCollider = parseInt(_value));
 
       // this.dispatchEvent(new Event(EVENT.MUTATE));
     }
@@ -642,7 +625,7 @@ namespace FudgeCore {
     protected reduceMutator(_mutator: Mutator): void {
       super.reduceMutator(_mutator);
       delete _mutator.convexMesh; //Convex Mesh can't be shown in the editor because float32Array is not a viable mutator
-      delete _mutator.collisionMask;
+      // delete _mutator.collisionMask;
       delete _mutator.isInitialized;
     }
     //#endregion
@@ -894,7 +877,7 @@ namespace FudgeCore {
       bodyB.triggerings.push(bodyA);
 
       let manifold: OIMO.Manifold = _contact.getManifold();
-      let points: OIMO.ManifoldPoint[] = manifold.getPoints(); 
+      let points: OIMO.ManifoldPoint[] = manifold.getPoints();
       let normal: OIMO.Vec3 = manifold.getNormal();
       let collisionNormal: Vector3 = new Vector3(normal.x, normal.y, normal.z);
       let collisionCenterPoint: Vector3 = bodyA.collisionCenterPoint(points, manifold.getNumPoints());

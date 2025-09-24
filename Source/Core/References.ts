@@ -27,8 +27,3 @@
 /// <reference path="Material/Material.ts"/>
 /// <reference path="ParticleSystem/ParticleSystem.ts"/>
 /// <reference path="Component/ComponentSkeleton.ts"/>
-
-//global functions
-function ifNumber(_check: number, _default: number): number {
-  return typeof _check == "undefined" ? _default : _check;
-}

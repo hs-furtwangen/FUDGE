@@ -3964,7 +3964,6 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<ComponentSkeleton>;
     }
 }
-declare function ifNumber(_check: number, _default: number): number;
 declare namespace FudgeCore {
     /**
      * Holds information about the AnimationStructure that the Animation uses to map the Sequences to the Attributes.
@@ -7492,7 +7491,7 @@ declare namespace FudgeCore {
      * It's the connection between the FUDGE rendered world and the Physics world.
      * For the physics to correctly get the transformations rotations need to be applied with from left = true.
      * Or rotations need to happen before scaling.
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
      */
     class ComponentRigidbody extends Component {
         #private;
@@ -7538,16 +7537,10 @@ declare namespace FudgeCore {
         /** The collision group this {@link Node} belongs to it's the default group normally which means it physically collides with every group besides trigger. */
         get collisionGroup(): COLLISION_GROUP;
         set collisionGroup(_value: COLLISION_GROUP);
-        /** Marking the Body as a trigger therefore not influencing the collision system but only sending triggerEvents */
-        get isTrigger(): boolean;
-        set isTrigger(_value: boolean);
         /**
-         * Returns the physical weight of the {@link Node}
+         * The physical weight of the body in kg.
          */
         get mass(): number;
-        /**
-         * Setting the physical weight of the {@link Node} in kg
-         */
         set mass(_value: number);
         /** Drag of linear movement. A Body does slow down even on a surface without friction. */
         get dampTranslation(): number;
@@ -7562,21 +7555,18 @@ declare namespace FudgeCore {
         get effectGravity(): number;
         set effectGravity(_effect: number);
         /**
-         * Get the friction of the rigidbody, which is the factor of sliding resistance of this rigidbody on surfaces
+         * The friction of the rigidbody, which is the factor of sliding resistance of this rigidbody on surfaces.
          */
         get friction(): number;
-        /**
-         * Set the friction of the rigidbody, which is the factor of  sliding resistance of this rigidbody on surfaces
-         */
         set friction(_friction: number);
         /**
-         * Get the restitution of the rigidbody, which is the factor of bounciness of this rigidbody on surfaces
+         * The restitution of the rigidbody, which is the factor of bounciness of this rigidbody on surfaces
          */
         get restitution(): number;
-        /**
-         * Set the restitution of the rigidbody, which is the factor of bounciness of this rigidbody on surfaces
-         */
         set restitution(_restitution: number);
+        /** Marking the Body as a trigger therefore not influencing the collision system but only sending triggerEvents */
+        get isTrigger(): boolean;
+        set isTrigger(_value: boolean);
         /**
          * Returns the rigidbody in the form the physics engine is using it, should not be used unless a functionality
          * is not provided through the FUDGE Integration.
@@ -7677,7 +7667,6 @@ declare namespace FudgeCore {
          * returning info about the hit. Provides the same functionality and information a regular raycast does but the ray is only testing against this specific body.
          */
         raycastThisBody(_origin: Vector3, _direction: Vector3, _length: number, _debugDraw?: boolean): RayHitInfo;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         /** Change properties by an associative array */
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
