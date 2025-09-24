@@ -680,28 +680,32 @@ declare namespace FudgeCore {
         order?: number;
     }
     /**
-     * Decorator to mark instance properties of a class for editor configuration and automatic serialization.
+     * Decorator to mark properties of a class for mutation and serialization.
+     * See {@link mutate} and {@link serialize} decorators for more information.
      *
      * **Example:**
      * ```typescript
-     * import ƒ = FudgeCore;
+     * import f = FudgeCore;
+     * import edit = f.edit;
      *
-     * export class MyScript extends ƒ.ComponentScript {
-     *   #size: number = 1;
+     * export class MyScript extends f.ComponentScript {
+     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
      *
-     *   @ƒ.edit(String) // display and serialize a string
+     *   @edit(String) // display and serialize a string
      *   public info: string;
      *
-     *   @ƒ.edit(ƒ.Vector3) // display and serialize a vector
-     *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+     *   @edit(f.Vector3) // display and serialize a vector
+     *   public position: f.Vector3 = new f.Vector3(1, 2, 3);
      *
-     *   @ƒ.edit(ƒ.Material) // display a material combo select element inside the editor and enable drag & drop to reference a material from the project. Serialize the material by referencing it in the project.
-     *   public resource: ƒ.Material;
+     *   @edit(f.Material) // display a material selector inside the editor and enable drag & drop to reference a material from the project. Serialize the material by referencing it in the project.
+     *   public resource: f.Material;
      *
-     *   @ƒ.edit(ƒ.Node) // display a node combo select element inside the editor and enable drag & drop to reference a node from the hierarchy. Serialize the node by its path in the hierarchy.
-     *   public reference: ƒ.Node
+     *   @edit(f.Node) // display a node selector inside the editor and enable drag & drop to reference a node from the hierarchy. Serialize the node by its path in the hierarchy.
+     *   public reference: f.Node;
      *
-     *   @ƒ.edit(Number) // display and serialize a number
+     *   #size: number = 1;
+     *
+     *   @edit(Number) // display and serialize a number
      *   public get size(): number {
      *     return this.#size;
      *   }
@@ -713,16 +717,75 @@ declare namespace FudgeCore {
      * }
      * ```
      *
-     * **Side effects:**
-     * - Invokes the {@link mutate} decorator on the property.
-     * - Invokes the {@link serialize} decorator on the property.
-     *
      * @author Jonas Plotzky, HFU, 2025
      */
     function edit<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     function edit<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void;
     function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    /**
+     * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
+     * See {@link mutateF} and {@link serializeF} decorators for more information.
+     *
+     * **Example:**
+     * ```typescript
+     * import f = FudgeCore;
+     * import editF = f.editF;
+     *
+     * export class MyClass {
+     *   public static subclasses: typeof MyClass[] = [];
+     * }
+     *
+     * export class MySubClassA extends MyClass { }
+     * export class MySubClassB extends MyClass { }
+     * MyClass.subclasses.push(MySubClassA, MySubClassB); // add subclasses
+     *
+     * export class MyScript extends f.ComponentScript {
+     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
+     *
+     *   @editF(MyClass) // display a combo select with the subclasses of MyClass in the editor and serialize
+     *   public myClass: typeof MyClass;
+     * }
+     * ```
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
     function editF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    /**
+     * Decorator to mark {@link SerializableResource resource} properties of a class for nested mutation and serialization.
+     * See {@link mutateNested} and {@link serializeNested} for more information.
+     *
+     * **Example:**
+     * ```typescript
+     * import f = FudgeCore;
+     * import edit = f.edit;
+     * import editNested = f.editNested;
+     *
+     * export class MyScript extends f.ComponentScript {
+     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
+     *
+     *   @edit(f.Material)
+     *   public material: f.Material;
+     *
+     *   @editNested(f.Material)
+     *   public nestedMaterial: f.Material;
+     *
+     *   public constructor() {
+     *     super();
+     *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
+     *
+     *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
+     *     f.Project.deregister(this.nestedMaterial);
+     *
+     *     // remove properties that are not needed
+     *     delete this.nestedMaterial.idResource;
+     *     delete this.nestedMaterial.name;
+     *   }
+     * }
+     * ```
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function editNested<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     /**
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
@@ -740,7 +803,6 @@ declare namespace FudgeCore {
     function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
     /**
      * Decorator to include properties in the {@link Mutator} of a class with explicit type information.
-     * Decorator to specify a type for a property of a {@link Mutable}.
      *
      * This allows the intended type of the property to be known by the editor (at runtime), making it:
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
@@ -748,8 +810,9 @@ declare namespace FudgeCore {
      *
      * To specify a function type (typeof `_type`) use the {@link mutateF} decorator.
      *
+     * To establish a property order in the mutator (editor), use the {@link order} decorator.
+     *
      * **Side effects:**
-     * - Invokes the {@link mutate} decorator.
      * - Invokes the {@link reference} decorator for `_type` {@link SerializableResource} or {@link Node}.
      * - Invokes the {@link select} decorator with default options for `_type` {@link SerializableResource}, {@link Node}.
      * @author Jonas Plotzky, HFU, 2024-2025
@@ -759,35 +822,22 @@ declare namespace FudgeCore {
     function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to specify a function type (typeof `_type`) for a property of a {@link Mutable}.
-     * See {@link mutate} decorator for more information.
      *
      * If the given `_type` has an iterable property `subclasses`, a combo select containing the subclasses will be displayed in the editor.
      *
-     * **Example**:
-     * ```typescript
-     * import ƒ = FudgeCore;
-     *
-     * export class MyClass {
-     *   public static subclasses: typeof MyClass[] = [];
-     * }
-     *
-     * export class MySubClassA extends MyClass {}
-     * export class MySubClassB extends MyClass {}
-     * MyClass.subclasses.push(MySubClassA, MySubClassB); // add subclasses
-     *
-     * export class MyScript extends ƒ.ComponentScript {
-     *   @ƒ.typeF(MyClass) // display a combo select with the subclasses of MyClass in the editor
-     *   public myClass: typeof MyClass;
-     * }
-     * ```
-     *
      * **Side effects:**
-     * - Invokes the {@link mutate} decorator.
      * - Invokes the {@link reference} decorator.
      * - Invokes the {@link select} decorator with default options.
      * @author Jonas Plotzky, HFU, 2025
      */
     function mutateF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    /**
+     * Decorator to mark {@link SerializableResource resource} properties of a class for nested mutation.
+     * The resource will be displayed nested within the containing object inside the editor.
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function mutateNested<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to mark properties of a {@link Mutable} as references. Reference properties are included in the {@link Mutator} (via {@link Mutable.getMutator}) as direct references to other objects regardless of their own type.
      * {@link Mutable.mutate} simply sets references similarly to how primitive values are set.
@@ -803,7 +853,7 @@ declare namespace FudgeCore {
      *
      * **Example**:
      * ```typescript
-     * import ƒ = FudgeCore;
+     * import f = FudgeCore;
      *
      * export class MyClass {
      *   public name: string; // MyClass instances will be displayed using their name
@@ -823,9 +873,9 @@ declare namespace FudgeCore {
      *   };
      * }
      *
-     * export class MyScript extends ƒ.ComponentScript {
-     *   @ƒ.select(getOptions) // display a combo select with the options returned by getOptions
-     *   @ƒ.type(MyClass) // no default select options for MyClass
+     * export class MyScript extends f.ComponentScript {
+     *   @f.select(getOptions) // display a combo select with the options returned by getOptions
+     *   @f.type(MyClass) // no default select options for MyClass
      *   public myOption: MyClass;
      * }
      * ```
@@ -841,34 +891,35 @@ declare namespace FudgeCore {
      *
      * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
      *
-     * **Serialization:**
      * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
      * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
      * - Primitives and enums will be serialized as is.
      * - {@link Serializable}s will be serialized nested.
-     * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+     * - {@link SerializableResource}s will be serialized via their resource id and fetched from the project when deserialized. To serialize nested, use the {@link serializeNested} decorator.
      * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
      *
      * **Example:**
      * ```typescript
-     * import ƒ = FudgeCore;
+     * import f = FudgeCore;
+     * import serialize = f.serialize;
      *
-     * export class MyScript extends ƒ.ComponentScript {
-     *   #size: number = 1;
+     * export class MyScript extends f.ComponentScript {
      *
-     *   @ƒ.serialize(String) // serialize a string
+     *   @serialize(String) // serialize a string
      *   public info: string;
      *
-     *   @ƒ.serialize(ƒ.Vector3) // serialize a vector
-     *   public position: ƒ.Vector3 = new ƒ.Vector3(1, 2, 3);
+     *   @serialize(f.Vector3) // serialize a vector
+     *   public position: f.Vector3 = new f.Vector3(1, 2, 3);
      *
-     *   @ƒ.serialize(ƒ.Material) // serialize a material by referencing it in the project
-     *   public resource: ƒ.Material;
+     *   @serialize(f.Material) // serialize a material by referencing it in the project
+     *   public resource: f.Material;
      *
-     *   @ƒ.serialize(ƒ.Node) // serialize a node by its path in the hierarchy
-     *   public reference: ƒ.Node
+     *   @serialize(f.Node) // serialize a node by its path in the hierarchy
+     *   public reference: f.Node;
      *
-     *   @ƒ.serialize(Number) // serialize a number
+     *   #size: number = 1;
+     *
+     *   @serialize(Number) // serialize a number
      *   public get size(): number {
      *     return this.#size;
      *   }
@@ -890,24 +941,60 @@ declare namespace FudgeCore {
      *
      * **Example**:
      * ```typescript
-     * import ƒ = FudgeCore;
+     * import f = FudgeCore;
+     * import serializeF = f.serializeF;
      *
      * export class SomeClass { }
      *
      * export function someFunction(): void { }
      *
-     * export class SomeScript extends ƒ.ComponentScript {
-     *   @ƒ.serializeF(SomeClass)
-     *   someClass: typeof SomeClass;
+     * export class SomeScript extends f.ComponentScript {
+     *   @serializeF(SomeClass)
+     *   public someClass: typeof SomeClass;
      *
-     *   @ƒ.serializeF(someFunction)
-     *   someFunction: typeof someFunction;
+     *   @serializeF(someFunction)
+     *   public someFunction: typeof someFunction;
      * }
      * ```
      *
      * @author Jonas Plotzky, HFU, 2025
      */
     function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
+    /**
+     * Decorator to mark {@link SerializableResource resource} properties of a {@link Serializable} for nested serialization.
+     * The resource will be serialized nested within the containing object rather than stored separately in the project.
+     *
+     * **Example:**
+     * ```typescript
+     * import f = FudgeCore;
+     * import serialize = f.serialize;
+     * import serializeNested = f.serializeNested;
+     *
+     * export class MyScript extends f.ComponentScript {
+     *
+     *   @serialize(f.Material) // serialize by reference (resource ID)
+     *   public material: f.Material;
+     *
+     *   @serializeNested(f.Material) // serialize nested
+     *   public nestedMaterial: f.Material;
+     *
+     *   public constructor() {
+     *     super();
+     *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
+     *
+     *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
+     *     f.Project.deregister(this.nestedMaterial);
+     *
+     *     // remove properties that are not needed
+     *     delete this.nestedMaterial.idResource;
+     *     delete this.nestedMaterial.name;
+     *   }
+     * }
+     * ```
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function serializeNested<T extends SerializableResource>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
     /**
      * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
      */

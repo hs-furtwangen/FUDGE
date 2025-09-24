@@ -6,12 +6,11 @@ namespace FudgeCore {
    * 
    * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
    * 
-   * **Serialization:**
    * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
    * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
    * - Primitives and enums will be serialized as is.
    * - {@link Serializable}s will be serialized nested. 
-   * - {@link SerializableResource}s will be serialized via their resource id and fetched with it from the project when deserialized.
+   * - {@link SerializableResource}s will be serialized via their resource id and fetched from the project when deserialized. To serialize nested, use the {@link serializeNested} decorator.
    * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
    * 
    * **Example:**
@@ -31,7 +30,7 @@ namespace FudgeCore {
    *   public resource: f.Material;
    *
    *   @serialize(f.Node) // serialize a node by its path in the hierarchy
-   *   public reference: f.Node
+   *   public reference: f.Node;
    * 
    *   #size: number = 1;
    *
@@ -98,9 +97,8 @@ namespace FudgeCore {
    * import serializeNested = f.serializeNested;
    *
    * export class MyScript extends f.ComponentScript {
-   *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
    *
-   *   @serialize(f.Material) // serialize by resource ID (reference)
+   *   @serialize(f.Material) // serialize by reference (resource ID)
    *   public material: f.Material;
    *
    *   @serializeNested(f.Material) // serialize nested
@@ -108,13 +106,14 @@ namespace FudgeCore {
    *
    *   public constructor() {
    *     super();
-   *
-   *     // create a new resource instance for nested serialization
    *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
    *     
    *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
    *     f.Project.deregister(this.nestedMaterial);
+   * 
+   *     // remove properties that are not needed
    *     delete this.nestedMaterial.idResource;
+   *     delete this.nestedMaterial.name;
    *   }
    * }
    * ```
