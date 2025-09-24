@@ -5037,9 +5037,7 @@ declare namespace FudgeCore {
         set time(_time: number);
         get timeScale(): number;
         set timeScale(_scale: number);
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutatorForAnimation(): MutatorForAnimation;
         private hndEvent;
         private update;
         private updateTimeScale;

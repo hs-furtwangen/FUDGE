@@ -13,19 +13,29 @@ namespace FudgeCore {
    * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
    * @author Jonas Plotzky, HFU, 2022-2025
    */
+  @orderFlat
   export class ComponentParticleSystem extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
-    @mutate(ParticleSystem)
+
+    @order(1)
+    @edit(ParticleSystem)
     public particleSystem: ParticleSystem;
+
     /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */
+    @order(6)
+    @edit(Boolean)
     public depthMask: boolean;
 
-    @mutate(BLEND)
+    @order(2)
+    @edit(BLEND)
     public blendMode: BLEND;
 
-    @mutate(PARTICLE_SYSTEM_PLAYMODE)
+    @order(3)
+    @edit(PARTICLE_SYSTEM_PLAYMODE)
     public playMode: PARTICLE_SYSTEM_PLAYMODE;
     
+    @order(5)
+    @edit(Number)
     public duration: number;
 
     /** @internal A texture filed with random numbers. Used by the render engine */
@@ -54,7 +64,8 @@ namespace FudgeCore {
     /**
      * Get the number of particles
      */
-    @mutate(Number)
+    @order(4)
+    @edit(Number)
     public get size(): number {
       return this.#size;
     }
@@ -100,40 +111,15 @@ namespace FudgeCore {
     @RenderInjectorComponentParticleSystem.decorate
     public deleteRenderData(): void {/* injected by RenderInjector*/ }
 
-    //#region transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        [super.constructor.name]: super.serialize(),
-        idParticleSystem: this.particleSystem?.idResource,
-        depthMask: this.depthMask,
-        blendMode: this.blendMode,
-        playMode: this.playMode,
-        duration: this.duration,
-        size: this.size
-      };
-
-      return serialization;
-    }
-
+    // TODO: backwards compatibility, remove in future versions
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
-      if (_serialization.idParticleSystem) this.particleSystem = <ParticleSystem>await Project.getResource(_serialization.idParticleSystem);
-      this.depthMask = _serialization.depthMask;
-      this.blendMode = _serialization.blendMode;
-      this.playMode = _serialization.playMode;
-      this.duration = _serialization.duration;
-      this.size = _serialization.size;
+      await super.deserialize(_serialization);
+
+      if (_serialization.idParticleSystem) 
+        this.particleSystem = <ParticleSystem>await Project.getResource(_serialization.idParticleSystem);
 
       return this;
     }
-
-    public getMutatorForAnimation(): MutatorForAnimation {
-      let mutator: MutatorForAnimation = <MutatorForAnimation>this.getMutator();
-      delete mutator.particleSystem;
-      delete mutator.size;
-      return mutator;
-    }
-    //#endregion
 
     private hndEvent = (_event: Event): void => {
       switch (_event.type) {
