@@ -208,8 +208,8 @@ namespace FudgeCore {
       let jointsToConnect: Joint[] = Physics.ƒactive.jointList;
       Physics.ƒactive.jointList = [];
       jointsToConnect.forEach((_joint: Joint): void => {
-        if (_joint.isConnected() == false)
-          if (_joint.isActive)
+        if (_joint.isConnected == false)
+          if (_joint.active)
             _joint.connect();
           else
             Physics.ƒactive.jointList.push(_joint);

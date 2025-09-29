@@ -1,7 +1,7 @@
 namespace FudgeCore {
   /**
-    * Base class for joints operating with exactly one axis
-    * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+   * Base class for joints operating with exactly one axis
+   * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
    */
   @orderFlat
   export abstract class JointAxial extends Joint {

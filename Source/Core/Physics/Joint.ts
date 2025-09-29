@@ -1,23 +1,22 @@
 namespace FudgeCore {
-  // TODO: use the new connection implementation for joints
-  // function getConnectOptions(this: Component): Record<string, Node> {
-  //   const options: Record<string, Node> = {};
-  //   for (const child of this.node.getChildren())
-  //     if (child.getComponent(ComponentRigidbody))
-  //       options[child.name] = child;
+  function getConnectOptions(this: Joint): Record<string, Node> {
+    const options: Record<string, Node> = {};
+    for (const child of this.node.getChildren())
+      if (child.getComponent(ComponentRigidbody))
+        options[child.name] = child;
 
-  //   return options;
-  // }
+    return options;
+  }
 
   /**
-     * Acts as the physical representation of a connection between two {@link Node}'s.
-     * The type of conncetion is defined by the subclasses like prismatic joint, cylinder joint etc.
-     * A Rigidbody on the {@link Node} that this component is added to is needed. Setting the connectedRigidbody and
-     * initializing the connection creates a physical connection between them. This differs from a connection through hierarchy
-     * in the node structure of fudge. Joints can have different DOF's (Degrees Of Freedom), 1 Axis that can either twist or swing is a degree of freedom.
-     * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
-     * @author Marko Fehrenbach, HFU 2020 | Jonas Plotzky, HFU, 2025
-     */
+   * Acts as the physical representation of a connection between two {@link Node}'s.
+   * The type of conncetion is defined by the subclasses like prismatic joint, cylinder joint etc.
+   * A Rigidbody on the {@link Node} that this component is added to is needed. Setting the connectedRigidbody and
+   * initializing the connection creates a physical connection between them. This differs from a connection through hierarchy
+   * in the node structure of fudge. Joints can have different DOF's (Degrees Of Freedom), 1 Axis that can either twist or swing is a degree of freedom.
+   * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
+   * @author Marko Fehrenbach, HFU 2020 | Jonas Plotzky, HFU, 2025
+   */
   @orderFlat
   export abstract class Joint extends Component {
     /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
@@ -37,8 +36,10 @@ namespace FudgeCore {
     #breakForce: number = 0;
     #breakTorque: number = 0;
 
+    // TODO: property exists solely for backwards compatibility, remove in future versions
     #nameChildToConnect: string = "";
-    // #connectedChild: Node;
+
+    #connectedChild: Node;
 
     protected abstract joint: OIMO.Joint;
     protected abstract config: OIMO.JointConfig;
@@ -58,6 +59,11 @@ namespace FudgeCore {
     }
 
     protected static registerSubclass(_subclass: typeof Joint): number { return Joint.subclasses.push(_subclass) - 1; }
+
+    /** Check if connection is dirty, so when either rb is changed disconnect and reconnect. Internally used no user interaction needed. */
+    public get isConnected(): boolean {
+      return this.#connected;
+    }
 
     /** Get/Set the first ComponentRigidbody of this connection. It should always be the one that this component is attached too in the sceneTree. */
     public get bodyAnchor(): ComponentRigidbody {
@@ -98,7 +104,7 @@ namespace FudgeCore {
 
     /**
      * The amount of force needed to break the JOINT, while rotating, in Newton. 0 equals unbreakable (default) 
-    */
+     */
     @order(4)
     @edit(Number)
     public get breakTorque(): number {
@@ -125,9 +131,9 @@ namespace FudgeCore {
     }
 
     /**
-      * If the two connected RigidBodies collide with eath other. (Default = false)
-      * On a welding joint the connected bodies should not be colliding with each other,
-      * for best results
+     * If the two connected RigidBodies collide with eath other. (Default = false)
+     * On a welding joint the connected bodies should not be colliding with each other,
+     * for best results
      */
     @order(1)
     @edit(Boolean)
@@ -141,43 +147,31 @@ namespace FudgeCore {
     }
 
     @order(2)
-    @edit(String)
-    protected get nameChildToConnect(): string {
-      return this.#nameChildToConnect;
+    @select(getConnectOptions)
+    @edit(Node)
+    protected get connectedChild(): Node {
+      return this.#connectedChild;
     }
 
-    protected set nameChildToConnect(_name: string) {
-      this.#nameChildToConnect = _name;
-      this.connectChild(_name);
+    protected set connectedChild(_node: Node) {
+      if (_node == null) {
+        this.#bodyAnchor = null;
+        this.#bodyTied = null;
+        this.disconnect();
+        this.dirtyStatus();
+        this.#connectedChild = _node;
+      }
+
+      if (this.connectNode(_node)) {
+        this.#connectedChild = _node;
+        return;
+      }
     }
-
-    // @order(2)
-    // @select(getConnectOptions)
-    // @edit(Node)
-    // protected get connectedChild(): Node {
-    //   return this.#connectedChild;
-    // }
-
-    // protected set connectedChild(_node: Node) {
-    //   if (_node == null) {
-    //     this.#bodyAnchor = null;
-    //     this.#bodyTied = null;
-    //     this.disconnect();
-    //     this.dirtyStatus();
-    //     this.#connectedChild = _node;
-    //   }
-
-    //   if (this.connectNode(_node)) {
-    //     this.#connectedChild = _node;
-    //     return;
-    //   }
-    // }
 
     /**
      * Connect a child node with the given name to the joint.
      */
     public connectChild(_name: string): void {
-      this.#nameChildToConnect = _name;
       if (!this.node)
         return;
 
@@ -192,7 +186,7 @@ namespace FudgeCore {
      * Connect the given node to the joint. Tieing its rigidbody to the nodes rigidbody this component is attached to.
      */
     public connectNode(_node: Node): boolean {
-      if (!_node || !this.node)
+      if (!this.node || !_node)
         return false;
 
       Debug.fudge(`${this.constructor.name} connected ${this.node.name} and ${_node.name}`);
@@ -210,11 +204,6 @@ namespace FudgeCore {
       return true;
     }
 
-    /** Check if connection is dirty, so when either rb is changed disconnect and reconnect. Internally used no user interaction needed. */
-    public isConnected(): boolean {
-      return this.#connected;
-    }
-
     /**
      * Initializing and connecting the two rigidbodies with the configured joint properties
      * is automatically called by the physics system. No user interaction needed.
@@ -222,8 +211,14 @@ namespace FudgeCore {
     public connect(): void {
       if (this.#connected == false) {
         if (!this.#bodyAnchor || !this.#bodyTied) {
-          if (this.#nameChildToConnect)
-            this.connectChild(this.#nameChildToConnect);
+
+          // TODO: backwards compatibility, remove in future versions
+          if (this.#nameChildToConnect && !this.#connectedChild)
+            this.#connectedChild = this.node.getChildByName(this.#nameChildToConnect);
+
+          if (this.#connectedChild)
+            this.connectNode(this.#connectedChild);
+
           return;
         }
 
@@ -252,13 +247,13 @@ namespace FudgeCore {
       return this.joint;
     }
 
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      this.connectChild(_serialization.nameChildToConnect);
+
+      // TODO: backwards compatibility, remove in future versions
+      if (_serialization.nameChildToConnect != undefined) 
+        this.#nameChildToConnect = _serialization.nameChildToConnect;
+
       return this;
     }
 

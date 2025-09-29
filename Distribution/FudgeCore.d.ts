@@ -3514,14 +3514,14 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * Acts as the physical representation of a connection between two {@link Node}'s.
-       * The type of conncetion is defined by the subclasses like prismatic joint, cylinder joint etc.
-       * A Rigidbody on the {@link Node} that this component is added to is needed. Setting the connectedRigidbody and
-       * initializing the connection creates a physical connection between them. This differs from a connection through hierarchy
-       * in the node structure of fudge. Joints can have different DOF's (Degrees Of Freedom), 1 Axis that can either twist or swing is a degree of freedom.
-       * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
-       * @author Marko Fehrenbach, HFU 2020 | Jonas Plotzky, HFU, 2025
-       */
+     * Acts as the physical representation of a connection between two {@link Node}'s.
+     * The type of conncetion is defined by the subclasses like prismatic joint, cylinder joint etc.
+     * A Rigidbody on the {@link Node} that this component is added to is needed. Setting the connectedRigidbody and
+     * initializing the connection creates a physical connection between them. This differs from a connection through hierarchy
+     * in the node structure of fudge. Joints can have different DOF's (Degrees Of Freedom), 1 Axis that can either twist or swing is a degree of freedom.
+     * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
+     * @author Marko Fehrenbach, HFU 2020 | Jonas Plotzky, HFU, 2025
+     */
     abstract class Joint extends Component {
         #private;
         /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
@@ -3534,6 +3534,8 @@ declare namespace FudgeCore {
         /** Create a joint connection between the two given RigidbodyComponents. */
         constructor(_bodyAnchor?: ComponentRigidbody, _bodyTied?: ComponentRigidbody);
         protected static registerSubclass(_subclass: typeof Joint): number;
+        /** Check if connection is dirty, so when either rb is changed disconnect and reconnect. Internally used no user interaction needed. */
+        get isConnected(): boolean;
         /** Get/Set the first ComponentRigidbody of this connection. It should always be the one that this component is attached too in the sceneTree. */
         get bodyAnchor(): ComponentRigidbody;
         set bodyAnchor(_cmpRB: ComponentRigidbody);
@@ -3547,7 +3549,7 @@ declare namespace FudgeCore {
         set anchor(_value: Vector3);
         /**
          * The amount of force needed to break the JOINT, while rotating, in Newton. 0 equals unbreakable (default)
-        */
+         */
         get breakTorque(): number;
         set breakTorque(_value: number);
         /**
@@ -3556,14 +3558,14 @@ declare namespace FudgeCore {
         get breakForce(): number;
         set breakForce(_value: number);
         /**
-          * If the two connected RigidBodies collide with eath other. (Default = false)
-          * On a welding joint the connected bodies should not be colliding with each other,
-          * for best results
+         * If the two connected RigidBodies collide with eath other. (Default = false)
+         * On a welding joint the connected bodies should not be colliding with each other,
+         * for best results
          */
         get internalCollision(): boolean;
         set internalCollision(_value: boolean);
-        protected get nameChildToConnect(): string;
-        protected set nameChildToConnect(_name: string);
+        protected get connectedChild(): Node;
+        protected set connectedChild(_node: Node);
         /**
          * Connect a child node with the given name to the joint.
          */
@@ -3572,8 +3574,6 @@ declare namespace FudgeCore {
          * Connect the given node to the joint. Tieing its rigidbody to the nodes rigidbody this component is attached to.
          */
         connectNode(_node: Node): boolean;
-        /** Check if connection is dirty, so when either rb is changed disconnect and reconnect. Internally used no user interaction needed. */
-        isConnected(): boolean;
         /**
          * Initializing and connecting the two rigidbodies with the configured joint properties
          * is automatically called by the physics system. No user interaction needed.
@@ -3589,7 +3589,6 @@ declare namespace FudgeCore {
          * Only to be used when functionality that is not added within FUDGE is needed.
         */
         getOimoJoint(): OIMO.Joint;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
@@ -3604,8 +3603,8 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-      * Base class for joints operating with exactly one axis
-      * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+     * Base class for joints operating with exactly one axis
+     * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
      */
     abstract class JointAxial extends Joint {
         #private;
@@ -7871,12 +7870,12 @@ declare namespace FudgeCore {
         get maxRotor(): number;
         set maxRotor(_value: number);
         /**
-          * The target rotational speed of the motor in m/s.
+         * The target rotational speed of the motor in m/s.
          */
         get rotorSpeed(): number;
         set rotorSpeed(_value: number);
         /**
-          * The maximum motor torque in newton meters. force <= 0 equals disabled.
+         * The maximum motor torque in newton meters. force <= 0 equals disabled.
          */
         get rotorTorque(): number;
         set rotorTorque(_value: number);
@@ -7886,14 +7885,14 @@ declare namespace FudgeCore {
         get minMotor(): number;
         set minMotor(_value: number);
         /**
-          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
+         * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
          */
         get maxMotor(): number;
         set maxMotor(_value: number);
         get motorSpeed(): number;
         set motorSpeed(_value: number);
         /**
-          * The maximum motor force in Newton. force <= 0 equals disabled.
+         * The maximum motor force in Newton. force <= 0 equals disabled.
          */
         get motorForce(): number;
         set motorForce(_value: number);
@@ -8212,12 +8211,12 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * A physical connection between two bodies with no movement.
-       * Best way to simulate convex objects like a chair seat connected to chair legs.
-       * The actual anchor point does not matter that much, only in very specific edge cases.
-       * Because welding means they simply do not disconnect. (unless you add Breakability)
+     * A physical connection between two bodies with no movement.
+     * Best way to simulate convex objects like a chair seat connected to chair legs.
+     * The actual anchor point does not matter that much, only in very specific edge cases.
+     * Because welding means they simply do not disconnect. (unless you add Breakability)
      * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-       */
+     */
     class JointWelding extends Joint {
         static readonly iSubclass: number;
         protected joint: OIMO.GenericJoint;
