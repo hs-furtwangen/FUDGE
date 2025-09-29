@@ -3589,7 +3589,6 @@ declare namespace FudgeCore {
          * Only to be used when functionality that is not added within FUDGE is needed.
         */
         getOimoJoint(): OIMO.Joint;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;

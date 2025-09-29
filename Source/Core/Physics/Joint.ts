@@ -1,9 +1,10 @@
 namespace FudgeCore {
+  // TODO: use the new connection implementation for joints
   // function getConnectOptions(this: Component): Record<string, Node> {
   //   const options: Record<string, Node> = {};
-  //   for (const descendant of this.node)
-  //     if (descendant.getComponent(ComponentRigidbody))
-  //       options[descendant.name] = descendant;
+  //   for (const child of this.node.getChildren())
+  //     if (child.getComponent(ComponentRigidbody))
+  //       options[child.name] = child;
 
   //   return options;
   // }
@@ -17,13 +18,13 @@ namespace FudgeCore {
      * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
      * @author Marko Fehrenbach, HFU 2020
      */
+  @orderFlat
   export abstract class Joint extends Component {
     /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
     public static readonly baseClass: typeof Joint = Joint;
     /** list of all the subclasses derived from this class, if they registered properly*/
     public static readonly subclasses: typeof Joint[] = [];
 
-    // public static readonly iSubclass: number = Component.registerSubclass(ComponentJoint);
     protected singleton: boolean = false; //Multiple joints can be attached to one Node
 
     #bodyAnchor: ComponentRigidbody;
@@ -37,7 +38,7 @@ namespace FudgeCore {
     #breakTorque: number = 0;
 
     #nameChildToConnect: string = "";
-    // #connection: Node;
+    // #connectedChild: Node;
 
     protected abstract joint: OIMO.Joint;
     protected abstract config: OIMO.JointConfig;
@@ -73,6 +74,7 @@ namespace FudgeCore {
     public get bodyTied(): ComponentRigidbody {
       return this.#bodyTied;
     }
+
     public set bodyTied(_cmpRB: ComponentRigidbody) {
       this.#bodyTied = _cmpRB;
       this.disconnect();
@@ -82,10 +84,12 @@ namespace FudgeCore {
     /**
      * The exact position where the two {@link Node}s are connected. When changed after initialization the joint needs to be reconnected.
      */
-    @mutate(Vector3)
+    @order(3)
+    @edit(Vector3)
     public get anchor(): Vector3 {
       return this.#anchor;
     }
+
     public set anchor(_value: Vector3) {
       this.#anchor = _value;
       this.disconnect();
@@ -95,10 +99,12 @@ namespace FudgeCore {
     /**
      * The amount of force needed to break the JOINT, while rotating, in Newton. 0 equals unbreakable (default) 
     */
-    @mutate(Number)
+    @order(4)
+    @edit(Number)
     public get breakTorque(): number {
       return this.#breakTorque;
     }
+
     public set breakTorque(_value: number) {
       this.#breakTorque = _value;
       this.joint?.setBreakTorque(this.#breakTorque);
@@ -107,10 +113,12 @@ namespace FudgeCore {
     /**
      * The amount of force needed to break the JOINT, in Newton. 0 equals unbreakable (default) 
      */
-    @mutate(Number)
+    @order(5)
+    @edit(Number)
     public get breakForce(): number {
       return this.#breakForce;
     }
+
     public set breakForce(_value: number) {
       this.#breakForce = _value;
       this.joint?.setBreakForce(this.#breakForce);
@@ -121,16 +129,19 @@ namespace FudgeCore {
       * On a welding joint the connected bodies should not be colliding with each other,
       * for best results
      */
-    @mutate(Boolean)
+    @order(1)
+    @edit(Boolean)
     public get internalCollision(): boolean {
       return this.#internalCollision;
     }
+
     public set internalCollision(_value: boolean) {
       this.#internalCollision = _value;
       this.joint?.setAllowCollision(this.#internalCollision);
     }
 
-    @mutate(String)
+    @order(2)
+    @edit(String)
     protected get nameChildToConnect(): string {
       return this.#nameChildToConnect;
     }
@@ -140,26 +151,24 @@ namespace FudgeCore {
       this.connectChild(_name);
     }
 
+    // @order(2)
     // @select(getConnectOptions)
-    // @type(Node)
-    // // @type(Node)
-    // protected get connection(): Node {
-    //   return this.#connection;
+    // @edit(Node)
+    // protected get connectedChild(): Node {
+    //   return this.#connectedChild;
     // }
 
-    // protected set connection(_node: Node) {
+    // protected set connectedChild(_node: Node) {
     //   if (_node == null) {
     //     this.#bodyAnchor = null;
-    //     this.#idBodyAnchor = -1;
     //     this.#bodyTied = null;
-    //     this.#idBodyTied = -1;
     //     this.disconnect();
     //     this.dirtyStatus();
-    //     this.#connection = _node;
+    //     this.#connectedChild = _node;
     //   }
 
     //   if (this.connectNode(_node)) {
-    //     this.#connection = _node;
+    //     this.#connectedChild = _node;
     //     return;
     //   }
     // }
@@ -243,12 +252,8 @@ namespace FudgeCore {
       return this.joint;
     }
 
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await this.mutate(_serialization);
+      await super.deserialize(_serialization);
       this.connectChild(_serialization.nameChildToConnect);
       return this;
     }
