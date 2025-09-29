@@ -8073,22 +8073,22 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * A physical connection between two bodies with three Degrees of Freedom, also known as ball and socket joint. Two bodies connected at their anchor but free to rotate.
-       * Used for things like the connection of bones in the human shoulder (if simplified, else better use JointRagdoll). Two RigidBodies need to be defined to use it. Only spring settings can be defined.
-       * 3 Degrees are swing horizontal, swing vertical and twist.
-       *
-       * ```text
-       *              JointHolder
-       *         z      bodyAnchor (e.g. Human-Shoulder)
-       *      y  ↑
-       *        \|          ───(●───
-       *  -x <---|---> x           bodyTied
-       *         |\                (e.g. Upper-Arm)
-       *         ↓ -y
-       *        -z
-       * ```
-       * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-       */
+     * A physical connection between two bodies with three Degrees of Freedom, also known as ball and socket joint. Two bodies connected at their anchor but free to rotate.
+     * Used for things like the connection of bones in the human shoulder (if simplified, else better use JointRagdoll). Two RigidBodies need to be defined to use it. Only spring settings can be defined.
+     * 3 Degrees are swing horizontal, swing vertical and twist.
+     *
+     * ```text
+     *              JointHolder
+     *         z      bodyAnchor (e.g. Human-Shoulder)
+     *      y  ↑
+     *        \|          ───(●───
+     *  -x <---|---> x           bodyTied
+     *         |\                (e.g. Upper-Arm)
+     *         ↓ -y
+     *        -z
+     * ```
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+     */
     class JointSpherical extends Joint {
         #private;
         static readonly iSubclass: number;
@@ -8102,7 +8102,7 @@ declare namespace FudgeCore {
         set springDamping(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequency(): number;
         set springFrequency(_value: number);
         protected constructJoint(): void;
@@ -8110,24 +8110,24 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * A physical connection between two bodies with two defined axis (normally e.g. (0,0,1) and rotation(1,0,0)), they share the same anchor and have free rotation, but transfer the twist.
-       * In reality used in cars to transfer the more stable stationary force on the velocity axis to the bumping, damped moving wheel. Two RigidBodies need to be defined to use it.
-       * The two motors can be defined for the two rotation axis, along with springs.
-       * ```text
-       *
-       *                      anchor - twist is transfered between bodies
-       *         z                   |
-       *         ↑            -----  |  ------------
-       *         |           |     | ↓ |            |
-       *  -x <---|---> x     |     | x |            |           e.g. wheel can still turn up/down,
-       *         |           |     |   |            |           left right but transfering it's rotation on to the wheel-axis.
-       *         ↓            -----     ------------
-       *        -z
-       *                 attachedRB          connectedRB
-       *                (e.g. wheel)       (e.g. wheel-axis)
-       * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-       */
+     * A physical connection between two bodies with two defined axis (normally e.g. (0,0,1) and rotation(1,0,0)), they share the same anchor and have free rotation, but transfer the twist.
+     * In reality used in cars to transfer the more stable stationary force on the velocity axis to the bumping, damped moving wheel. Two RigidBodies need to be defined to use it.
+     * The two motors can be defined for the two rotation axis, along with springs.
+     * ```text
+     *
+     *                      anchor - twist is transfered between bodies
+     *         z                   |
+     *         ↑            -----  |  ------------
+     *         |           |     | ↓ |            |
+     *  -x <---|---> x     |     | x |            |           e.g. wheel can still turn up/down,
+     *         |           |     |   |            |           left right but transfering it's rotation on to the wheel-axis.
+     *         ↓            -----     ------------
+     *        -z
+     *                 attachedRB          connectedRB
+     *                (e.g. wheel)       (e.g. wheel-axis)
+     * ```
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+     */
     class JointUniversal extends Joint {
         #private;
         static readonly iSubclass: number;
@@ -8141,9 +8141,9 @@ declare namespace FudgeCore {
         get axisFirst(): Vector3;
         set axisFirst(_value: Vector3);
         /**
-        * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
-        *  When changed after initialization the joint needs to be reconnected.
-        */
+         * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
+         *  When changed after initialization the joint needs to be reconnected.
+         */
         get axisSecond(): Vector3;
         set axisSecond(_value: Vector3);
         /**
@@ -8153,7 +8153,7 @@ declare namespace FudgeCore {
         set springDampingFirst(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequencyFirst(): number;
         set springFrequencyFirst(_value: number);
         /**
@@ -8163,21 +8163,21 @@ declare namespace FudgeCore {
         set springDampingSecond(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequencySecond(): number;
         set springFrequencySecond(_value: number);
         /**
-          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
-         */
-        get maxRotorFirst(): number;
-        set maxRotorFirst(_value: number);
-        /**
-          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
+         * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
          */
         get minRotorFirst(): number;
         set minRotorFirst(_value: number);
         /**
-          * The target rotational speed of the motor in radians/s.
+         * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+         */
+        get maxRotorFirst(): number;
+        set maxRotorFirst(_value: number);
+        /**
+         * The target rotational speed of the motor in radians/s.
          */
         get rotorSpeedFirst(): number;
         set rotorSpeedFirst(_value: number);
@@ -8187,22 +8187,22 @@ declare namespace FudgeCore {
         get rotorTorqueFirst(): number;
         set rotorTorqueFirst(_value: number);
         /**
+         * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
+         */
+        get minRotorSecond(): number;
+        set minRotorSecond(_value: number);
+        /**
          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
          */
         get maxRotorSecond(): number;
         set maxRotorSecond(_value: number);
         /**
-          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
-         */
-        get minRotorSecond(): number;
-        set minRotorSecond(_value: number);
-        /**
-          * The target rotational speed of the motor in radians/s.
+         * The target rotational speed of the motor in radians/s.
          */
         get rotorSpeedSecond(): number;
         set rotorSpeedSecond(_value: number);
         /**
-          * The maximum motor torque in newton meters. force <= 0 equals disabled.
+         * The maximum motor torque in newton meters. force <= 0 equals disabled.
          */
         get rotorTorqueSecond(): number;
         set rotorTorqueSecond(_value: number);

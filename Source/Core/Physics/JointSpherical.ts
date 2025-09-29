@@ -1,21 +1,21 @@
 namespace FudgeCore {
   /**
-     * A physical connection between two bodies with three Degrees of Freedom, also known as ball and socket joint. Two bodies connected at their anchor but free to rotate.
-     * Used for things like the connection of bones in the human shoulder (if simplified, else better use JointRagdoll). Two RigidBodies need to be defined to use it. Only spring settings can be defined.
-     * 3 Degrees are swing horizontal, swing vertical and twist.
-     * 
-     * ```text
-     *              JointHolder
-     *         z      bodyAnchor (e.g. Human-Shoulder)     
-     *      y  ↑          
-     *        \|          ───(●───
-     *  -x <---|---> x           bodyTied        
-     *         |\                (e.g. Upper-Arm) 
-     *         ↓ -y       
-     *        -z          
-     * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-     */
+   * A physical connection between two bodies with three Degrees of Freedom, also known as ball and socket joint. Two bodies connected at their anchor but free to rotate.
+   * Used for things like the connection of bones in the human shoulder (if simplified, else better use JointRagdoll). Two RigidBodies need to be defined to use it. Only spring settings can be defined.
+   * 3 Degrees are swing horizontal, swing vertical and twist.
+   * 
+   * ```text
+   *              JointHolder
+   *         z      bodyAnchor (e.g. Human-Shoulder)     
+   *      y  ↑          
+   *        \|          ───(●───
+   *  -x <---|---> x           bodyTied        
+   *         |\                (e.g. Upper-Arm) 
+   *         ↓ -y       
+   *        -z          
+   * ```
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+   */
   export class JointSpherical extends Joint {
     public static readonly iSubclass: number = Joint.registerSubclass(JointSpherical);
 
@@ -31,15 +31,14 @@ namespace FudgeCore {
       this.anchor = new Vector3(_localAnchor.x, _localAnchor.y, _localAnchor.z);
     }
 
-    //#region Get/Set transfor of fudge properties to the physics engine
-
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @mutate(Number)
+    @edit(Number)
     public get springDamping(): number {
       return this.#springDamping;
     }
+
     public set springDamping(_value: number) {
       this.#springDamping = _value;
       if (this.joint != null) this.joint.getSpringDamper().dampingRatio = _value;
@@ -47,16 +46,16 @@ namespace FudgeCore {
 
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-    */
-    @mutate(Number)
+     */
+    @edit(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }
+
     public set springFrequency(_value: number) {
       this.#springFrequency = _value;
       if (this.joint != null) this.joint.getSpringDamper().frequency = _value;
     }
-    //#endregion
 
     protected constructJoint(): void {
       this.#springDamper = new OIMO.SpringDamper().setSpring(this.springFrequency, this.springDamping);
