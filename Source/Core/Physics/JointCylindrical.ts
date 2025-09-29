@@ -124,7 +124,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The target rotational speed of the motor in m/s. 
+     * The target rotational speed of the motor in m/s. 
      */
     @order(18)
     @edit(Number)
@@ -138,7 +138,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The maximum motor torque in newton meters. force <= 0 equals disabled. 
+     * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
     @order(19)
     @edit(Number)
@@ -165,7 +165,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
+     * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
      */
     public override get maxMotor(): number {
       return super.maxMotor;
@@ -188,7 +188,7 @@ namespace FudgeCore {
     }
 
     /**
-      * The maximum motor force in Newton. force <= 0 equals disabled. 
+     * The maximum motor force in Newton. force <= 0 equals disabled. 
      */
     @order(9.5)
     @edit(Number)

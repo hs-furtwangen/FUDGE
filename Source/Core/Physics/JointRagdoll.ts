@@ -33,8 +33,8 @@ namespace FudgeCore {
     #springDampingSwing: number = 0;
     #springFrequencySwing: number = 0;
 
-    #maxMotorTwist: number = 360 * Calc.deg2rad;
     #minMotorTwist: number = 0;
+    #maxMotorTwist: number = 360 * Calc.deg2rad;
     #motorTorqueTwist: number = 0;
     #motorSpeedTwist: number = 0;
 

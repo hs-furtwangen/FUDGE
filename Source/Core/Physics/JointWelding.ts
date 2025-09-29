@@ -1,11 +1,11 @@
 namespace FudgeCore {
   /**
-     * A physical connection between two bodies with no movement. 
-     * Best way to simulate convex objects like a chair seat connected to chair legs.
-     * The actual anchor point does not matter that much, only in very specific edge cases.
-     * Because welding means they simply do not disconnect. (unless you add Breakability)
+   * A physical connection between two bodies with no movement. 
+   * Best way to simulate convex objects like a chair seat connected to chair legs.
+   * The actual anchor point does not matter that much, only in very specific edge cases.
+   * Because welding means they simply do not disconnect. (unless you add Breakability)
    * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-     */
+   */
   export class JointWelding extends Joint {
     public static readonly iSubclass: number = Joint.registerSubclass(JointWelding);
 
@@ -17,7 +17,6 @@ namespace FudgeCore {
 
       this.anchor = new Vector3(_localAnchor.x, _localAnchor.y, _localAnchor.z);
     }
-    //#endregion
 
     protected constructJoint(): void {
       this.config = new OIMO.GenericJointConfig();
