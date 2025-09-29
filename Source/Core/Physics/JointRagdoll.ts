@@ -1,26 +1,26 @@
 namespace FudgeCore {
   /**
-    * A physical connection between two bodies, designed to simulate behaviour within a real body. It has two axis, a swing and twist axis, and also the perpendicular axis, 
-    * similar to a Spherical joint, but more restrictive in it's angles and only two degrees of freedom. Two RigidBodies need to be defined to use it. Mostly used to create humanlike joints that behave like a 
-    * lifeless body.
-    * ```text        
-    *                  
-    *                      anchor - it can twist on one axis and swing on another
-    *                            │
-    *         z            ┌───┐ │ ┌───┐
-    *         ↑            │   │ ↓ │   │        e.g. z = TwistAxis, it can rotate in-itself around this axis 
-    *    -x ←─┼─→ x        │   │ x │   │        e.g. x = SwingAxis, it can rotate anchored around the base on this axis   
-    *         ↓            │   │   │   │           
-    *        -z            └───┘   └───┘         e.g. you can twist the leg in-itself to a certain degree,
-    *                                                     but also rotate it forward/backward/left/right to a certain degree
-    *                bodyAnchor          bodyTied
-    *              (e.g. pelvis)         (e.g. upper-leg)
-    * 
-    * ```
-    * Twist equals a rotation around a point without moving on an axis.
-    * Swing equals a rotation on a point with a moving local axis.
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-    */
+   * A physical connection between two bodies, designed to simulate behaviour within a real body. It has two axis, a swing and twist axis, and also the perpendicular axis, 
+   * similar to a Spherical joint, but more restrictive in it's angles and only two degrees of freedom. Two RigidBodies need to be defined to use it. Mostly used to create humanlike joints that behave like a 
+   * lifeless body.
+   * ```text        
+   *                  
+   *                      anchor - it can twist on one axis and swing on another
+   *                            │
+   *         z            ┌───┐ │ ┌───┐
+   *         ↑            │   │ ↓ │   │        e.g. z = TwistAxis, it can rotate in-itself around this axis 
+   *    -x ←─┼─→ x        │   │ x │   │        e.g. x = SwingAxis, it can rotate anchored around the base on this axis   
+   *         ↓            │   │   │   │           
+   *        -z            └───┘   └───┘         e.g. you can twist the leg in-itself to a certain degree,
+   *                                                     but also rotate it forward/backward/left/right to a certain degree
+   *                bodyAnchor          bodyTied
+   *              (e.g. pelvis)         (e.g. upper-leg)
+   * 
+   * ```
+   * Twist equals a rotation around a point without moving on an axis.
+   * Swing equals a rotation on a point with a moving local axis.
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+   */
   export class JointRagdoll extends Joint {
     public static readonly iSubclass: number = Joint.registerSubclass(JointRagdoll);
 

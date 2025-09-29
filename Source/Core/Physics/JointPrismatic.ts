@@ -1,19 +1,20 @@
 namespace FudgeCore {
   /**
-     * A physical connection between two bodies with a defined axe movement.
-     * Used to create a sliding joint along one axis. Two RigidBodies need to be defined to use it.
-     * A motor can be defined to move the connected along the defined axis. Great to construct standard springs or physical sliders.
-     * 
-     * ```text
-     *          JointHolder - bodyAnchor
-     *                    ┌───┐
-     *                    │   │
-     *           <────────│   │──────> tied body, sliding on one Axis, 1 Degree of Freedom
-     *                    │   │
-     *                    └───┘
-     * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-     */
+   * A physical connection between two bodies with a defined axe movement.
+   * Used to create a sliding joint along one axis. Two RigidBodies need to be defined to use it.
+   * A motor can be defined to move the connected along the defined axis. Great to construct standard springs or physical sliders.
+   * 
+   * ```text
+   *          JointHolder - bodyAnchor
+   *                    ┌───┐
+   *                    │   │
+   *           <────────│   │──────> tied body, sliding on one Axis, 1 Degree of Freedom
+   *                    │   │
+   *                    └───┘
+   * ```
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+   */
+  @orderFlat
   export class JointPrismatic extends JointAxial {
     public static readonly iSubclass: number = Joint.registerSubclass(JointPrismatic);
 
@@ -31,19 +32,20 @@ namespace FudgeCore {
       this.maxMotor = 10;
       this.minMotor = -10;
     }
-    //#region Get/Set transfor of fudge properties to the physics engine
+
     /**
-      * The maximum motor force in Newton. force <= 0 equals disabled. This is the force that the motor is using to hold the position, or reach it if a motorSpeed is defined.
+     * The maximum motor force in Newton. force <= 0 equals disabled. This is the force that the motor is using to hold the position, or reach it if a motorSpeed is defined.
      */
-    @mutate(Number)
+    @order(9.5)
+    @edit(Number)
     public get motorForce(): number {
       return this.#motorForce;
     }
+
     public set motorForce(_value: number) {
       this.#motorForce = _value;
       if (this.joint != null) this.joint.getLimitMotor().motorForce = _value;
     }
-    //#endregion
 
     /** Actual creation of a joint in the OimoPhysics system */
     protected constructJoint(): void {

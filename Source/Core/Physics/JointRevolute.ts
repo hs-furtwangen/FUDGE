@@ -1,22 +1,23 @@
 namespace FudgeCore {
   /**
-     * A physical connection between two bodies with a defined axe of rotation. Also known as HINGE joint.
-     * Two RigidBodies need to be defined to use it. A motor can be defined to rotate the connected along the defined axis.
-     * 
-     * ```text        
-     *                  rotation axis, 1st Degree of freedom
-     *                    ↑
-     *               ┌───┐│┌────┐     
-     *               │   │││    │  
-     *               │   │││    │ 
-     *               │   │││    │ 
-     *               └───┘│└────┘
-     *                    │   
-     *      bodyAnchor         bodyTied
-     *   (e.g. Doorhinge)       (e.g. Door)
-     * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-     */
+   * A physical connection between two bodies with a defined axe of rotation. Also known as HINGE joint.
+   * Two RigidBodies need to be defined to use it. A motor can be defined to rotate the connected along the defined axis.
+   * 
+   * ```text        
+   *                  rotation axis, 1st Degree of freedom
+   *                    ↑
+   *               ┌───┐│┌────┐     
+   *               │   │││    │  
+   *               │   │││    │ 
+   *               │   │││    │ 
+   *               └───┘│└────┘
+   *                    │   
+   *      bodyAnchor         bodyTied
+   *   (e.g. Doorhinge)       (e.g. Door)
+   * ```
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+   */
+  @orderFlat
   export class JointRevolute extends JointAxial {
     public static readonly iSubclass: number = Joint.registerSubclass(JointRevolute);
 
@@ -34,23 +35,12 @@ namespace FudgeCore {
     }
 
     /**
-      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
-     */
-    public override get maxMotor(): number {
-      return super.maxMotor;
-    }
-    public override set maxMotor(_value: number) {
-      super.maxMotor = _value;
-      _value *= Calc.deg2rad;
-      if (this.joint)
-        this.joint.getLimitMotor().upperLimit = _value;
-    }
-    /**
-      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
+     * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
     public override get minMotor(): number {
       return super.minMotor;
     }
+    
     public override set minMotor(_value: number) {
       super.minMotor = _value;
       if (this.joint)
@@ -58,12 +48,28 @@ namespace FudgeCore {
     }
 
     /**
-      * The maximum motor force in newton meters. force <= 0 equals disabled. 
+     * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
-    @mutate(Number)
+    public override get maxMotor(): number {
+      return super.maxMotor;
+    }
+
+    public override set maxMotor(_value: number) {
+      super.maxMotor = _value;
+      _value *= Calc.deg2rad;
+      if (this.joint)
+        this.joint.getLimitMotor().upperLimit = _value;
+    }
+
+    /**
+     * The maximum motor force in newton meters. force <= 0 equals disabled. 
+     */
+    @order(9.5)
+    @edit(Number)
     public get motorTorque(): number {
       return this.#motorTorque;
     }
+
     public set motorTorque(_value: number) {
       this.#motorTorque = _value;
       if (this.joint != null) this.joint.getLimitMotor().motorTorque = _value;

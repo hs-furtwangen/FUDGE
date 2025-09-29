@@ -7901,20 +7901,20 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * A physical connection between two bodies with a defined axe movement.
-       * Used to create a sliding joint along one axis. Two RigidBodies need to be defined to use it.
-       * A motor can be defined to move the connected along the defined axis. Great to construct standard springs or physical sliders.
-       *
-       * ```text
-       *          JointHolder - bodyAnchor
-       *                    ┌───┐
-       *                    │   │
-       *           <────────│   │──────> tied body, sliding on one Axis, 1 Degree of Freedom
-       *                    │   │
-       *                    └───┘
-       * ```
-       * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-       */
+     * A physical connection between two bodies with a defined axe movement.
+     * Used to create a sliding joint along one axis. Two RigidBodies need to be defined to use it.
+     * A motor can be defined to move the connected along the defined axis. Great to construct standard springs or physical sliders.
+     *
+     * ```text
+     *          JointHolder - bodyAnchor
+     *                    ┌───┐
+     *                    │   │
+     *           <────────│   │──────> tied body, sliding on one Axis, 1 Degree of Freedom
+     *                    │   │
+     *                    └───┘
+     * ```
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+     */
     class JointPrismatic extends JointAxial {
         #private;
         static readonly iSubclass: number;
@@ -7924,7 +7924,7 @@ declare namespace FudgeCore {
         /** Creating a prismatic joint between two ComponentRigidbodies only moving on one axis bound on a local anchorpoint. */
         constructor(_bodyAnchor?: ComponentRigidbody, _bodyTied?: ComponentRigidbody, _axis?: Vector3, _localAnchor?: Vector3);
         /**
-          * The maximum motor force in Newton. force <= 0 equals disabled. This is the force that the motor is using to hold the position, or reach it if a motorSpeed is defined.
+         * The maximum motor force in Newton. force <= 0 equals disabled. This is the force that the motor is using to hold the position, or reach it if a motorSpeed is defined.
          */
         get motorForce(): number;
         set motorForce(_value: number);
@@ -7934,27 +7934,27 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-      * A physical connection between two bodies, designed to simulate behaviour within a real body. It has two axis, a swing and twist axis, and also the perpendicular axis,
-      * similar to a Spherical joint, but more restrictive in it's angles and only two degrees of freedom. Two RigidBodies need to be defined to use it. Mostly used to create humanlike joints that behave like a
-      * lifeless body.
-      * ```text
-      *
-      *                      anchor - it can twist on one axis and swing on another
-      *                            │
-      *         z            ┌───┐ │ ┌───┐
-      *         ↑            │   │ ↓ │   │        e.g. z = TwistAxis, it can rotate in-itself around this axis
-      *    -x ←─┼─→ x        │   │ x │   │        e.g. x = SwingAxis, it can rotate anchored around the base on this axis
-      *         ↓            │   │   │   │
-      *        -z            └───┘   └───┘         e.g. you can twist the leg in-itself to a certain degree,
-      *                                                     but also rotate it forward/backward/left/right to a certain degree
-      *                bodyAnchor          bodyTied
-      *              (e.g. pelvis)         (e.g. upper-leg)
-      *
-      * ```
-      * Twist equals a rotation around a point without moving on an axis.
-      * Swing equals a rotation on a point with a moving local axis.
-       * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-      */
+     * A physical connection between two bodies, designed to simulate behaviour within a real body. It has two axis, a swing and twist axis, and also the perpendicular axis,
+     * similar to a Spherical joint, but more restrictive in it's angles and only two degrees of freedom. Two RigidBodies need to be defined to use it. Mostly used to create humanlike joints that behave like a
+     * lifeless body.
+     * ```text
+     *
+     *                      anchor - it can twist on one axis and swing on another
+     *                            │
+     *         z            ┌───┐ │ ┌───┐
+     *         ↑            │   │ ↓ │   │        e.g. z = TwistAxis, it can rotate in-itself around this axis
+     *    -x ←─┼─→ x        │   │ x │   │        e.g. x = SwingAxis, it can rotate anchored around the base on this axis
+     *         ↓            │   │   │   │
+     *        -z            └───┘   └───┘         e.g. you can twist the leg in-itself to a certain degree,
+     *                                                     but also rotate it forward/backward/left/right to a certain degree
+     *                bodyAnchor          bodyTied
+     *              (e.g. pelvis)         (e.g. upper-leg)
+     *
+     * ```
+     * Twist equals a rotation around a point without moving on an axis.
+     * Swing equals a rotation on a point with a moving local axis.
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+     */
     class JointRagdoll extends Joint {
         #private;
         static readonly iSubclass: number;
@@ -8029,23 +8029,23 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * A physical connection between two bodies with a defined axe of rotation. Also known as HINGE joint.
-       * Two RigidBodies need to be defined to use it. A motor can be defined to rotate the connected along the defined axis.
-       *
-       * ```text
-       *                  rotation axis, 1st Degree of freedom
-       *                    ↑
-       *               ┌───┐│┌────┐
-       *               │   │││    │
-       *               │   │││    │
-       *               │   │││    │
-       *               └───┘│└────┘
-       *                    │
-       *      bodyAnchor         bodyTied
-       *   (e.g. Doorhinge)       (e.g. Door)
-       * ```
-       * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-       */
+     * A physical connection between two bodies with a defined axe of rotation. Also known as HINGE joint.
+     * Two RigidBodies need to be defined to use it. A motor can be defined to rotate the connected along the defined axis.
+     *
+     * ```text
+     *                  rotation axis, 1st Degree of freedom
+     *                    ↑
+     *               ┌───┐│┌────┐
+     *               │   │││    │
+     *               │   │││    │
+     *               │   │││    │
+     *               └───┘│└────┘
+     *                    │
+     *      bodyAnchor         bodyTied
+     *   (e.g. Doorhinge)       (e.g. Door)
+     * ```
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+     */
     class JointRevolute extends JointAxial {
         #private;
         static readonly iSubclass: number;
@@ -8053,17 +8053,17 @@ declare namespace FudgeCore {
         protected config: OIMO.RevoluteJointConfig;
         constructor(_bodyAnchor?: ComponentRigidbody, _bodyTied?: ComponentRigidbody, _axis?: Vector3, _localAnchor?: Vector3);
         /**
-          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
-         */
-        get maxMotor(): number;
-        set maxMotor(_value: number);
-        /**
-          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
+         * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
          */
         get minMotor(): number;
         set minMotor(_value: number);
         /**
-          * The maximum motor force in newton meters. force <= 0 equals disabled.
+         * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+         */
+        get maxMotor(): number;
+        set maxMotor(_value: number);
+        /**
+         * The maximum motor force in newton meters. force <= 0 equals disabled.
          */
         get motorTorque(): number;
         set motorTorque(_value: number);
