@@ -16,7 +16,7 @@ namespace FudgeCore {
      * initializing the connection creates a physical connection between them. This differs from a connection through hierarchy
      * in the node structure of fudge. Joints can have different DOF's (Degrees Of Freedom), 1 Axis that can either twist or swing is a degree of freedom.
      * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
-     * @author Marko Fehrenbach, HFU 2020
+     * @author Marko Fehrenbach, HFU 2020 | Jonas Plotzky, HFU, 2025
      */
   @orderFlat
   export abstract class Joint extends Component {

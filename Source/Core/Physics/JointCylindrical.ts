@@ -11,8 +11,9 @@ namespace FudgeCore {
    *                    │   │        rotating around axis = 2nd degree of freedom 
    *                    └───┘
    * ```  
-   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export class JointCylindrical extends JointAxial {
     public static readonly iSubclass: number = Joint.registerSubclass(JointCylindrical);
 
@@ -43,9 +44,11 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
+    @order(12)
     public override get springDamping(): number {
       return super.springDamping;
     }
+
     public override set springDamping(_value: number) {
       super.springDamping = _value;
       if (this.joint != null) this.joint.getTranslationalSpringDamper().dampingRatio = _value;
@@ -53,22 +56,26 @@ namespace FudgeCore {
 
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-    */
+     */
+    @order(13)
     public override get springFrequency(): number {
       return super.springFrequency;
     }
+
     public override set springFrequency(_value: number) {
       super.springFrequency = _value;
       if (this.joint != null) this.joint.getTranslationalSpringDamper().frequency = _value;
     }
 
     /**
-    * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
-    */
-    @mutate(Number)
+     * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
+     */
+    @order(14)
+    @edit(Number)
     public get springDampingRotation(): number {
       return this.#springDampingRotation;
     }
+
     public set springDampingRotation(_value: number) {
       this.#springDampingRotation = _value;
       if (this.joint != null) this.joint.getRotationalSpringDamper().dampingRatio = _value;
@@ -76,60 +83,85 @@ namespace FudgeCore {
 
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. Influencing TORQUE / ROTATION
-    */
-    @mutate(Number)
+     */
+    @order(15)
+    @edit(Number)
     public get springFrequencyRotation(): number {
       return this.#springFrequencyRotation;
     }
+
     public set springFrequencyRotation(_value: number) {
       this.#springFrequencyRotation = _value;
       if (this.joint != null) this.joint.getRotationalSpringDamper().frequency = _value;
     }
 
-
     /**
-      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+     * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    @mutate(Number)
-    public get maxRotor(): number {
-      return this.#maxRotor;
-    }
-    public set maxRotor(_value: number) {
-      this.#maxRotor = _value;
-      if (this.joint != null) this.joint.getRotationalLimitMotor().upperLimit = _value * Calc.deg2rad;
-    }
-    /**
-      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
-     */
-    @mutate(Number)
+    @order(16)
+    @edit(Number)
     public get minRotor(): number {
       return this.#minRotor;
     }
+
     public set minRotor(_value: number) {
       this.#minRotor = _value;
       if (this.joint != null) this.joint.getRotationalLimitMotor().lowerLimit = _value * Calc.deg2rad;
     }
+
+    /**
+     * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+     */
+    @order(17)
+    @edit(Number)
+    public get maxRotor(): number {
+      return this.#maxRotor;
+    }
+
+    public set maxRotor(_value: number) {
+      this.#maxRotor = _value;
+      if (this.joint != null) this.joint.getRotationalLimitMotor().upperLimit = _value * Calc.deg2rad;
+    }
+
     /**
       * The target rotational speed of the motor in m/s. 
      */
-    @mutate(Number)
+    @order(18)
+    @edit(Number)
     public get rotorSpeed(): number {
       return this.#rotorSpeed;
     }
+
     public set rotorSpeed(_value: number) {
       this.#rotorSpeed = _value;
       if (this.joint != null) this.joint.getRotationalLimitMotor().motorSpeed = _value;
     }
+
     /**
       * The maximum motor torque in newton meters. force <= 0 equals disabled. 
      */
-    @mutate(Number)
+    @order(19)
+    @edit(Number)
     public get rotorTorque(): number {
       return this.#rotorTorque;
     }
+
     public set rotorTorque(_value: number) {
       this.#rotorTorque = _value;
       if (this.joint != null) this.joint.getRotationalLimitMotor().motorTorque = _value;
+    }
+
+    /**
+     * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
+     */
+    public override get minMotor(): number {
+      return super.minMotor;
+    }
+
+    public override set minMotor(_value: number) {
+      super.minMotor = _value;
+      if (this.joint != null)
+        this.joint.getTranslationalLimitMotor().lowerLimit = _value;
     }
 
     /**
@@ -138,26 +170,17 @@ namespace FudgeCore {
     public override get maxMotor(): number {
       return super.maxMotor;
     }
+
     public override set maxMotor(_value: number) {
       super.maxMotor = _value;
       if (this.joint != null)
         this.joint.getTranslationalLimitMotor().upperLimit = _value;
     }
-    /**
-      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
-     */
-    public override get minMotor(): number {
-      return super.minMotor;
-    }
-    public override set minMotor(_value: number) {
-      super.minMotor = _value;
-      if (this.joint != null)
-        this.joint.getTranslationalLimitMotor().lowerLimit = _value;
-    }
 
     public override get motorSpeed(): number {
       return super.motorSpeed;
     }
+
     public override set motorSpeed(_value: number) {
       super.motorSpeed = _value;
       if (this.joint != null)
@@ -167,10 +190,12 @@ namespace FudgeCore {
     /**
       * The maximum motor force in Newton. force <= 0 equals disabled. 
      */
-    @mutate(Number)
+    @order(9.5)
+    @edit(Number)
     public get motorForce(): number {
       return this.#motorForce;
     }
+
     public set motorForce(_value: number) {
       this.#motorForce = _value;
       if (this.joint != null) this.joint.getTranslationalLimitMotor().motorForce = _value;

@@ -3520,7 +3520,7 @@ declare namespace FudgeCore {
        * initializing the connection creates a physical connection between them. This differs from a connection through hierarchy
        * in the node structure of fudge. Joints can have different DOF's (Degrees Of Freedom), 1 Axis that can either twist or swing is a degree of freedom.
        * A joint typically consists of a motor that limits movement/rotation or is activly trying to move to a limit. And a spring which defines the rigidity.
-       * @author Marko Fehrenbach, HFU 2020
+       * @author Marko Fehrenbach, HFU 2020 | Jonas Plotzky, HFU, 2025
        */
     abstract class Joint extends Component {
         #private;
@@ -3603,8 +3603,8 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-       * Base class for joints operating with exactly one axis
-       * @author Jirka Dell'Oro-Friedl, HFU, 2021
+      * Base class for joints operating with exactly one axis
+      * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
      */
     abstract class JointAxial extends Joint {
         #private;
@@ -3618,15 +3618,15 @@ declare namespace FudgeCore {
         get axis(): Vector3;
         set axis(_value: Vector3);
         /**
-          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
-         */
-        get maxMotor(): number;
-        set maxMotor(_value: number);
-        /**
-          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
+         * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
          */
         get minMotor(): number;
         set minMotor(_value: number);
+        /**
+         * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
+         */
+        get maxMotor(): number;
+        set maxMotor(_value: number);
         /**
          * The target speed of the motor in m/s.
          */
@@ -3639,7 +3639,7 @@ declare namespace FudgeCore {
         set springDamping(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequency(): number;
         set springFrequency(_value: number);
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
@@ -7829,7 +7829,7 @@ declare namespace FudgeCore {
      *                    │   │        rotating around axis = 2nd degree of freedom
      *                    └───┘
      * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
      */
     class JointCylindrical extends JointAxial {
         #private;
@@ -7846,29 +7846,29 @@ declare namespace FudgeCore {
         set springDamping(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequency(): number;
         set springFrequency(_value: number);
         /**
-        * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
-        */
+         * The damping of the spring. 1 equals completly damped. Influencing TORQUE / ROTATION
+         */
         get springDampingRotation(): number;
         set springDampingRotation(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. Influencing TORQUE / ROTATION
-        */
+         */
         get springFrequencyRotation(): number;
         set springFrequencyRotation(_value: number);
         /**
-          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
-         */
-        get maxRotor(): number;
-        set maxRotor(_value: number);
-        /**
-          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
+         * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
          */
         get minRotor(): number;
         set minRotor(_value: number);
+        /**
+         * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+         */
+        get maxRotor(): number;
+        set maxRotor(_value: number);
         /**
           * The target rotational speed of the motor in m/s.
          */
@@ -7880,15 +7880,15 @@ declare namespace FudgeCore {
         get rotorTorque(): number;
         set rotorTorque(_value: number);
         /**
+         * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
+         */
+        get minMotor(): number;
+        set minMotor(_value: number);
+        /**
           * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
          */
         get maxMotor(): number;
         set maxMotor(_value: number);
-        /**
-          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
-         */
-        get minMotor(): number;
-        set minMotor(_value: number);
         get motorSpeed(): number;
         set motorSpeed(_value: number);
         /**

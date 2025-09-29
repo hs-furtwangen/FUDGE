@@ -1,8 +1,9 @@
 namespace FudgeCore {
   /**
-     * Base class for joints operating with exactly one axis
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+    * Base class for joints operating with exactly one axis
+    * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export abstract class JointAxial extends Joint {
     protected springDamper: OIMO.SpringDamper;
 
@@ -28,10 +29,12 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
-    @mutate(Vector3)
+    @order(6)
+    @edit(Vector3)
     public get axis(): Vector3 {
       return this.#axis;
     }
+
     public set axis(_value: Vector3) {
       this.#axis = _value;
       this.disconnect();
@@ -39,9 +42,24 @@ namespace FudgeCore {
     }
 
     /**
-      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
+     * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
      */
-    @mutate(Number)
+    @order(7)
+    @edit(Number)
+    public get minMotor(): number {
+      return this.#minMotor;
+    }
+    public set minMotor(_value: number) {
+      this.#minMotor = _value;
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().lowerLimit = _value;
+    }
+
+    /**
+     * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
+     */
+    @order(8)
+    @edit(Number)
     public get maxMotor(): number {
       return this.#maxMotor;
     }
@@ -53,22 +71,10 @@ namespace FudgeCore {
     }
 
     /**
-      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
-     */
-    @mutate(Number)
-    public get minMotor(): number {
-      return this.#minMotor;
-    }
-    public set minMotor(_value: number) {
-      this.#minMotor = _value;
-      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
-        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().lowerLimit = _value;
-    }
-
-    /**
      * The target speed of the motor in m/s.
      */
-    @mutate(Number)
+    @order(9)
+    @edit(Number)
     public get motorSpeed(): number {
       return this.#motorSpeed;
     }
@@ -82,10 +88,12 @@ namespace FudgeCore {
     /**
      * The damping of the spring. 1 equals completly damped.
      */
-    @mutate(Number)
+    @order(10)
+    @edit(Number)
     public get springDamping(): number {
       return this.#springDamping;
     }
+
     public set springDamping(_value: number) {
       this.#springDamping = _value;
       if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
@@ -94,11 +102,13 @@ namespace FudgeCore {
 
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-    */
-    @mutate(Number)
+     */
+    @order(11)
+    @edit(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }
+
     public set springFrequency(_value: number) {
       this.#springFrequency = _value;
       if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
