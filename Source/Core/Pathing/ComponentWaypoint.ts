@@ -20,6 +20,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(this);
     static readonly #waypoints: ComponentWaypoint[] = [];
 
+    @edit(Matrix4x4)
     public mtxLocal: Matrix4x4;
 
     #connections: Connection[];
@@ -78,22 +79,20 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        [super.constructor.name]: super.serialize(),
-        matrix: this.mtxLocal.serialize(),
-        connections: this.#connections.map(_con => {
-          let connection: SerializedConnection = { cost: _con.cost, end: _con.end, speedModifier: _con.speedModifier };
-          if (connection.end instanceof ComponentWaypoint) {
-            connection.end = Node.PATH_FROM_TO(this, connection.end);
-          }
-          return connection;
-        })
-      };
+      let serialization: Serialization = super.serialize();
+      serialization.connections = this.#connections.map(_con => {
+        let connection: SerializedConnection = { cost: _con.cost, end: _con.end, speedModifier: _con.speedModifier };
+        if (connection.end instanceof ComponentWaypoint) {
+          connection.end = Node.PATH_FROM_TO(this, connection.end);
+        }
+        return connection;
+      });
+
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mtxLocal.deserialize(_serialization.matrix);
+      await super.deserialize(_serialization);
       const hndNodeDeserialized: EventListenerUnified = () => {
         this.#connections = _serialization.connections.map((_con: SerializedConnection) => {
           let connection: Connection = { cost: _con.cost, end: this.serializedWaypointToWaypoint(_con.end), speedModifier: _con.speedModifier, start: this };
@@ -102,7 +101,8 @@ namespace FudgeCore {
         this.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
       };
       this.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-      await super.deserialize(_serialization[super.constructor.name]);
+
+      
       return this;
     }
 

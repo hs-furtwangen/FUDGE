@@ -7360,8 +7360,6 @@ declare namespace FudgeCore {
         /** The speed the walker should move with. Corresponds to units/s. */
         speed: number;
         constructor();
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         /**
          * Teleports (moves instantly) to the _target Waypoint.
          * @param _target
