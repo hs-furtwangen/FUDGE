@@ -15,7 +15,7 @@ namespace FudgeCore {
    *      bodyAnchor         bodyTied
    *   (e.g. Doorhinge)       (e.g. Door)
    * ```
-   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
    */
   @orderFlat
   export class JointRevolute extends JointAxial {
@@ -30,8 +30,8 @@ namespace FudgeCore {
     public constructor(_bodyAnchor: ComponentRigidbody = null, _bodyTied: ComponentRigidbody = null, _axis: Vector3 = new Vector3(0, 1, 0), _localAnchor: Vector3 = new Vector3(0, 0, 0)) {
       super(_bodyAnchor, _bodyTied, _axis, _localAnchor);
 
-      this.maxMotor = 360;
       this.minMotor = 0;
+      this.maxMotor = 360;
     }
 
     /**

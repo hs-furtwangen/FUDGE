@@ -8,8 +8,8 @@ namespace FudgeCore {
     protected springDamper: OIMO.SpringDamper;
 
     //Internal Variables
-    #maxMotor: number = 10;
     #minMotor: number = -10;
+    #maxMotor: number = 10;
     #motorSpeed: number = 0;
     #axis: Vector3;
     #springFrequency: number = 0;
@@ -49,6 +49,7 @@ namespace FudgeCore {
     public get minMotor(): number {
       return this.#minMotor;
     }
+
     public set minMotor(_value: number) {
       this.#minMotor = _value;
       if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)

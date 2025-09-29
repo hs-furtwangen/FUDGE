@@ -26,8 +26,8 @@ namespace FudgeCore {
 
     #motorForce: number = 0;
 
-    #maxRotor: number = 360;
     #minRotor: number = 0;
+    #maxRotor: number = 360;
     #rotorTorque: number = 0;
     #rotorSpeed: number = 0;
 

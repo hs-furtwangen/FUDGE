@@ -252,6 +252,10 @@ namespace FudgeCore {
       return this.joint;
     }
 
+    public serialize(): Serialization {
+      return this.getMutator();
+    }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
       this.connectChild(_serialization.nameChildToConnect);

@@ -29,8 +29,8 @@ namespace FudgeCore {
     public constructor(_bodyAnchor: ComponentRigidbody = null, _bodyTied: ComponentRigidbody = null, _axis: Vector3 = new Vector3(0, 1, 0), _localAnchor: Vector3 = new Vector3(0, 0, 0)) {
       super(_bodyAnchor, _bodyTied, _axis, _localAnchor);
 
-      this.maxMotor = 10;
       this.minMotor = -10;
+      this.maxMotor = 10;
     }
 
     /**

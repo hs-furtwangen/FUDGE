@@ -3589,6 +3589,7 @@ declare namespace FudgeCore {
          * Only to be used when functionality that is not added within FUDGE is needed.
         */
         getOimoJoint(): OIMO.Joint;
+        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         protected reduceMutator(_mutator: Mutator): void;
@@ -7990,7 +7991,7 @@ declare namespace FudgeCore {
         set springDampingTwist(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequencyTwist(): number;
         set springFrequencyTwist(_value: number);
         /**
@@ -8000,26 +8001,26 @@ declare namespace FudgeCore {
         set springDampingSwing(_value: number);
         /**
          * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-        */
+         */
         get springFrequencySwing(): number;
         set springFrequencySwing(_value: number);
-        /**
-          * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
-         */
-        get maxMotorTwist(): number;
-        set maxMotorTwist(_value: number);
         /**
          * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
          */
         get minMotorTwist(): number;
         set minMotorTwist(_value: number);
         /**
+         * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+         */
+        get maxMotorTwist(): number;
+        set maxMotorTwist(_value: number);
+        /**
           * The target rotational speed of the motor in radians/s.
          */
         get motorSpeedTwist(): number;
         set motorSpeedTwist(_value: number);
         /**
-          * The maximum motor torque in  newton meters. force <= 0 equals disabled.
+         * The maximum motor torque in  newton meters. force <= 0 equals disabled.
          */
         get motorTorqueTwist(): number;
         set motorTorqueTwist(_value: number);
@@ -8044,7 +8045,7 @@ declare namespace FudgeCore {
      *      bodyAnchor         bodyTied
      *   (e.g. Doorhinge)       (e.g. Door)
      * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
+     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
      */
     class JointRevolute extends JointAxial {
         #private;
