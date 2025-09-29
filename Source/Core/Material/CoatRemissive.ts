@@ -2,9 +2,18 @@ namespace FudgeCore {
   /**
    * A {@link Coat} providing a color and parameters for the phong shading model.
    */
+  @orderFlat
   export class CoatRemissive extends CoatColored {
+    @order(2)
+    @edit(Number)
     public diffuse: number;
+
+    @order(3)
+    @edit(Number)
     public specular: number;
+
+    @order(4)
+    @edit(Number)
     public intensity: number;
 
     #metallic: number;
@@ -17,43 +26,14 @@ namespace FudgeCore {
       this.metallic = _metallic;
     }
 
+    @order(5)
+    @edit(Number)
     public get metallic(): number {
       return this.#metallic;
     }
+
     public set metallic(_value: number) {
       this.#metallic = Calc.clamp(_value, 0, 1);
     }
-
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.diffuse = this.diffuse;
-      serialization.specular = this.specular;
-      serialization.intensity = this.intensity;
-      serialization.metallic = this.metallic;
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-      this.diffuse = _serialization.diffuse;
-      this.specular = _serialization.specular;
-      this.intensity = _serialization.intensity ?? this.intensity;
-      this.metallic = _serialization.metallic ?? this.metallic;
-      return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      delete mutator.diffuse;
-      delete mutator.specular;
-      delete mutator.intensity;
-      mutator.diffuse = this.diffuse;
-      mutator.specular = this.specular;
-      mutator.intensity = this.intensity;
-      mutator.metallic = this.metallic;
-      return mutator;
-    }
-    //#endregion
   }
 }
