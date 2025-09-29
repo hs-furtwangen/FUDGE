@@ -119,13 +119,46 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2025
    */
   export function serializeNested<T extends SerializableResource>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
-    return serializeFactory(_type, false, true);
+    return serializeFactory(_type, false, true, false);
+  }
+
+  /**
+   * Decorator to mark {@link Serializable} properties for full reconstruction during serialization.
+   * The object will be serialized with type information and reconstructed from scratch during deserialization.
+   * 
+   * **⚠️ Warning:** Do not use with {@link SerializableResource}s unless you manually deregister them from the project.
+   * Resources reconstructed this way will automatically register themselves, potentially causing ID conflicts.
+   *
+   * **Example:**
+   * ```typescript
+   * import f = FudgeCore;
+   * import serializeReconstruct = f.serializeReconstruct;
+   *
+   * export class MySpecialScriptA extends f.ComponentScript {}
+   * export class MySpecialScriptB extends f.ComponentScript {}
+   *
+   * export class MyScript extends f.ComponentScript {
+   *   @serializeReconstruct(f.ComponentScript) // serialize with type information
+   *   public myReconstruct: f.ComponentScript;
+   * }
+   *
+   * // Usage:
+   * let myScript: Test.MyScript = new Test.MyScript();
+   * myScript.myReconstruct = new Test.MySpecialScriptA(); // or new Test.MySpecialScriptB();
+   * let serialization: f.Serialization = f.Serializer.serialize(myScript);
+   * let deserialization: Test.MyScript = await f.Serializer.deserialize(serialization); // myScript.myReconstruct is now an instance of MySpecialScriptA
+   * ```
+   * 
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function serializeReconstruct<T extends Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
+    return serializeFactory(_type, false, false, true);
   }
 
   /**
    * @internal
    */
-  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _nested?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _nested?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -145,6 +178,8 @@ namespace FudgeCore {
         strategy = "primitive";
       } else if (_type == Node) {
         strategy = "node";
+      } else if (_reconstruct) {
+        strategy = "reconstruct";
       } else if (isSerializableResource(<SerializableResource>_type.prototype) && !_nested) {
         strategy = "resource";
       } else if (isSerializable(_type.prototype)) {
@@ -190,6 +225,9 @@ namespace FudgeCore {
           break;
         case "function":
           _serialization[key] = Serializer.getFunctionPath(value);
+          break;
+        case "reconstruct":
+          _serialization[key] = Serializer.serialize(value);
           break;
         case "primitiveArray":
           _serialization[key] = Array.from(value);
@@ -249,6 +287,9 @@ namespace FudgeCore {
           break;
         case "function":
           Reflect.set(_instance, key, Serializer.getFunction(value));
+          break;
+        case "reconstruct":
+          Reflect.set(_instance, key, await Serializer.deserialize(value));
           break;
         case "primitiveArray":
           Reflect.set(_instance, key, Array.from(value));

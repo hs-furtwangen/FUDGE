@@ -60,7 +60,7 @@ namespace FudgeCore {
      * A map of property keys to their serialization strategy.
      * Use the {@link serialize} decorator to add to this map.
      */
-    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
+    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
 
   const emptyMetadata: Metadata = Object.freeze({});
