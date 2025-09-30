@@ -10,6 +10,7 @@
 /// <reference path="Serialization/SerializeDecorator.ts"/>
 /// <reference path="Serialization/EditDecorator.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
+/// <reference path="Serialization/Resource.ts"/>
 /// <reference path="Math/Vector2.ts"/>
 /// <reference path="Math/Vector3.ts"/>
 /// <reference path="Math/Vector4.ts"/>
@@ -26,6 +27,8 @@
 /// <reference path="Physics/JointAxial.ts"/>
 /// <reference path="Texture/Texture.ts"/>
 /// <reference path="Mesh/Mesh.ts"/>
+/// <reference path="Shader/Shader.ts"/>
+/// <reference path="Material/Coat.ts"/>
 /// <reference path="Material/Material.ts"/>
 /// <reference path="ParticleSystem/ParticleSystem.ts"/>
 /// <reference path="Component/ComponentSkeleton.ts"/>

@@ -1127,6 +1127,18 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * A base class for resources. Extends {@link Mutable}, implements {@link SerializableResource}.
+     */
+    class Resource extends Mutable implements SerializableResource {
+        name: string;
+        idResource: string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
      * Stores and manipulates a twodimensional vector comprised of the components x and y
      * ```text
      *            +y
@@ -3868,6 +3880,72 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * Interface to access data from a WebGl shaderprogram.
+     * This should always mirror the (static) interface of {@link Shader}. It exposes the static members of Shader in an instance-based way. e.g.:
+     * ```typescript
+     * let shader: ShaderInterface;
+     * ```
+     * can take values of type
+     * ```typescript
+     * typeof Shader | ShaderInteface
+     * ```
+     */
+    interface ShaderInterface {
+        define: string[];
+        program: WebGLProgram;
+        uniforms: {
+            [name: string]: WebGLUniformLocation;
+        };
+        /** Returns the vertex shader source code for the render engine */
+        getVertexShaderSource(): string;
+        /** Returns the fragment shader source code for the render engine */
+        getFragmentShaderSource(): string;
+    }
+    /**
+     * Static superclass for the representation of WebGl shaderprograms.
+     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
+     */
+    abstract class Shader {
+        /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
+        static readonly baseClass: typeof Shader;
+        /** list of all the subclasses derived from this class, if they registered properly*/
+        static readonly subclasses: typeof Shader[];
+        static define: string[];
+        static program: WebGLProgram;
+        static uniforms: {
+            [name: string]: WebGLUniformLocation;
+        };
+        /** The type of coat that can be used with this shader to create a material */
+        static getCoat(): typeof Coat;
+        /** Returns the vertex shader source code for the render engine */
+        static getVertexShaderSource(): string;
+        /** Returns the fragment shader source code for the render engine */
+        static getFragmentShaderSource(): string;
+        protected static registerSubclass(_subclass: typeof Shader): number;
+        protected static insertDefines(_shader: string, _defines: string[]): string;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Holds data to feed into a {@link Shader} to describe the surface of {@link Mesh}.
+     * {@link Material}s reference {@link Coat} and {@link Shader}.
+     */
+    class Coat extends Mutable implements Serializable {
+        /**
+         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
+         */
+        alphaClip: number;
+        /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
+        updateRenderData(): void;
+        /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
+        useRenderData(): void;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+        protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
      * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
      * @authors Jirka Dell'Oro-Friedl, HFU, 2019
      */
@@ -6499,25 +6577,6 @@ declare namespace FudgeCore {
         private hndMutationInstance;
         private reflectMutation;
         private isFiltered;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Holds data to feed into a {@link Shader} to describe the surface of {@link Mesh}.
-     * {@link Material}s reference {@link Coat} and {@link Shader}.
-     */
-    class Coat extends Mutable implements Serializable {
-        /**
-         * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
-         */
-        alphaClip: number;
-        /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-        updateRenderData(): void;
-        /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-        useRenderData(): void;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -10111,53 +10170,6 @@ declare namespace FudgeCore {
         private getBuffer;
         private getAnimationSequence;
         private toInternInterpolation;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Interface to access data from a WebGl shaderprogram.
-     * This should always mirror the (static) interface of {@link Shader}. It exposes the static members of Shader in an instance-based way. e.g.:
-     * ```typescript
-     * let shader: ShaderInterface;
-     * ```
-     * can take values of type
-     * ```typescript
-     * typeof Shader | ShaderInteface
-     * ```
-     */
-    interface ShaderInterface {
-        define: string[];
-        program: WebGLProgram;
-        uniforms: {
-            [name: string]: WebGLUniformLocation;
-        };
-        /** Returns the vertex shader source code for the render engine */
-        getVertexShaderSource(): string;
-        /** Returns the fragment shader source code for the render engine */
-        getFragmentShaderSource(): string;
-    }
-    /**
-     * Static superclass for the representation of WebGl shaderprograms.
-     * @authors Jascha Karagöl, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2019
-     */
-    abstract class Shader {
-        /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
-        static readonly baseClass: typeof Shader;
-        /** list of all the subclasses derived from this class, if they registered properly*/
-        static readonly subclasses: typeof Shader[];
-        static define: string[];
-        static program: WebGLProgram;
-        static uniforms: {
-            [name: string]: WebGLUniformLocation;
-        };
-        /** The type of coat that can be used with this shader to create a material */
-        static getCoat(): typeof Coat;
-        /** Returns the vertex shader source code for the render engine */
-        static getVertexShaderSource(): string;
-        /** Returns the fragment shader source code for the render engine */
-        static getFragmentShaderSource(): string;
-        protected static registerSubclass(_subclass: typeof Shader): number;
-        protected static insertDefines(_shader: string, _defines: string[]): string;
     }
 }
 declare namespace FudgeCore {
