@@ -294,6 +294,16 @@ namespace FudgeCore {
       Gizmos.drawWireFrustum(this.#aspectRatio, this.#fieldOfView, this.#near, this.#far, this.#direction, this.mtxWorld, Color.CSS("lightgrey"));
     };
 
+    // TODO: backwards compatibility, remove in future version
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization);
+
+      if (_serialization.backgroundColor != undefined)
+        this.clrBackground.deserialize(_serialization.backgroundColor);
+
+      return this;
+    }
+
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.transform;
       super.reduceMutator(_mutator);
