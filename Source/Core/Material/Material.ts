@@ -5,8 +5,16 @@ namespace FudgeCore {
    * @author Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   @orderFlat
-  export class Material extends Resource implements SerializableResource {
+  export class Material extends Mutable implements SerializableResource {
     public timestampUpdate: number = 0;
+
+    @order(0)
+    @edit(String)
+    public name: string;
+
+    @order(1)
+    @edit(String)
+    public idResource: string;
 
     @serializeFunction(Shader)
     private shader: typeof Shader; // The shader program used by this BaseMaterial
@@ -22,6 +30,7 @@ namespace FudgeCore {
         else
           this.coat = this.createCoatMatchingShader();
       }
+
       Project.register(this);
     }
 
@@ -76,16 +85,10 @@ namespace FudgeCore {
     public serialize(): Serialization {
       return serializeDecorations(this);
     }
-    
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await deserializeDecorations(this, _serialization);
 
-      this.name = _serialization.name;
+    public deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
-      this.shader = (<General>FudgeCore)[_serialization.shader];
-      let coat: Coat = <Coat>await Serializer.deserialize(_serialization.coat);
-      this.coat = coat;
-      return this;
+      return deserializeDecorations(this, _serialization);
     }
 
     protected reduceMutator(_mutator: Mutator): void {

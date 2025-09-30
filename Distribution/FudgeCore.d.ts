@@ -1130,9 +1130,10 @@ declare namespace FudgeCore {
      * A base class for resources. Extends {@link Mutable}, implements {@link SerializableResource}.
      * @author Jonas Plotzky, HFU, 2025
      */
-    class Resource extends Mutable implements SerializableResource {
+    abstract class Resource extends Mutable implements SerializableResource {
         name: string;
         idResource: string;
+        constructor(_name?: string, _register?: boolean);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
         protected reduceMutator(_mutator: Mutator): void;
@@ -3950,9 +3951,11 @@ declare namespace FudgeCore {
      * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
      * @author Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    class Material extends Resource implements SerializableResource {
+    class Material extends Mutable implements SerializableResource {
         #private;
         timestampUpdate: number;
+        name: string;
+        idResource: string;
         private shader;
         constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
         /**
