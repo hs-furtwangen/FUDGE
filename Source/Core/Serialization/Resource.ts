@@ -5,7 +5,7 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2025
    */
   @orderFlat
-  export class Resource extends Mutable implements SerializableResource {
+  export abstract class Resource extends Mutable implements SerializableResource {
     @order(0)
     @edit(String)
     public name: string;
@@ -14,6 +14,13 @@ namespace FudgeCore {
     @edit(String)
     public idResource: string;
 
+    public constructor(_name: string = Resource.name, _register: boolean = true) {
+      super();
+      this.name = _name;
+      if (_register)
+        Project.register(this);
+    }
+
     public serialize(): Serialization {
       return serializeDecorations(this);
     }
@@ -21,7 +28,7 @@ namespace FudgeCore {
     public deserialize(_serialization: Serialization): Promise<Serializable> | Serializable {
       if (Reflect.has(_serialization, "idResource"))
         Project.register(this, _serialization.idResource);
-      
+
       return deserializeDecorations(this, _serialization);
     }
 
