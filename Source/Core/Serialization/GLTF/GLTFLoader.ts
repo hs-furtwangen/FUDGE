@@ -693,7 +693,7 @@ namespace FudgeCore {
       material.name = gltfMaterial.name;
       material.coat = coat;
 
-      Reflect.set(material, "shaderType", shader);
+      Reflect.set(material, "shader", shader);
       // material.setShader(shader);
       if (material instanceof MaterialGLTF)
         material.url = this.#url;

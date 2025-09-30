@@ -66,10 +66,9 @@ namespace FudgeCore {
     /**
      * Changes the materials reference to the given {@link Shader}, creates and references a new {@link Coat} instance  
      * and mutates the new coat to preserve matching properties.
-     * @param _shaderType 
      */
-    public setShader(_shaderType: typeof Shader): void {
-      this.shader = _shaderType;
+    public setShader(_shader: typeof Shader): void {
+      this.shader = _shader;
       let coat: Coat = this.createCoatMatchingShader();
       coat.mutate(this.#coat?.getMutator());
       this.coat = coat;
