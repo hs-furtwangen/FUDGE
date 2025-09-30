@@ -9,7 +9,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
 
     @order(1)
-    @edit(Animation)
+    @editReference(Animation)
     public animation: Animation;
 
     @order(2)

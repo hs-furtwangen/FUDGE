@@ -2,38 +2,32 @@
 
 namespace FudgeCore {
   /**
-   * Decorator to mark properties of a {@link Serializable} for automatic serialization.
+   * Decorator to mark properties of a class for nested serialization. Primitives and enums will be serialized as is. {@link Serializable}s will be serialized nested (via {@link Serializable.serialize}/{@link Serializable.deserialize}).
    * 
-   * To specify a function type (typeof `_type`) use the {@link serializeFunction} decorator.
+   * - To serialize a function type (typeof `_type`), use the {@link serializeFunction} decorator.
+   * - To serialize {@link Node} or {@link SerializableResource} references, use the {@link serializeReference} decorator.
+   * - To serialize with type information for polymorphic reconstruction, use the {@link serializeReconstruct} decorator.
    * 
    * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
    * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
-   * - Primitives and enums will be serialized as is.
-   * - {@link Serializable}s will be serialized nested. 
-   * - {@link SerializableResource}s will be serialized via their resource id and fetched from the project when deserialized. To serialize nested, use the {@link serializeNested} decorator.
-   * - {@link Node}s will be serialized as a path connecting them through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy. Node references can only be serialized from a {@link Component}.
+   * 
+   * **⚠️ Warning:** Do not use with {@link SerializableResource} unless you manually deregister them from the project. 
+   * Otherwise, they will automatically register themselves when deserialized, potentially causing ID conflicts.
    * 
    * **Example:**
    * ```typescript
    * import f = FudgeCore;
-   * import serialize = f.serialize;
    *
    * export class MyScript extends f.ComponentScript {
-   *   @serialize(String) // serialize a string
+   *   @f.serialize(String) // serialize a string
    *   public info: string;
    *
-   *   @serialize(f.Vector3) // serialize a vector
+   *   @f.serialize(f.Vector3) // serialize a vector
    *   public position: f.Vector3 = new f.Vector3(1, 2, 3);
-   *
-   *   @serialize(f.Material) // serialize a material by referencing it in the project
-   *   public resource: f.Material;
-   *
-   *   @serialize(f.Node) // serialize a node by its path in the hierarchy
-   *   public reference: f.Node;
    * 
    *   #size: number = 1;
    *
-   *   @serialize(Number) // serialize a number
+   *   @f.serialize(Number) // serialize a number
    *   public get size(): number {
    *     return this.#size;
    *   }
@@ -44,22 +38,42 @@ namespace FudgeCore {
    * }
    * ```
    * 
+   * **Example Nested Resource:**
+   * ```typescript
+   * import f = FudgeCore;
+   *
+   * export class MyScript extends f.ComponentScript {
+   *   @f.serializeReference(f.Material) // serialize a reference to a material in the project
+   *   public material: f.Material;
+   *
+   *   @f.serialize(f.Material) // serialize nested
+   *   public nestedMaterial: f.Material;
+   *
+   *   public constructor() {
+   *     super();
+   *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
+   *     
+   *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
+   *     f.Project.deregister(this.nestedMaterial);
+   * 
+   *     // remove properties that are not needed
+   *     delete this.nestedMaterial.idResource;
+   *     delete this.nestedMaterial.name;
+   *   }
+   * }
+   * ```
+   * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
-  // primitive type
-  export function serialize<T extends Number | String | Boolean>(_type: (abstract new (...args: General[]) => T)): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
-  // object type
-  export function serialize<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T | T[]>) => void;
-  // enum type
+  export function serialize<T extends Number | String | Boolean | Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends SerializableResource ? never : Serializable, T | T[]>) => void; // enum type
   export function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
-
   export function serialize(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
     return serializeFactory(_type, false);
   }
 
   /**
-   * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for automatic serialization and editor configuration.
-   * See {@link serialize} decorator for more information.
+   * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for serialization.
+   * See {@link serialize} decorator for additional information.
    *
    * **Example**:
    * ```typescript
@@ -86,44 +100,33 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark {@link SerializableResource resource} properties of a {@link Serializable} for nested serialization.
-   * The resource will be serialized nested within the containing object rather than stored separately in the project.
-   *
+   * Decorator to mark properties of a class for reference-based serialization.
+   * See {@link serialize} decorator for additional information.
+   * 
+   * - {@link SerializableResource}s will be serialized via their resource id and fetched from the project when deserialized.
+   * - {@link Node}s will be serialized as a path through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. Node references can only be serialized from a {@link Component}. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
+   * 
    * **Example:**
    * ```typescript
    * import f = FudgeCore;
-   * import serialize = f.serialize;
-   * import serializeNested = f.serializeNested;
    *
    * export class MyScript extends f.ComponentScript {
-   *   @serialize(f.Material) // serialize by reference (resource ID)
-   *   public material: f.Material;
+   *   @f.serializeReference(f.Material) // serialize a reference to a material in the project
+   *   public resource: f.Material;
    *
-   *   @serializeNested(f.Material) // serialize nested
-   *   public nestedMaterial: f.Material;
-   *
-   *   public constructor() {
-   *     super();
-   *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
-   *     
-   *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
-   *     f.Project.deregister(this.nestedMaterial);
-   * 
-   *     // remove properties that are not needed
-   *     delete this.nestedMaterial.idResource;
-   *     delete this.nestedMaterial.name;
-   *   }
+   *   @f.serializeReference(f.Node) // serialize a reference to a node in the hierarchy
+   *   public reference: f.Node;
    * }
    * ```
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function serializeNested<T extends SerializableResource>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
-    return serializeFactory(_type, false, true, false);
+  export function serializeReference<T extends SerializableResource | Node, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<Node extends T ? Component : Serializable, T | T[]>) => void {
+    return serializeFactory(_type, false, true);
   }
 
   /**
-   * Decorator to mark {@link Serializable} properties for full reconstruction during serialization.
+   * Decorator to mark properties of a class for serialization with type information and polymorphic reconstruction.
    * The object will be serialized with type information and reconstructed from scratch during deserialization.
    * 
    * **⚠️ Warning:** Do not use with {@link SerializableResource}s unless you manually deregister them from the project.
@@ -132,13 +135,12 @@ namespace FudgeCore {
    * **Example:**
    * ```typescript
    * import f = FudgeCore;
-   * import serializeReconstruct = f.serializeReconstruct;
    *
    * export class MySpecialScriptA extends f.ComponentScript {}
    * export class MySpecialScriptB extends f.ComponentScript {}
    *
    * export class MyScript extends f.ComponentScript {
-   *   @serializeReconstruct(f.ComponentScript) // serialize with type information
+   *   @f.serializeReconstruct(f.ComponentScript) // serialize with type information
    *   public myReconstruct: f.ComponentScript;
    * }
    *
@@ -158,7 +160,7 @@ namespace FudgeCore {
   /**
    * @internal
    */
-  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _nested?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -174,14 +176,12 @@ namespace FudgeCore {
 
       if (_function) {
         strategy = "function";
+      } else if (_reference) {
+        strategy = _type == Node ? "node" : "resource";
       } else if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") { // primitive or enum 
         strategy = "primitive";
-      } else if (_type == Node) {
-        strategy = "node";
       } else if (_reconstruct) {
         strategy = "reconstruct";
-      } else if (isSerializableResource(<SerializableResource>_type.prototype) && !_nested) {
-        strategy = "resource";
       } else if (isSerializable(_type.prototype)) {
         strategy = "serializable";
       }

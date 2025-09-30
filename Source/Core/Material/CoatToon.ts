@@ -23,7 +23,7 @@ namespace FudgeCore {
   function mixinCoatToon<TBase extends new (...args: General[]) => Serializable & Mutable>(_base: TBase): (abstract new (...args: General[]) => { texToon: Texture }) & TBase {
     abstract class CoatToon extends _base {
 
-      @edit(Texture)
+      @editReference(Texture)
       public texToon: Texture;
 
       public serialize(): Serialization {

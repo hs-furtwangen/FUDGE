@@ -9,7 +9,7 @@ namespace FudgeCore {
   export class ComponentText extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentText);
 
-    @editNested(TextureText)
+    @edit(TextureText)
     public readonly texture: TextureText;
 
     public readonly mtxWorld: Matrix4x4;

@@ -10,7 +10,7 @@ namespace FudgeCore {
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
     @order(1)
-    @edit(Mesh)
+    @editReference(Mesh)
     public mesh: Mesh;
     public skeleton: ComponentSkeleton;
 
