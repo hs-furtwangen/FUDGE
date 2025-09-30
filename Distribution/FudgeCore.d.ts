@@ -3856,8 +3856,8 @@ declare namespace FudgeCore {
         static readonly baseClass: typeof Mesh;
         /** list of all the subclasses derived from this class, if they registered properly*/
         static readonly subclasses: typeof Mesh[];
-        idResource: string;
         name: string;
+        idResource: string;
         vertices: Vertices;
         faces: Face[];
         /** bounding box AABB */
@@ -5105,6 +5105,7 @@ declare namespace FudgeCore {
         getWorldToPixelScale(_posWorld: Vector3): number;
         drawGizmos(): void;
         drawGizmosSelected(): void;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }

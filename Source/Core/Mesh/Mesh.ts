@@ -6,17 +6,23 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019/22
    */
   @RenderInjectorMesh.decorate
+  @orderFlat
   export abstract class Mesh extends Mutable implements SerializableResource {
     /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
     public static readonly baseClass: typeof Mesh = Mesh;
     /** list of all the subclasses derived from this class, if they registered properly*/
     public static readonly subclasses: typeof Mesh[] = [];
 
-    // TODO: rename vertices to verticesSmooth or just cloud, and cloud to vertices
+    @order(0)
+    @edit(String)
+    public name: string;
 
-    public idResource: string = undefined;
-    public name: string = "Mesh";
+    @order(1)
+    @edit(String)
+    public idResource: string;
+
     // base structure for meshes in FUDGE
+    // TODO: rename vertices to verticesSmooth or just cloud, and cloud to vertices
     public vertices: Vertices = new Vertices();
     public faces: Face[] = [];
 
@@ -32,6 +38,7 @@ namespace FudgeCore {
       super();
       this.name = _name;
       this.clear();
+
       Project.register(this);
     }
 
@@ -50,6 +57,7 @@ namespace FudgeCore {
 
       return this.ƒbox;
     }
+    
     public get radius(): number {
       if (this.ƒradius == null)
         this.ƒradius = this.createRadius();
@@ -87,21 +95,13 @@ namespace FudgeCore {
       this.renderMesh.clear();
     }
 
-    //#region Transfer
-    // Serialize/Deserialize for all meshes that calculate without parameters
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        idResource: this.idResource,
-        name: this.name,
-        type: this.type // store for editor view
-      }; // no data needed ...
-      return serialization;
+      return serializeDecorations(this);
     }
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+
+    public deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
-      this.name = _serialization.name;
-      // type is an accessor and must not be deserialized
-      return this;
+      return deserializeDecorations(this, _serialization);
     }
 
     protected reduceMutator(_mutator: Mutator): void {
@@ -111,8 +111,6 @@ namespace FudgeCore {
 
       delete _mutator.renderBuffers;
     }
-    //#endregion
-
 
     protected createRadius(): number {
       //TODO: radius and bounding box could be created on construction of vertex-array
