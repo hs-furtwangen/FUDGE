@@ -364,6 +364,8 @@ namespace FudgeCore {
         abstract class MutableSerializableResourceExternal extends _base {
           public async mutate(_mutator: Mutator, _selection: string[] = null): Promise<void> {
             await super.mutate(_mutator, _selection);
+            if (_mutator.url != undefined)
+              this.url = _mutator.url;
             if (_mutator.url != undefined || _mutator.name != undefined)
               await this.load();
           }
