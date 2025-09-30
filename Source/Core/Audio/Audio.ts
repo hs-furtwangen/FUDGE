@@ -20,10 +20,6 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     public get isReady(): boolean {
       return this.ready;
     }

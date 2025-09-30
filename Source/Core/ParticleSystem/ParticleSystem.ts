@@ -108,10 +108,6 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     public get data(): ParticleData.System {
       return this.#data;
     }

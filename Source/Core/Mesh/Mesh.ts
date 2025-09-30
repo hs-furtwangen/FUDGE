@@ -37,10 +37,6 @@ namespace FudgeCore {
 
     protected static registerSubclass(_subClass: typeof Mesh): number { return Mesh.subclasses.push(_subClass) - 1; }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     public get renderMesh(): RenderMesh {
       if (this.#renderMesh == null)
         this.#renderMesh = new RenderMesh(this);

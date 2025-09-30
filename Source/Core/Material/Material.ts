@@ -6,11 +6,15 @@ namespace FudgeCore {
    */
   export class Material extends Mutable implements SerializableResource {
     /** The name to call the Material by. */
+    @edit(String)
     public name: string;
+
+    @edit(String)
     public idResource: string = undefined;
 
     public timestampUpdate: number = 0;
 
+    @serializeFunction(Shader)
     private shaderType: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
 
@@ -27,14 +31,10 @@ namespace FudgeCore {
       Project.register(this);
     }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     /**
      * Returns the currently referenced {@link Coat} instance
      */
-    @mutate(Coat)
+    @editReconstruct(Coat)
     public get coat(): Coat {
       return this.#coat;
     }
@@ -78,17 +78,10 @@ namespace FudgeCore {
       return this.shaderType;
     }
 
-    //#region Transfer
-    // TODO: this type of serialization was implemented for implicit Material create. Check if obsolete when only one material class exists and/or materials are stored separately
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        name: this.name,
-        idResource: this.idResource,
-        shader: this.shaderType.name,
-        coat: Serializer.serialize(this.#coat),
-      };
-      return serialization;
+      return serializeDecorations(this);
     }
+    
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       this.name = _serialization.name;
       Project.register(this, _serialization.idResource);
@@ -102,6 +95,5 @@ namespace FudgeCore {
       delete _mutator.timestampUpdate;
       // delete _mutator.idResource;
     }
-    //#endregion
   }
 }

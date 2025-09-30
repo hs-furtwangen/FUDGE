@@ -9,14 +9,13 @@ namespace FudgeCore {
 
   /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
   export interface SerializableResource extends Serializable {
-    readonly isSerializableResource: true;
     name: string;
     idResource: string;
     readonly type: string;
   }
 
   export function isSerializableResource(_object: Object): _object is SerializableResource {
-    return isSerializable(_object) && Reflect.has(_object, "isSerializableResource");
+    return isSerializable(_object) && Reflect.has(_object, "idResource") && Reflect.has(_object, "name") && Reflect.has(_object, "type");
   }
 
   /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */

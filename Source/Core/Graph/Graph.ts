@@ -13,10 +13,6 @@ namespace FudgeCore {
       this.addEventListener(EVENT.MUTATE, this.hndMutate);
     }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     public get type(): string {
       return this.constructor.name;
     }

@@ -41,10 +41,6 @@ namespace FudgeCore {
       this.name = _name;
     }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     @mutate(MIPMAP)
     public get mipmap(): MIPMAP {
       return this.#mipmap;

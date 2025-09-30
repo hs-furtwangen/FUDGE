@@ -154,10 +154,6 @@ namespace FudgeCore {
 
     protected static registerSubclass(_subClass: typeof Animation): number { return Animation.subclasses.push(_subClass) - 1; }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     public get getLabels(): Enumerator {
       //TODO: this actually needs testing
       let en: Enumerator = new Enumerator(this.labels);
