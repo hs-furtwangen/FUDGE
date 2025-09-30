@@ -685,7 +685,7 @@ declare namespace FudgeCore {
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
      * - Display the appropriate input element, even if the property has not been set (is `undefined`).
      *
-     * To specify a function type (typeof `_type`) use the {@link mutateF} decorator.
+     * To specify a function type (typeof `_type`) use the {@link mutateFunction} decorator.
      *
      * To establish a property order in the mutator (editor), use the {@link order} decorator.
      *
@@ -707,7 +707,7 @@ declare namespace FudgeCore {
      * - Invokes the {@link select} decorator with default options.
      * @author Jonas Plotzky, HFU, 2025
      */
-    function mutateF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to mark {@link SerializableResource resource} properties of a class for nested mutation.
      * The resource will be displayed nested within the containing object inside the editor.
@@ -781,7 +781,7 @@ declare namespace FudgeCore {
     /**
      * Decorator to mark properties of a {@link Serializable} for automatic serialization.
      *
-     * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
+     * To specify a function type (typeof `_type`) use the {@link serializeFunction} decorator.
      *
      * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
      * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
@@ -833,24 +833,24 @@ declare namespace FudgeCore {
      * **Example**:
      * ```typescript
      * import f = FudgeCore;
-     * import serializeF = f.serializeF;
+     * import serializeFunction = f.serializeFunction;
      *
      * export class SomeClass { }
      *
      * export function someFunction(): void { }
      *
      * export class SomeScript extends f.ComponentScript {
-     *   @serializeF(SomeClass)
+     *   @serializeFunction(SomeClass)
      *   public someClass: typeof SomeClass;
      *
-     *   @serializeF(someFunction)
+     *   @serializeFunction(someFunction)
      *   public someFunction: typeof someFunction;
      * }
      * ```
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
+    function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
     /**
      * Decorator to mark {@link SerializableResource resource} properties of a {@link Serializable} for nested serialization.
      * The resource will be serialized nested within the containing object rather than stored separately in the project.
@@ -973,12 +973,12 @@ declare namespace FudgeCore {
     function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
-     * See {@link mutateF} and {@link serializeF} decorators for more information.
+     * See {@link mutateFunction} and {@link serializeFunction} decorators for more information.
      *
      * **Example:**
      * ```typescript
      * import f = FudgeCore;
-     * import editF = f.editF;
+     * import editFunction = f.editFunction;
      *
      * export class MyClass {
      *   public static subclasses: typeof MyClass[] = [];
@@ -991,14 +991,14 @@ declare namespace FudgeCore {
      * export class MyScript extends f.ComponentScript {
      *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
      *
-     *   @editF(MyClass)
+     *   @editFunction(MyClass)
      *   public myClass: typeof MyClass;
      * }
      * ```
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function editF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     /**
      * Decorator to mark {@link SerializableResource resource} properties of a class for nested mutation and serialization.
      * See {@link mutateNested} and {@link serializeNested} for more information.

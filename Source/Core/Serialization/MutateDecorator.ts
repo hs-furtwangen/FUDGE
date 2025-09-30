@@ -7,7 +7,7 @@ namespace FudgeCore {
    * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
    * - Display the appropriate input element, even if the property has not been set (is `undefined`).
    *
-   * To specify a function type (typeof `_type`) use the {@link mutateF} decorator.
+   * To specify a function type (typeof `_type`) use the {@link mutateFunction} decorator.
    * 
    * To establish a property order in the mutator (editor), use the {@link order} decorator.
    *
@@ -37,7 +37,7 @@ namespace FudgeCore {
    * - Invokes the {@link select} decorator with default options.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function mutateF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
+  export function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
     return mutateFactory(_type, true);
   }
 

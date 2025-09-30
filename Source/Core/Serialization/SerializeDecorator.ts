@@ -4,7 +4,7 @@ namespace FudgeCore {
   /**
    * Decorator to mark properties of a {@link Serializable} for automatic serialization.
    * 
-   * To specify a function type (typeof `_type`) use the {@link serializeF} decorator.
+   * To specify a function type (typeof `_type`) use the {@link serializeFunction} decorator.
    * 
    * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
    * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
@@ -64,24 +64,24 @@ namespace FudgeCore {
    * **Example**:
    * ```typescript
    * import f = FudgeCore;
-   * import serializeF = f.serializeF;
+   * import serializeFunction = f.serializeFunction;
    *
    * export class SomeClass { }
    *
    * export function someFunction(): void { }
    *
    * export class SomeScript extends f.ComponentScript {
-   *   @serializeF(SomeClass)
+   *   @serializeFunction(SomeClass)
    *   public someClass: typeof SomeClass;
    *
-   *   @serializeF(someFunction)
+   *   @serializeFunction(someFunction)
    *   public someFunction: typeof someFunction;
    * }
    * ```
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function serializeF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
+  export function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
     return serializeFactory(_type, true);
   }
 

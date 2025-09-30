@@ -57,12 +57,12 @@ namespace FudgeCore {
 
   /**
    * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
-   * See {@link mutateF} and {@link serializeF} decorators for more information.
+   * See {@link mutateFunction} and {@link serializeFunction} decorators for more information.
    * 
    * **Example:**
    * ```typescript
    * import f = FudgeCore;
-   * import editF = f.editF;
+   * import editFunction = f.editFunction;
    *
    * export class MyClass {
    *   public static subclasses: typeof MyClass[] = [];
@@ -75,14 +75,14 @@ namespace FudgeCore {
    * export class MyScript extends f.ComponentScript {
    *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
    *   
-   *   @editF(MyClass)
+   *   @editFunction(MyClass)
    *   public myClass: typeof MyClass;
    * }
    * ```
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function editF<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
+  export function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
     return editFactory(_type, true);
   }
 
@@ -135,4 +135,5 @@ namespace FudgeCore {
       mutateFactory(_type, _function, _nested)(_value, _context);
     };
   }
+
 }
