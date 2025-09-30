@@ -690,7 +690,7 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function mutate<T extends Number | String | Boolean | Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function mutate<T extends Number | String | Boolean | Mutable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation.
@@ -987,7 +987,7 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function edit<T extends Number | String | Boolean | Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    function edit<T extends Number | String | Boolean | object>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
@@ -1137,6 +1137,41 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
         protected reduceMutator(_mutator: Mutator): void;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
+     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+     */
+    class MutableArray<T extends Mutable = Mutable> extends Array<T> {
+        #private;
+        constructor(_type: new () => T, ..._args: T[]);
+        get type(): new () => T;
+        /**
+         * Rearrange the entries of the array according to the given sequence of indices
+         */
+        rearrange(_sequence: number[]): void;
+        /**
+         * Returns an associative array with this arrays elements corresponding types as string-values
+         */
+        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
+        /**
+         * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
+         */
+        getMutator(): Mutator;
+        /**
+         * See {@link Mutable.getMutatorForUserInterface}
+         */
+        getMutatorForUserInterface(): Mutator;
+        /**
+         * Mutate the elements of this array defined by the _mutator by invoking {@link Mutable.mutate} on it
+         */
+        mutate(_mutator: Mutator): void | Promise<void>;
+        /**
+         * Updates the values of the given mutator according to the current state of the instance
+         */
+        updateMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -3973,9 +4008,8 @@ declare namespace FudgeCore {
         /**
          * Changes the materials reference to the given {@link Shader}, creates and references a new {@link Coat} instance
          * and mutates the new coat to preserve matching properties.
-         * @param _shaderType
          */
-        setShader(_shaderType: typeof Shader): void;
+        setShader(_shader: typeof Shader): void;
         /**
          * Returns the {@link Shader} referenced by this material
          */
@@ -7058,8 +7092,8 @@ declare namespace FudgeCore {
     class MeshPolygon extends Mesh {
         static readonly iSubclass: number;
         protected static shapeDefault: Vector2[];
-        protected shape: MutableArray<Vector2>;
         protected fitTexture: boolean;
+        protected shape: MutableArray<Vector2>;
         constructor(_name?: string, _shape?: Vector2[], _fitTexture?: boolean);
         protected get minVertices(): number;
         /**
@@ -8960,41 +8994,6 @@ declare namespace FudgeCore {
          */
         static loadFiles(_fileList: FileList, _loaded: MapFilenameToContent): Promise<void>;
         private static handleFileSelect;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     */
-    class MutableArray<T extends Mutable = Mutable> extends Array<T> {
-        #private;
-        constructor(_type: new () => T, ..._args: T[]);
-        get type(): new () => T;
-        /**
-         * Rearrange the entries of the array according to the given sequence of indices
-         */
-        rearrange(_sequence: number[]): void;
-        /**
-         * Returns an associative array with this arrays elements corresponding types as string-values
-         */
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
-        /**
-         * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
-         */
-        getMutator(): Mutator;
-        /**
-         * See {@link Mutable.getMutatorForUserInterface}
-         */
-        getMutatorForUserInterface(): Mutator;
-        /**
-         * Mutate the elements of this array defined by the _mutator by invoking {@link Mutable.mutate} on it
-         */
-        mutate(_mutator: Mutator): void | Promise<void>;
-        /**
-         * Updates the values of the given mutator according to the current state of the instance
-         */
-        updateMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {

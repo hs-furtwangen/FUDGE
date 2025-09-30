@@ -17,8 +17,12 @@ namespace FudgeCore {
       new Vector2(1, -1),
       new Vector2(0, 1)
     ];
-    protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
+
+    @edit(Boolean)
     protected fitTexture: boolean;
+    
+    @edit(MutableArray)
+    protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
 
     public constructor(_name: string = "MeshPolygon", _shape: Vector2[] = MeshPolygon.shapeDefault, _fitTexture: boolean = true) {
       super(_name);
@@ -75,9 +79,7 @@ namespace FudgeCore {
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
-
       serialization.shape = Serializer.serializeArray(this.shape, Vector2);
-      serialization.fitTexture = this.fitTexture;
       return serialization;
     }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
