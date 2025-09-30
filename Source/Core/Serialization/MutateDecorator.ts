@@ -13,7 +13,7 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
-  export function mutate<T extends Number | String | Boolean | Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+  export function mutate<T extends Number | String | Boolean | Mutable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
   export function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void; // enum type
   export function mutate(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
     return mutateFactory(_type, false);
