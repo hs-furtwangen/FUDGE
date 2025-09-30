@@ -2,11 +2,15 @@ namespace FudgeCore {
 
   /**
    * A base class for resources. Extends {@link Mutable}, implements {@link SerializableResource}.
+   * @author Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export class Resource extends Mutable implements SerializableResource {
+    @order(0)
     @edit(String)
     public name: string;
 
+    @order(1)
     @edit(String)
     public idResource: string;
 

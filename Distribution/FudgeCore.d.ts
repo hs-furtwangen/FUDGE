@@ -1128,6 +1128,7 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * A base class for resources. Extends {@link Mutable}, implements {@link SerializableResource}.
+     * @author Jonas Plotzky, HFU, 2025
      */
     class Resource extends Mutable implements SerializableResource {
         name: string;
@@ -3947,15 +3948,12 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     /**
      * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
-     * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+     * @author Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
      */
-    class Material extends Mutable implements SerializableResource {
+    class Material extends Resource implements SerializableResource {
         #private;
-        /** The name to call the Material by. */
-        name: string;
-        idResource: string;
         timestampUpdate: number;
-        private shaderType;
+        private shader;
         constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
         /**
          * Returns the currently referenced {@link Coat} instance

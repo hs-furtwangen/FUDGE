@@ -2,26 +2,20 @@ namespace FudgeCore {
 
   /**
    * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+   * @author Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  export class Material extends Mutable implements SerializableResource {
-    /** The name to call the Material by. */
-    @edit(String)
-    public name: string;
-
-    @edit(String)
-    public idResource: string = undefined;
-
+  @orderFlat
+  export class Material extends Resource implements SerializableResource {
     public timestampUpdate: number = 0;
 
     @serializeFunction(Shader)
-    private shaderType: typeof Shader; // The shader program used by this BaseMaterial
+    private shader: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
 
     public constructor(_name: string, _shader?: typeof Shader, _coat?: Coat) {
       super();
       this.name = _name;
-      this.shaderType = _shader;
+      this.shader = _shader;
       if (_shader) {
         if (_coat)
           this.coat = _coat;
@@ -34,6 +28,7 @@ namespace FudgeCore {
     /**
      * Returns the currently referenced {@link Coat} instance
      */
+    @order(2)
     @editReconstruct(Coat)
     public get coat(): Coat {
       return this.#coat;
@@ -42,9 +37,9 @@ namespace FudgeCore {
      * Makes this material reference the given {@link Coat} if it is compatible with the referenced {@link Shader}
      */
     public set coat(_coat: Coat) {
-      if (this.shaderType)
-        if (_coat.constructor != this.shaderType.getCoat())
-          if (_coat instanceof this.shaderType.getCoat())
+      if (this.shader)
+        if (_coat.constructor != this.shader.getCoat())
+          if (_coat instanceof this.shader.getCoat())
             Debug.fudge("Coat is extension of Coat required by shader");
           else
             throw (new Error("Shader and coat don't match"));
@@ -55,7 +50,7 @@ namespace FudgeCore {
      * Creates a new {@link Coat} instance that is valid for the {@link Shader} referenced by this material
      */
     public createCoatMatchingShader(): Coat {
-      let coat: Coat = new (this.shaderType.getCoat())();
+      let coat: Coat = new (this.shader.getCoat())();
       return coat;
     }
 
@@ -65,7 +60,7 @@ namespace FudgeCore {
      * @param _shaderType 
      */
     public setShader(_shaderType: typeof Shader): void {
-      this.shaderType = _shaderType;
+      this.shader = _shaderType;
       let coat: Coat = this.createCoatMatchingShader();
       coat.mutate(this.#coat?.getMutator());
       this.coat = coat;
@@ -75,7 +70,7 @@ namespace FudgeCore {
      * Returns the {@link Shader} referenced by this material
      */
     public getShader(): typeof Shader {
-      return this.shaderType;
+      return this.shader;
     }
 
     public serialize(): Serialization {
@@ -83,9 +78,11 @@ namespace FudgeCore {
     }
     
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await deserializeDecorations(this, _serialization);
+
       this.name = _serialization.name;
       Project.register(this, _serialization.idResource);
-      this.shaderType = (<General>FudgeCore)[_serialization.shader];
+      this.shader = (<General>FudgeCore)[_serialization.shader];
       let coat: Coat = <Coat>await Serializer.deserialize(_serialization.coat);
       this.coat = coat;
       return this;
