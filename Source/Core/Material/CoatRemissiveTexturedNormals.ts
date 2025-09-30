@@ -13,5 +13,15 @@ namespace FudgeCore {
       super(_color, _texture, _diffuse, _specular, _intensity, _metallic);
       this.normalMap = _normalMap;
     }
+
+    // TODO: backwards compatibility, remove in future version
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization);
+
+      if (_serialization.idNormalMap)
+        this.normalMap = <Texture>await Project.getResource(_serialization.idNormalMap);
+
+      return this;
+    }
   }
 }

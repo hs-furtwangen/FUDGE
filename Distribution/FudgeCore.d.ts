@@ -483,7 +483,6 @@ declare namespace FudgeCore {
     }
     /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
     export interface SerializableResource extends Serializable {
-        readonly isSerializableResource: true;
         name: string;
         idResource: string;
         readonly type: string;
@@ -3745,7 +3744,6 @@ declare namespace FudgeCore {
         protected mipmapDirty: boolean;
         protected wrapDirty: boolean;
         constructor(_name?: string);
-        get isSerializableResource(): true;
         get mipmap(): MIPMAP;
         set mipmap(_mipmap: MIPMAP);
         get wrap(): WRAP;
@@ -3854,7 +3852,6 @@ declare namespace FudgeCore {
         protected ƒradius: number;
         constructor(_name?: string);
         protected static registerSubclass(_subClass: typeof Mesh): number;
-        get isSerializableResource(): true;
         get renderMesh(): RenderMesh;
         get boundingBox(): Box;
         get radius(): number;
@@ -3882,7 +3879,6 @@ declare namespace FudgeCore {
         timestampUpdate: number;
         private shaderType;
         constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
-        get isSerializableResource(): true;
         /**
          * Returns the currently referenced {@link Coat} instance
          */
@@ -3980,7 +3976,6 @@ declare namespace FudgeCore {
         name: string;
         idResource: string;
         constructor(_name?: string, _data?: ParticleData.System);
-        get isSerializableResource(): true;
         get data(): ParticleData.System;
         set data(_data: ParticleData.System);
         serialize(): Serialization;
@@ -4110,7 +4105,6 @@ declare namespace FudgeCore {
          */
         static blendRecursive(_base: Mutator, _blend: Mutator, _weightBase: number, _weightBlend: number, _intersect?: boolean): Mutator;
         protected static registerSubclass(_subClass: typeof Animation): number;
-        get isSerializableResource(): true;
         get getLabels(): Enumerator;
         get fps(): number;
         set fps(_fps: number);
@@ -4627,7 +4621,6 @@ declare namespace FudgeCore {
         private url;
         private ready;
         constructor(_url?: RequestInfo);
-        get isSerializableResource(): true;
         get isReady(): boolean;
         /**
          * Asynchronously loads the audio (mp3) from the given url
@@ -5799,7 +5792,6 @@ declare namespace FudgeCore {
             channels: AnimationChannel[];
             eventTrack: AnimationEventTrack;
             constructor(_name?: string, _duration?: number, _channels?: AnimationChannel[], _eventTrack?: AnimationEventTrack);
-            get isSerializableResource(): true;
             serialize(): SerializationOf<Animation>;
             deserialize(_serialization: Serialization): Promise<Animation>;
             protected reduceMutator(_mutator: Mutator): void;
@@ -6363,7 +6355,6 @@ declare namespace FudgeCore {
              */
             alphaClip: number;
             constructor(_name?: string, _features?: typeof ShaderFeature[], _properties?: MaterialProperty[]);
-            get isSerializableResource(): true;
             get features(): typeof ShaderFeature[];
             set features(_features: typeof ShaderFeature[]);
             get shader(): Shader;
@@ -6443,7 +6434,6 @@ declare namespace FudgeCore {
     class Graph extends Node implements SerializableResource {
         idResource: string;
         constructor(_name?: string);
-        get isSerializableResource(): true;
         get type(): string;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
@@ -6560,6 +6550,7 @@ declare namespace FudgeCore {
     class CoatTextured extends CoatColored {
         texture: Texture;
         constructor(_color?: Color, _texture?: Texture);
+        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -6583,6 +6574,7 @@ declare namespace FudgeCore {
     class CoatRemissiveTexturedNormals extends CoatRemissiveTextured {
         normalMap: Texture;
         constructor(_color?: Color, _texture?: Texture, _normalMap?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {

@@ -26,12 +26,7 @@ namespace FudgeCore {
       @editReference(Texture)
       public texToon: Texture;
 
-      public serialize(): Serialization {
-        let serialization: Serialization = super.serialize();
-        serialization.idTexToon = this.texToon.idResource;
-        return serialization;
-      }
-
+      // TODO: backwards compatibility, remove in future version
       public async deserialize(_serialization: Serialization): Promise<Serializable> {
         await super.deserialize(_serialization);
         if (_serialization.idTexToon)
