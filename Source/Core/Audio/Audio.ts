@@ -4,11 +4,18 @@ namespace FudgeCore {
    * @authors Thomas Dorner, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2020
    */
   export class Audio extends Mutable implements SerializableResource {
-    public name: string = "Audio";
-    public idResource: string = undefined;
+    @edit(String)
+    public name: string = Audio.name;
+
+    @edit(String)
+    public idResource: string;
+
     public buffer: AudioBuffer = undefined;
     public path: URL = undefined;
+
+    @edit(String)
     private url: RequestInfo = undefined;
+
     private ready: boolean = false;
 
     public constructor(_url?: RequestInfo) {
@@ -37,40 +44,37 @@ namespace FudgeCore {
       let buffer: AudioBuffer = await AudioManager.default.decodeAudioData(arrayBuffer);
       this.buffer = buffer;
       this.ready = true;
-      this.dispatchEvent(new Event(EVENT_AUDIO.READY));
+      const event: RecyclableEvent = RecyclableEvent.get(EVENT_AUDIO.READY);
+      this.dispatchEvent(event);
+      RecyclableEvent.store(event);
     }
 
-    //#region Transfer
+
     public serialize(): Serialization {
-      return {
-        url: this.url,
-        idResource: this.idResource,
-        name: this.name,
-        type: this.type
-      };
+      return serializeDecorations(this);
     }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
-      await this.load(_serialization.url);
-      this.name = _serialization.name;
+      this.load(_serialization.url);
+      deserializeDecorations(this, _serialization);
       return this;
     }
 
     public async mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void> {
-      let url: string = _mutator.url; // save url for reconstruction after exclusion
+      // let url: string = _mutator.url; // save url for reconstruction after exclusion
       if (_mutator.url != this.url.toString())
         this.load(_mutator.url);
       // except url from mutator for further processing
-      delete (_mutator.url);
-      super.mutate(_mutator, _selection, _dispatchMutate);
+      // delete (_mutator.url);
+      return super.mutate(_mutator, _selection, _dispatchMutate);
       // reconstruct, for mutator may be kept by caller
-      Reflect.set(_mutator, "url", url);
+      // _mutator.url = url;
     }
 
     protected reduceMutator(_mutator: Mutator): void {
       // delete _mutator.idResource; 
       delete _mutator.ready;
     }
-    //#endregion
   }
 }
