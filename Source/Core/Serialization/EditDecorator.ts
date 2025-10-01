@@ -67,8 +67,16 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function edit<T extends Number | String | Boolean | object>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
-  export function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;   // enum type
+
+
+  // primitive type
+  export function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P | P[]>) => void) : never;
+  // object type
+  export function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
+  // object type array
+  export function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+  // enum type
+  export function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P | P[]>) => void;
   export function edit(_type: Function | Record<string, unknown>): (_value: unknown, _context: ClassPropertyContext<General, General>) => void {
     return editFactory(_type, false);
   }

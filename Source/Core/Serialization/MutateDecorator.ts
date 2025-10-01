@@ -1,4 +1,14 @@
 namespace FudgeCore {
+
+  /**
+   * Maps wrapper types (`Number`, `String`, `Boolean`) to their primitive counterparts.
+   */
+  export type WrapperToPrimitve<T> =
+    T extends String ? string :
+    T extends Number ? number :
+    T extends Boolean ? boolean :
+    never;
+
   //#region @mutate
   /**
    * Decorator to mark properties of a class for nested mutation.
@@ -13,8 +23,14 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
-  export function mutate<T extends Number | String | Boolean | Mutable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
-  export function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void; // enum type
+ // primitive type
+  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void) : never;
+  // object type
+  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P>) => void;
+  // object type array
+  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P[]>) => void;
+  // enum type
+  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void;
   export function mutate(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
     return mutateFactory(_type, false);
   }

@@ -65,8 +65,14 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
-  export function serialize<T extends Number | String | Boolean | Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends SerializableResource ? never : Serializable, T | T[]>) => void; // enum type
-  export function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
+  // primitive type
+  export function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Serializable, P>) => void) : never;
+  // object type
+  export function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, P | P[]>) => void;
+  // object type array
+  export function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, P[]>) => void;
+  // enum type
+  export function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, P | P[]>) => void;
   export function serialize(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
     return serializeFactory(_type, false);
   }

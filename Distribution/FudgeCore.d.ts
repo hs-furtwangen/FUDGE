@@ -678,6 +678,10 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * Maps wrapper types (`Number`, `String`, `Boolean`) to their primitive counterparts.
+     */
+    type WrapperToPrimitve<T> = T extends String ? string : T extends Number ? number : T extends Boolean ? boolean : never;
+    /**
      * Decorator to mark properties of a class for nested mutation.
      *
      * This allows the intended type of the property to be known by the editor (at runtime), making it:
@@ -690,8 +694,10 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function mutate<T extends Number | String | Boolean | Mutable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
-    function mutate<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void;
+    function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void) : never;
+    function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P>) => void;
+    function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P[]>) => void;
+    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation.
      * See {@link mutate} for additional information.
@@ -832,8 +838,10 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function serialize<T extends Number | String | Boolean | Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<T extends SerializableResource ? never : Serializable, T | T[]>) => void;
-    function serialize<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void;
+    function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Serializable, P>) => void) : never;
+    function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, P | P[]>) => void;
+    function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, P[]>) => void;
+    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, P | P[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for serialization.
      * See {@link serialize} decorator for additional information.
@@ -987,8 +995,10 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function edit<T extends Number | String | Boolean | object>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
-    function edit<T extends Number | String, E extends Record<keyof E, T>>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
+    function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P | P[]>) => void) : never;
+    function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
+    function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+    function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P | P[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
      * See {@link mutateFunction} and {@link serializeF} decorators for more information.
