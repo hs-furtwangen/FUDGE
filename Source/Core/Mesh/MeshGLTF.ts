@@ -5,6 +5,7 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2024
    */
   export class MeshGLTF extends mixinSerializableResourceExternal(Mesh) {
+    @edit(Number)
     public iPrimitive: number; // most likely will not stay consistent with the glTF file...
 
     public async load(_url: RequestInfo = this.url, _name: string = this.name, _iPrimitive: number = this.iPrimitive): Promise<MeshGLTF> {
@@ -12,17 +13,6 @@ namespace FudgeCore {
       this.name = _name;
       this.iPrimitive = _iPrimitive;
       return GLTFLoader.loadResource(this);
-    }
-
-    public serialize(): Serialization {
-      const serialization: Serialization = super.serialize();
-      serialization.iPrimitive = this.iPrimitive;
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<MeshGLTF> {
-      this.iPrimitive = _serialization.iPrimitive;
-      return <Promise<MeshGLTF>>super.deserialize(_serialization);
     }
   }
 }

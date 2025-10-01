@@ -5,11 +5,17 @@ namespace FudgeCore {
    */
   export class MeshTorus extends MeshRotation {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshTorus);
+
+    @edit(Number)
     private latitudes: number = 12;
+
+    @edit(Number)
     private radiusRing: number = 0.5 - 0.125;
+
+    @edit(Number)
     private radiusTube: number = 0.125;
 
-    public constructor(_name: string = "MeshTorus", _radiusRing: number = 0.5 - 0.125, _radiusTube: number = 0.125 , _longitudes: number = 8, _latitudes: number = 6) {
+    public constructor(_name: string = "MeshTorus", _radiusRing: number = 0.5 - 0.125, _radiusTube: number = 0.125, _longitudes: number = 8, _latitudes: number = 6) {
       super(_name, MeshTorus.getShape(_radiusRing, _radiusTube, Math.max(3, _latitudes)), _longitudes);
       this.radiusTube = _radiusTube;
       this.radiusRing = _radiusRing;
@@ -30,7 +36,7 @@ namespace FudgeCore {
     /**
      * Create this torus from the given parameters
      */
-    public create(_radiusRing: number = 0.5 - 0.125, _radiusTube: number = 0.125,  _longitudes: number = 8, _latitudes: number = 6): void {
+    public create(_radiusRing: number = 0.5 - 0.125, _radiusTube: number = 0.125, _longitudes: number = 8, _latitudes: number = 6): void {
       this.radiusTube = _radiusTube;
       this.latitudes = Math.max(3, Math.round(_latitudes));
       this.radiusRing = _radiusRing;
@@ -41,9 +47,7 @@ namespace FudgeCore {
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
-      serialization.latitudes = this.latitudes;
-      serialization.radiusRing = this.radiusRing;
-      serialization.radiusTube = this.radiusTube;
+      delete serialization.shape;
       return serialization;
     }
 
@@ -54,13 +58,14 @@ namespace FudgeCore {
     }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      super.mutate(_mutator, _selection, _dispatchMutate);
+      await super.mutate(_mutator, _selection, _dispatchMutate);
       this.create(this.radiusRing, this.radiusTube, this.longitudes, this.latitudes);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.shape;
+    public getMutator(_extendable?: boolean): Mutator {
+      let mutator: Mutator = super.getMutator(_extendable);
+      delete mutator.shape;
+      return mutator;
     }
     //#endregion
   }

@@ -76,12 +76,12 @@ namespace FudgeCore {
         this.faces.push(new Face(this.vertices, i - 1, i, 0));
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       serialization.shape = Serializer.serializeArray(this.shape, Vector2);
       return serialization;
     }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
       if (_serialization.shape) 
@@ -95,10 +95,5 @@ namespace FudgeCore {
       this.create(this.shape, this.fitTexture);
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-    }
-    //#endregion
   }
 }

@@ -19,7 +19,11 @@ namespace FudgeCore {
       new Vector2(0.5, 0.5),
       new Vector2(0.5, -0.5)
     ];
+
+    @edit(MutableArray)
     protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
+
+    @edit(Number)
     protected longitudes: number;
 
     public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.verticesDefault, _longitudes: number = 3) {
@@ -32,17 +36,14 @@ namespace FudgeCore {
       return 2;
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       serialization.shape = Serializer.serializeArray(this.shape, Vector2);
-      serialization.longitudes = this.longitudes;
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      this.longitudes = _serialization.longitudes;
       if (_serialization.shape)
         this.rotate(await Serializer.deserializeArray(_serialization.shape, Vector2), this.longitudes);
 
@@ -54,7 +55,6 @@ namespace FudgeCore {
       this.rotate(this.shape, this.longitudes);
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }
-    //#endregion
 
     protected rotate(_shape: Vector2[], _longitudes: number): void {
       this.clear();

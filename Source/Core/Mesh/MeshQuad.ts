@@ -23,20 +23,25 @@ namespace FudgeCore {
     // public get indicesFlat(): Uint16Array { return this.indices; }
     // public get normalsFlat(): Float32Array { return this.normalsVertex; }
 
-    //#region Transger
+
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
+      let serialization: Serialization = super.serialize();
+      delete serialization.shape;
+      delete serialization.fitTexture;
       return serialization;
     }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
       this.create(MeshQuad.shape, true); // this seems to be dispatched doubled while deserializing the resources
       return this;
     }
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.shape;
-      delete _mutator.fitTexture;
+
+    public getMutator(_extendable?: boolean): Mutator {
+      let mutator: Mutator = super.getMutator(_extendable);
+      delete mutator.shape;
+      delete mutator.fitTexture;
+      return mutator;
     }
   }
 }

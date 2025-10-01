@@ -39,10 +39,11 @@ namespace FudgeCore {
      * The texture to be used as the heightmap.
      * **Caution!** Setting this causes the mesh to be recreated which can be an expensive operation.
      */
-    @mutate(TextureImage)
+    @editReference(TextureImage)
     public get texture(): TextureImage {
       return this.#texture;
     }
+
     public set texture(_texture: TextureImage) {
       this.#texture = _texture;
       if (!_texture)
@@ -51,32 +52,30 @@ namespace FudgeCore {
       super.create(resolution, resolution, MeshRelief.createHeightMapFunction(_texture));
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       delete serialization.seed;
       delete serialization.scale;
       delete serialization.resolution;
-
-      if (this.#texture)
-        serialization.idTexture = this.texture.idResource;
-
       return serialization;
     }
+
+    // TODO: Backward compatibility, remove in future version
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      if (_serialization.idTexture) 
+
+      if (_serialization.idTexture)
         this.texture = <TextureImage>await Project.getResource(_serialization.idTexture);
-      
+
       return this;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.seed;
-      delete _mutator.scale;
-      delete _mutator.resolution;
+    public getMutator(_extendable?: boolean): Mutator {
+      let mutator: Mutator = super.getMutator(_extendable);
+      delete mutator.seed;
+      delete mutator.scale;
+      delete mutator.resolution;
+      return mutator;
     }
-    //#endregion
   }
 }

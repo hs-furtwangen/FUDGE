@@ -35,9 +35,16 @@ namespace FudgeCore {
    */
   export class MeshTerrain extends Mesh {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshTerrain);
-    protected resolution: Vector2;
-    protected scale: Vector2;
+
+    @edit(Number)
     protected seed: number;
+
+    @edit(Vector2)
+    protected resolution: Vector2;
+
+    @edit(Vector2)
+    protected scale: Vector2;
+
     protected heightMapFunction: HeightMapFunction = null;
 
     public constructor(_name: string = "MeshTerrain", _resolution: Vector2 = Vector2.ONE(2), _scaleInput: Vector2 = Vector2.ONE(), _functionOrSeed: HeightMapFunction | number = 0) {
@@ -153,29 +160,16 @@ namespace FudgeCore {
       return [iQuad, iQuad + 1];
     }
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.seed = this.seed;
-      serialization.scale = this.scale.serialize();
-      serialization.resolution = this.resolution.serialize();
-      return serialization;
-    }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      if (_serialization.resolution)
-        this.resolution.deserialize(_serialization.resolution);
-      if (_serialization.scale)
-        this.scale.deserialize(_serialization.scale);
-      this.seed = _serialization.seed;
       this.create(this.resolution, this.scale, this.seed);
       return this;
     }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      super.mutate(_mutator, _selection, _dispatchMutate);
+      await super.mutate(_mutator, _selection, _dispatchMutate);
       this.create(this.resolution, this.scale, this.seed);
     }
-    //#endregion
+
   }
 }

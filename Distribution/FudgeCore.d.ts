@@ -7103,7 +7103,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -7126,7 +7125,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
         private extrude;
     }
 }
@@ -7139,8 +7137,6 @@ declare namespace FudgeCore {
     export class MeshFBX extends MeshFBX_base {
         iMesh: number;
         load(_url?: RequestInfo, _iMesh?: number): Promise<MeshFBX>;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         private getDataIndex;
         private createBones;
     }
@@ -7169,8 +7165,6 @@ declare namespace FudgeCore {
     export class MeshGLTF extends MeshGLTF_base {
         iPrimitive: number;
         load(_url?: RequestInfo, _name?: string, _iPrimitive?: number): Promise<MeshGLTF>;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<MeshGLTF>;
     }
     export {};
 }
@@ -7221,7 +7215,7 @@ declare namespace FudgeCore {
         constructor(_name?: string);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
+        getMutator(_extendable?: boolean): Mutator;
     }
 }
 declare namespace FudgeCore {
@@ -7258,9 +7252,9 @@ declare namespace FudgeCore {
      */
     class MeshTerrain extends Mesh {
         static readonly iSubclass: number;
+        protected seed: number;
         protected resolution: Vector2;
         protected scale: Vector2;
-        protected seed: number;
         protected heightMapFunction: HeightMapFunction;
         constructor(_name?: string, _resolution?: Vector2, _scaleInput?: Vector2, _functionOrSeed?: HeightMapFunction | number);
         /**
@@ -7281,7 +7275,6 @@ declare namespace FudgeCore {
          * Returns the indices of the two faces forming the quad the given grid position belongs to.
          */
         getFaceIndicesFromGrid(_grid: Vector2): number[];
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
     }
@@ -7305,7 +7298,7 @@ declare namespace FudgeCore {
         set texture(_texture: TextureImage);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
+        getMutator(_extendable?: boolean): Mutator;
     }
 }
 declare namespace FudgeCore {
@@ -7352,7 +7345,7 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
+        getMutator(_extendable?: boolean): Mutator;
     }
 }
 declare namespace FudgeCore {
@@ -7391,7 +7384,7 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
+        getMutator(_extendable?: boolean): Mutator;
     }
 }
 declare namespace FudgeCore {

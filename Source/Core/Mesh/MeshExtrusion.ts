@@ -27,7 +27,6 @@ namespace FudgeCore {
       // console.log("Mutator", this.getMutator());
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       serialization.transforms = Serializer.serializeArray(this.mtxTransforms, Matrix4x4);
@@ -48,11 +47,6 @@ namespace FudgeCore {
       this.extrude(this.mtxTransforms);
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-    }
-    //#endregion
 
     private extrude(_mtxTransforms: Matrix4x4[] = MeshExtrusion.mtxDefaults): void {
       this.mtxTransforms = new MutableArray(Matrix4x4, ..._mtxTransforms);

@@ -6,6 +6,8 @@ namespace FudgeCore {
    */
   export class MeshSphere extends MeshRotation {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshSphere);
+
+    @edit(Number)
     private latitudes: number;
 
     public constructor(_name: string = "MeshSphere", _longitudes: number = 8, _latitudes: number = 8) {
@@ -49,7 +51,6 @@ namespace FudgeCore {
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       delete serialization.shape;
-      serialization.latitudes = this.latitudes;
       return serialization;
     }
 
@@ -60,13 +61,14 @@ namespace FudgeCore {
     }
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      super.mutate(_mutator, _selection, _dispatchMutate);
+      await super.mutate(_mutator, _selection, _dispatchMutate);
       this.create(this.longitudes, this.latitudes);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.shape;
+    public getMutator(_extendable?: boolean): Mutator {
+      let mutator: Mutator = super.getMutator(_extendable);
+      delete mutator.shape;
+      return mutator;
     }
     //#endregion
   }
