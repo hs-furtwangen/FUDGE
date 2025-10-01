@@ -1369,7 +1369,6 @@ declare namespace FudgeCore {
         toString(): string;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Vector2;
-        getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
         protected reduceMutator(_mutator: Mutator): void;
     }
@@ -1656,7 +1655,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Vector3;
         mutate(_mutator: Mutator): void;
-        getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }
@@ -2869,7 +2867,7 @@ declare namespace FudgeCore {
      * Defines a rectangle with position and size and add comfortable methods to it
      * @author Jirka Dell'Oro-Friedl, HFU, 2019
      */
-    class Rectangle extends Mutable implements Recycable {
+    class Rectangle extends Mutable implements Recycable, Serializable {
         position: Vector2;
         size: Vector2;
         constructor(_x?: number, _y?: number, _width?: number, _height?: number, _origin?: ORIGIN2D);
@@ -2956,6 +2954,8 @@ declare namespace FudgeCore {
          * Creates a string representation of this rectangle.
          */
         toString(): string;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }

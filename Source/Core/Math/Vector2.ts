@@ -8,7 +8,9 @@ namespace FudgeCore {
    * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   export class Vector2 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
 
     public constructor(_x: number = 0, _y: number = 0) {
@@ -390,13 +392,6 @@ namespace FudgeCore {
       } else
         this.mutate(_serialization);
       return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = {
-        x: this.x, y: this.y
-      };
-      return mutator;
     }
 
     public override mutate(_mutator: Mutator): void {

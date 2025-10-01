@@ -14,9 +14,13 @@ namespace FudgeCore {
     * @authors Matthias Roming, HFU, 2023 | Marko Fehrenbach, HFU, 2020 | Jonas Plotzky, HFU, 2023
     */
   export class Quaternion extends Mutable implements Serializable, Recycable, ArrayConvertible {
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
+    @edit(Number)
     public z: number;
+    @edit(Number)
     public w: number;
 
     readonly #eulerAngles: Vector3 = Vector3.ZERO(); // euler angle representation of this quaternion in degrees.

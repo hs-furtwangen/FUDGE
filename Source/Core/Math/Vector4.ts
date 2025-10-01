@@ -4,9 +4,13 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2023
    */
   export class Vector4 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
+    @edit(Number)
     public z: number;
+    @edit(Number)
     public w: number;
 
     public constructor(_x: number = 0, _y: number = 0, _z: number = 0, _w: number = 0) {

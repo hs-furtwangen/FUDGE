@@ -21,8 +21,11 @@ namespace FudgeCore {
      */
     public static readonly keys: readonly ["x", "y", "z"] = ["x", "y", "z"];
 
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
+    @edit(Number)
     public z: number;
 
     public constructor(_x: number = 0, _y: number = 0, _z: number = 0) {
@@ -688,11 +691,6 @@ namespace FudgeCore {
         this.y = _mutator.y;
       if (_mutator.z != undefined)
         this.z = _mutator.z;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = { x: this.x, y: this.y, z: this.z };
-      return mutator;
     }
 
     protected reduceMutator(_mutator: Mutator): void {/** */ }
