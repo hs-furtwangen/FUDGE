@@ -4186,14 +4186,14 @@ declare namespace FudgeCore {
      * Describes and controls and animation by yielding mutators
      * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
      * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
-     * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
+     * @author Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
      */
     class Animation extends Mutable implements SerializableResource {
         #private;
         static readonly subclasses: typeof Animation[];
         static readonly iSubclass: number;
-        idResource: string;
         name: string;
+        idResource: string;
         totalTime: number;
         labels: AnimationLabel;
         animationStructure: AnimationStructure;
@@ -4261,7 +4261,7 @@ declare namespace FudgeCore {
          * @returns 1 if forward, 0 if stop, -1 if backwards
          */
         calculateDirection(_time: number, _playmode: ANIMATION_PLAYMODE): number;
-        serialize(): Serialization;
+        serialize(_serializeStructure?: boolean): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         protected reduceMutator(_mutator: Mutator): void;
         /**
@@ -4695,10 +4695,10 @@ declare namespace FudgeCore {
         private next;
         private wrap;
         constructor(_name?: string);
-        get texture(): Texture;
         /**
-         * Sets the texture to be used as the spritesheet
+         * The spritesheet texture
          */
+        get texture(): Texture;
         set texture(_texture: Texture);
         /**
          * Creates this animation sprite from the given arguments

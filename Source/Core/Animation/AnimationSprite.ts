@@ -1,11 +1,23 @@
 namespace FudgeCore {
   export class AnimationSprite extends Animation {
     public static readonly iSubclass: number = Animation.registerSubclass(AnimationSprite);
+
+    @edit(Number)
     private frames: number = 25;
+
+    @edit(Number)
     private wrapAfter: number = 5;
+
+    @edit(Vector2)
     private start: Vector2 = new Vector2(0, 0);
+
+    @edit(Vector2)
     private size: Vector2 = new Vector2(80, 80);
+
+    @edit(Vector2)
     private next: Vector2 = new Vector2(80, 0);
+
+    @edit(Vector2)
     private wrap: Vector2 = new Vector2(0, 80);
 
     #texture: Texture = TextureDefault.color;
@@ -14,16 +26,17 @@ namespace FudgeCore {
     public constructor(_name: string = "AnimationSprite") { //}, _fps: number = 15) {
       super(_name, {}, 1);
       this.framesPerSecond = this.frames;
-      this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
+      this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond); // TODO: during deserialization, this will be called twice... maybe find a lazy solution?
     }
-    
-    @mutate(Texture)
+
+    /**
+     * The spritesheet texture
+     */
+    @editReference(Texture)
     public get texture(): Texture {
       return this.#texture;
     }
-    /**
-     * Sets the texture to be used as the spritesheet
-     */
+
     public set texture(_texture: Texture) {
       this.#texture = _texture;
       this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
@@ -113,40 +126,31 @@ namespace FudgeCore {
       return positions;
     }
 
-    //#region transfer
     public async mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void> {
       super.mutate(_mutator, _selection, _dispatchMutate);
       this.create(this.texture, this.frames, this.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
     }
 
     public serialize(): Serialization {
-      let serialization: Serialization = {};
-      serialization.idResource = this.idResource;
-      serialization.idTexture = this.#texture.idResource;
-      serialization.frames = this.frames;
-      serialization.wrapAfter = this.wrapAfter;
-      for (let name of ["start", "size", "next", "wrap"])
-        serialization[name] = (<Vector2>Reflect.get(this, name)).serialize();
-
       let animationsStructure: AnimationStructure = this.animationStructure;
-      this.animationStructure = {}; // no need to serialize structure
-      // let serialization: Serialization = super.serialize();
-      serialization[super.constructor.name] = super.serialize();
+      this.animationStructure = null; // no need to serialize structure
+      let serialization: Serialization = super.serialize();
       this.animationStructure = animationsStructure; // restore existent structure
       return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
+      // TODO: backwards compatibility, remove in future version
+      if (_serialization[super.constructor.name] != undefined)
+        await super.deserialize(_serialization[super.constructor.name]);
+      // TODO: backwards compatibility, remove in future version
       if (_serialization.idTexture)
         this.#texture = <Texture>await Project.getResource(_serialization.idTexture);
 
-      for (let name of ["start", "size", "next", "wrap"])
-        (<Vector2>Reflect.get(this, name)).deserialize(_serialization[name]);
+      await super.deserialize(_serialization);
       this.create(this.texture, _serialization.frames, _serialization.wrapAfter, this.start, this.size, this.next, this.wrap, this.framesPerSecond);
       return this;
     }
-    //#endregion
 
     /**
      * Converts the {@link AnimationSprite} into an {@link Animation}

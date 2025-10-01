@@ -71,21 +71,30 @@ namespace FudgeCore {
    * Describes and controls and animation by yielding mutators 
    * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
    * Applied to a {@link Node} directly via script or {@link ComponentAnimation}.
-   * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
+   * @author Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023 | Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export class Animation extends Mutable implements SerializableResource {
     // /** refers back to this class from any subclass e.g. in order to find compatible other resources*/
     // public static readonly baseClass: typeof Animation = Animation;
     // /** list of all the subclasses derived from this class, if they registered properly*/
     public static readonly subclasses: typeof Animation[] = [];
     public static readonly iSubclass: number = Animation.registerSubclass(Animation);
-    public idResource: string = undefined;
+
+    @order(0)
+    @edit(String)
     public name: string;
+
+    @order(1)
+    @edit(String)
+    public idResource: string;
+
     public totalTime: number = 0; // Why isn't this called duration or length?
     public labels: AnimationLabel = {}; // a label marks a specific time to conveniently jump to using a text identifier
     public animationStructure: AnimationStructure; // TODO: if set the cache needs to be adjusted (animationStructuresProcessed)
     public events: AnimationEventTrigger = {};
-    protected framesPerSecond: number = 60; // TODO: change this and its accessors to #framesPerSecond?
+
+    protected framesPerSecond: number = 60;
 
     // processed eventlist and animation strucutres for playback.
     private eventsProcessed: Map<ANIMATION_STRUCTURE_TYPE, AnimationEventTrigger> = new Map<ANIMATION_STRUCTURE_TYPE, AnimationEventTrigger>();
@@ -160,6 +169,8 @@ namespace FudgeCore {
       return en;
     }
 
+    @order(2)
+    @edit(Number)
     public get fps(): number {
       return this.framesPerSecond;
     }
@@ -286,38 +297,37 @@ namespace FudgeCore {
     }
 
     //#region transfer
-    public serialize(): Serialization {
-      let s: Serialization = {
-        idResource: this.idResource,
-        name: this.name,
-        labels: {},
-        events: {},
-        framesPerSecond: this.framesPerSecond
-        // sps: this.stepsPerSecond
-      };
-      for (let name in this.labels) {
-        s.labels[name] = this.labels[name];
-      }
-      for (let name in this.events) {
-        s.events[name] = this.events[name];
-      }
-      s.animationStructure = this.traverseStructureForSerialization(this.animationStructure);
-      return s;
+    public serialize(_serializeStructure?: boolean): Serialization {
+      const serialization: Serialization = serializeDecorations(this);
+
+      serialization.labels = {};
+      for (let name in this.labels)
+        serialization.labels[name] = this.labels[name];
+
+      serialization.events = {};
+      for (let name in this.events)
+        serialization.events[name] = this.events[name];
+
+      serialization.animationStructure = this.traverseStructureForSerialization(this.animationStructure);
+      return serialization;
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
-      this.name = _serialization.name;
-      this.framesPerSecond = _serialization.framesPerSecond;
-      // this.stepsPerSecond = _serialization.sps;
+      await deserializeDecorations(this, _serialization);
+
+      // TODO: backwards compatibility, remove in future version
+      if (_serialization.framesPerSecond != undefined)
+        this.fps = _serialization.framesPerSecond;
+
       this.labels = {};
-      for (let name in _serialization.labels) {
+      for (let name in _serialization.labels)
         this.labels[name] = _serialization.labels[name];
-      }
+
       this.events = {};
-      for (let name in _serialization.events) {
+      for (let name in _serialization.events)
         this.events[name] = _serialization.events[name];
-      }
+
       this.eventsProcessed = new Map<ANIMATION_STRUCTURE_TYPE, AnimationEventTrigger>();
 
       this.animationStructure = await this.traverseStructureForDeserialization(_serialization.animationStructure);
@@ -327,10 +337,6 @@ namespace FudgeCore {
       this.calculateTotalTime();
       return this;
     }
-
-    // public getMutator(): Mutator {
-    //   return this.serialize();
-    // }
 
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.totalTime;
