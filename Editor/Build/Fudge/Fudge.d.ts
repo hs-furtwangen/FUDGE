@@ -7,6 +7,7 @@ declare namespace Fudge {
     export class ContextMenu {
         static appendCopyPaste(_menu: Electron.Menu): void;
         static getSubclassMenu<T extends Subclass<T>>(_id: CONTEXTMENU, _class: T, _callback: ContextMenuCallback): Electron.Menu;
+        static getSubclassIndex(_item: Electron.MenuItem): number;
     }
     export {};
 }

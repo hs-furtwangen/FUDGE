@@ -22,13 +22,23 @@ namespace Fudge {
       for (let iSubclass in _class.subclasses) {
         let subclass: T = _class.subclasses[iSubclass];
         let item: Electron.MenuItem = new remote.MenuItem(
-          { label: subclass.name, id: String(_id), click: _callback }
+          { 
+            label: subclass.name, 
+            id: String(_id), 
+            click: _callback,
+            // @ts-ignore
+            iSubclass: parseInt(iSubclass) 
+          }
         );
-        //@ts-ignore
-        item.overrideProperty("iSubclass", iSubclass);
+        // //@ts-ignore
+        // item.overrideProperty("iSubclass", iSubclass);
         menu.append(item);
       }
       return menu;
+    }
+
+    public static getSubclassIndex(_item: Electron.MenuItem): number {
+      return Reflect.get(_item, "iSubclass");
     }
   }
 }

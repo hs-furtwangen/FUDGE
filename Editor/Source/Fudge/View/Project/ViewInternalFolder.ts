@@ -124,8 +124,8 @@ namespace Fudge {
     protected async contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): Promise<void> {
       let choice: CONTEXTMENU = Number(_item.id);
       ƒ.Debug.fudge(`MenuSelect | id: ${CONTEXTMENU[_item.id]} | event: ${_event}`);
-      let iSubclass: number = _item["iSubclass"];
-      if (!iSubclass && (choice == CONTEXTMENU.CREATE_MESH || choice == CONTEXTMENU.CREATE_MATERIAL)) {
+      let iSubclass: number = ContextMenu.getSubclassIndex(_item);
+      if (iSubclass == null && (choice == CONTEXTMENU.CREATE_MESH || choice == CONTEXTMENU.CREATE_MATERIAL || choice == CONTEXTMENU.CREATE_ANIMATION)) {
         alert("Funky Electron-Error... please try again");
         return;
       }
@@ -146,7 +146,6 @@ namespace Fudge {
       ƒ.Debug.fudge(focus.name);
       if (!(focus instanceof ResourceFolder))
         return;
-
 
       switch (choice) {
         case CONTEXTMENU.CREATE_FOLDER:
