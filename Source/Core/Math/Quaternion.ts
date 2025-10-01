@@ -616,8 +616,8 @@ namespace FudgeCore {
 
     // currently quaternions are never serialized, so this is not needed. But maybe it will be in the future.
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      serialization.toJSON = () => { return `[${this.x}, ${this.y}, ${this.z}, ${this.w}]`; };
+      let serialization: Serialization = this.getMutator(true);
+      serialization.toJSON = () => `[${this.x}, ${this.y}, ${this.z}, ${this.w}]`;
       return serialization;
     }
 

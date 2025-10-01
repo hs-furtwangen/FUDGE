@@ -670,9 +670,8 @@ namespace FudgeCore {
 
     //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      // serialization.toJSON = () => { return `{ "r": ${this.r}, "g": ${this.g}, "b": ${this.b}, "a": ${this.a}}`; };
-      serialization.toJSON = () => { return `[${this.x}, ${this.y}, ${this.z}]`; };
+      let serialization: Serialization = this.getMutator(true);
+      serialization.toJSON = () => `[${this.x}, ${this.y}, ${this.z}]`;
       return serialization;
     }
 

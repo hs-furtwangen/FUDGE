@@ -283,7 +283,9 @@ namespace FudgeCore {
     }
 
     public serialize(): Serialization {
-      return { toJSON: () => `[${this.x}, ${this.y}, ${this.z}, ${this.w}]` };
+      let serialization: Serialization = this.getMutator(true);
+      serialization.toJSON = () => `[${this.x}, ${this.y}, ${this.z}, ${this.w}]`;
+      return serialization;
     }
 
     public deserialize(_serialization: Serialization): Vector4 {

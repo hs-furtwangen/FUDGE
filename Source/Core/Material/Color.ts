@@ -13,9 +13,13 @@ namespace FudgeCore {
       return crc2;
     })();
 
+    @edit(Number)
     public r: number;
+    @edit(Number)
     public g: number;
+    @edit(Number)
     public b: number;
+    @edit(Number)
     public a: number;
 
     public constructor(_r: number = 1, _g: number = 1, _b: number = 1, _a: number = 1) {
@@ -424,8 +428,7 @@ namespace FudgeCore {
     //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = this.getMutator(true);
-      // serialization.toJSON = () => { return `{ "r": ${this.r}, "g": ${this.g}, "b": ${this.b}, "a": ${this.a}}`; };
-      serialization.toJSON = () => { return `[${this.r}, ${this.g}, ${this.b}, ${this.a}]`; };
+      serialization.toJSON = () => `[${this.r}, ${this.g}, ${this.b}, ${this.a}]`;
       return serialization;
     }
 
