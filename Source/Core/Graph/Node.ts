@@ -371,7 +371,7 @@ namespace FudgeCore {
           let componentsOfType: Component[] = this.components[componentType];
           let mutatorsForType: Mutator[] = _mutator.components[componentType];
           for (let i: number = 0; i < componentsOfType.length; i++)
-            componentsOfType[i].mutate(mutatorsForType[i], null, false);
+            componentsOfType[i].mutate(mutatorsForType[i], false);
         }
       }
 

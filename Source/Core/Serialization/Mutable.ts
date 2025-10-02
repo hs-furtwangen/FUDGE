@@ -114,9 +114,9 @@ namespace FudgeCore {
      * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
      * Uses mutateBase, but can be overwritten in subclasses
      */
-    public mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await this.mutateBase(_mutator, _selection);
+    public mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await this.mutateBase(_mutator);
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }
@@ -137,28 +137,21 @@ namespace FudgeCore {
     /**
      * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
      */
-    protected async mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void> {
-      let mutator: Mutator = _mutator;
-      if (_selection) { // TODO: this doesn't work as it does not recurse into objects
-        mutator = {};
-        for (let attribute of _selection) // reduce the mutator to the selection
-          if (typeof (_mutator[attribute]) !== "undefined")
-            mutator[attribute] = _mutator[attribute];
-      }
-
+    protected async mutateBase(_mutator: Mutator): Promise<void> {
       const references: ReadonlySet<string> = Mutator.references(this);
-      for (let attribute in mutator) {
+      for (let attribute in _mutator) {
         if (!Reflect.has(this, attribute))
           continue;
         let mutant: Object = Reflect.get(this, attribute);
-        let value: Mutator = <Mutator>mutator[attribute];
+        let value: Mutator = <Mutator>_mutator[attribute];
 
 
         if (value != null && !references.has(attribute) && (mutant instanceof MutableArray || mutant instanceof Mutable))
-          await mutant.mutate(value, null, false);
+          await mutant.mutate(value, false);
         else
           Reflect.set(this, attribute, value);
       }
     }
+
   }
 }

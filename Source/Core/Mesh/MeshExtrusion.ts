@@ -42,8 +42,8 @@ namespace FudgeCore {
       return this;
     }
 
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await super.mutate(_mutator, _dispatchMutate);
       this.extrude(this.mtxTransforms);
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }

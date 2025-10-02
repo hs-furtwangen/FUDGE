@@ -61,13 +61,13 @@ namespace FudgeCore {
       return this;
     }
 
-    public async mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void> {
+    public async mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void> {
       // let url: string = _mutator.url; // save url for reconstruction after exclusion
       if (_mutator.url != this.url.toString())
         this.load(_mutator.url);
       // except url from mutator for further processing
       // delete (_mutator.url);
-      return super.mutate(_mutator, _selection, _dispatchMutate);
+      return super.mutate(_mutator, _dispatchMutate);
       // reconstruct, for mutator may be kept by caller
       // _mutator.url = url;
     }

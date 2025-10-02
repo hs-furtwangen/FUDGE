@@ -221,8 +221,8 @@ namespace FudgeCore {
 
     //#endregion
 
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await super.mutate(_mutator, _dispatchMutate);
       if (_mutator.axisFirst)
         this.axisFirst = this.axisFirst;
       if (_mutator.axisSecond)

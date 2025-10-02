@@ -88,7 +88,7 @@ namespace FudgeCore {
       return this;
     }
 
-    public override mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate: boolean = true): void {
+    public override mutate(_mutator: Mutator, _dispatchMutate: boolean = true): void {
       // inline sync mutate for animation performance
       if (_mutator.active != undefined)
         this.activate(_mutator.active);

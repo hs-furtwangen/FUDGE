@@ -362,8 +362,8 @@ namespace FudgeCore {
        */
       function mixinMutableSerializableResourceExternal<TBase extends (abstract new (...args: General[]) => SerializableResourceExternal & Mutable)>(_base: TBase) { // eslint-disable-line
         abstract class MutableSerializableResourceExternal extends _base {
-          public async mutate(_mutator: Mutator, _selection: string[] = null): Promise<void> {
-            await super.mutate(_mutator, _selection);
+          public async mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void> {
+            await super.mutate(_mutator, _dispatchMutate);
             if (_mutator.url != undefined)
               this.url = _mutator.url;
             if (_mutator.url != undefined || _mutator.name != undefined)

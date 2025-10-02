@@ -172,7 +172,7 @@ namespace FudgeCore {
       // mutate the corresponding component in the destination
       let cmpMutate: Component = _destination.getComponent(_event.detail.component.constructor);
       if (cmpMutate)
-        await cmpMutate.mutate(_event.detail.mutator, null, false);
+        await cmpMutate.mutate(_event.detail.mutator, false);
     }
 
     private isFiltered(): boolean {
