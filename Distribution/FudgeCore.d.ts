@@ -7308,6 +7308,7 @@ declare namespace FudgeCore {
         set texture(_texture: TextureImage);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
+        mutate(_mutator: Mutator): Promise<void>;
         getMutator(_extendable?: boolean): Mutator;
     }
 }

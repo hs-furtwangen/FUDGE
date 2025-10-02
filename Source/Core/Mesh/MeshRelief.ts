@@ -70,6 +70,10 @@ namespace FudgeCore {
       return this;
     }
 
+    public async mutate(_mutator: Mutator): Promise<void> {
+      return this.mutateBase(_mutator);
+    }
+
     public getMutator(_extendable?: boolean): Mutator {
       let mutator: Mutator = super.getMutator(_extendable);
       delete mutator.seed;
