@@ -593,7 +593,7 @@ namespace FudgeCore {
     /** Change properties by an associative array */
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       await super.mutate(_mutator, _selection, _dispatchMutate);
-      if (_mutator.initialization != undefined && this.isActive)
+      if (_mutator.initialization != undefined && this.active)
         this.initialize();
       // TODO: see if this alternative should be, at least partially, done with mutateSelection
       // let callIfExist: Function = (_key: string, _setter: Function) => {
@@ -603,25 +603,6 @@ namespace FudgeCore {
 
       // this.dispatchEvent(new Event(EVENT.MUTATE));
     }
-
-    // TODO: use enumerate decorator!
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-
-      mutator.friction = this.friction;
-      mutator.restitution = this.restitution;
-      mutator.mass = this.mass;
-      mutator.dampTranslation = this.dampTranslation;
-      mutator.dampRotation = this.dampRotation;
-      mutator.effectGravity = this.effectGravity;
-      mutator.typeBody = this.#typeBody;
-      mutator.typeCollider = this.#typeCollider;
-      mutator.isTrigger = this.#isTrigger;
-
-      // Object.preventExtensions(mutator);
-      return mutator;
-    }
-
     //#endregion
 
     // Activate the functions of this component as response to events

@@ -7774,7 +7774,6 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Promise<Serializable>;
         /** Change properties by an associative array */
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        getMutator(): Mutator;
         private hndEvent;
         private create;
         /** Creates the actual OimoPhysics Rigidbody out of informations the FUDGE Component has. */
