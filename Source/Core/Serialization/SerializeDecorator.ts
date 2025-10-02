@@ -184,7 +184,7 @@ namespace FudgeCore {
         strategy = "function";
       } else if (_reference) {
         strategy = _type == Node ? "node" : "resource";
-      } else if (_type == String || _type == Number || _type == Boolean || typeof _type == "object") { // primitive or enum 
+      } else if (_type == String || _type == Number || _type == Boolean || _type == Object || typeof _type == "object") { // primitive, plain object and enum 
         strategy = "primitive";
       } else if (_reconstruct) {
         strategy = "reconstruct";
