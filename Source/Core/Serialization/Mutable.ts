@@ -40,17 +40,6 @@ namespace FudgeCore {
           mutator[key] = Reflect.get(this, key);
       }
 
-      // collect primitive and mutable attributes
-      for (let attribute in this) {
-        const value: Object = this[attribute];
-        if (value instanceof Function)
-          continue;
-        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")))
-          continue;
-
-        mutator[attribute] = value;
-      }
-
       if (!_extendable)
         // mutator can be reduced but not extended!
         Object.preventExtensions(mutator);
