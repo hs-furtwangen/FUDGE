@@ -91,9 +91,15 @@ namespace FudgeCore {
    * Additionally a {@link ComponentFaceCamera} can be attached to make the particles face the camera.
    * @authors Jonas Plotzky, HFU, 2022
    */
+  @orderFlat
   export class ParticleSystem extends Mutable implements SerializableResource {
+    @order(0)
+    @edit(String)
     public name: string;
-    public idResource: string = undefined;
+
+    @order(1)
+    @edit(String)
+    public idResource: string;
 
     #data: ParticleData.System;
     /** Map of shader universal derivates to corresponding computed {@link ShaderParticleSystem}. 
@@ -108,6 +114,7 @@ namespace FudgeCore {
       Project.register(this);
     }
 
+    @serialize(Object)
     public get data(): ParticleData.System {
       return this.#data;
     }
@@ -137,27 +144,18 @@ namespace FudgeCore {
       return this.#mapShaderToShaderParticleSystem.get(_source);
     }
 
-    //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        idResource: this.idResource,
-        name: this.name,
-        data: this.data
-      };
-      return serialization;
+      return serializeDecorations(this);
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       Project.register(this, _serialization.idResource);
-      this.name = _serialization.name;
-      this.data = _serialization.data;
-      return this;
+      return deserializeDecorations(this, _serialization);
     }
 
     protected reduceMutator(_mutator: Mutator): void {
       delete _mutator.cachedMutators;
       delete _mutator.shaderMap;
     }
-    //#endregion
   }
 }
