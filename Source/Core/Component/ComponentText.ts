@@ -61,6 +61,8 @@ namespace FudgeCore {
     public override async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
       Project.deregister(this.texture);
+      delete this.texture.name;
+      delete this.texture.idResource;
       return this;
     }
 
