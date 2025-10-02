@@ -3817,7 +3817,6 @@ declare namespace FudgeCore {
         refresh(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(_extendable?: boolean): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
     }
     /**
@@ -3832,7 +3831,6 @@ declare namespace FudgeCore {
          * Asynchronously loads the image from the given url
          */
         load(_url: RequestInfo): Promise<void>;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
     }
@@ -3859,20 +3857,18 @@ declare namespace FudgeCore {
     export class TextureText extends Texture {
         #private;
         protected crc2: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-        constructor(_name: string, _text?: string, _font?: string);
-        set text(_text: string);
+        constructor(_name?: string, _text?: string, _font?: string);
         get text(): string;
-        set font(_font: string);
+        set text(_text: string);
         get font(): string;
+        set font(_font: string);
         get texImageSource(): ImageSource;
         get width(): number;
         get height(): number;
         get hasTransparency(): boolean;
         private get canvas();
         useRenderData(_textureUnit?: number): void;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(_extendable?: boolean): Mutator;
     }
     /**
      * Texture created from a FUDGE-Sketch
@@ -5359,6 +5355,7 @@ declare namespace FudgeCore {
         constructor(_text?: string, _font?: string);
         useRenderData(_mtxMeshToWorld: Matrix4x4, _cmpCamera: ComponentCamera): Matrix4x4;
         drawGizmosSelected(): void;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
         protected reduceMutator(_mutator: Mutator): void;
     }
 }

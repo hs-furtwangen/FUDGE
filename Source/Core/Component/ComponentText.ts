@@ -23,6 +23,9 @@ namespace FudgeCore {
     public constructor(_text?: string, _font?: string) {
       super();
       this.texture = new TextureText(ComponentText.name, _text, _font);
+      Project.deregister(this.texture);
+      delete this.texture.name;
+      delete this.texture.idResource;
       this.mtxWorld = Matrix4x4.IDENTITY();
       this.fixedSize = false;
     }
@@ -53,6 +56,12 @@ namespace FudgeCore {
         return;
 
       Gizmos.drawWireMesh(mesh, this.mtxWorld, cmpMaterial.color);
+    }
+
+    public override async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization);
+      Project.deregister(this.texture);
+      return this;
     }
 
     protected reduceMutator(_mutator: Mutator): void {
