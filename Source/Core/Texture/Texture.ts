@@ -23,6 +23,7 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
   @RenderInjectorTexture.decorate
+  @orderFlat
   export abstract class Texture extends Mutable implements SerializableResource {
     @order(0)
     @edit(String)
@@ -46,6 +47,7 @@ namespace FudgeCore {
       this.name = _name;
     }
 
+    @order(2)
     @edit(MIPMAP)
     public get mipmap(): MIPMAP {
       return this.#mipmap;
@@ -56,6 +58,7 @@ namespace FudgeCore {
       this.mipmapDirty = true;
     }
 
+    @order(3)
     @edit(WRAP)
     public get wrap(): WRAP {
       return this.#wrap;
@@ -124,9 +127,11 @@ namespace FudgeCore {
   /**
    * Texture created from an existing image
    */
+  @orderFlat
   export class TextureImage extends Texture {
     public image: HTMLImageElement = null;
 
+    @order(4)
     @edit(String)
     public url: RequestInfo;
 
@@ -226,6 +231,7 @@ namespace FudgeCore {
    * Texture created from a text. Texture upates when the text or font changes. The texture is resized to fit the text.
    * @authors Jonas Plotzky, HFU, 2024
    */
+  @orderFlat
   export class TextureText extends Texture {
     protected crc2: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
     #text: string;
@@ -238,6 +244,7 @@ namespace FudgeCore {
       this.font = _font;
     }
 
+    @order(4)
     @edit(String)
     public get text(): string {
       return this.#text;
@@ -248,6 +255,7 @@ namespace FudgeCore {
       this.textureDirty = true;
     }
 
+    @order(5)
     @edit(String)
     public get font(): string {
       return this.#font;
