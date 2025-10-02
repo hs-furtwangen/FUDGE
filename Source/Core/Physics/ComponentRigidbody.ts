@@ -622,12 +622,6 @@ namespace FudgeCore {
       return mutator;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.convexMesh; //Convex Mesh can't be shown in the editor because float32Array is not a viable mutator
-      // delete _mutator.collisionMask;
-      delete _mutator.isInitialized;
-    }
     //#endregion
 
     // Activate the functions of this component as response to events

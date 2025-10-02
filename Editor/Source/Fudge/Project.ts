@@ -178,16 +178,6 @@ namespace Fudge {
       return ƒ.deserializeDecorations(this, _serialization);
     }
 
-    protected reduceMutator(_mutator: ƒ.Mutator): void {
-      delete _mutator.base;
-      delete _mutator.fileIndex;
-      delete _mutator.fileInternal;
-      delete _mutator.fileInternalFolder;
-      delete _mutator.fileScript;
-      delete _mutator.fileSettings;
-      delete _mutator.fileStyles;
-    }
-
     private createProjectHTML(_title: string): string {
       let html: Document = document.implementation.createHTMLDocument(_title);
 

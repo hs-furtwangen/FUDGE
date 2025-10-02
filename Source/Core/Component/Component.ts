@@ -106,7 +106,6 @@ namespace FudgeCore {
      */
     public drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
 
-    //#region Transfer
     public serialize(): Serialization {
       return serializeDecorations(this);
     }
@@ -114,12 +113,5 @@ namespace FudgeCore {
     public deserialize(_serialization: Serialization): Promise<Serializable> {
       return deserializeDecorations(this, _serialization);
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.singleton;
-      delete _mutator.mtxWorld;
-    }
-
-    //#endregion
   }
 }

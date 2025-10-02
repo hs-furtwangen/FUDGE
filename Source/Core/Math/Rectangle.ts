@@ -256,7 +256,5 @@ namespace FudgeCore {
     public deserialize(_serialization: Serialization): Promise<Serializable> {
       return deserializeDecorations(this, _serialization);
     }
-
-    protected reduceMutator(_mutator: Mutator): void {/* */ }
   }
 }

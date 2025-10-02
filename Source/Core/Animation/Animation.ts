@@ -337,10 +337,7 @@ namespace FudgeCore {
       this.calculateTotalTime();
       return this;
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.totalTime;
-    }
+    
     /**
      * Traverses an AnimationStructure and returns the Serialization of said Structure.
      * @param _structure The Animation Structure at the current level to transform into the Serialization.

@@ -152,10 +152,5 @@ namespace FudgeCore {
       Project.register(this, _serialization.idResource);
       return deserializeDecorations(this, _serialization);
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.cachedMutators;
-      delete _mutator.shaderMap;
-    }
   }
 }

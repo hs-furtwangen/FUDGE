@@ -31,9 +31,5 @@ namespace FudgeCore {
 
       return deserializeDecorations(this, _serialization);
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      return;
-    }
   }
 }

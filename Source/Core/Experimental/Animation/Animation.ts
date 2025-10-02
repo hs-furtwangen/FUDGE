@@ -59,10 +59,6 @@ namespace FudgeCore {
 
         return this;
       }
-
-      protected reduceMutator(_mutator: Mutator): void {
-        throw new Error("Method not implemented.");
-      }
     }
   }
 }

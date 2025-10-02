@@ -692,8 +692,6 @@ namespace FudgeCore {
         this.z = _mutator.z;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-    //#endregion
     //#endregion
   }
 }

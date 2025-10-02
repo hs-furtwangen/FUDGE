@@ -425,7 +425,6 @@ namespace FudgeCore {
       return `rgba(${Math.round(this.r * 255)}, ${Math.round(this.g * 255)}, ${Math.round(this.b * 255)}, ${this.a})`;
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = this.getMutator(true);
       serialization.toJSON = () => `[${this.r}, ${this.g}, ${this.b}, ${this.a}]`;
@@ -450,9 +449,5 @@ namespace FudgeCore {
       if (_mutator.a != undefined)
         this.a = _mutator.a;
     }
-
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-    //#endregion
-    //#endregion
   }
 }

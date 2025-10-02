@@ -641,8 +641,6 @@ namespace FudgeCore {
       this.resetCache();
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-
     private resetCache(): void {
       this.#eulerAnglesDirty = true;
     }

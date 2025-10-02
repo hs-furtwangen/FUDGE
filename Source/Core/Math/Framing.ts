@@ -13,7 +13,6 @@ namespace FudgeCore {
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Framing
    */
   export abstract class Framing extends Mutable {
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
 
     /**
      * Maps a point in the given frame according to this framing

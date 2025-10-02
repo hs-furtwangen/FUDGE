@@ -71,10 +71,5 @@ namespace FudgeCore {
       // reconstruct, for mutator may be kept by caller
       // _mutator.url = url;
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      // delete _mutator.idResource; 
-      delete _mutator.ready;
-    }
   }
 }

@@ -43,8 +43,6 @@ namespace FudgeCore {
       if (!_extendable)
         // mutator can be reduced but not extended!
         Object.preventExtensions(mutator);
-      // delete unwanted attributes
-      this.reduceMutator(mutator);
 
       const references: ReadonlySet<string> = Mutator.references(this);
       // replace references to mutable objects with references to mutators
@@ -162,12 +160,5 @@ namespace FudgeCore {
           Reflect.set(this, attribute, value);
       }
     }
-
-    /**
-     * Reduces the attributes of the general mutator according to desired options for mutation. To be implemented in subclasses
-     * @param _mutator 
-     */
-    protected abstract reduceMutator(_mutator: Mutator): void;
-
   }
 }

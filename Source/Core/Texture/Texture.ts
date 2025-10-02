@@ -113,15 +113,6 @@ namespace FudgeCore {
 
       return this;
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.idResource;
-      delete _mutator.renderData;
-      delete _mutator.textureDirty;
-      delete _mutator.mipmapDirty;
-      delete _mutator.mipmapGenerated;
-      delete _mutator.wrapDirty;
-    }
   }
 
   /**

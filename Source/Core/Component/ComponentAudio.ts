@@ -230,11 +230,6 @@ namespace FudgeCore {
       return this;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.listened;
-    }
-
     private hndAudioReady: EventListener = (_event: Event) => {
       Debug.fudge("Audio start", Reflect.get(_event.target, "url"));
       if (this.playing)

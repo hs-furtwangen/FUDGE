@@ -400,8 +400,6 @@ namespace FudgeCore {
         this.y = _mutator.y;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-    //#endregion
     //#endregion
   }
 }

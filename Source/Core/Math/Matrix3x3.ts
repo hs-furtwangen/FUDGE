@@ -497,15 +497,13 @@ namespace FudgeCore {
       this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-
     private resetCache(): void {
       this.#translationDirty = true;
       this.#rotationDirty = true;
       this.#scalingDirty = true;
       this.mutator = null;
     }
-    //#endregion
+
     //#endregion
   }
 }

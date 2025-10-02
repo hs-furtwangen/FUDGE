@@ -1399,8 +1399,6 @@ namespace FudgeCore {
       this.compose(_mutator.translation, _mutator.rotation ?? _mutator.quaternion, _mutator.scaling);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-
     private resetCache(): void {
       this.#translationDirty = true;
       this.#rotationDirty = true;
@@ -1409,7 +1407,6 @@ namespace FudgeCore {
       this.modified = true;
       this.mutator = null;
     }
-    //#endregion
     //#endregion
   }
 }

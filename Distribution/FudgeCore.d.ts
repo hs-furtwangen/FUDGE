@@ -1128,11 +1128,6 @@ declare namespace FudgeCore {
          * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
          */
         protected mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void>;
-        /**
-         * Reduces the attributes of the general mutator according to desired options for mutation. To be implemented in subclasses
-         * @param _mutator
-         */
-        protected abstract reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -1146,7 +1141,6 @@ declare namespace FudgeCore {
         constructor(_name?: string, _register?: boolean);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -1380,7 +1374,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Vector2;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -1665,7 +1658,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Vector3;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -1802,7 +1794,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Vector4;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -2030,7 +2021,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Quaternion;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
         private resetCache;
     }
 }
@@ -2193,7 +2183,6 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Matrix3x3;
         getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
         private resetCache;
     }
 }
@@ -2577,7 +2566,6 @@ declare namespace FudgeCore {
         deserialize(_serialization: Serialization): Matrix4x4;
         getMutator(): Mutator;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
         private resetCache;
     }
 }
@@ -2760,7 +2748,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Color;
         mutate(_mutator: Mutator): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -2966,7 +2953,6 @@ declare namespace FudgeCore {
         toString(): string;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -3457,7 +3443,6 @@ declare namespace FudgeCore {
         drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -3713,7 +3698,6 @@ declare namespace FudgeCore {
         getOimoJoint(): OIMO.Joint;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
         /** Tell the FudgePhysics system that this joint needs to be handled in the next frame. */
         protected dirtyStatus(): void;
         protected addJoint(): void;
@@ -3817,7 +3801,6 @@ declare namespace FudgeCore {
         refresh(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
     /**
      * Texture created from an existing image
@@ -3916,7 +3899,6 @@ declare namespace FudgeCore {
         clear(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
         protected createRadius(): number;
         protected createBoundingBox(): Box;
     }
@@ -3984,7 +3966,6 @@ declare namespace FudgeCore {
         useRenderData(): void;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4022,7 +4003,6 @@ declare namespace FudgeCore {
         getShader(): typeof Shader;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4099,7 +4079,6 @@ declare namespace FudgeCore {
         set data(_data: ParticleData.System);
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4269,7 +4248,6 @@ declare namespace FudgeCore {
         calculateDirection(_time: number, _playmode: ANIMATION_PLAYMODE): number;
         serialize(_serializeStructure?: boolean): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
         /**
          * Traverses an AnimationStructure and returns the Serialization of said Structure.
          * @param _structure The Animation Structure at the current level to transform into the Serialization.
@@ -4452,7 +4430,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         getMutator(): Mutator;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4687,7 +4664,6 @@ declare namespace FudgeCore {
          * Utility function that (re-)generates all functions in the sequence.
          */
         protected regenerateFunctions(_keys?: AnimationKey<T>[]): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4748,7 +4724,6 @@ declare namespace FudgeCore {
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -4992,7 +4967,6 @@ declare namespace FudgeCore {
         connect(_on: boolean): void;
         drawGizmos(): void;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
         private hndAudioReady;
         private hndAudioEnded;
         private install;
@@ -5146,7 +5120,6 @@ declare namespace FudgeCore {
         drawGizmos(): void;
         drawGizmosSelected(): void;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -5356,7 +5329,6 @@ declare namespace FudgeCore {
         useRenderData(_mtxMeshToWorld: Matrix4x4, _cmpCamera: ComponentCamera): Matrix4x4;
         drawGizmosSelected(): void;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -5385,7 +5357,6 @@ declare namespace FudgeCore {
         transform(_mtxTransform: Matrix4x4, _base?: BASE, _node?: Node): void;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void;
-        protected reduceMutator(_mutator: Mutator): void;
     }
 }
 declare namespace FudgeCore {
@@ -5915,7 +5886,6 @@ declare namespace FudgeCore {
             constructor(_name?: string, _duration?: number, _channels?: AnimationChannel[], _eventTrack?: AnimationEventTrack);
             serialize(): SerializationOf<Animation>;
             deserialize(_serialization: Serialization): Promise<Animation>;
-            protected reduceMutator(_mutator: Mutator): void;
         }
     }
 }
@@ -6320,7 +6290,6 @@ declare namespace FudgeCore {
             useRenderData(): void;
             serialize(): Serialization;
             deserialize(_serialization: Serialization): Promise<Serializable>;
-            protected reduceMutator(_mutator: Mutator): void;
         }
         class MaterialPropertyColor extends MaterialProperty {
             static readonly iSubclass: number;
@@ -6491,7 +6460,6 @@ declare namespace FudgeCore {
             useRenderData(..._args: unknown[]): void;
             serialize(): Serialization;
             deserialize(_serialization: SerializationOf<Material>): Promise<Serializable>;
-            protected reduceMutator(_mutator: Mutator): void;
         }
     }
 }
@@ -6771,7 +6739,6 @@ declare namespace FudgeCore {
      * @link https://github.com/hs-furtwangen/FUDGE/wiki/Framing
      */
     abstract class Framing extends Mutable {
-        protected reduceMutator(_mutator: Mutator): void;
         /**
          * Maps a point in the given frame according to this framing
          * @param _pointInFrame The point in the frame given
@@ -7808,7 +7775,6 @@ declare namespace FudgeCore {
         /** Change properties by an associative array */
         mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
         getMutator(): Mutator;
-        protected reduceMutator(_mutator: Mutator): void;
         private hndEvent;
         private create;
         /** Creates the actual OimoPhysics Rigidbody out of informations the FUDGE Component has. */

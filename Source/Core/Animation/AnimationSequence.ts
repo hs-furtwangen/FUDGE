@@ -207,7 +207,5 @@ namespace FudgeCore {
         key.functionOut = new functionType(key, keyNext);
       }
     }
-
-    protected reduceMutator(_mutator: Mutator): void { /* */ }
   }
 }

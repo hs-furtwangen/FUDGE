@@ -65,10 +65,5 @@ namespace FudgeCore {
       delete this.texture.idResource;
       return this;
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.texture.name;
-    }
   }
 }

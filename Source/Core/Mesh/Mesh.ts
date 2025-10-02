@@ -104,14 +104,6 @@ namespace FudgeCore {
       return deserializeDecorations(this, _serialization);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      // TODO: so much to delete... rather just gather what to mutate
-      delete _mutator.ƒbox;
-      delete _mutator.ƒradius;
-
-      delete _mutator.renderBuffers;
-    }
-
     protected createRadius(): number {
       //TODO: radius and bounding box could be created on construction of vertex-array
       let radius: number = 0;

@@ -263,13 +263,6 @@ namespace FudgeCore {
         this.anchor = this.anchor;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.springDamper;
-      delete _mutator.joint;
-      delete _mutator.motor;
-      super.reduceMutator(_mutator);
-    }
-
     /** Tell the FudgePhysics system that this joint needs to be handled in the next frame. */
     protected dirtyStatus(): void {
       Physics.changeJointStatus(this);

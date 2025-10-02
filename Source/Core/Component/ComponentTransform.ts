@@ -97,15 +97,5 @@ namespace FudgeCore {
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.world;
-      super.reduceMutator(_mutator);
-    }
-
   }
-
-  // function decorateMutable<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<typeof Coat, M>): M {
-  //   return 
-  // }
 }
