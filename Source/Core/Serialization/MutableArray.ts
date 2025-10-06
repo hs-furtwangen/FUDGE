@@ -37,7 +37,7 @@ namespace FudgeCore {
     public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
       let types: MutatorAttributeTypes = {};
       for (let entry in this)
-        types[entry] = this[entry].constructor.name;
+        types[entry] = this[entry].constructor;
 
       return types;
     }

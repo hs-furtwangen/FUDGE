@@ -41,20 +41,17 @@ namespace FudgeUserInterface {
       let div: HTMLDivElement = document.createElement("div");
 
       for (let key in mutatorTypes) {
-        let type: Object | string = mutatorTypes[key];
+        let type: Function | object = mutatorTypes[key];
         let value: Object = mutator[key];
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
-        if (!element && mutatorOptions[key]) // the new way
-          element = new CustomElementComboSelect({ key: key, label: key, type: type?.toString() }, _mutable, mutatorOptions[key]);
+        if (!element && mutatorOptions[key])
+          element = new CustomElementComboSelect({ key: key, label: key, type: (<Function>type).name }, _mutable, mutatorOptions[key]);
 
         if (!element) {
           let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
           element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
         }
-
-        if (!element && type) // the old way... remove
-          element = new CustomElementOutput({ key: key, label: key, type: type.toString(), value: value?.toString(), placeholder: `Drop your ${type} here...` });
 
         if (!element) { // undefined values without a type can't be displayed
           console.warn("No interface created for", _mutable.constructor.name, key);
@@ -73,13 +70,13 @@ namespace FudgeUserInterface {
     public static createInterfaceFromMutator(_mutator: ƒ.Mutator): HTMLDivElement {
       let div: HTMLDivElement = document.createElement("div");
       for (let key in _mutator) {
-        let value: Object = _mutator[key];
+        let value: unknown = _mutator[key];
         if (value instanceof Object) {
           let details: Details = new Details(key, "Details");
           details.setContent(Generator.createInterfaceFromMutator(value));
           div.appendChild(details);
         } else
-          div.appendChild(this.createMutatorElement(key, (<Object>value).constructor.name, value));
+          div.appendChild(this.createMutatorElement(key, value.constructor, value));
       }
 
       return div;
@@ -88,17 +85,17 @@ namespace FudgeUserInterface {
     /**
      * Create a specific CustomElement for the given data. Returns undefined if no element is {@link CustomElement.register registered} for the given type.
      */
-    public static createMutatorElement(_key: string, _type: Object | string, _value: Object): CustomElement | undefined {
+    public static createMutatorElement(_key: string, _type: Function | object, _value: Object): CustomElement | undefined {
       let element: CustomElement;
       let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement;
       try {
-        if (_type instanceof Object) {
-          elementType = CustomElement.get("Object");
-          element = new elementType({ key: _key, label: _key, value: _value?.toString() }, _type);
-        } else {
+        if (typeof _type == "function") {
           elementType = CustomElement.get(_type);
           if (elementType)
             element = new elementType({ key: _key, label: _key, value: _value?.toString() });
+        } else if (typeof _type == "object") {
+          elementType = CustomElement.get(Object);
+          element = new elementType({ key: _key, label: _key, value: _value?.toString() }, _type);
         }
       } catch (_error) {
         ƒ.Debug.fudge(_error);

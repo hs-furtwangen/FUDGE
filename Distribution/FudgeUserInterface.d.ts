@@ -84,7 +84,7 @@ declare namespace FudgeUserInterface {
         /**
          * Create a specific CustomElement for the given data. Returns undefined if no element is {@link CustomElement.register registered} for the given type.
          */
-        static createMutatorElement(_key: string, _type: Object | string, _value: Object): CustomElement | undefined;
+        static createMutatorElement(_key: string, _type: Function | object, _value: Object): CustomElement | undefined;
     }
 }
 declare namespace FudgeUserInterface {
@@ -104,7 +104,7 @@ declare namespace FudgeUserInterface {
      */
     abstract class CustomElement extends HTMLElement {
         static tag: string;
-        private static mapObjectToCustomElement;
+        private static mapTypeToCustomElement;
         private static idCounter;
         protected initialized: boolean;
         constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]);
@@ -119,7 +119,7 @@ declare namespace FudgeUserInterface {
         /**
          * Retrieve the element representing the given data type (if registered)
          */
-        static get(_type: string): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement);
+        static get(_type: Function): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement);
         private static map;
         /**
          * Return the key (name) of the attribute this element represents

@@ -656,12 +656,12 @@ declare namespace FudgeCore {
         mutatorOrder?: Record<string, number>;
         /**
          * A map from property keys to functions that return a map of possible options for the property.
-         * Use the {@link edit} or the {@link mutate} decorator to add to this map.
+         * Use the {@link select} decorator to add to this map.
          */
         mutatorOptions?: MutatorOptions;
         /**
          * A map of property keys to their mutation strategy.
-         * Use the {@link mutate} decorator to add to this map.
+         * Use the {@link edit} or {@link mutate} decorator to add to this map.
          */
         mutables?: Record<PropertyKey, "set" | "mutate" | "setArray" | "mutateArray">;
         /**
@@ -8897,10 +8897,10 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Interface describing the datatypes of the attributes a mutator as strings
+     * Interface describing the datatypes of the attributes a mutator as constructors or enum objects
      */
     interface MutatorAttributeTypes {
-        [attribute: string]: string | object;
+        [attribute: string]: Function | object;
     }
     /**
      * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
@@ -8931,7 +8931,7 @@ declare namespace FudgeCore {
          */
         function types(_from: Object): Readonly<MutatorTypes>;
         /**
-         * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+         * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
          */
         function options(_from: Object): Readonly<MutatorOptions>;
         /**

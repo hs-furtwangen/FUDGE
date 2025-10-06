@@ -1,10 +1,10 @@
 namespace FudgeCore {
 
   /**
-   * Interface describing the datatypes of the attributes a mutator as strings 
+   * Interface describing the datatypes of the attributes a mutator as constructors or enum objects 
    */
   export interface MutatorAttributeTypes {
-    [attribute: string]: string | object;
+    [attribute: string]: Function | object;
   }
 
   /**
@@ -47,7 +47,7 @@ namespace FudgeCore {
 
     const emptyReferences: Readonly<MutatorOptions> = Object.freeze({});
     /**
-     * Returns the decorated {@link Metadata.mutatorOptions references} of the {@link Mutator} of the given instance or class. Returns an empty object if no references are decorated.
+     * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
      */
     export function options(_from: Object): Readonly<MutatorOptions> {
       return getMetadata(_from).mutatorOptions ?? emptyReferences;
@@ -158,7 +158,7 @@ namespace FudgeCore {
      */
     export function update(_instance: object, _mutator: Mutator): Mutator {
       const mutables: Metadata["mutables"] = getMetadata(_instance).mutables;
-      
+
       for (const key in _mutator) {
         const value: Object = Reflect.get(_instance, key);
         const isReference: boolean = mutables?.[key] == "set";

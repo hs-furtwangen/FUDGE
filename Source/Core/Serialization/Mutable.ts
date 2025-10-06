@@ -55,10 +55,10 @@ namespace FudgeCore {
       const metaTypes: MutatorTypes = Mutator.types(this);
       for (const key in _mutator) {
         const metaType: Function | Record<string, unknown> = metaTypes[key];
-        let type: string | object;
+        let type: Function | object;
         switch (typeof metaType) {
           case "function":
-            type = metaType.name;
+            type = metaType;
             break;
           case "object":
             type = metaType;
@@ -67,11 +67,11 @@ namespace FudgeCore {
             let value: unknown = _mutator[key];
             if (value != undefined)
               if (typeof value == "object")
-                type = (<General>this)[key].constructor.name;
+                type = (<General>this)[key].constructor;
               else if (typeof value == "function")
-                type = value.name;
+                type = value;
               else
-                type = value.constructor.name;
+                type = value.constructor;
             break;
         }
 

@@ -18,7 +18,8 @@ namespace FudgeUserInterface {
    */
   export abstract class CustomElement extends HTMLElement {
     public static tag: string;
-    private static mapObjectToCustomElement: Map<string, typeof CustomElement> = new Map();
+    private static mapTypeToCustomElement: Map<Function, typeof CustomElement> = new Map();
+
     private static idCounter: number = 0;
     protected initialized: boolean = false;
 
@@ -48,22 +49,20 @@ namespace FudgeUserInterface {
       customElements.define(_tag, _typeCustomElement);
 
       if (_typeObject)
-        CustomElement.map(_typeObject.name, _typeCustomElement);
+        CustomElement.map(_typeObject, _typeCustomElement);
     }
 
     /**
      * Retrieve the element representing the given data type (if registered)
      */
-    public static get(_type: string): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement) {
-      let element: string | typeof CustomElement | CustomElementConstructor = CustomElement.mapObjectToCustomElement.get(_type);
-      if (typeof (element) == "string")
-        element = customElements.get(element);
+    public static get(_type: Function): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement) {
+      let element: string | typeof CustomElement | CustomElementConstructor = CustomElement.mapTypeToCustomElement.get(_type);
       return <typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement)>element;
     }
 
-    private static map(_type: string, _typeCustomElement: typeof CustomElement): void {
+    private static map(_type: Function, _typeCustomElement: typeof CustomElement): void {
       ƒ.Debug.fudge("Map", _type, _typeCustomElement.name);
-      CustomElement.mapObjectToCustomElement.set(_type, _typeCustomElement);
+      CustomElement.mapTypeToCustomElement.set(_type, _typeCustomElement);
     }
 
     /**

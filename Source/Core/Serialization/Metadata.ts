@@ -47,13 +47,13 @@ namespace FudgeCore {
 
     /**
      * A map from property keys to functions that return a map of possible options for the property.
-     * Use the {@link edit} or the {@link mutate} decorator to add to this map.
+     * Use the {@link select} decorator to add to this map.
      */
     mutatorOptions?: MutatorOptions;
 
     /**
      * A map of property keys to their mutation strategy.
-     * Use the {@link mutate} decorator to add to this map.
+     * Use the {@link edit} or {@link mutate} decorator to add to this map.
      */
     mutables?: Record<PropertyKey, "set" | "mutate" | "setArray" | "mutateArray">;
 
