@@ -50,13 +50,6 @@ namespace FudgeCore {
     }
 
     /**
-     * See {@link Mutable.getMutatorForUserInterface}
-     */
-    public getMutatorForUserInterface(): Mutator {
-      return this.getMutator();
-    }
-
-    /**
      * Mutate the elements of this array defined by the _mutator by invoking {@link Mutable.mutate} on it
      */
     public mutate(_mutator: Mutator): void | Promise<void>; // allow sync or async overrides

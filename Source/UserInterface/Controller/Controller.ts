@@ -49,7 +49,7 @@ namespace FudgeUserInterface {
      * with the values in the given UI-domElement
      */
     public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
-      let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
+      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator();
 
       for (let key in mutator) {
         let element: HTMLElement = Controller.findChildElementByKey(_domElement, key);
@@ -73,7 +73,7 @@ namespace FudgeUserInterface {
      * If an additional [[ƒ.Mutator]] is passed, its values are used instead of those of the [[ƒ.Mutable]].
      */
     public static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void {
-      let mutator: ƒ.Mutator = _mutator || _mutable.getMutatorForUserInterface();
+      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator();
 
       for (let key in mutator) {
         let element: CustomElement = <CustomElement>Controller.findChildElementByKey(_domElement, key);
@@ -188,7 +188,7 @@ namespace FudgeUserInterface {
       const path: string[] = this.getMutatorPath(_event);
 
       // get current state for undo
-      const mutator: ƒ.Mutator = this.mutable.getMutatorForUserInterface();
+      const mutator: ƒ.Mutator = this.mutable.getMutator();
       const current: ƒ.Mutator = ƒ.Mutator.fromPath(mutator, path);
 
       // get incoming state from interface for mutation

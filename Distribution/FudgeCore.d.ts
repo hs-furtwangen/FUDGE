@@ -1101,16 +1101,6 @@ declare namespace FudgeCore {
          */
         getMutator(_extendable?: boolean): Mutator;
         /**
-         * Collect the attributes of the instance and their values applicable for animation.
-         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-         */
-        getMutatorForAnimation(_extendable?: boolean): MutatorForAnimation;
-        /**
-         * Collect the attributes of the instance and their values applicable for the user interface.
-         * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-         */
-        getMutatorForUserInterface(_extendable?: boolean): MutatorForUserInterface;
-        /**
          * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
          * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
          */
@@ -1161,10 +1151,6 @@ declare namespace FudgeCore {
          * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
          */
         getMutator(): Mutator;
-        /**
-         * See {@link Mutable.getMutatorForUserInterface}
-         */
-        getMutatorForUserInterface(): Mutator;
         /**
          * Mutate the elements of this array defined by the _mutator by invoking {@link Mutable.mutate} on it
          */

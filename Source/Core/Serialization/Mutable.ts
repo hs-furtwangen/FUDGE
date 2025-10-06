@@ -47,14 +47,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Collect the attributes of the instance and their values applicable for the user interface.
-     * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-     */
-    public getMutatorForUserInterface(_extendable: boolean = false): MutatorForUserInterface {
-      return <MutatorForUserInterface>this.getMutator(_extendable);  // TODO: both of these (this and getMutatorForAnimation) don't really work as they don't recursively call getMutatorForUserInterface on sub-mutable objects, maybe instead implement a reduceMutatorForUserInterface???
-    }
-
-    /**
      * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
      * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
      */
