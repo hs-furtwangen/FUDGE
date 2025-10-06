@@ -71,7 +71,7 @@ namespace FudgeCore {
     }
 
     public async mutate(_mutator: Mutator): Promise<void> {
-      return this.mutateBase(_mutator);
+      return <Promise<void>><unknown>Mutator.mutateDecorations(this, _mutator);
     }
 
     public getMutator(_extendable?: boolean): Mutator {
