@@ -97,9 +97,6 @@ namespace FudgeCore {
       if (!_reference && !_function)
         return;
 
-      const references: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
-      references.add(key);
-
       let get: MutatorOptionsGetter | undefined;
       if (_function && (<General>_type).subclasses)
         get = getSubclassOptions;

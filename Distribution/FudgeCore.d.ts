@@ -650,10 +650,6 @@ declare namespace FudgeCore {
          */
         mutatorTypes?: MutatorTypes;
         /**
-         * Keys of properties of the class's {@link Mutator} that are references to other objects.
-         */
-        mutatorReferences?: Set<string>;
-        /**
          * A map from property keys to their specified order in the class's {@link Mutator}.
          * Use the {@link order} decorator to add to this map.
          */
@@ -6189,55 +6185,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    namespace Experimental {
-        namespace Edit {
-            interface Mutable {
-                mutator(): Mutator;
-                mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Mutable> | Mutable;
-            }
-            function isMutable(_object: Object): _object is Mutable;
-            interface Serializable {
-                serialize(): Serialization;
-                deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
-            }
-            function isSerializable(_object: Object): _object is Serializable;
-            /**
-             * Interface for resources, identified by a unique id and a human readable name. Extends {@link Serializable}.
-             * Resource constructors should be parameterless and need to be registered using {@link registerResourceClass} to appear in the resource list of the editor.
-             */
-            interface Resource extends Serializable {
-                idResource: string;
-                name: string;
-            }
-            function isResource(_object: Object): _object is Resource;
-            function registerComponentClass(_class: () => Component): void;
-            function registerResourceClass(_class: () => Resource): void;
-            function mutatorFromDecorations(_instance: object, _out?: Mutator): Mutator;
-            function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
-            /**
-             * Optional base class for all editable objects. Implements {@link Mutable} and {@link Serializable} by using the {@link serialize serialization} and {@link mutate mutator} decorator systems. Extends {@link EventTargetUnified} for event handling.
-             * Use this class if you want to implement {@link Mutable} and {@link Serializable} without writing boilerplate code. Copy the implementation to your class if you are unable to extend this class.
-             */
-            abstract class Editable extends EventTargetUnified implements Mutable, Serializable {
-                serialize(): Serialization;
-                deserialize(_serialization: Serialization): Promise<Editable> | Editable;
-                mutator(): Mutator;
-                mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<Editable> | Editable;
-            }
-            abstract class Component extends Editable {
-            }
-            class Node extends EventTargetUnified implements Serializable {
-                serialize(): Serialization;
-                deserialize(_serialization: Serialization): Promise<Serializable>;
-            }
-            class Graph extends Node implements Resource {
-                idResource: string;
-                name: string;
-            }
-        }
-    }
-}
-declare namespace FudgeCore {
     abstract class RenderWebGLMaterialProperty {
         static decorate(_constructor: typeof Experimental.MaterialProperty, _context: ClassDecoratorContext): void;
         static updateRenderData(this: Experimental.MaterialProperty, _data: Float32Array, _offset: number): void;
@@ -8979,10 +8926,6 @@ declare namespace FudgeCore {
          * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
          */
         function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
-        /**
-         * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
-         */
-        function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
         /**
          * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
          */

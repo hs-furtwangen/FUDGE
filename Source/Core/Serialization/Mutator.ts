@@ -37,14 +37,6 @@ namespace FudgeCore {
       return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
 
-    const emptyRefs: ReadonlySet<string> = Object.freeze(new Set<string>()); // TODO: remove!
-    /**
-     * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
-     */
-    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> { // TODO: remove!
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyRefs);
-    }
-
     const emptyTypes: MutatorTypes = Object.freeze({});
     /**
      * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.

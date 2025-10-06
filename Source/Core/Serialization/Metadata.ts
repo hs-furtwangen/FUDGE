@@ -40,11 +40,6 @@ namespace FudgeCore {
     mutatorTypes?: MutatorTypes;
 
     /**
-     * Keys of properties of the class's {@link Mutator} that are references to other objects.
-     */
-    mutatorReferences?: Set<string>; // TODO: remove!
-
-    /**
      * A map from property keys to their specified order in the class's {@link Mutator}.
      * Use the {@link order} decorator to add to this map.
      */
