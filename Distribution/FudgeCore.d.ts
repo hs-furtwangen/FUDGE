@@ -5288,8 +5288,6 @@ declare namespace FudgeCore {
     class ComponentScript extends Component {
         static readonly iSubclass: number;
         constructor();
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
