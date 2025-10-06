@@ -37,11 +37,11 @@ namespace FudgeCore {
       return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
 
-    const emptyRefs: ReadonlySet<string> = Object.freeze(new Set<string>());
+    const emptyRefs: ReadonlySet<string> = Object.freeze(new Set<string>()); // TODO: remove!
     /**
      * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
      */
-    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
+    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> { // TODO: remove!
       return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyRefs);
     }
 
@@ -113,43 +113,46 @@ namespace FudgeCore {
     }
 
     /**
-     * **WIP** TODO: add array support
-     * 
      * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
      * @param _instance The instance to copy the decorated properties from.
-     * @param _out - (optional) the receiving mutator.
+     * @param _mutator - (optional) the receiving mutator.
      * @returns `_out` or a new mutator if none is provided.
      */
-    export function fromDecorations(_instance: object, _out: Mutator = {}): Mutator {
-      const references: ReadonlySet<string> = Mutator.references(_instance);
+    export function fromDecorations(_instance: object, _mutator: Mutator = {}): Mutator {
+      const mutables: Metadata["mutables"] = getMetadata(_instance).mutables;
       for (const key of Mutator.keys(_instance)) {
-        if (!Reflect.has(_instance, key))
+        if (!Reflect.has(_instance, key)) // only properties in instance
           continue;
 
-        const isReference: boolean = references.has(key);
-        const value: unknown = _instance[key];
-        if (!isReference && isMutable(value))
-          _out[key] = value.getMutator(_out[key]);
-        else if (Array.isArray(value))
-          _out[key] = Mutator.fromArray(value, isReference);
-        else
-          _out[key] = value;
+        const value: unknown = Reflect.get(_instance, key);
+
+        let strategy: Metadata["mutables"][string] = mutables[key];
+        if (Array.isArray(value))
+          strategy += "Array";
+
+        switch (strategy) {
+          case "set":
+            _mutator[key] = value;
+            break;
+          case "mutate":
+            _mutator[key] = (<Mutable>value).getMutator();
+            break;
+          case "setArray":
+            _mutator[key] = Array.from(<unknown[]>value);
+            break;
+          case "mutateArray":
+            _mutator[key] = Mutator.fromArray(<Mutable[]>value);
+            break;
+        }
       }
 
-      return _out;
+      return _instance;
     }
 
-    export function fromArray(_array: General[], _reference?: boolean): Mutator {
+    export function fromArray(_array: Mutable[]): Mutator {
       const mutator: Mutator = new Array(_array.length);
-      for (let i: number = 0; i < _array.length; i++) {
-        const value: unknown = _array[i];
-        if (!_reference && isMutable(value))
-          mutator[i] = value.getMutator();
-        else if (Array.isArray(value))
-          mutator[i] = Mutator.fromArray(value, _reference);
-        else
-          mutator[i] = value;
-      }
+      for (let i: number = 0; i < _array.length; i++)
+        mutator[i] = _array[i].getMutator();
 
       return mutator;
     }
@@ -175,7 +178,6 @@ namespace FudgeCore {
     }
 
     /**
-     * **WIP** TODO: add array support
      * 
      * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
      * @param _instance The instance to update.
@@ -183,42 +185,48 @@ namespace FudgeCore {
      * @returns `_instance`.
      */
     export async function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T> {
-      const references: ReadonlySet<string> = Mutator.references(_instance);
+      const mutables: Metadata["mutables"] = getMetadata(_instance).mutables;
       for (const key of Mutator.keys(_instance)) {
-        if (!Reflect.has(_instance, key) || !Reflect.has(_mutator, key))
+        if (!Reflect.has(_mutator, key)) // only properties in mutator
           continue;
 
-        const isReference: boolean = references.has(key);
         const mutant: unknown = Reflect.get(_instance, key);
-        const value: unknown = _mutator[key];
+        const value: unknown = Reflect.get(_mutator, key);
 
-        if (value != null && !isReference && isMutable(mutant))
-          await mutant.mutate(value);
-        else if (Array.isArray(mutant))
-          await mutateArray(mutant, value, isReference);
-        else
-          Reflect.set(_instance, key, value);
+        let strategy: Metadata["mutables"][string] = mutables[key];
+        if (Array.isArray(value))
+          strategy += "Array";
+
+        switch (strategy) {
+          case "set":
+            Reflect.set(_instance, key, value);
+            break;
+          case "mutate":
+            await (<Mutable>mutant).mutate(value);
+            break;
+          case "setArray":
+            for (const key in <unknown[]>value)
+              (<unknown[]>mutant)[key] = (<unknown[]>value)[key];
+            break;
+          case "mutateArray":
+            await mutateArray(<Mutable[]>mutant, <Mutator[]>value);
+            break;
+        }
       }
 
       return _instance;
     }
 
-    export async function mutateArray<T extends General[]>(_instance: T, _mutator: Mutator, _reference?: boolean): Promise<T> {
+    export async function mutateArray<T extends Mutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]> {
       for (let key: number = 0; key < _mutator.length; key++) {
-        const mutant: unknown = Reflect.get(_instance, key);
-        const value: unknown = _mutator[key];
-        if (value != null && !_reference && isMutable(mutant))
-          await mutant.mutate(value);
-        else if (Array.isArray(mutant))
-          await mutateArray(mutant, value, _reference);
-        else
-          Reflect.set(_instance, key, value);
+        if (!Reflect.has(_instance, key))
+          continue;
 
+        await _instance[key].mutate(_mutator[key]);
       }
 
       return _instance;
     }
-
 
     /**
      * Creates and returns an empty mutator for the given value.

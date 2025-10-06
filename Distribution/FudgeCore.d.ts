@@ -664,6 +664,11 @@ declare namespace FudgeCore {
          */
         mutatorOptions?: MutatorOptions;
         /**
+         * A map of property keys to their mutation strategy.
+         * Use the {@link mutate} decorator to add to this map.
+         */
+        mutables?: Record<PropertyKey, "set" | "mutate" | "setArray" | "mutateArray">;
+        /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
          */
@@ -9001,15 +9006,13 @@ declare namespace FudgeCore {
          */
         function from(_object: object): Mutator;
         /**
-         * **WIP** TODO: add array support
-         *
          * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
          * @param _instance The instance to copy the decorated properties from.
-         * @param _out - (optional) the receiving mutator.
+         * @param _mutator - (optional) the receiving mutator.
          * @returns `_out` or a new mutator if none is provided.
          */
-        function fromDecorations(_instance: object, _out?: Mutator): Mutator;
-        function fromArray(_array: General[], _reference?: boolean): Mutator;
+        function fromDecorations(_instance: object, _mutator?: Mutator): Mutator;
+        function fromArray(_array: Mutable[]): Mutator;
         /**
          * Updates the values of the given {@link Mutator} according to the current state of the given instance.
          * @param _instance The instance to update from.
@@ -9018,7 +9021,6 @@ declare namespace FudgeCore {
          */
         function update(_instance: object, _mutator: Mutator): Mutator;
         /**
-         * **WIP** TODO: add array support
          *
          * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
          * @param _instance The instance to update.
@@ -9026,7 +9028,7 @@ declare namespace FudgeCore {
          * @returns `_instance`.
          */
         function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
-        function mutateArray<T extends General[]>(_instance: T, _mutator: Mutator, _reference?: boolean): Promise<T>;
+        function mutateArray<T extends Mutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]>;
         /**
          * Creates and returns an empty mutator for the given value.
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.

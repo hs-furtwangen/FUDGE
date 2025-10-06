@@ -23,7 +23,7 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
- // primitive type
+  // primitive type
   export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void) : never;
   // object type
   export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P>) => void;
@@ -79,6 +79,20 @@ namespace FudgeCore {
       // add type information
       const types: Metadata["mutatorTypes"] = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
       types[key] = _type;
+
+      // determine mutation strategy
+      let strategy: Metadata["mutables"][string];
+      if (isMutable(_type.prototype) && !_function && !_reference)
+        strategy = "mutate";
+      else
+        strategy = "set";
+
+      if (!strategy)
+        return;
+
+      // add serialization type to metadata
+      const mutables: Metadata["mutables"] = getOwnProperty(metadata, "mutables") ?? (metadata.mutables = { ...metadata.mutables });
+      mutables[key] = strategy;
 
       if (!_reference && !_function)
         return;
