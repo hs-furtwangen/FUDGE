@@ -146,7 +146,7 @@ namespace FudgeCore {
         }
       }
 
-      return _instance;
+      return _mutator;
     }
 
     export function fromArray(_array: Mutable[]): Mutator {
@@ -165,10 +165,12 @@ namespace FudgeCore {
      * @returns `_mutator`.
      */
     export function update(_instance: object, _mutator: Mutator): Mutator {
-      const references: ReadonlySet<string> = Mutator.references(_instance);
+      const mutables: Metadata["mutables"] = getMetadata(_instance).mutables;
+      
       for (const key in _mutator) {
         const value: Object = Reflect.get(_instance, key);
-        if (!references.has(key) && isMutable(value))
+        const isReference: boolean = mutables?.[key] == "set";
+        if (!isReference && isMutable(value))
           Mutator.update(value, _mutator[key]);
         else
           _mutator[key] = value;
