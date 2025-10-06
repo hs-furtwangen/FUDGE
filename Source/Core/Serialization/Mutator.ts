@@ -188,6 +188,9 @@ namespace FudgeCore {
         const value: unknown = Reflect.get(_mutator, key);
 
         let strategy: Metadata["mutables"][string] = mutables[key];
+        if (strategy == "mutate" && mutant == null)
+          throw new Error(`${_instance.constructor.name}: Cannot mutate property "${key}" because it is null. Mutable properties must be initialized before mutation can occur.`);
+
         if (Array.isArray(value))
           strategy += "Array";
 
