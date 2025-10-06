@@ -123,14 +123,34 @@ namespace FudgeCore {
     export function fromDecorations(_instance: object, _out: Mutator = {}): Mutator {
       const references: ReadonlySet<string> = Mutator.references(_instance);
       for (const key of Mutator.keys(_instance)) {
+        if (!Reflect.has(_instance, key))
+          continue;
+
         const value: unknown = _instance[key];
-        if (!references.has(key) && (value instanceof Mutable || value instanceof MutableArray))
-          _out[key] = value.getMutator();
+        if (!references.has(key) && isMutable(value))
+          _out[key] = value.getMutator(_out[key]);
+        else if (Array.isArray(value))
+          _out[key] = Mutator.fromArray(value, references.has(key));
         else
           _out[key] = value;
       }
 
       return _out;
+    }
+
+    export function fromArray(_array: General[], _reference?: boolean): Mutator {
+      const mutator: Mutator = new Array(_array.length);
+      for (let i: number = 0; i < _array.length; i++) {
+        const value: unknown = _array[i];
+        if (!_reference && isMutable(value))
+          mutator[i] = value.getMutator();
+        else if (Array.isArray(value))
+          mutator[i] = Mutator.fromArray(value);
+        else
+          mutator[i] = value;
+      }
+
+      return mutator;
     }
 
     // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
@@ -144,7 +164,7 @@ namespace FudgeCore {
       const references: ReadonlySet<string> = Mutator.references(_instance);
       for (const key in _mutator) {
         const value: Object = Reflect.get(_instance, key);
-        if (!references.has(key) && (value instanceof Mutable || value instanceof MutableArray))
+        if (!references.has(key) && isMutable(value))
           Mutator.update(value, _mutator[key]);
         else
           _mutator[key] = value;
@@ -163,11 +183,14 @@ namespace FudgeCore {
      */
     export async function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T> {
       const references: ReadonlySet<string> = Mutator.references(_instance);
-      for (const key in Mutator.keys(_instance)) {
+      for (const key of Mutator.keys(_instance)) {
+        if (!Reflect.has(_instance, key) || !Reflect.has(_mutator, key))
+          continue;
+
         const mutant: unknown = Reflect.get(_instance, key);
         const value: unknown = _mutator[key];
 
-        if (value != null && !references.has(key) && (mutant instanceof MutableArray || mutant instanceof Mutable))
+        if (value != null && !references.has(key) && isMutable(mutant))
           await mutant.mutate(value);
         else
           Reflect.set(_instance, key, value);
