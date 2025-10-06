@@ -208,7 +208,7 @@ namespace FudgeCore {
   export function serializeDecorations(_instance: object, _serialization: Serialization = {}): Serialization {
     const serializables: Metadata["serializables"] = getMetadata(_instance).serializables;
     for (const key in serializables) {
-      const value: General = Reflect.get(_instance, key);
+      const value: unknown = Reflect.get(_instance, key);
       if (value == null)
         continue;
 
@@ -221,34 +221,34 @@ namespace FudgeCore {
           _serialization[key] = value;
           break;
         case "serializable":
-          _serialization[key] = value.serialize();
+          _serialization[key] = (<Serializable>value).serialize();
           break;
         case "resource":
-          _serialization[key] = value.idResource;
+          _serialization[key] = (<SerializableResource>value).idResource;
           break;
         case "node":
-          _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, value);
+          _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, <Node>value);
           break;
         case "function":
-          _serialization[key] = Serializer.getFunctionPath(value);
+          _serialization[key] = Serializer.getFunctionPath(<Function>value);
           break;
         case "reconstruct":
-          _serialization[key] = Serializer.serialize(value);
+          _serialization[key] = Serializer.serialize(<Serializable>value);
           break;
         case "primitiveArray":
-          _serialization[key] = Array.from(value);
+          _serialization[key] = Array.from(<unknown[]>value);
           break;
         case "serializableArray":
-          _serialization[key] = Serializer.serializeArray(value);
+          _serialization[key] = Serializer.serializeArray(<Serializable[]>value);
           break;
         case "resourceArray":
-          _serialization[key] = Serializer.serializeResources(value);
+          _serialization[key] = Serializer.serializeResources(<SerializableResource[]>value);
           break;
         case "nodeArray":
-          _serialization[key] = value.map((_node: Node) => Node.PATH_FROM_TO(<Component>_instance, _node));
+          _serialization[key] = (<Node[]>value).map((_node: Node) => Node.PATH_FROM_TO(<Component>_instance, _node));
           break;
         case "functionArray":
-          _serialization[key] = Serializer.serializeFunctions(value);
+          _serialization[key] = Serializer.serializeFunctions(<Function[]>value);
           break;
       }
     }
