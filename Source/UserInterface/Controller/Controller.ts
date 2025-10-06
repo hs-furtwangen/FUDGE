@@ -49,7 +49,7 @@ namespace FudgeUserInterface {
      * with the values in the given UI-domElement
      */
     public static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
-      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator();
+      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator(true);
 
       for (let key in mutator) {
         let element: HTMLElement = Controller.findChildElementByKey(_domElement, key);
@@ -73,7 +73,7 @@ namespace FudgeUserInterface {
      * If an additional [[ƒ.Mutator]] is passed, its values are used instead of those of the [[ƒ.Mutable]].
      */
     public static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void {
-      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator();
+      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator(true);
 
       for (let key in mutator) {
         let element: CustomElement = <CustomElement>Controller.findChildElementByKey(_domElement, key);
@@ -139,7 +139,7 @@ namespace FudgeUserInterface {
     protected mutateOnInput = async (_event: Event): Promise<void> => {
       let path: string[] = this.getMutatorPath(_event);
       // get current mutator and save for undo
-      let mutator: ƒ.Mutator = this.mutable.getMutator();
+      let mutator: ƒ.Mutator = this.mutable.getMutator(true);
       // ƒ.Debug.info(mutator);
       this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: ƒ.Mutator.fromPath(mutator, path) } }));
 
