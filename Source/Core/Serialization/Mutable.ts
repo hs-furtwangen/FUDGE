@@ -1,5 +1,9 @@
 namespace FudgeCore {
 
+  export function isMutable(_object: Object): _object is Mutable {
+    return typeof _object === "object" && _object != null && Reflect.has(_object, "getMutator") && Reflect.has(_object, "mutate");
+  }
+
   /**
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
    * 
@@ -33,26 +37,11 @@ namespace FudgeCore {
      * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
      */
     public getMutator(_extendable: boolean = false): Mutator {
-      const mutator: Mutator = {};
-      // opt-in for decorated properties. Maybe this should be the default behavior instead of the old opt-out solution?
-      for (const key of Mutator.keys(this)) {
-        if (Reflect.has(this, key))
-          mutator[key] = Reflect.get(this, key);
-      }
+      const mutator: Mutator = Mutator.fromDecorations(this);
 
       if (!_extendable)
         // mutator can be reduced but not extended!
         Object.preventExtensions(mutator);
-
-      const references: ReadonlySet<string> = Mutator.references(this);
-      // replace references to mutable objects with references to mutators
-      for (let attribute in mutator) {
-        let value: Object = mutator[attribute];
-        if (references.has(attribute))
-          continue; // do not replace references
-        if (value instanceof Mutable || value instanceof MutableArray)
-          mutator[attribute] = value.getMutator();
-      }
 
       return mutator;
     }
@@ -91,7 +80,7 @@ namespace FudgeCore {
             type = metaType;
             break;
           case "undefined":
-            let value: number | boolean | string | object | Function = _mutator[key];
+            let value: unknown = _mutator[key];
             if (value != undefined)
               if (typeof value == "object")
                 type = (<General>this)[key].constructor.name;
@@ -108,15 +97,14 @@ namespace FudgeCore {
       return out;
     }
 
-    //TODO: remove the _selection parameter, seems to be unused and adds a lot of boilerplate...
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
-     * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
+     * The the event dispatching may be suppressed.
      * Uses mutateBase, but can be overwritten in subclasses
      */
     public mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
-      await this.mutateBase(_mutator);
+      await Mutator.mutateDecorations(this, _mutator);
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }
@@ -133,25 +121,5 @@ namespace FudgeCore {
           (<General>this)[key].setArray(valueArray);
       }
     }
-
-    /**
-     * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
-     */
-    protected async mutateBase(_mutator: Mutator): Promise<void> {
-      const references: ReadonlySet<string> = Mutator.references(this);
-      for (let attribute in _mutator) {
-        if (!Reflect.has(this, attribute))
-          continue;
-        let mutant: Object = Reflect.get(this, attribute);
-        let value: Mutator = <Mutator>_mutator[attribute];
-
-
-        if (value != null && !references.has(attribute) && (mutant instanceof MutableArray || mutant instanceof Mutable))
-          await mutant.mutate(value, false);
-        else
-          Reflect.set(this, attribute, value);
-      }
-    }
-
   }
 }

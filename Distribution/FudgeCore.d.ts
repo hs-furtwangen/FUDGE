@@ -1076,6 +1076,7 @@ declare namespace FudgeCore {
     function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
 }
 declare namespace FudgeCore {
+    function isMutable(_object: Object): _object is Mutable;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
      *
@@ -1116,7 +1117,7 @@ declare namespace FudgeCore {
         getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
          * Updates the attribute values of the instance according to the state of the mutator.
-         * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
+         * The the event dispatching may be suppressed.
          * Uses mutateBase, but can be overwritten in subclasses
          */
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>;
@@ -1124,10 +1125,6 @@ declare namespace FudgeCore {
          * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
          */
         animate(_mutator: AnimationMutator): void;
-        /**
-         * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
-         */
-        protected mutateBase(_mutator: Mutator): Promise<void>;
     }
 }
 declare namespace FudgeCore {
@@ -9028,6 +9025,7 @@ declare namespace FudgeCore {
          * @returns `_out` or a new mutator if none is provided.
          */
         function fromDecorations(_instance: object, _out?: Mutator): Mutator;
+        function fromArray(_array: General[], _reference?: boolean): Mutator;
         /**
          * Updates the values of the given {@link Mutator} according to the current state of the given instance.
          * @param _instance The instance to update from.
