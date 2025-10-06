@@ -126,11 +126,12 @@ namespace FudgeCore {
         if (!Reflect.has(_instance, key))
           continue;
 
+        const isReference: boolean = references.has(key);
         const value: unknown = _instance[key];
-        if (!references.has(key) && isMutable(value))
+        if (!isReference && isMutable(value))
           _out[key] = value.getMutator(_out[key]);
         else if (Array.isArray(value))
-          _out[key] = Mutator.fromArray(value, references.has(key));
+          _out[key] = Mutator.fromArray(value, isReference);
         else
           _out[key] = value;
       }
@@ -145,7 +146,7 @@ namespace FudgeCore {
         if (!_reference && isMutable(value))
           mutator[i] = value.getMutator();
         else if (Array.isArray(value))
-          mutator[i] = Mutator.fromArray(value);
+          mutator[i] = Mutator.fromArray(value, _reference);
         else
           mutator[i] = value;
       }
@@ -187,13 +188,32 @@ namespace FudgeCore {
         if (!Reflect.has(_instance, key) || !Reflect.has(_mutator, key))
           continue;
 
+        const isReference: boolean = references.has(key);
         const mutant: unknown = Reflect.get(_instance, key);
         const value: unknown = _mutator[key];
 
-        if (value != null && !references.has(key) && isMutable(mutant))
+        if (value != null && !isReference && isMutable(mutant))
           await mutant.mutate(value);
+        else if (Array.isArray(mutant))
+          await mutateArray(mutant, value, isReference);
         else
           Reflect.set(_instance, key, value);
+      }
+
+      return _instance;
+    }
+
+    export async function mutateArray<T extends General[]>(_instance: T, _mutator: Mutator, _reference?: boolean): Promise<T> {
+      for (let key: number = 0; key < _mutator.length; key++) {
+        const mutant: unknown = Reflect.get(_instance, key);
+        const value: unknown = _mutator[key];
+        if (value != null && !_reference && isMutable(mutant))
+          await mutant.mutate(value);
+        else if (Array.isArray(mutant))
+          await mutateArray(mutant, value, _reference);
+        else
+          Reflect.set(_instance, key, value);
+
       }
 
       return _instance;

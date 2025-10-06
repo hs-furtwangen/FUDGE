@@ -9026,6 +9026,7 @@ declare namespace FudgeCore {
          * @returns `_instance`.
          */
         function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
+        function mutateArray<T extends General[]>(_instance: T, _mutator: Mutator, _reference?: boolean): Promise<T>;
         /**
          * Creates and returns an empty mutator for the given value.
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
