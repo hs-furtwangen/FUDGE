@@ -47,14 +47,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Collect the attributes of the instance and their values applicable for animation.
-     * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-     */
-    public getMutatorForAnimation(_extendable: boolean = false): MutatorForAnimation {
-      return <MutatorForAnimation>this.getMutator(_extendable);
-    }
-
-    /**
      * Collect the attributes of the instance and their values applicable for the user interface.
      * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
      */

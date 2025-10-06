@@ -285,7 +285,6 @@ declare namespace Fudge {
         getProjectHTML(_title: string): string;
         serialize(): ƒ.Serialization;
         deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable>;
-        protected reduceMutator(_mutator: ƒ.Mutator): void;
         private createProjectHTML;
         private settingsStringify;
         private stringifyHTML;

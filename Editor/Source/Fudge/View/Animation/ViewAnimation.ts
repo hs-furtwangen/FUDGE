@@ -114,7 +114,7 @@ namespace Fudge {
           path.push("components");
           path.push(_component.type);
           path.push(_index.toString());
-          let mutator: ƒ.Mutator = _component.getMutatorForAnimation();
+          let mutator: ƒ.Mutator = _component.getMutator();
           if (mutator && Object.keys(mutator).length > 0) {
             let item: Electron.MenuItem;
             item = new remote.MenuItem(
