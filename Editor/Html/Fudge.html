@@ -53,8 +53,7 @@
   </template>
   <script>
     FudgeUserInterface.CustomElementTemplate.register("custom-vector2");
-    FudgeUserInterface.CustomElement.register("custom-vector2", class CustomVector2 extends FudgeUserInterface.CustomElementTemplate { });
-    FudgeUserInterface.CustomElement.map("Vector2", "custom-vector2");
+    FudgeUserInterface.CustomElement.register("custom-vector2", class CustomVector2 extends FudgeUserInterface.CustomElementTemplate { }, FudgeCore.Vector2);
   </script>
 
   <template>
@@ -69,8 +68,7 @@
   </template>
   <script>
     FudgeUserInterface.CustomElementTemplate.register("custom-vector3");
-    FudgeUserInterface.CustomElement.register("custom-vector3", class CustomVector3 extends FudgeUserInterface.CustomElementTemplate { });
-    FudgeUserInterface.CustomElement.map("Vector3", "custom-vector3");
+    FudgeUserInterface.CustomElement.register("custom-vector3", class CustomVector3 extends FudgeUserInterface.CustomElementTemplate { }, FudgeCore.Vector3);
   </script>
 
   <template>
@@ -103,8 +101,7 @@
   </template>
   <script>
     FudgeUserInterface.CustomElementTemplate.register("custom-matrix4x4");
-    FudgeUserInterface.CustomElement.register("custom-matrix4x4", FudgeUserInterface.CustomElementMatrix4x4);
-    FudgeUserInterface.CustomElement.map("Matrix4x4", "custom-matrix4x4");
+    FudgeUserInterface.CustomElement.register("custom-matrix4x4", FudgeUserInterface.CustomElementMatrix4x4, FudgeCore.Matrix4x4);
   </script>
 
   <template>
@@ -130,8 +127,7 @@
   </template>
   <script>
     FudgeUserInterface.CustomElementTemplate.register("custom-matrix3x3");
-    FudgeUserInterface.CustomElement.register("custom-matrix3x3", FudgeUserInterface.CustomElementMatrix3x3);
-    FudgeUserInterface.CustomElement.map("Matrix3x3", "custom-matrix3x3");
+    FudgeUserInterface.CustomElement.register("custom-matrix3x3", FudgeUserInterface.CustomElementMatrix3x3, FudgeCore.Matrix3x3);
   </script>
 </body>
 
