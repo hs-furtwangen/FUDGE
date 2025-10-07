@@ -1,6 +1,19 @@
 namespace FudgeCore {
 
-  export function isMutable(_object: Object): _object is Mutable {
+  export interface IMutable {
+    /**
+     * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
+     * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+     */
+    getMutator(): Mutator;
+
+    /**
+     * Updates the attribute values of the instance according to the state of the given mutator.
+     */
+    mutate(_mutator: Mutator): void | Promise<void>;
+  }
+
+  export function isMutable(_object: Object): _object is IMutable {
     return typeof _object === "object" && _object != null && Reflect.has(_object, "getMutator") && Reflect.has(_object, "mutate");
   }
 
@@ -13,7 +26,7 @@ namespace FudgeCore {
    * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
    * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
    */
-  export abstract class Mutable extends EventTargetUnified {
+  export abstract class Mutable extends EventTargetUnified implements IMutable {
 
     public static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray {
       for (let i: number = 0; i < _path.length; i++)
@@ -34,6 +47,7 @@ namespace FudgeCore {
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
      * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
      * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+     * Uses {@link Mutator.fromDecorations}.
      */
     public getMutator(_extendable: boolean = false): Mutator {
       const mutator: Mutator = Mutator.fromDecorations(this);
@@ -48,11 +62,12 @@ namespace FudgeCore {
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
      * The the event dispatching may be suppressed.
-     * Uses mutateBase, but can be overwritten in subclasses
+     * Uses {@link Mutator.mutateDecorations}.
      */
     public mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
       await Mutator.mutateDecorations(this, _mutator);
+      
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }

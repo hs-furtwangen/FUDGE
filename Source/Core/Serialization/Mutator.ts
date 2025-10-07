@@ -120,13 +120,13 @@ namespace FudgeCore {
             _mutator[key] = value;
             break;
           case "mutate":
-            _mutator[key] = (<Mutable>value).getMutator();
+            _mutator[key] = (<IMutable>value).getMutator();
             break;
           case "setArray":
             _mutator[key] = Array.from(<unknown[]>value);
             break;
           case "mutateArray":
-            _mutator[key] = Mutator.fromArray(<Mutable[]>value);
+            _mutator[key] = Mutator.fromArray(<IMutable[]>value);
             break;
         }
       }
@@ -134,7 +134,7 @@ namespace FudgeCore {
       return _mutator;
     }
 
-    export function fromArray(_array: Mutable[]): Mutator {
+    export function fromArray(_array: IMutable[]): Mutator {
       const mutator: Mutator = new Array(_array.length);
       for (let i: number = 0; i < _array.length; i++)
         mutator[i] = _array[i].getMutator();
@@ -192,14 +192,14 @@ namespace FudgeCore {
             Reflect.set(_instance, key, value);
             break;
           case "mutate":
-            await (<Mutable>mutant).mutate(value);
+            await (<IMutable>mutant).mutate(value);
             break;
           case "setArray":
             for (const key in <unknown[]>value)
               (<unknown[]>mutant)[key] = (<unknown[]>value)[key];
             break;
           case "mutateArray":
-            await mutateArray(<Mutable[]>mutant, <Mutator[]>value);
+            await mutateArray(<IMutable[]>mutant, <Mutator[]>value);
             break;
         }
       }
@@ -207,7 +207,7 @@ namespace FudgeCore {
       return _instance;
     }
 
-    export async function mutateArray<T extends Mutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]> {
+    export async function mutateArray<T extends IMutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]> {
       for (let key: number = 0; key < _mutator.length; key++) {
         if (!Reflect.has(_instance, key))
           continue;

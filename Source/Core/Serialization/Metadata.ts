@@ -20,10 +20,8 @@ namespace FudgeCore {
    */
   export type MutatorOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
 
-  // export type MutatorInfo = { [key: string]: { type?: Function | Record<string, unknown>; isArray?: boolean; isFunction?: boolean; getOptions?: (this: unknown, _key: string) => Record<string, unknown> } };
-
   /**
-   * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
+   * Metadata for classes. Metadata needs to be explicitly specified using decorators.
    * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
    */
   export interface Metadata extends DecoratorMetadata {

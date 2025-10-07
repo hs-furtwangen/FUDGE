@@ -635,7 +635,7 @@ declare namespace FudgeCore {
      */
     type MutatorOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
     /**
-     * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
+     * Metadata for classes. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
      */
     interface Metadata extends DecoratorMetadata {
@@ -1077,7 +1077,18 @@ declare namespace FudgeCore {
     function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
 }
 declare namespace FudgeCore {
-    function isMutable(_object: Object): _object is Mutable;
+    interface IMutable {
+        /**
+         * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
+         * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+         */
+        getMutator(): Mutator;
+        /**
+         * Updates the attribute values of the instance according to the state of the given mutator.
+         */
+        mutate(_mutator: Mutator): void | Promise<void>;
+    }
+    function isMutable(_object: Object): _object is IMutable;
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using graphical interfaces created at runtime.
      *
@@ -1087,7 +1098,7 @@ declare namespace FudgeCore {
      * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
      * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
-    abstract class Mutable extends EventTargetUnified {
+    abstract class Mutable extends EventTargetUnified implements IMutable {
         static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray;
         /**
          * Retrieves the type of this mutable subclass as the name of the runtime class
@@ -1098,12 +1109,13 @@ declare namespace FudgeCore {
          * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
          * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+         * Uses {@link Mutator.fromDecorations}.
          */
         getMutator(_extendable?: boolean): Mutator;
         /**
          * Updates the attribute values of the instance according to the state of the mutator.
          * The the event dispatching may be suppressed.
-         * Uses mutateBase, but can be overwritten in subclasses
+         * Uses {@link Mutator.mutateDecorations}.
          */
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>;
         /**
@@ -1130,7 +1142,7 @@ declare namespace FudgeCore {
      * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
      * @author Jirka Dell'Oro-Friedl, HFU, 2021
      */
-    class MutableArray<T extends Mutable = Mutable> extends Array<T> {
+    class MutableArray<T extends Mutable = Mutable> extends Array<T> implements IMutable {
         #private;
         constructor(_type: new () => T, ..._args: T[]);
         get type(): new () => T;
@@ -8939,7 +8951,7 @@ declare namespace FudgeCore {
          * @returns `_out` or a new mutator if none is provided.
          */
         function fromDecorations(_instance: object, _mutator?: Mutator): Mutator;
-        function fromArray(_array: Mutable[]): Mutator;
+        function fromArray(_array: IMutable[]): Mutator;
         /**
          * Updates the values of the given {@link Mutator} according to the current state of the given instance.
          * @param _instance The instance to update from.
@@ -8955,7 +8967,7 @@ declare namespace FudgeCore {
          * @returns `_instance`.
          */
         function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
-        function mutateArray<T extends Mutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]>;
+        function mutateArray<T extends IMutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]>;
         /**
          * Creates and returns an empty mutator for the given value.
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
