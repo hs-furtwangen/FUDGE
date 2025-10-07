@@ -77,7 +77,7 @@ namespace FudgeCore {
       keys.push(key);
 
       // add type information
-      const types: Metadata["mutatorTypes"] = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
+      const types: MutatorTypes = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
       types[key] = _type;
 
       // determine mutation strategy

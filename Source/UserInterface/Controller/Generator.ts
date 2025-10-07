@@ -36,13 +36,13 @@ namespace FudgeUserInterface {
      */
     public static createInterfaceFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator?: ƒ.Mutator): HTMLDivElement {
       let mutator: ƒ.Mutator = _mutator || _mutable.getMutator(true);
-      let mutatorTypes: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
+      let mutatorTypes: ƒ.MutatorTypes = ƒ.Mutator.getTypes(_mutable, mutator);
       let mutatorOptions: ƒ.MutatorOptions = ƒ.Mutator.options(_mutable);
       let div: HTMLDivElement = document.createElement("div");
 
-      for (let key in mutatorTypes) {
+      for (let key in mutator) {
+        let value: unknown = mutator[key];
         let type: Function | object = mutatorTypes[key];
-        let value: Object = mutator[key];
         let element: HTMLElement = Generator.createMutatorElement(key, type, value);
 
         if (!element && mutatorOptions[key])

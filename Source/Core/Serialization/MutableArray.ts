@@ -32,17 +32,6 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns an associative array with this arrays elements corresponding types as string-values
-     */
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = {};
-      for (let entry in this)
-        types[entry] = this[entry].constructor;
-
-      return types;
-    }
-
-    /**
      * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
      */
     public getMutator(): Mutator {

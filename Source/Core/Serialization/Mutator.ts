@@ -1,13 +1,6 @@
 namespace FudgeCore {
 
   /**
-   * Interface describing the datatypes of the attributes a mutator as constructors or enum objects 
-   */
-  export interface MutatorAttributeTypes {
-    [attribute: string]: Function | object;
-  }
-
-  /**
    * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
    */
   export interface Mutator {
@@ -238,6 +231,41 @@ namespace FudgeCore {
         return [];
 
       return null;
+    }
+
+    /**
+     * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
+     * Does not recurse into objects! This will return the {@link Mutator.types decorated types} instead of the inferred runtime-types of the object, if available.
+     */
+    export function getTypes(_instance: object, _mutator: Mutator): MutatorTypes {
+      const out: MutatorTypes = {};
+      const types: MutatorTypes = Mutator.types(_instance);
+      for (const key in _mutator) {
+        const metaType: Function | Record<string, unknown> = types[key];
+        let type: Function | Record<string, unknown>;
+        switch (typeof metaType) {
+          case "function":
+            type = metaType;
+            break;
+          case "object":
+            type = metaType;
+            break;
+          case "undefined":
+            let value: unknown = _mutator[key];
+            if (value != undefined)
+              if (typeof value == "object")
+                type = Reflect.get(_instance, key).constructor;
+              else if (typeof value == "function")
+                type = value;
+              else
+                type = value.constructor;
+            break;
+        }
+
+        out[key] = type;
+      }
+
+      return out;
     }
   }
 };

@@ -1079,14 +1079,13 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     function isMutable(_object: Object): _object is Mutable;
     /**
-     * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
+     * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using graphical interfaces created at runtime.
      *
-     * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
-     * Using the {@link mutate}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
+     * Mutables provide a {@link Mutator} built by collecting all their {@link mutate decorated properties}.
      *
-     * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
+     * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual {@link Mutable.getMutator} method.
      * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
-     * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
+     * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
     abstract class Mutable extends EventTargetUnified {
         static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray;
@@ -1101,11 +1100,6 @@ declare namespace FudgeCore {
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
          */
         getMutator(_extendable?: boolean): Mutator;
-        /**
-         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as either string-values or map objects.
-         * Does not recurse into objects! This will return the decorated {@link Metadata meta-types} instead of the inferred runtime-types of the object, if available.
-         */
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
          * Updates the attribute values of the instance according to the state of the mutator.
          * The the event dispatching may be suppressed.
@@ -1144,10 +1138,6 @@ declare namespace FudgeCore {
          * Rearrange the entries of the array according to the given sequence of indices
          */
         rearrange(_sequence: number[]): void;
-        /**
-         * Returns an associative array with this arrays elements corresponding types as string-values
-         */
-        getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes;
         /**
          * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
          */
@@ -8897,12 +8887,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Interface describing the datatypes of the attributes a mutator as constructors or enum objects
-     */
-    interface MutatorAttributeTypes {
-        [attribute: string]: Function | object;
-    }
-    /**
      * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
      */
     interface Mutator {
@@ -8977,6 +8961,11 @@ declare namespace FudgeCore {
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
          */
         function create(_mutator: Mutator): Mutator | null;
+        /**
+         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
+         * Does not recurse into objects! This will return the {@link Mutator.types decorated types} instead of the inferred runtime-types of the object, if available.
+         */
+        function getTypes(_instance: object, _mutator: Mutator): MutatorTypes;
     }
 }
 declare namespace FBX {
