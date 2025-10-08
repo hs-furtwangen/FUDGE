@@ -27,21 +27,10 @@ namespace FudgeCore {
 
     const emptyKeys: readonly string[] = Object.freeze([] as string[]);
     /**
-     * Returns an iterable of mutator keys for the given source:
-     * 
-     * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available. 
-     * - Returns {@link Array.keys()} for arrays.
-     * - Returns an empty iterable otherwise.
+     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
      */
-    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
-      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
-      if (mutatorKeys)
-        return <Iterable<K>>mutatorKeys;
-
-      if (Array.isArray(_from))
-        return <Iterable<K>>_from.keys();
-
-      return <Iterable<K>>emptyKeys;
+    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
+      return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
 
     const emptyTypes: MutatorTypes = Object.freeze({});
@@ -126,7 +115,7 @@ namespace FudgeCore {
      * @returns `_out` or a new mutator if none is provided.
      */
     export function fromDecorations(_mutable: object, _mutator: Mutator = {}): Mutator {
-      for (const key of Mutator.keys(_mutable)) {
+      for (const key of Mutator.getKeys(_mutable)) {
         if (!Reflect.has(_mutable, key))
           continue;
 
@@ -171,7 +160,7 @@ namespace FudgeCore {
      * @returns `_instance`.
      */
     export async function mutateDecorations<T extends object>(_mutable: T, _mutator: Mutator): Promise<T> {
-      for (const key of Mutator.keys(_mutable)) {
+      for (const key of Mutator.getKeys(_mutable)) {
         if (!Reflect.has(_mutable, key) || !Reflect.has(_mutator, key))
           continue;
 
@@ -237,6 +226,24 @@ namespace FudgeCore {
       }
 
       return out;
+    }
+
+    /**
+     * Returns an iterable of mutator keys for the given source:
+     * 
+     * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available. 
+     * - Returns {@link Array.keys()} for arrays.
+     * - Returns an empty iterable otherwise.
+     */
+    export function getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
+      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
+      if (mutatorKeys)
+        return <Iterable<K>>mutatorKeys;
+
+      if (Array.isArray(_from))
+        return <Iterable<K>>_from.keys();
+
+      return <Iterable<K>>emptyKeys;
     }
   }
 };

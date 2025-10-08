@@ -8918,13 +8918,9 @@ declare namespace FudgeCore {
     }
     namespace Mutator {
         /**
-         * Returns an iterable of mutator keys for the given source:
-         *
-         * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
-         * - Returns {@link Array.keys()} for arrays.
-         * - Returns an empty iterable otherwise.
+         * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
          */
-        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
+        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
         /**
          * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
          */
@@ -8983,6 +8979,14 @@ declare namespace FudgeCore {
          * Does not recurse into objects! This will return the {@link Mutator.types decorated types} instead of the inferred runtime-types of the object, if available.
          */
         function getTypes(_instance: object, _mutator: Mutator): MutatorTypes;
+        /**
+         * Returns an iterable of mutator keys for the given source:
+         *
+         * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
+         * - Returns {@link Array.keys()} for arrays.
+         * - Returns an empty iterable otherwise.
+         */
+        function getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
     }
 }
 declare namespace FBX {
