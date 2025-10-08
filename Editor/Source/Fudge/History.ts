@@ -137,7 +137,7 @@ namespace Fudge {
         current = { [key]: _source[key] };
         _source[key] = _target[key];
       } else {
-        ƒ.Mutator.update(_source, ƒ.Mutator.clone(_target)); // cache the current state
+        current = ƒ.Mutator.update(_source, ƒ.Mutator.clone(_target)); // cache the current state
         await _source.mutate(_target);
       }
 
