@@ -306,7 +306,7 @@ namespace Fudge {
           break;
         case ƒui.EVENT.MUTATE:
           let controller: ControllerDetail = Reflect.get(_event.target, "controller");
-          let mutable: ƒ.Component = <ƒ.Component>controller.getMutable();
+          let mutable: ƒ.Component = <ƒ.Component>controller?.getMutable();
           if (mutable instanceof ƒ.ComponentRigidbody) {
             // mutable.initialize(); 
             mutable.isInitialized = false;

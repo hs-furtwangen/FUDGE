@@ -174,12 +174,13 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
+    type historySource = ƒ.Mutable | ƒ.MutableArray | ƒ.Node | ƒ.Project;
     type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
     enum HISTORY {
         MUTATE = 0,
         ADD = 1,
-        REMOVE = 2
+        REMOVE = 2,
+        LINK = 3
     }
     /**
      * Static class to record the history of manipulations of various entities. Enables undo and redo.

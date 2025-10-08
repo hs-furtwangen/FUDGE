@@ -42,6 +42,8 @@ namespace FudgeUserInterface {
       button.hidden = true;
       this.appendChild(button);
 
+      this.onchange = this.hndChange;
+
       this.setMutatorValue(Reflect.get(this.#mutable, this.getAttribute("key")));
     }
 
@@ -86,11 +88,26 @@ namespace FudgeUserInterface {
     private hndInput = (_event: Event): void => {
       const button: HTMLButtonElement = this.querySelector("button");
       button.hidden = !(_event.target as HTMLInputElement).value;
-      _event.stopPropagation(); // prevent bubbling of input event to controller
+      _event.stopPropagation(); // prevent bubbling of input event to controller TODO: only stop propagation if input originates from button or the combo select input
     };
 
     private hndKey(_event: KeyboardEvent): void {
       _event.stopPropagation();
+    };
+
+    private hndChange = async (_event: Event): Promise<void> => {
+      const input: HTMLInputElement = this.querySelector("input");
+      const options: Record<string, unknown> = this.getOptions();
+      const key: string = this.getAttribute("key");
+      const incoming: unknown = options[input.value];
+      const current: unknown = Reflect.get(this.#mutable, key);
+
+      if (incoming == current)
+        return;
+
+      this.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.#mutable, mutator: { [key]: current } } }));
+
+      Reflect.set(this.#mutable, key, incoming);
     };
 
     private getOptions(): Record<string, unknown> {

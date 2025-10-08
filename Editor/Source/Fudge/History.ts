@@ -1,9 +1,9 @@
 namespace Fudge {
   import ƒ = FudgeCore;
 
-  export type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
+  export type historySource = ƒ.Mutable | ƒ.MutableArray | ƒ.Node | ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-  export enum HISTORY { MUTATE, ADD, REMOVE };
+  export enum HISTORY { MUTATE, ADD, REMOVE, LINK };
   type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
@@ -130,9 +130,16 @@ namespace Fudge {
      * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator. 
      * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
      */
-    private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _target: ƒ.Mutator): Promise<void> {
-      const current: ƒ.Mutator = ƒ.Mutator.update(_source, ƒ.Mutator.clone(_target)); // cache the current state
-      await _source.mutate(_target);
+    private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator): Promise<void> {
+      let current: ƒ.Mutator;
+      if (_step[0] == HISTORY.LINK) {
+        let key: string = <string>Reflect.ownKeys(_target)[0];
+        current = { [key]: _source[key] };
+        _source[key] = _target[key];
+      } else {
+        ƒ.Mutator.update(_source, ƒ.Mutator.clone(_target)); // cache the current state
+        await _source.mutate(_target);
+      }
 
       _step[2] = current; // replace target in step with previous state
 

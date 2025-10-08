@@ -20,7 +20,7 @@ namespace FudgeUserInterface {
       this.startRefresh();
       this.domElement.addEventListener(EVENT.INPUT, this.mutateOnInput);
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
-      this.domElement.addEventListener(EVENT.CHANGE, this.hndChange);
+      // this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
     }
 
     /**
@@ -141,7 +141,7 @@ namespace FudgeUserInterface {
       // get current mutator and save for undo
       let mutator: ƒ.Mutator = this.mutable.getMutator(true);
       // ƒ.Debug.info(mutator);
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: ƒ.Mutator.fromPath(mutator, path) } }));
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 0, mutable: this.mutable, mutator: ƒ.Mutator.fromPath(mutator, path) } }));
 
       // get current mutator from interface for mutation   
       mutator = this.getMutator();
@@ -153,26 +153,12 @@ namespace FudgeUserInterface {
 
     protected rearrangeArray = async (_event: Event): Promise<void> => {
       let sequence: number[] = (<CustomEvent>_event).detail.sequence;
-      let path: string[] = [];
-      let details: DetailsArray = <DetailsArray>_event.target;
-      let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>;
-
-      { // find the MutableArray connected to this DetailsArray
-        let element: HTMLElement = details;
-        while (element != this.domElement) {
-          if (element.getAttribute("key"))
-            path.push(element.getAttribute("key"));
-          element = element.parentElement;
-        }
-        // console.log(path);
-        mutable = this.mutable;
-        for (let key of path)
-          mutable = Reflect.get(mutable, key);
-      }
+      let path: string[] = this.getMutatorPath(_event);
+      let target: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.getTarget(path);
 
       // rearrange that mutable
-      (<ƒ.MutableArray<ƒ.Mutable>><unknown>mutable).rearrange(sequence);
-      await this.mutable.mutate(this.mutable.getMutator());
+      (<ƒ.MutableArray<ƒ.Mutable>><unknown>target).rearrange(sequence);
+      await this.mutable.mutate(this.mutable.getMutator()); // TODO: rearrangement is not a mutation so dispatching this mutate is irritating...
     };
 
     protected refresh = (_event: Event): void => {
@@ -184,33 +170,58 @@ namespace FudgeUserInterface {
       window.clearInterval(this.idInterval);
     };
 
-    protected hndChange = async (_event: Event): Promise<void> => {
-      const path: string[] = this.getMutatorPath(_event);
+    // protected setValue = (_event: Event): void => {
+    //   const path: string[] = this.getMutatorPath(_event);
+    //   const key: string = path[path.length - 1];
+    //   const target: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.getTarget(path.toSpliced(path.length - 1));
+    //   const input: string = (<CustomEvent>_event).detail.input;
 
-      // get current state for undo
-      const mutator: ƒ.Mutator = this.mutable.getMutator();
-      const current: ƒ.Mutator = ƒ.Mutator.fromPath(mutator, path);
+    //   const mutatorOptions: ƒ.MutatorOptions = ƒ.Mutator.options(target);
+    //   const getOptions: (this: object, _key: string) => Record<string, unknown> = mutatorOptions[key];
 
-      // get incoming state from interface for mutation
-      const incoming: ƒ.Mutator = Controller.getMutator(this.mutable, this.domElement, ƒ.Mutator.clone(current));
+    //   if (!getOptions)
+    //     return;
 
-      // compare the actual mutation
-      let a: ƒ.General = current;
-      let b: ƒ.General = incoming;
-      for (const key of path) {
-        a = a[key];
-        b = b[key];
-      }
+    //   const options: Record<string, unknown> = getOptions.call(target, key);
 
-      if (a == b)
-        return;
+    //   const incoming: unknown = options[input];
+    //   const current: unknown = Reflect.get(target, key);
 
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: current } }));
-      await this.mutable.mutate(incoming);
-      _event.stopPropagation();
+    //   if (incoming == current)
+    //     return;
 
-      this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));
-    };
+    //   this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: target, mutator: { [key]: current } } }));
+
+    //   Reflect.set(target, key, incoming);
+    // };
+
+    // protected hndChange = async (_event: Event): Promise<void> => {
+    //   const path: string[] = this.getMutatorPath(_event);
+
+    //   // get current state for undo
+    //   const mutator: ƒ.Mutator = this.mutable.getMutator();
+    //   const current: ƒ.Mutator = ƒ.Mutator.fromPath(mutator, path);
+
+    //   // get incoming state from interface for mutation
+    //   const incoming: ƒ.Mutator = Controller.getMutator(this.mutable, this.domElement, ƒ.Mutator.clone(current));
+
+    //   // compare the actual mutation
+    //   let a: ƒ.General = current;
+    //   let b: ƒ.General = incoming;
+    //   for (const key of path) {
+    //     a = a[key];
+    //     b = b[key];
+    //   }
+
+    //   if (a == b)
+    //     return;
+
+    //   this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { mutable: this.mutable, mutator: current } }));
+    //   await this.mutable.mutate(incoming);
+    //   _event.stopPropagation();
+
+    //   this.domElement.dispatchEvent(new Event(EVENT.MUTATE, { bubbles: true }));
+    // };
 
     private getMutatorPath(_event: Event): string[] {
       const path: string[] = [];
@@ -224,6 +235,15 @@ namespace FudgeUserInterface {
       }
 
       return path.reverse();
+    }
+
+    private getTarget<T = unknown>(_path: string[]): T {
+      let target: object = this.mutable;
+
+      for (let key of _path)
+        target = Reflect.get(target, key);
+
+      return <T>target;
     }
   }
 }

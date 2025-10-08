@@ -54,8 +54,8 @@ declare namespace FudgeUserInterface {
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
         protected refresh: (_event: Event) => void;
-        protected hndChange: (_event: Event) => Promise<void>;
         private getMutatorPath;
+        private getTarget;
     }
 }
 declare namespace FudgeUserInterface {
@@ -205,6 +205,7 @@ declare namespace FudgeUserInterface {
         private hndFocus;
         private hndInput;
         private hndKey;
+        private hndChange;
         private getOptions;
     }
 }
