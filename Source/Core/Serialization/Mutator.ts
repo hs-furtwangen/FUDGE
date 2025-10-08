@@ -41,20 +41,20 @@ namespace FudgeCore {
       return getMetadata(_from).mutatorTypes ?? emptyTypes;
     }
 
-    const emptyRefs: ReadonlySet<string> = Object.freeze(new Set<string>());
+    const emptyReferences: ReadonlySet<string> = Object.freeze(new Set<string>());
     /**
      * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
      */
     export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyRefs);
+      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyReferences);
     }
 
-    const emptyReferences: Readonly<MutatorOptions> = Object.freeze({});
+    const emptyOptions: Readonly<MutatorOptions> = Object.freeze({});
     /**
      * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
      */
     export function options(_from: Object): Readonly<MutatorOptions> {
-      return getMetadata(_from).mutatorOptions ?? emptyReferences;
+      return getMetadata(_from).mutatorOptions ?? emptyOptions;
     }
 
     /**
