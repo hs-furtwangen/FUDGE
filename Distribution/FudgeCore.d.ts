@@ -8918,14 +8918,13 @@ declare namespace FudgeCore {
     }
     namespace Mutator {
         /**
-         * Returns an iterable of keys for the given source:
+         * Returns an iterable of mutator keys for the given source:
          *
          * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
          * - Returns {@link Array.keys()} for arrays.
          * - Returns an empty iterable otherwise.
          */
         function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
-        function iterator<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
         /**
          * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
          */

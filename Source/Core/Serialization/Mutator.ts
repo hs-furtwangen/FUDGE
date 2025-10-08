@@ -27,24 +27,13 @@ namespace FudgeCore {
 
     const emptyKeys: readonly string[] = Object.freeze([] as string[]);
     /**
-     * Returns an iterable of keys for the given source:
+     * Returns an iterable of mutator keys for the given source:
      * 
      * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available. 
      * - Returns {@link Array.keys()} for arrays.
      * - Returns an empty iterable otherwise.
      */
     export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
-      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
-      if (mutatorKeys)
-        return <Iterable<K>>mutatorKeys;
-
-      if (Array.isArray(_from))
-        return <Iterable<K>>_from.keys();
-
-      return <Iterable<K>>emptyKeys;
-    }
-
-    export function iterator<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
       const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
       if (mutatorKeys)
         return <Iterable<K>>mutatorKeys;
