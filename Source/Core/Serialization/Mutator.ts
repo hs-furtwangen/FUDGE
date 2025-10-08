@@ -27,10 +27,32 @@ namespace FudgeCore {
 
     const emptyKeys: readonly string[] = Object.freeze([] as string[]);
     /**
-     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
+     * Returns an iterable of keys for the given source:
+     * 
+     * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available. 
+     * - Returns {@link Array.keys()} for arrays.
+     * - Returns an empty iterable otherwise.
      */
-    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
-      return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
+    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
+      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
+      if (mutatorKeys)
+        return <Iterable<K>>mutatorKeys;
+
+      if (Array.isArray(_from))
+        return <Iterable<K>>_from.keys();
+
+      return <Iterable<K>>emptyKeys;
+    }
+
+    export function iterator<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
+      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
+      if (mutatorKeys)
+        return <Iterable<K>>mutatorKeys;
+
+      if (Array.isArray(_from))
+        return <Iterable<K>>_from.keys();
+
+      return <Iterable<K>>emptyKeys;
     }
 
     const emptyTypes: MutatorTypes = Object.freeze({});
@@ -115,39 +137,21 @@ namespace FudgeCore {
      * @returns `_out` or a new mutator if none is provided.
      */
     export function fromDecorations(_mutable: object, _mutator: Mutator = {}): Mutator {
-      const references: ReadonlySet<string> = Mutator.references(_mutable);
       for (const key of Mutator.keys(_mutable)) {
         if (!Reflect.has(_mutable, key))
           continue;
 
-        const isReference: boolean = references.has(key);
         const value: unknown = _mutable[key];
-        if (!isReference && isMutable(value))
+        if (isMutable(value))
           _mutator[key] = value.getMutator(_mutator[key]);
         else if (Array.isArray(value))
-          _mutator[key] = Mutator.fromArray(value, isReference);
+          _mutator[key] = fromDecorations(value);
         else
           _mutator[key] = value;
       }
 
       return _mutator;
     }
-
-    export function fromArray(_array: General[], _reference?: boolean): Mutator {
-      const mutator: Mutator = new Array(_array.length);
-      for (let i: number = 0; i < _array.length; i++) {
-        const value: unknown = _array[i];
-        if (!_reference && isMutable(value))
-          mutator[i] = value.getMutator();
-        else if (Array.isArray(value))
-          mutator[i] = Mutator.fromArray(value, _reference);
-        else
-          mutator[i] = value;
-      }
-
-      return mutator;
-    }
-
 
     // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
     /**
@@ -157,10 +161,9 @@ namespace FudgeCore {
      * @returns `_mutator`.
      */
     export function update(_mutable: object, _mutator: Mutator): Mutator {
-      const references: ReadonlySet<string> = Mutator.references(_mutable);
       for (const key in _mutator) {
         const value: Object = Reflect.get(_mutable, key);
-        if (!references.has(key) && isMutable(value))
+        if (isMutable(value))
           Mutator.update(value, _mutator[key]);
         else if (Array.isArray(value))
           Mutator.update(value, _mutator[key]);
@@ -179,40 +182,19 @@ namespace FudgeCore {
      * @returns `_instance`.
      */
     export async function mutateDecorations<T extends object>(_mutable: T, _mutator: Mutator): Promise<T> {
-      const references: ReadonlySet<string> = Mutator.references(_mutable);
       for (const key of Mutator.keys(_mutable)) {
         if (!Reflect.has(_mutable, key) || !Reflect.has(_mutator, key))
           continue;
 
-        const isReference: boolean = references.has(key);
         const mutant: unknown = Reflect.get(_mutable, key);
         const value: unknown = _mutator[key];
 
-        if (value != null && !isReference && isMutable(mutant))
+        if (value != null && isMutable(mutant))
           await mutant.mutate(value);
         else if (Array.isArray(mutant))
-          await mutateArray(mutant, value, isReference);
+          await mutateDecorations(mutant, value);
         else
           Reflect.set(_mutable, key, value);
-      }
-
-      return _mutable;
-    }
-
-    export async function mutateArray<T extends General[]>(_mutable: T, _mutator: Mutator, _reference?: boolean): Promise<T> {
-      for (let key: number = 0; key < _mutator.length; key++) {
-        if (!Reflect.has(_mutable, key) || !Reflect.has(_mutator, key))
-          continue;
-
-        const mutant: unknown = Reflect.get(_mutable, key);
-        const value: unknown = _mutator[key];
-        if (value != null && !_reference && isMutable(mutant))
-          await mutant.mutate(value);
-        else if (Array.isArray(mutant))
-          await mutateArray(mutant, value, _reference);
-        else
-          Reflect.set(_mutable, key, value);
-
       }
 
       return _mutable;

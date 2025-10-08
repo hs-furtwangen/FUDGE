@@ -8918,9 +8918,14 @@ declare namespace FudgeCore {
     }
     namespace Mutator {
         /**
-         * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
+         * Returns an iterable of keys for the given source:
+         *
+         * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
+         * - Returns {@link Array.keys()} for arrays.
+         * - Returns an empty iterable otherwise.
          */
-        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
+        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
+        function iterator<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
         /**
          * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
          */
@@ -8954,7 +8959,6 @@ declare namespace FudgeCore {
          * @returns `_out` or a new mutator if none is provided.
          */
         function fromDecorations(_mutable: object, _mutator?: Mutator): Mutator;
-        function fromArray(_array: General[], _reference?: boolean): Mutator;
         /**
          * Updates the values of the given {@link Mutator} according to the current state of the given instance.
          * @param _mutable The instance to update from.
@@ -8970,7 +8974,6 @@ declare namespace FudgeCore {
          * @returns `_instance`.
          */
         function mutateDecorations<T extends object>(_mutable: T, _mutator: Mutator): Promise<T>;
-        function mutateArray<T extends General[]>(_mutable: T, _mutator: Mutator, _reference?: boolean): Promise<T>;
         /**
          * Creates and returns an empty mutator for the given value.
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
