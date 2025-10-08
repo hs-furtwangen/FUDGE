@@ -80,22 +80,11 @@ namespace FudgeCore {
       const types: MutatorTypes = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
       types[key] = _type;
 
-      // determine mutation strategy
-      let strategy: Metadata["mutables"][string];
-      if (isMutable(_type.prototype) && !_function && !_reference)
-        strategy = "mutate";
-      else
-        strategy = "set";
-
-      if (!strategy)
-        return;
-
-      // add serialization type to metadata
-      const mutables: Metadata["mutables"] = getOwnProperty(metadata, "mutables") ?? (metadata.mutables = { ...metadata.mutables });
-      mutables[key] = strategy;
-
       if (!_reference && !_function)
         return;
+
+      const references: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
+      references.add(key);
 
       let get: MutatorOptionsGetter | undefined;
       if (_function && (<General>_type).subclasses)

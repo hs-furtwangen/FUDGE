@@ -650,6 +650,10 @@ declare namespace FudgeCore {
          */
         mutatorTypes?: MutatorTypes;
         /**
+         * Keys of properties of the class's {@link Mutator} that are references to other objects.
+         */
+        mutatorReferences?: Set<string>;
+        /**
          * A map from property keys to their specified order in the class's {@link Mutator}.
          * Use the {@link order} decorator to add to this map.
          */
@@ -659,11 +663,6 @@ declare namespace FudgeCore {
          * Use the {@link select} decorator to add to this map.
          */
         mutatorOptions?: MutatorOptions;
-        /**
-         * A map of property keys to their mutation strategy.
-         * Use the {@link edit} or {@link mutate} decorator to add to this map.
-         */
-        mutables?: Record<PropertyKey, "set" | "mutate" | "setArray" | "mutateArray">;
         /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
@@ -1082,7 +1081,7 @@ declare namespace FudgeCore {
          * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
          */
-        getMutator(): Mutator;
+        getMutator(_extendable?: boolean): Mutator;
         /**
          * Updates the attribute values of the instance according to the state of the given mutator.
          */
@@ -8927,6 +8926,10 @@ declare namespace FudgeCore {
          */
         function types(_from: Object): Readonly<MutatorTypes>;
         /**
+         * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
+         */
+        function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
+        /**
          * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
          */
         function options(_from: Object): Readonly<MutatorOptions>;
@@ -8946,28 +8949,28 @@ declare namespace FudgeCore {
         function from(_object: object): Mutator;
         /**
          * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
-         * @param _instance The instance to copy the decorated properties from.
+         * @param _mutable The instance to copy the decorated properties from.
          * @param _mutator - (optional) the receiving mutator.
          * @returns `_out` or a new mutator if none is provided.
          */
-        function fromDecorations(_instance: object, _mutator?: Mutator): Mutator;
-        function fromArray(_array: IMutable[]): Mutator;
+        function fromDecorations(_mutable: object, _mutator?: Mutator): Mutator;
+        function fromArray(_array: General[], _reference?: boolean): Mutator;
         /**
          * Updates the values of the given {@link Mutator} according to the current state of the given instance.
-         * @param _instance The instance to update from.
+         * @param _mutable The instance to update from.
          * @param _mutator The mutator to update.
          * @returns `_mutator`.
          */
-        function update(_instance: object, _mutator: Mutator): Mutator;
+        function update(_mutable: object, _mutator: Mutator): Mutator;
         /**
          *
          * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
-         * @param _instance The instance to update.
+         * @param _mutable The instance to update.
          * @param _mutator The mutator to update from.
          * @returns `_instance`.
          */
-        function mutateDecorations<T extends object>(_instance: T, _mutator: Mutator): Promise<T>;
-        function mutateArray<T extends IMutable>(_instance: T[], _mutator: Mutator[]): Promise<T[]>;
+        function mutateDecorations<T extends object>(_mutable: T, _mutator: Mutator): Promise<T>;
+        function mutateArray<T extends General[]>(_mutable: T, _mutator: Mutator, _reference?: boolean): Promise<T>;
         /**
          * Creates and returns an empty mutator for the given value.
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.

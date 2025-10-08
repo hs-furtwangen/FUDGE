@@ -5,7 +5,7 @@ namespace FudgeCore {
      * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
      * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
      */
-    getMutator(): Mutator;
+    getMutator(_extendable?: boolean): Mutator;
 
     /**
      * Updates the attribute values of the instance according to the state of the given mutator.
@@ -67,7 +67,7 @@ namespace FudgeCore {
     public mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
       await Mutator.mutateDecorations(this, _mutator);
-      
+
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }

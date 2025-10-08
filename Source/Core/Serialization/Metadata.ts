@@ -38,6 +38,11 @@ namespace FudgeCore {
     mutatorTypes?: MutatorTypes;
 
     /**
+     * Keys of properties of the class's {@link Mutator} that are references to other objects.
+     */
+    mutatorReferences?: Set<string>;
+
+    /**
      * A map from property keys to their specified order in the class's {@link Mutator}.
      * Use the {@link order} decorator to add to this map.
      */
@@ -48,12 +53,6 @@ namespace FudgeCore {
      * Use the {@link select} decorator to add to this map.
      */
     mutatorOptions?: MutatorOptions;
-
-    /**
-     * A map of property keys to their mutation strategy.
-     * Use the {@link edit} or {@link mutate} decorator to add to this map.
-     */
-    mutables?: Record<PropertyKey, "set" | "mutate" | "setArray" | "mutateArray">;
 
     /**
      * A map of property keys to their serialization strategy.
