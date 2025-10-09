@@ -266,6 +266,39 @@ declare namespace FudgeUserInterface {
 }
 declare namespace FudgeUserInterface {
     /**
+     * An interactive number stepper with exponential display and complex handling using keyboard and mouse
+     */
+    class CustomElementNumber extends CustomElement {
+        private static customElement;
+        value: number;
+        private input;
+        private dragging;
+        private start;
+        private delta;
+        private pixels;
+        constructor(_attributes?: CustomElementAttributes);
+        get min(): number;
+        get max(): number;
+        get step(): number;
+        /**
+         * Creates the content of the element when connected the first time
+         */
+        connectedCallback(): void;
+        disconnectedCallback(): void;
+        getMutatorValue(): number;
+        setMutatorValue(_value: number): void;
+        private hndPointerdownInput;
+        private hndPointermoveWindow;
+        private hndPointerupWindow;
+        private hndPointerupInput;
+        private hndFocus;
+        private hndChange;
+        private hndInput;
+        private hndKey;
+    }
+}
+declare namespace FudgeUserInterface {
+    /**
      * A standard text input field with a label to it.
      */
     class CustomElementOutput extends CustomElement {

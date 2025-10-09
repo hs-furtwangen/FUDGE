@@ -225,6 +225,10 @@ input:autofill:active {
   transition: color calc(infinity * 1s) step-end, background-color calc(infinity * 1s) step-end;
 }
 
+.hide-carret {
+  caret-color: transparent;
+}
+
 *:focus {
   outline: 1px outset var(--color-focus);
   /* background-color: var(--color-focus); */
@@ -361,6 +365,11 @@ fudge-comboselect>button::before {
 
 fudge-digit {
   font-family: monospace;
+}
+
+fudge-number>input[type="number"] {
+  font-family: monospace;
+  text-align: left;
 }
 
 /* custom elements */
