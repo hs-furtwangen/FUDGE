@@ -11,9 +11,11 @@ namespace FudgeUserInterface {
     private input: HTMLInputElement;
 
     private dragging: boolean;
-    private start: number = 0;
+    private startValue: number = 0;
+    private startDecimals: number = 0;
     private delta: number = 0;
     private pixels: number = 0;
+    private speed: number = 0.01;
 
     public constructor(_attributes?: CustomElementAttributes) {
       super(_attributes);
@@ -44,23 +46,19 @@ namespace FudgeUserInterface {
       this.appendLabel();
 
       this.input = document.createElement("input");
-      this.input.type = this.getAttribute("type") ?? "number";
+      this.input.type = "text"; // use text to enforce decimal point notation
       this.input.min = this.getAttribute("min") ?? "";
       this.input.max = this.getAttribute("max") ?? "";
       this.input.step = this.getAttribute("step") ?? "";
+      this.input.inputMode = "decimal";
 
       this.input.onchange = this.hndChange;
       this.input.oninput = this.hndInput;
       this.input.onkeydown = this.hndKey;
       this.input.onkeyup = this.hndKey;
-
       this.input.onfocus = this.hndFocus;
-
-      // scrub support for number
-      if (this.input.type == "number") {
-        this.input.onpointerdown = this.hndPointerdownInput;
-        this.input.onpointerup = this.hndPointerupInput;
-      }
+      this.input.onpointerdown = this.hndPointerdownInput;
+      this.input.onpointerup = this.hndPointerupInput;
 
       this.appendChild(this.input);
 
@@ -77,7 +75,7 @@ namespace FudgeUserInterface {
 
     public setMutatorValue(_value: number): void {
       if (_value == undefined || isNaN(_value)) {
-        this.input.value = String(this.value);
+        this.input.value = this.value.toString();
         return;
       }
 
@@ -91,22 +89,22 @@ namespace FudgeUserInterface {
 
       const step: number = this.step;
       if (step != null) {
-        let base: number = min ?? 0;
-        _value = Math.round((_value - base) / step) * step + base;
-        let v: number = FudgeCore.Calc.snap(_value, step);
-        _value = v;
+        const decimals: number = this.decimals(step);
+        _value = FudgeCore.Calc.snap(_value, step);
+        _value = parseFloat(_value.toFixed(decimals));
+        this.input.value = _value.toFixed(decimals);
+      } else if (this.dragging) {
+        this.input.value = _value.toFixed(Math.max(this.startDecimals, this.decimals(this.speed)));
+      } else {
+        this.input.value = _value.toString();
       }
 
       this.value = _value;
-      this.input.value = String(this.value);
     }
 
     private hndPointerdownInput = (_event: PointerEvent): void => {
       if (document.activeElement == this.input)
         return;
-
-      this.delta = 0;
-      this.start = this.value;
 
       window.addEventListener("pointermove", this.hndPointermoveWindow);
       window.addEventListener("pointerup", this.hndPointerupWindow);
@@ -115,11 +113,11 @@ namespace FudgeUserInterface {
     };
 
     private hndPointermoveWindow = (_event: MouseEvent): void => {
-      let speed: number = this.step ?? 0.01;
+      this.speed = this.step ?? 0.01;
       if (_event.ctrlKey)
-        speed *= 0.1;
+        this.speed *= 0.1;
       else if (_event.shiftKey)
-        speed *= 10;
+        this.speed *= 10;
 
       this.pixels += _event.movementX;
 
@@ -128,6 +126,10 @@ namespace FudgeUserInterface {
       if (move != 0) {
         if (!this.dragging) {
           this.dragging = true;
+          this.delta = 0;
+          this.startValue = this.value;
+          this.startDecimals = this.decimals(this.input.value);
+
           this.input.requestPointerLock();
           this.input.classList.add("hide-carret");
           this.input.focus();
@@ -135,10 +137,10 @@ namespace FudgeUserInterface {
         }
 
         this.pixels -= move * 2;
-        this.delta += move * speed;
+        this.delta += move * this.speed;
 
-        const value: number = this.start + this.delta;
-        this.setMutatorValue(parseFloat(value.toFixed(4)));
+        let value: number = this.startValue + this.delta;
+        this.setMutatorValue(value);
       }
 
       _event.preventDefault();
@@ -150,7 +152,7 @@ namespace FudgeUserInterface {
         this.input.blur();
         this.input.classList.remove("hide-carret");
 
-        if (this.start != this.value)
+        if (this.startValue != this.value)
           this.input.dispatchEvent(new Event("change", { bubbles: true }));
       }
 
@@ -171,7 +173,7 @@ namespace FudgeUserInterface {
         this.input.select();
     };
 
-    private hndChange = (): void => {
+    private hndChange = (_event: Event): void => {
       this.setMutatorValue(parseFloat(this.input.value));
     };
 
@@ -183,5 +185,13 @@ namespace FudgeUserInterface {
       _event.stopPropagation();
     };
 
+    private decimals(_number: number | string): number {
+      const parts: string[] = _number.toString().toLowerCase().split('e');
+      const mantissa: string = parts[0];
+      const exp: number = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+      const frac: string = mantissa.split('.')[1] || '';
+      const decimals: number = Math.max(0, frac.length - exp);
+      return decimals;
+    };
   }
 }

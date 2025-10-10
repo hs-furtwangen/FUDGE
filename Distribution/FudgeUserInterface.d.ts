@@ -273,9 +273,11 @@ declare namespace FudgeUserInterface {
         value: number;
         private input;
         private dragging;
-        private start;
+        private startValue;
+        private startDecimals;
         private delta;
         private pixels;
+        private speed;
         constructor(_attributes?: CustomElementAttributes);
         get min(): number;
         get max(): number;
@@ -295,6 +297,7 @@ declare namespace FudgeUserInterface {
         private hndChange;
         private hndInput;
         private hndKey;
+        private decimals;
     }
 }
 declare namespace FudgeUserInterface {

@@ -367,7 +367,7 @@ fudge-digit {
   font-family: monospace;
 }
 
-fudge-number>input[type="number"] {
+fudge-number>input[type="text"] {
   font-family: monospace;
   text-align: left;
 }
