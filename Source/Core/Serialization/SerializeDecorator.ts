@@ -265,7 +265,7 @@ namespace FudgeCore {
   export async function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T> {
     const metadata: Metadata = getMetadata(_instance);
     const serializables: Metadata["serializables"] = metadata.serializables;
-    const types: MutatorTypes = metadata.mutatorTypes;
+    const types: MutatorTypes = metadata.mutatorTypes; // TODO: remove this...
 
     let nodePaths: Serialization;
     for (const key in serializables) {
@@ -303,7 +303,7 @@ namespace FudgeCore {
           Reflect.set(_instance, key, Array.from(value));
           break;
         case "serializableArray":
-          Reflect.set(_instance, key, await Serializer.deserializeArray(value, <General>types[key]));
+          Reflect.set(_instance, key, await Serializer.deserializeArray(value, <General>types?.[key]));
           break;
         case "resourceArray":
           Reflect.set(_instance, key, await Serializer.deserializeResources(value));

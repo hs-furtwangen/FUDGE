@@ -1154,7 +1154,8 @@ declare namespace FudgeCore {
          */
         static mutate(_object: object, _mutator: Mutator): void | Promise<void>;
         /**
-         * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
+         * Copy the properties of the given instance into a {@link Mutator} object. See {@link getKeys} for information on which properties are copied.
+         *
          * @param _mutable The instance to copy the decorated properties from.
          * @param _mutator - (optional) the receiving mutator.
          * @returns `_out` or a new mutator if none is provided.
@@ -1162,7 +1163,7 @@ declare namespace FudgeCore {
         static getMutatorBase(_mutable: object, _mutator?: Mutator): Mutator;
         /**
          *
-         * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
+         * Update the properties of the given instance according to the state of the given {@link Mutator}. See {@link getKeys} for information on which properties are updated.
          * @param _mutable The instance to update.
          * @param _mutator The mutator to update from.
          * @returns `_instance`.
@@ -1187,8 +1188,9 @@ declare namespace FudgeCore {
         /**
          * Returns an iterable of keys for the given source:
          *
-         * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
+         * - Returns the decorated keys ({@link mutate @mutate}) of the given instance, if available.
          * - Returns {@link Array.keys()} for arrays.
+         * - Returns {@link Object.getOwnPropertyNames} for objects.
          * - Returns an empty iterable otherwise.
          */
         static getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
