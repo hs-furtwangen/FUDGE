@@ -21,6 +21,14 @@ namespace FudgeCore {
   export interface MutatorForAnimation extends Mutator { readonly forAnimation: null }
   export interface MutatorForUserInterface extends Mutator { readonly forUserInterface: null }
 
+  /**
+   * A property path and value.
+   */
+  export interface AtomicMutator<T = unknown> {
+    path: string[];
+    value: T;
+  }
+
   export namespace Mutator {
     // export const SET: unique symbol = Symbol("SET");
     // export const MUTATE: unique symbol = Symbol("MUTATE");
@@ -191,6 +199,28 @@ namespace FudgeCore {
         return [];
 
       return null;
+    }
+
+    /**
+     * Get the value from the given mutator path.
+     */
+    export function getValue<T = unknown>(_root: Record<string, General>, _path: string[]): T {
+      let object: Record<string, General> = _root;
+      for (let i: number = 0; i < _path.length - 1; i++)
+        object = object[_path[i]];
+
+      return object[_path[_path.length - 1]];
+    }
+
+    /**
+     * Set the value at the given mutator path.
+     */
+    export function setValue(_root: Record<string, General>, _path: string[], _value: unknown): void {
+      let object: Record<string, General> = _root;
+      for (let i: number = 0; i < _path.length - 1; i++)
+        object = object[_path[i]];
+
+      object[_path[_path.length - 1]] = _value;
     }
 
     /**

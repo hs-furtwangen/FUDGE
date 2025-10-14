@@ -1,9 +1,9 @@
 namespace Fudge {
   import ƒ = FudgeCore;
 
-  export type historySource = ƒ.Mutable | ƒ.MutableArray | ƒ.Node | ƒ.Project | Array<unknown>;
-  export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | Array<unknown>;
-  export enum HISTORY { MUTATE, ADD, REMOVE, LINK, REORDER };
+  export type historySource = ƒ.Mutable | ƒ.MutableArray | ƒ.Node | ƒ.Project;
+  export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+  export enum HISTORY { MUTATE, ADD, REMOVE, LINK, RESTRUCTURE };
   type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
@@ -58,8 +58,6 @@ namespace Fudge {
         History.processNode(DO.RE, action, source, target);
       else if (source == ƒ.Project)
         History.processProject(DO.RE, action, source, target);
-      else if (Array.isArray(source) && Array.isArray(target))
-        History.processArray(DO.UN, step, source, target);
       else if (ƒ.isMutable(source))
         History.processMutation(DO.UN, step, source, target);
 
@@ -88,8 +86,6 @@ namespace Fudge {
           History.processNode(DO.UN, action, source, target);
         else if (source == ƒ.Project)
           History.processProject(DO.UN, action, source, target);
-        else if (Array.isArray(source) && Array.isArray(target))
-          History.processArray(DO.UN, step, source, target);
         else if (ƒ.isMutable(source))
           History.processMutation(DO.UN, step, source, target);
 
@@ -131,26 +127,10 @@ namespace Fudge {
     }
 
     /**
-     * Process structural changes on an {@link Array}.
-     */
-    private static async processArray(_do: DO, _step: historyStep, _source: Array<unknown>, _target: Array<unknown>): Promise<void> {
-      let current: Array<unknown>;
-
-      switch (_step[0]) {
-        case HISTORY.REORDER:
-          current = _source.concat();
-          _source.splice(0, _source.length, ..._target);
-      }
-
-      _step[2] = current; // replace target in step with previous state
-    }
-
-
-    /**
      * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator. 
      * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
      */
-    private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.Mutable | Array<unknown>, _target: ƒ.Mutator): Promise<void> {
+    private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator): Promise<void> {
       let current: ƒ.Mutator;
 
       switch (_step[0]) {
@@ -166,6 +146,13 @@ namespace Fudge {
           current = { [key]: _source[key] };
           _source[key] = _target[key];
           break;
+        case HISTORY.RESTRUCTURE:
+          const mutator: ƒ.AtomicMutator<Array<unknown>> = <ƒ.AtomicMutator<Array<unknown>>>_target;
+
+          const source: Array<unknown> = ƒ.Mutator.getValue(_source, mutator.path);
+          current = { path: mutator.path, value: source.concat() };
+
+          source.splice(0, source.length, ...mutator.value);
       }
 
       _step[2] = current; // replace target in step with previous state
