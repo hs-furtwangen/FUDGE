@@ -1,7 +1,7 @@
 namespace Fudge {
   import ƒ = FudgeCore;
 
-  export type historySource = ƒ.Mutable | ƒ.MutableArray | ƒ.Node | ƒ.Project;
+  export type historySource = object | ƒ.Node | ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
   export enum HISTORY { MUTATE, ADD, REMOVE, LINK, RESTRUCTURE };
   type historyStep = [HISTORY, historySource, historyTarget];
@@ -56,7 +56,7 @@ namespace Fudge {
 
       if (source instanceof ƒ.Node)
         History.processNode(DO.RE, action, source, target);
-      else if (source == ƒ.Project)
+      else if (source instanceof ƒ.Project)
         History.processProject(DO.RE, action, source, target);
       else if (ƒ.isMutable(source))
         History.processMutation(DO.UN, step, source, target);
@@ -84,7 +84,7 @@ namespace Fudge {
         let [action, source, target] = step;
         if (source instanceof ƒ.Node)
           History.processNode(DO.UN, action, source, target);
-        else if (source == ƒ.Project)
+        else if (source instanceof ƒ.Project)
           History.processProject(DO.UN, action, source, target);
         else if (ƒ.isMutable(source))
           History.processMutation(DO.UN, step, source, target);
@@ -138,7 +138,7 @@ namespace Fudge {
           if (!ƒ.isMutable(_source))
             return;
 
-          current = ƒ.Mutator.update(_source, ƒ.Mutator.clone(_target)); // cache the current state
+          current = ƒ.Mutable.updateMutator(_source, ƒ.Mutable.cloneMutator(_target)); // cache the current state
           await _source.mutate(_target);
           break;
         case HISTORY.LINK: // TODO: is this a mutation or is it not?
@@ -149,7 +149,7 @@ namespace Fudge {
         case HISTORY.RESTRUCTURE:
           const mutator: ƒ.AtomicMutator<Array<unknown>> = <ƒ.AtomicMutator<Array<unknown>>>_target;
 
-          const source: Array<unknown> = ƒ.Mutator.getValue(_source, mutator.path);
+          const source: Array<unknown> = ƒ.Mutable.getValue(_source, mutator.path);
           current = { path: mutator.path, value: source.concat() };
 
           source.splice(0, source.length, ...mutator.value);

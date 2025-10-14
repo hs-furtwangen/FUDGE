@@ -18,41 +18,42 @@ declare namespace FudgeUserInterface {
 declare namespace FudgeUserInterface {
     import ƒ = FudgeCore;
     /**
-     * Connects a [[Mutable]] to a DOM-Element and synchronizes that mutable with the mutator stored within.
+     * Connects a mutable object to a DOM-Element and synchronizes that mutable with the mutator stored within.
      * Updates the mutable on interaction with the element and the element in time intervals.
      */
     class Controller {
         domElement: HTMLElement;
         protected timeUpdate: number;
-        protected mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>;
+        protected mutable: object;
         private idInterval;
-        constructor(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement);
+        constructor(_mutable: object, _domElement: HTMLElement);
         /**
-         * Recursive method taking an existing [[ƒ.Mutator]] as a template
+         * Recursive method taking an existing mutator as a template
          * and updating its values with those found in the given UI-domElement.
          */
         static updateMutator(_domElement: HTMLElement, _mutator: ƒ.Mutator): ƒ.Mutator;
         /**
-         * Recursive method taking the a [[ƒ.Mutable]] as a template to create a [[ƒ.Mutator]] or update the given [[ƒ.Mutator]]
+         * Recursive method taking the a mutable as a template to create a mutator or update the given mutator.
          * with the values in the given UI-domElement
          */
-        static getMutator(_mutable: ƒ.Mutable | ƒ.MutableArray, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
+        static getMutator(_mutable: object, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         /**
-         * Recursive method taking the [[ƒ.Mutator]] of a [[ƒ.Mutable]] and updating the UI-domElement accordingly.
-         * If an additional [[ƒ.Mutator]] is passed, its values are used instead of those of the [[ƒ.Mutable]].
+         * Recursive method taking the mutator of a mutable and updating the UI-domElement accordingly.
+         * If an additional mutator is passed, its values are used instead of those of the mutable.
          */
-        static updateUserInterface(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void;
+        static updateUserInterface(_mutable: object, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void;
         /**
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
-        getMutable(): ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>;
-        setMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>): void;
+        getMutable(): object;
+        setMutable(_mutable: object): void;
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
+        protected restructureArray: (_event: Event) => Promise<void>;
         protected refresh: (_event: Event) => void;
         private getMutatorPath;
         private getTarget;
@@ -61,21 +62,21 @@ declare namespace FudgeUserInterface {
 declare namespace FudgeUserInterface {
     import ƒ = FudgeCore;
     /**
-     * Static class generating UI-domElements from the information found in [[ƒ.Mutable]]s and [[ƒ.Mutator]]s
+     * Static class generating UI-domElements from the information found in mutables and mutators
      */
     class Generator {
         /**
          * Creates a [[Controller]] from a [[FudgeCore.Mutable]] with expandable details or a list
          */
-        static createController(_mutable: ƒ.Mutable, _name?: string): Controller;
+        static createController(_mutable: object, _name?: string): Controller;
         /**
          * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
-        static createDetailsFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _name?: string, _mutator?: ƒ.Mutator): Details | DetailsArray;
+        static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator, _type?: Function | Record<string, unknown>, _optionsGetter?: ƒ.MutatorOptionsGetter): Details | DetailsArray;
         /**
          * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
-        static createInterfaceFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator?: ƒ.Mutator): HTMLDivElement;
+        static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator, _containerType?: Function | Record<string, unknown>, _containerOptionsGetter?: ƒ.MutatorOptionsGetter): HTMLDivElement;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -485,7 +486,9 @@ declare namespace FudgeUserInterface {
 declare namespace FudgeUserInterface {
     import ƒ = FudgeCore;
     class DetailsArray extends Details {
-        constructor(_legend: string);
+        input: CustomElementNumber;
+        button: HTMLButtonElement;
+        constructor(_legend: string, _length: number);
         setContent(_content: HTMLDivElement): void;
         getMutator(): ƒ.Mutator;
         private addEventListeners;
@@ -494,6 +497,7 @@ declare namespace FudgeUserInterface {
         private hndDragStart;
         private hndDragOver;
         private hndDrop;
+        private hndChangeInput;
         private hndInsert;
         private hndKeySpecial;
     }
@@ -873,6 +877,7 @@ declare namespace FudgeUserInterface {
         EXPAND = "expand",
         INPUT = "input",
         REARRANGE_ARRAY = "rearrangeArray",
+        RESIZE_ARRAY = "resizeArray",
         TOGGLE = "toggle",
         POINTER_MOVE = "pointermove",
         INSERT = "insert",

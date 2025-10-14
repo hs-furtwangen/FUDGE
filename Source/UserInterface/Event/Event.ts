@@ -35,6 +35,7 @@ namespace FudgeUserInterface {
     EXPAND = "expand",
     INPUT = "input",
     REARRANGE_ARRAY = "rearrangeArray",
+    RESIZE_ARRAY = "resizeArray",
     TOGGLE = "toggle",
     POINTER_MOVE = "pointermove",
     INSERT = "insert",

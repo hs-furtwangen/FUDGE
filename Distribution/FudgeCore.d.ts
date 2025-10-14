@@ -669,6 +669,24 @@ declare namespace FudgeCore {
          */
         serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
     }
+    namespace Metadata {
+        /**
+         * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
+         */
+        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
+        /**
+         * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+         */
+        function types(_from: Object): Readonly<MutatorTypes>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
+         */
+        function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+         */
+        function options(_from: Object): Readonly<MutatorOptions>;
+    }
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
      */
@@ -1076,7 +1094,28 @@ declare namespace FudgeCore {
     function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void;
 }
 declare namespace FudgeCore {
+    /**
+     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
+     */
+    interface Mutator {
+        [attribute: string]: General;
+    }
+    /**
+     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
+     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
+     */
+    interface AnimationMutator {
+        [attribute: string]: Float32Array;
+    }
+    /**
+     * A property path and value.
+     */
+    interface AtomicMutator<T = unknown> {
+        path: string[];
+        value: T;
+    }
     interface IMutable {
+        type: string;
         /**
          * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
          * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
@@ -1098,7 +1137,76 @@ declare namespace FudgeCore {
      * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
     abstract class Mutable extends EventTargetUnified implements IMutable {
-        static getMutableFromPath(_mutable: Mutable | MutableArray, _path: string[]): Mutable | MutableArray;
+        /**
+         * Get the value from the given mutation path.
+         */
+        static getValue<T = unknown>(_root: Record<string, General>, _path: string[]): T;
+        /**
+         * Set the value at the given mutation path.
+         */
+        static setValue(_root: Record<string, General>, _path: string[], _value: unknown): void;
+        /**
+         * Collect applicable properties of the given object and copies of their values in a {@link Mutator}-object.
+         */
+        static getMutator(_object: object): Mutator;
+        /**
+         * Updates the property values of the given object according to the state of the given mutator.
+         */
+        static mutate(_object: object, _mutator: Mutator): void | Promise<void>;
+        /**
+         * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
+         * @param _mutable The instance to copy the decorated properties from.
+         * @param _mutator - (optional) the receiving mutator.
+         * @returns `_out` or a new mutator if none is provided.
+         */
+        static getMutatorBase(_mutable: object, _mutator?: Mutator): Mutator;
+        /**
+         *
+         * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
+         * @param _mutable The instance to update.
+         * @param _mutator The mutator to update from.
+         * @returns `_instance`.
+         */
+        static mutateBase<T extends object>(_mutable: T, _mutator: Mutator): Promise<T>;
+        /**
+         * Collect applicable attributes of the given instance and copies of their values in a mutator.
+         */
+        static getMutatorOfArbitrary(_object: object): Mutator;
+        /**
+         * Updates the values of the given {@link Mutator} according to the current state of the given instance.
+         * @param _mutable The instance to update from.
+         * @param _mutator The mutator to update.
+         * @returns `_mutator`.
+         */
+        static updateMutator(_mutable: object, _mutator: Mutator): Mutator;
+        /**
+         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
+         * Does not recurse into objects! This will return the {@link Metadata.types decorated types} instead of the inferred runtime-types of the object, if available.
+         */
+        static getTypes(_instance: object, _mutator: Mutator): MutatorTypes;
+        /**
+         * Returns an iterable of keys for the given source:
+         *
+         * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
+         * - Returns {@link Array.keys()} for arrays.
+         * - Returns an empty iterable otherwise.
+         */
+        static getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
+        /**
+         * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
+         */
+        static cloneMutatorFromPath(_mutator: Mutator, _path: string[], _index?: number): Mutator;
+        /**
+         * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
+         * @param _mutator The mutator to clone. Must be a plain object or array.
+         * @returns A clone of `_mutator` or null if it is not a plain object or array.
+         */
+        static cloneMutator(_mutator: Mutator): Mutator | null;
+        /**
+         * Creates and returns an empty mutator for the given value.
+         * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
+         */
+        private static createMutator;
         /**
          * Retrieves the type of this mutable subclass as the name of the runtime class
          * @returns The type of the mutable
@@ -1141,7 +1249,7 @@ declare namespace FudgeCore {
      * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
      * @author Jirka Dell'Oro-Friedl, HFU, 2021
      */
-    class MutableArray<T extends Mutable = Mutable> extends Array<T> implements IMutable {
+    class MutableArray<T extends Mutable = Mutable> extends Array<T> {
         #private;
         constructor(_type: new () => T, ..._args: T[]);
         get type(): new () => T;
@@ -8894,99 +9002,6 @@ declare namespace FudgeCore {
          */
         static loadFiles(_fileList: FileList, _loaded: MapFilenameToContent): Promise<void>;
         private static handleFileSelect;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
-     */
-    interface Mutator {
-        [attribute: string]: General;
-    }
-    /**
-     * Interface describing an animation target mutator, which is an associative array with names of attributes and their corresponding values.
-     * Numeric values are stored as Float32Arrays, which allows for efficient interpolation and blending in the animation system.
-     */
-    interface AnimationMutator {
-        [attribute: string]: Float32Array;
-    }
-    interface MutatorForAnimation extends Mutator {
-        readonly forAnimation: null;
-    }
-    interface MutatorForUserInterface extends Mutator {
-        readonly forUserInterface: null;
-    }
-    namespace Mutator {
-        /**
-         * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
-         */
-        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
-        /**
-         * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
-         */
-        function types(_from: Object): Readonly<MutatorTypes>;
-        /**
-         * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
-         */
-        function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K>;
-        /**
-         * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
-         */
-        function options(_from: Object): Readonly<MutatorOptions>;
-        /**
-         * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
-         * @param _mutator The mutator to clone. Must be a plain object or array.
-         * @returns A clone of `_mutator` or null if it is not a plain object or array.
-         */
-        function clone(_mutator: Mutator): Mutator | null;
-        /**
-         * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
-         */
-        function fromPath(_mutator: Mutator, _path: string[], _index?: number): Mutator;
-        /**
-         * Collect applicable attributes of the given instance and copies of their values in a mutator.
-         */
-        function from(_object: object): Mutator;
-        /**
-         * Copy the {@link mutate decorated properties} of the given instance into a {@link Mutator} object.
-         * @param _mutable The instance to copy the decorated properties from.
-         * @param _mutator - (optional) the receiving mutator.
-         * @returns `_out` or a new mutator if none is provided.
-         */
-        function fromDecorations(_mutable: object, _mutator?: Mutator): Mutator;
-        /**
-         * Updates the values of the given {@link Mutator} according to the current state of the given instance.
-         * @param _mutable The instance to update from.
-         * @param _mutator The mutator to update.
-         * @returns `_mutator`.
-         */
-        function update(_mutable: object, _mutator: Mutator): Mutator;
-        /**
-         *
-         * Update the {@link mutate decorated properties} of the given instance according to the state of the given {@link Mutator}.
-         * @param _mutable The instance to update.
-         * @param _mutator The mutator to update from.
-         * @returns `_instance`.
-         */
-        function mutateDecorations<T extends object>(_mutable: T, _mutator: Mutator): Promise<T>;
-        /**
-         * Creates and returns an empty mutator for the given value.
-         * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
-         */
-        function create(_mutator: Mutator): Mutator | null;
-        /**
-         * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
-         * Does not recurse into objects! This will return the {@link Mutator.types decorated types} instead of the inferred runtime-types of the object, if available.
-         */
-        function getTypes(_instance: object, _mutator: Mutator): MutatorTypes;
-        /**
-         * Returns an iterable of mutator keys for the given source:
-         *
-         * - Returns the {@link FudgeCore.mutate decorated keys} that will be included in the {@link Mutator} of the given instance or class, if available.
-         * - Returns {@link Array.keys()} for arrays.
-         * - Returns an empty iterable otherwise.
-         */
-        function getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K>;
     }
 }
 declare namespace FBX {

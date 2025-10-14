@@ -3,7 +3,7 @@ namespace FudgeCore {
    * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
    * @author Jirka Dell'Oro-Friedl, HFU, 2021
    */
-  export class MutableArray<T extends Mutable = Mutable> extends Array<T> implements IMutable {
+  export class MutableArray<T extends Mutable = Mutable> extends Array<T> {
     #type: new () => T;
 
     public constructor(_type: new () => T, ..._args: T[]) {
@@ -35,7 +35,7 @@ namespace FudgeCore {
      * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
      */
     public getMutator(): Mutator {
-      return this.map((_value) => _value.getMutator());
+      return Mutable.getMutatorBase(this);
     }
 
     /**
@@ -44,7 +44,7 @@ namespace FudgeCore {
     public mutate(_mutator: Mutator): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator): Promise<void> {
       for (let entry in _mutator)
-        await this[<General>entry].mutate(_mutator[entry]);
+        await this[<General>entry]?.mutate(_mutator[entry]);
     }
 
     /**

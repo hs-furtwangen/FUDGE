@@ -2,13 +2,13 @@ namespace FudgeUserInterface {
   import ƒ = FudgeCore;
 
   /**
-   * Static class generating UI-domElements from the information found in [[ƒ.Mutable]]s and [[ƒ.Mutator]]s
+   * Static class generating UI-domElements from the information found in mutables and mutators
    */
   export class Generator {
     /**
      * Creates a [[Controller]] from a [[FudgeCore.Mutable]] with expandable details or a list
      */
-    public static createController(_mutable: ƒ.Mutable, _name?: string): Controller {
+    public static createController(_mutable: object, _name?: string): Controller {
       let controller: Controller = new Controller(_mutable, Generator.createDetailsFromMutable(_mutable, _name));
       controller.updateUserInterface();
       return controller;
@@ -17,41 +17,55 @@ namespace FudgeUserInterface {
     /**
      * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
-    public static createDetailsFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _name?: string, _mutator?: ƒ.Mutator): Details | DetailsArray {
+    public static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator, _type?: Function | Record<string, unknown>, _optionsGetter?: ƒ.MutatorOptionsGetter): Details | DetailsArray {
       let name: string = _name || _mutable.constructor.name;
 
       let details: Details | DetailsArray;
-      if (_mutable instanceof ƒ.MutableArray)
-        details = new DetailsArray(name);
-      else if (_mutable instanceof ƒ.Mutable)
+      if (Array.isArray(_mutable))
+        details = new DetailsArray(name, _mutable.length);
+      else if (ƒ.isMutable(_mutable))
         details = new Details(name, _mutable.type);
       else return null;
 
-      details.setContent(Generator.createInterfaceFromMutable(_mutable, _mutator));
+      details.setContent(Generator.createInterfaceFromMutable(_mutable, _mutator, _type, _optionsGetter));
       return details;
     }
 
     /**
      * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
-    public static createInterfaceFromMutable(_mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>, _mutator?: ƒ.Mutator): HTMLDivElement {
-      let mutator: ƒ.Mutator = _mutator || _mutable.getMutator(true);
-      let mutatorTypes: ƒ.MutatorTypes = ƒ.Mutator.getTypes(_mutable, mutator);
-      let mutatorOptions: ƒ.MutatorOptions = ƒ.Mutator.options(_mutable);
+    public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator, _containerType?: Function | Record<string, unknown>, _containerOptionsGetter?: ƒ.MutatorOptionsGetter): HTMLDivElement {
+      let mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable)
+      let mutatorTypes: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
+      let mutatorOptions: ƒ.MutatorOptions = ƒ.Metadata.options(_mutable);
       let div: HTMLDivElement = document.createElement("div");
 
       for (let key in mutator) {
-        let value: unknown = mutator[key];
-        let type: Function | object = mutatorTypes[key];
-        let element: HTMLElement = Generator.createMutatorElement(key, type, value);
+        let type: Function | Record<string, unknown> = mutatorTypes[key] ?? _containerType;
+        let optionsGetter: ƒ.MutatorOptionsGetter = mutatorOptions[key] ?? _containerOptionsGetter;
+        let mutant: unknown = Reflect.get(_mutable, key);
+        if (mutant == undefined && optionsGetter == undefined) { // try initialize value
+          try {
+            const value: unknown = new (<ƒ.General>type)();
+            Reflect.set(_mutable, key, value);
+          } catch {
+            console.warn("No initial value set for", _mutable.constructor.name, key);
+          }
 
-        if (!element && mutatorOptions[key])
-          element = new CustomElementComboSelect({ key: key, label: key, type: (<Function>type).name }, _mutable, mutatorOptions[key]);
-
-        if (!element) {
-          let subMutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = Reflect.get(_mutable, key);
-          element = Generator.createDetailsFromMutable(subMutable, key, <ƒ.Mutator>value);
         }
+
+        let value: unknown = mutator[key];
+        let isArray: boolean = Array.isArray(mutant);
+        let element: HTMLElement;
+
+        if (!isArray)
+          element = Generator.createMutatorElement(key, type, value);
+
+        if (!element && optionsGetter)
+          element = new CustomElementComboSelect({ key: key, label: key, type: (<Function>type).name }, _mutable, optionsGetter);
+
+        if (!element)
+          element = Generator.createDetailsFromMutable(<object>mutant, key, <ƒ.Mutator>value, type, optionsGetter);
 
         if (!element) { // undefined values without a type can't be displayed
           console.warn("No interface created for", _mutable.constructor.name, key);

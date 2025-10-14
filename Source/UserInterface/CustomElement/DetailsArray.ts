@@ -3,23 +3,35 @@ namespace FudgeUserInterface {
 
   export class DetailsArray extends Details {
 
-    public constructor(_legend: string) {
+    public input: CustomElementNumber;
+    public button: HTMLButtonElement;
+
+    public constructor(_legend: string, _length: number) {
       super(_legend, "Array");
+
+      this.input = new CustomElementNumber({ key: "length", label: "length", value: _length.toString(), min: "0", step: "1" });
+      this.input.addEventListener("change", this.hndChangeInput);
+      this.querySelector("summary").after(this.input);
+
+      this.button = document.createElement("button");
+      this.button.innerText = "+";
+      // button.onclick = this.hndClick;
+      // button.hidden = true;
+      this.appendChild(this.button);
     }
 
     public setContent(_content: HTMLDivElement): void {
       super.setContent(_content);
-      for (let child of this.content.children as HTMLCollectionOf<HTMLElement>) {
+      for (let child of this.content.children as HTMLCollectionOf<HTMLElement>)
         this.addEventListeners(child);
-      }
     }
 
     public getMutator(): ƒ.Mutator {
       let mutator: ƒ.Mutator[] = [];
 
-      for (let child of this.content.children as HTMLCollectionOf<CustomElement>) {
+      for (let child of this.content.children as HTMLCollectionOf<CustomElement>)
         mutator.push(child.getMutatorValue());
-      }
+
       return mutator;
     }
 
@@ -35,9 +47,9 @@ namespace FudgeUserInterface {
 
     private rearrange(_focus: number = undefined): void {
       let sequence: number[] = [];
-      for (let child of this.content.children) {
+      for (let child of this.content.children)
         sequence.push(parseInt(child.getAttribute("label")));
-      }
+
       this.setFocus(_focus);
       this.dispatchEvent(new CustomEvent(EVENT.REARRANGE_ARRAY, { bubbles: true, detail: { key: this.getAttribute("key"), sequence: sequence } }));
 
@@ -111,6 +123,9 @@ namespace FudgeUserInterface {
       drag.focus();
     };
 
+    private hndChangeInput = (_event: Event): void => {
+      this.dispatchEvent(new CustomEvent(EVENT.RESIZE_ARRAY, { bubbles: true, detail: { length: this.input.value } }));
+    };
 
     private hndInsert = (_event: Event): void => {
       ƒ.Debug.fudge("hndInsert");

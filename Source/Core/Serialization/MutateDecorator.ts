@@ -202,7 +202,7 @@ namespace FudgeCore {
   }
 
   function getSubclassOptions(this: object, _key: string): Record<string, Function> {
-    const subclasses: Iterable<Function> = (<{ readonly subclasses: Iterable<Function> }>Mutator.types(this)[_key]).subclasses;
+    const subclasses: Iterable<Function> = (<{ readonly subclasses: Iterable<Function> }>Metadata.types(this)[_key]).subclasses;
     const options: Record<string, Function> = {};
     for (const subclass of subclasses)
       options[subclass.name] = subclass;
@@ -211,7 +211,7 @@ namespace FudgeCore {
   }
 
   function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
-    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>Mutator.types(this)[_key]);
+    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>Metadata.types(this)[_key]);
     const options: Record<string, SerializableResource> = {};
     for (const resource of resources)
       options[resource.name] = resource;

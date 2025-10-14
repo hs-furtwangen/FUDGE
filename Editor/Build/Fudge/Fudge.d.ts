@@ -174,14 +174,14 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    type historySource = ƒ.Mutable | ƒ.MutableArray | ƒ.Node | ƒ.Project | Array<unknown>;
-    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | Array<unknown>;
+    type historySource = object | ƒ.Node | ƒ.Project;
+    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
     enum HISTORY {
         MUTATE = 0,
         ADD = 1,
         REMOVE = 2,
         LINK = 3,
-        REORDER = 4
+        RESTRUCTURE = 4
     }
     /**
      * Static class to record the history of manipulations of various entities. Enables undo and redo.
@@ -211,10 +211,6 @@ declare namespace Fudge {
          * In case the order of the last two steps needs to be changed, use this method
          */
         static swap(): void;
-        /**
-         * Process structural changes on an {@link Array}.
-         */
-        private static processArray;
         /**
          * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator.
          * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
@@ -409,7 +405,6 @@ declare namespace Fudge {
         private hndInsert;
         private hndKey;
         private hndDragOver;
-        private hndMutate;
         private hndDrop;
         private filterDragDrop;
         private getAncestorWithType;

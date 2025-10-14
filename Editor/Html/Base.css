@@ -257,7 +257,7 @@ label {
 /* details details {
   padding-left: 1em;
 } */
-details div {
+details div, details>fudge-number {
   padding-left: 1em;
 }
 
@@ -345,7 +345,8 @@ fudge-select {
 }
 
 fudge-textinput,
-fudge-comboselect {
+fudge-comboselect,
+fudge-number {
   display: flex;
 }
 
@@ -370,6 +371,7 @@ fudge-digit {
 fudge-number>input[type="text"] {
   font-family: monospace;
   text-align: left;
+  flex: 1 1 auto;
 }
 
 /* custom elements */

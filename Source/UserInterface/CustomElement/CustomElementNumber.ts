@@ -62,7 +62,7 @@ namespace FudgeUserInterface {
 
       this.appendChild(this.input);
 
-      this.setMutatorValue(this.value);
+      this.setMutatorValue(parseFloat(this.getAttribute("value")));
     }
 
     public disconnectedCallback(): void {

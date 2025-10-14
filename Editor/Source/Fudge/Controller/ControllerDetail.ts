@@ -65,7 +65,7 @@ namespace Fudge {
       if (this.filterDragDrop(_event, filter.UrlOnMeshGLTF, checkMimeType(MIME.GLTF))) return;
 
       let { mutable, key } = this.getTargetMutableAndKey(_event);
-      let metaTypes: ƒ.MutatorTypes = ƒ.Mutator.types(mutable);
+      let metaTypes: ƒ.MutatorTypes = ƒ.Metadata.types(mutable);
       let metaType: Object | Function = metaTypes[key];
       // console.log(key, metaTypes, metaType);
 
@@ -83,11 +83,6 @@ namespace Fudge {
           return (sources.length == 1 && sources[0].getMimeType() == _mime);
         };
       }
-    };
-
-    private hndMutate = async (_event: DragEvent): Promise<void> => {
-      // console.log("BEFORE", this);
-      History.save(HISTORY.MUTATE, this.mutable, this.mutable.getMutator());
     };
 
     private hndDrop = async (_event: DragEvent): Promise<void> => {
@@ -160,13 +155,13 @@ namespace Fudge {
       return null;
     }
 
-    private getTargetMutableAndKey(_event: Event): { mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>; key: string } {
+    private getTargetMutableAndKey(_event: Event): { mutable: object; key: string } {
       let path: ƒ.General[] = _event.composedPath();
       path = path.slice(0, path.indexOf(this.domElement));
       path = path.filter(_element => _element instanceof HTMLElement && (_element.getAttribute("type")));
       path.reverse();
 
-      let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.mutable;
+      let mutable: object = this.mutable;
       let keys: string[] = path.map(_element => _element.getAttribute("key"));
       for (let i: number = 0; i < keys.length - 1; i++)
         mutable = mutable[keys[i]];

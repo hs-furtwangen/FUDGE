@@ -61,6 +61,42 @@ namespace FudgeCore {
     serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
 
+  export namespace Metadata {
+    const emptyKeys: readonly string[] = Object.freeze([] as string[]);
+    const emptyTypes: MutatorTypes = Object.freeze({});
+    const emptyReferences: ReadonlySet<string> = Object.freeze(new Set<string>());
+    const emptyOptions: Readonly<MutatorOptions> = Object.freeze({});
+
+    /**
+     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
+     */
+    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
+      return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
+    }
+
+    /**
+     * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+     */
+    export function types(_from: Object): Readonly<MutatorTypes> {
+      return getMetadata(_from).mutatorTypes ?? emptyTypes;
+    }
+
+
+    /**
+     * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
+     */
+    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
+      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyReferences);
+    }
+
+    /**
+     * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+     */
+    export function options(_from: Object): Readonly<MutatorOptions> {
+      return getMetadata(_from).mutatorOptions ?? emptyOptions;
+    }
+  }
+
   const emptyMetadata: Metadata = Object.freeze({});
   /**
    * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
