@@ -24,15 +24,22 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2024-2025
    */
   // primitive type
-  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void) : never;
+  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P>) => void) : never;
+  // primitive type array
+  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P[]>) => void) : never;
+
   // object type
-  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P>) => void;
+  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
   // object type array
-  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Mutable, P[]>) => void;
+  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+
   // enum type
-  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<Mutable, P | P[]>) => void;
-  export function mutate(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
-    return mutateFactory(_type, false);
+  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
+  // enum type array
+  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+
+  export function mutate(_type: Function | Record<string, unknown>, _collectionType?: typeof Array): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
+    return mutateFactory(_type, _collectionType, false);
   }
 
   /**
@@ -46,8 +53,11 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Mutable, T | T[]>) => void {
-    return mutateFactory(_type, true);
+  export function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
+  export function mutateFunction<T extends Function>(_type: T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+
+  export function mutateFunction<T extends Function>(_type: T, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
+    return mutateFactory(_type, _collectionType, true);
   }
 
   /**
@@ -57,14 +67,17 @@ namespace FudgeCore {
    * **Side effects:**
    * - Invokes the {@link select} decorator with default options.
    */
-  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Mutable : Mutable, T | T[]>) => void {
-    return mutateFactory(_type, false, true);
+  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
+  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
+
+  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void {
+    return mutateFactory(_type, _collectionType, false, true);
   }
 
   /**
    * @internal
    */
-  export function mutateFactory(_type: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function mutateFactory(_type: Function | Record<string, unknown>, _collectionType?: typeof Array, _function?: boolean, _reference?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")

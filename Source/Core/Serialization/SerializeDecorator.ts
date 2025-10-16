@@ -66,15 +66,22 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2024-2025
    */
   // primitive type
-  export function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<Serializable, P>) => void) : never;
+  export function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P>) => void) : never;
+  // primitive type array
+  export function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P[]>) => void) : never;
+
   // object type
-  export function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, P | P[]>) => void;
+  export function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
   // object type array
-  export function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, P[]>) => void;
+  export function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+
   // enum type
-  export function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<Serializable, P | P[]>) => void;
-  export function serialize(_type: Function | Record<string, unknown>): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
-    return serializeFactory(_type, false);
+  export function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
+  // enum type array
+  export function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+
+  export function serialize(_type: Function | Record<string, unknown>, _collectionType?: typeof Array): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) | void {
+    return serializeFactory(_type, _collectionType, false);
   }
 
   /**
@@ -101,8 +108,11 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
-    return serializeFactory(_type, true);
+  export function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
+  export function serializeFunction<T extends Function>(_type: T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+
+  export function serializeFunction<T extends Function>(_type: T, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
+    return serializeFactory(_type, _collectionType, true);
   }
 
   /**
@@ -127,8 +137,11 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function serializeReference<T extends SerializableResource | Node, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<Node extends T ? Component : Serializable, T | T[]>) => void {
-    return serializeFactory(_type, false, true);
+  export function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
+  export function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
+
+  export function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void {
+    return serializeFactory(_type, _collectionType, false, true);
   }
 
   /**
@@ -159,14 +172,17 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function serializeReconstruct<T extends Serializable>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T | T[]>) => void {
-    return serializeFactory(_type, false, false, true);
+  export function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
+  export function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+
+  export function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
+    return serializeFactory(_type, _collectionType, false, false, true);
   }
 
   /**
    * @internal
    */
-  export function serializeFactory(_type: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function serializeFactory(_type: Function | Record<string, unknown>, _collectionType?: typeof Array, _function?: boolean, _reference?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -192,6 +208,9 @@ namespace FudgeCore {
         strategy = "serializable";
       }
 
+      if (_collectionType != null)
+        strategy += _collectionType.name;
+
       if (!strategy)
         return;
 
@@ -206,16 +225,16 @@ namespace FudgeCore {
    * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
    */
   export function serializeDecorations(_instance: object, _serialization: Serialization = {}): Serialization {
-    const serializables: Metadata["serializables"] = getMetadata(_instance).serializables;
+    const metadata: Metadata = getMetadata(_instance);
+    const serializables: Metadata["serializables"] = metadata.serializables;
+    const types: MutatorTypes = metadata.mutatorTypes; // TODO: remove this ?
+
     for (const key in serializables) {
       const value: unknown = Reflect.get(_instance, key);
       if (value == null)
         continue;
 
       let strategy: Metadata["serializables"][string] = serializables[key];
-      if (Array.isArray(value))
-        strategy += "Array";
-
       switch (strategy) {
         case "primitive":
           _serialization[key] = value;
@@ -239,7 +258,7 @@ namespace FudgeCore {
           _serialization[key] = Array.from(<unknown[]>value);
           break;
         case "serializableArray":
-          _serialization[key] = Serializer.serializeArray(<Serializable[]>value);
+          _serialization[key] = Serializer.serializeArray(<Serializable[]>value, <General>types?.[key]);
           break;
         case "resourceArray":
           _serialization[key] = Serializer.serializeResources(<SerializableResource[]>value);
@@ -249,6 +268,9 @@ namespace FudgeCore {
           break;
         case "functionArray":
           _serialization[key] = Serializer.serializeFunctions(<Function[]>value);
+          break;
+        case "reconstructArray":
+          _serialization[key] = Serializer.serializeArray(<Serializable[]>value);
           break;
       }
     }
@@ -265,7 +287,7 @@ namespace FudgeCore {
   export async function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T> {
     const metadata: Metadata = getMetadata(_instance);
     const serializables: Metadata["serializables"] = metadata.serializables;
-    const types: MutatorTypes = metadata.mutatorTypes; // TODO: remove this...
+    const types: MutatorTypes = metadata.mutatorTypes;
 
     let nodePaths: Serialization;
     for (const key in serializables) {
@@ -274,9 +296,6 @@ namespace FudgeCore {
         continue;
 
       let strategy: Metadata["serializables"][string] = serializables[key];
-      if (Array.isArray(value))
-        strategy += "Array";
-
       switch (strategy) {
         case "primitive":
           Reflect.set(_instance, key, value);
@@ -310,6 +329,9 @@ namespace FudgeCore {
           break;
         case "functionArray":
           Reflect.set(_instance, key, Serializer.deserializeFunctions(value));
+          break;
+        case "reconstructArray":
+          Reflect.set(_instance, key, await Serializer.deserializeArray(value));
           break;
       }
     }

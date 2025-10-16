@@ -58,7 +58,7 @@ namespace FudgeCore {
      * A map of property keys to their serialization strategy.
      * Use the {@link serialize} decorator to add to this map.
      */
-    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
+    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray" | "reconstructArray">;
   }
 
   export namespace Metadata {
@@ -85,8 +85,8 @@ namespace FudgeCore {
     /**
      * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
      */
-    export function references<T extends Object, K extends Extract<keyof T, string>>(_from: T): ReadonlySet<K> {
-      return <ReadonlySet<K>>(getMetadata(_from).mutatorReferences ?? emptyReferences);
+    export function references(_from: object): ReadonlySet<string> {
+      return <ReadonlySet<string>>(getMetadata(_from).mutatorReferences ?? emptyReferences);
     }
 
     /**
