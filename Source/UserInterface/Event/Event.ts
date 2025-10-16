@@ -6,6 +6,7 @@ namespace FudgeUserInterface {
     CLICK = "click",
     DOUBLE_CLICK = "dblclick",
     KEY_DOWN = "keydown",
+    KEY_UP = "keyup",
     DRAG_START = "dragstart",
     DRAG_ENTER = "dragenter",
     DRAG_OVER = "dragover",
@@ -18,6 +19,7 @@ namespace FudgeUserInterface {
     FOCUS_IN = "focusin",
     FOCUS_OUT = "focusout",
     FOCUS_SET = "focusSet",
+    FOCUS = "focus",
     BLUR = "blur",
     CHANGE = "change",
     DELETE = "delete",
@@ -35,11 +37,14 @@ namespace FudgeUserInterface {
     EXPAND = "expand",
     INPUT = "input",
     REARRANGE_ARRAY = "rearrangeArray",
-    RESIZE_ARRAY = "resizeArray",
+    RESTRUCTURE_ARRAY = "restructureArray",
     TOGGLE = "toggle",
     POINTER_MOVE = "pointermove",
     INSERT = "insert",
     SELECT_ALL = "selectAll",
-    SAVE_HISTORY = "saveHistory"
+    SAVE_HISTORY = "saveHistory",
+    REQUEST_OPTIONS = "requestOptions",
+    SET_VALUE = "setValue",
+    INITIALIZE_VALUE = "initializeValue"
   }
 }

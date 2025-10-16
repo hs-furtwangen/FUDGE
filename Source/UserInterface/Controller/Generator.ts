@@ -17,64 +17,94 @@ namespace FudgeUserInterface {
     /**
      * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
-    public static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator, _type?: Function | Record<string, unknown>, _optionsGetter?: ƒ.MutatorOptionsGetter): Details | DetailsArray {
+    public static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator): Details {
+      if (!ƒ.isMutable(_mutable))
+        return null;
+
       let name: string = _name || _mutable.constructor.name;
+      let details: Details = new Details(name, _mutable.type);
+      details.setContent(Generator.createInterfaceFromMutable(_mutable, _mutator));
+      return details;
+    }
 
-      let details: Details | DetailsArray;
-      if (Array.isArray(_mutable))
-        details = new DetailsArray(name, _mutable.length);
-      else if (ƒ.isMutable(_mutable))
-        details = new Details(name, _mutable.type);
-      else return null;
 
-      details.setContent(Generator.createInterfaceFromMutable(_mutable, _mutator, _type, _optionsGetter));
+    public static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): DetailsArray {
+      if (!Array.isArray(_mutable))
+        return null;
+
+      let details: DetailsArray = new DetailsArray(_name);
+      details.setContent(Generator.createInterfaceFromArray(_mutable, _mutator, _type, _getOptions));
       return details;
     }
 
     /**
      * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
-    public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator, _containerType?: Function | Record<string, unknown>, _containerOptionsGetter?: ƒ.MutatorOptionsGetter): HTMLDivElement {
-      let mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable)
-      let mutatorTypes: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
-      let mutatorOptions: ƒ.MutatorOptions = ƒ.Metadata.options(_mutable);
-      let div: HTMLDivElement = document.createElement("div");
+    public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
+      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable)
+      const types: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
+      const options: ƒ.MutatorOptions = ƒ.Metadata.options(_mutable);
+      const div: HTMLDivElement = document.createElement("div");
 
-      for (let key in mutator) {
-        let type: Function | Record<string, unknown> = mutatorTypes[key] ?? _containerType;
-        let optionsGetter: ƒ.MutatorOptionsGetter = mutatorOptions[key] ?? _containerOptionsGetter;
-        let mutant: unknown = Reflect.get(_mutable, key);
-        if (mutant == undefined && optionsGetter == undefined) { // try initialize value
-          try {
-            const value: unknown = new (<ƒ.General>type)();
-            Reflect.set(_mutable, key, value);
-          } catch {
-            console.warn("No initial value set for", _mutable.constructor.name, key);
-          }
-
-        }
-
-        let value: unknown = mutator[key];
-        let isArray: boolean = Array.isArray(mutant);
-        let element: HTMLElement;
-
-        if (!isArray)
-          element = Generator.createMutatorElement(key, type, value);
-
-        if (!element && optionsGetter)
-          element = new CustomElementComboSelect({ key: key, label: key, type: (<Function>type).name }, _mutable, optionsGetter);
-
+      for (const key in mutator) {
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], options[key]);
         if (!element)
-          element = Generator.createDetailsFromMutable(<object>mutant, key, <ƒ.Mutator>value, type, optionsGetter);
-
-        if (!element) { // undefined values without a type can't be displayed
-          console.warn("No interface created for", _mutable.constructor.name, key);
           continue;
-        }
+
+        div.appendChild(element);
+      }
+
+      return div;
+    }
+
+    public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): HTMLDivElement {
+      const div: HTMLDivElement = document.createElement("div");
+
+      for (const key in _mutator) {
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, _mutator, key, _type, _getOptions);
+        if (!element)
+          continue;
 
         div.appendChild(element);
       }
       return div;
+    }
+
+    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter): HTMLElement {
+      const mutant: unknown = Reflect.get(_mutable, _key);
+      const value: unknown = Reflect.get(_mutable, _key);
+
+      // if (mutant == undefined && _getOptions == undefined) { // try initialize value
+      //   try {
+      //     Controller.initializeValue(_mutable, _key, _type);
+      //   } catch {
+      //     console.warn("No initial value set for", _mutable.constructor.name, _key);
+      //   }
+      // }
+
+      let element: HTMLElement;
+
+      if (Array.isArray(mutant))
+        element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _type, _getOptions);
+
+      if (!element)
+        element = Generator.createMutatorElement(_key, _type, value);
+
+      if (!element && _getOptions)
+        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name }, value);
+
+      if (!element)
+        element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
+
+      if (!element)
+        element = new CustomElementInitializer({ key: _key, label: _key });
+
+      if (!element) { // undefined values without a type can't be displayed
+        console.warn("No interface created for", _mutable.constructor.name, _key);
+        return null;
+      }
+
+      return element;
     }
 
     /**
@@ -99,9 +129,13 @@ namespace FudgeUserInterface {
     /**
      * Create a specific CustomElement for the given data. Returns undefined if no element is {@link CustomElement.register registered} for the given type.
      */
-    public static createMutatorElement(_key: string, _type: Function | object, _value: Object): CustomElement | undefined {
+    public static createMutatorElement(_key: string, _type: Function | object, _value: unknown): CustomElement | undefined {
       let element: CustomElement;
       let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement;
+
+      if (_value == null)
+        return null;
+
       try {
         if (typeof _type == "function") {
           elementType = CustomElement.get(_type);

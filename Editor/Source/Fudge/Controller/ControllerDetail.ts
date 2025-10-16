@@ -41,7 +41,7 @@ namespace Fudge {
       ƒ.Debug.log(_event.detail);
       let property: ƒ.Mutable = this.mutable[_event.detail.getAttribute("key")];
       ƒ.Debug.log(property.type);
-      if (property instanceof ƒ.MutableArray && property.type) 
+      if (property instanceof ƒ.MutableArray && property.type)
         property.push(new property.type());
     };
 
@@ -107,7 +107,8 @@ namespace Fudge {
 
       if (this.#view != View.getViewSource(_event)) {
         let sources: Object[] = ƒui.Clipboard.dragDrop.get();
-        History.save(HISTORY.LINK, mutable, { [key]: mutable[key] });
+
+        History.save(HISTORY.LINK, mutable, { path: [key], value: mutable[key] });
         mutable[key] = sources[0];
       }
 

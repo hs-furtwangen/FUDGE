@@ -132,6 +132,7 @@ namespace Fudge {
      */
     private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator): Promise<void> {
       let current: ƒ.Mutator;
+      let atomicMutator: ƒ.AtomicMutator = <ƒ.AtomicMutator<Array<unknown>>>_target;
 
       switch (_step[0]) {
         case HISTORY.MUTATE:
@@ -141,18 +142,16 @@ namespace Fudge {
           current = ƒ.Mutable.updateMutator(_source, ƒ.Mutable.cloneMutator(_target)); // cache the current state
           await _source.mutate(_target);
           break;
-        case HISTORY.LINK: // TODO: is this a mutation or is it not?
-          let key: string = <string>Reflect.ownKeys(_target)[0];
-          current = { [key]: _source[key] };
-          _source[key] = _target[key];
+        case HISTORY.LINK: 
+          current = { path: atomicMutator.path, value: ƒ.Mutable.getValue(_source, atomicMutator.path) };
+
+          ƒ.Mutable.setValue(_source, atomicMutator.path, atomicMutator.value);
           break;
         case HISTORY.RESTRUCTURE:
-          const mutator: ƒ.AtomicMutator<Array<unknown>> = <ƒ.AtomicMutator<Array<unknown>>>_target;
+          const source: Array<unknown> = ƒ.Mutable.getValue(_source, atomicMutator.path);
+          current = { path: atomicMutator.path, value: source.concat() };
 
-          const source: Array<unknown> = ƒ.Mutable.getValue(_source, mutator.path);
-          current = { path: mutator.path, value: source.concat() };
-
-          source.splice(0, source.length, ...mutator.value);
+          source.splice(0, source.length, ...<Array<unknown>>atomicMutator.value);
       }
 
       _step[2] = current; // replace target in step with previous state

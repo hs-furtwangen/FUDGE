@@ -72,6 +72,10 @@ namespace FudgeUserInterface {
       return this.getAttribute("key");
     }
 
+    public get isInitialized(): boolean {
+      return this.initialized;
+    }
+
     /**
      * Add a label-element as child to this element
      */
@@ -110,7 +114,7 @@ namespace FudgeUserInterface {
         clone.setAttribute(attribute.name, attribute.value);
       return clone;
     }
-    
+
     /**
      * Get the value of this element in a format compatible with [[FudgeCore.Mutator]]
      */

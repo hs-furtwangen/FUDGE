@@ -4,14 +4,16 @@ namespace FudgeUserInterface {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-comboselect", CustomElementComboSelect);
 
-    // this breaches the separation of concerns of view and controller, but it is very handy if the custom element reference can get its options by itself.
-    #mutable: object;
-    #getOptions: (this: object, _key: string) => Record<string, unknown>;
+    public options: Record<string, unknown>;
+    public input: HTMLInputElement;
+    public datalist: HTMLDataListElement;
+    public button: HTMLButtonElement;
+    public value: unknown;
 
-    public constructor(_attributes: CustomElementAttributes, _mutable: object, _get: (this: object, _key: string) => Record<string, unknown>) {
+    public constructor(_attributes: CustomElementAttributes, _value?: unknown, _options?: Record<string, unknown>) {
       super(_attributes);
-      this.#mutable = _mutable;
-      this.#getOptions = _get;
+      this.options = _options;
+      this.value = _value;
     }
 
     /**
@@ -24,71 +26,61 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
-      let datalist: HTMLDataListElement = document.createElement("datalist");
-      datalist.id = CustomElement.nextId.toString();
-      this.appendChild(datalist);
+      this.datalist = document.createElement("datalist");
+      this.datalist.id = CustomElement.nextId.toString();
+      this.appendChild(this.datalist);
 
-      let input: HTMLInputElement = document.createElement("input");
-      input.setAttribute("list", datalist.id);
-      input.placeholder = `${this.getAttribute("type")}...`;
-      input.spellcheck = false;
-      input.onfocus = this.hndFocus;
-      input.oninput = this.hndInput;
-      input.onkeyup = this.hndKey;
-      this.appendChild(input);
+      this.input = document.createElement("input");
+      this.input.setAttribute("list", this.datalist.id);
+      this.input.placeholder = `${this.getAttribute("type")}...`;
+      this.input.spellcheck = false;
+      this.input.addEventListener(EVENT.FOCUS, this.hndFocus);
+      this.input.addEventListener(EVENT.INPUT, this.hndInput);
+      this.input.addEventListener(EVENT.KEY_UP, this.hndKey);
+      this.appendChild(this.input);
 
-      let button: HTMLButtonElement = document.createElement("button");
-      button.onclick = this.hndClick;
-      button.hidden = true;
-      this.appendChild(button);
+      this.button = document.createElement("button");
+      this.button.addEventListener(EVENT.CLICK, this.hndClick);
+      this.button.hidden = true;
+      this.appendChild(this.button);
 
-      this.onchange = this.hndChange;
-
-      this.setMutatorValue(Reflect.get(this.#mutable, this.getAttribute("key")));
+      this.addEventListener(EVENT.CHANGE, this.hndChange);
     }
 
     public getMutatorValue(): unknown {
-      const input: HTMLInputElement = this.querySelector("input");
       const options: Record<string, unknown> = this.getOptions();
-      return options[input.value];
+      return options[this.input.value];
     }
 
     public setMutatorValue(_value: { name?: string }): void {
-      const input: HTMLInputElement = this.querySelector("input");
-      if (input == document.activeElement)
+      if (this.input == document.activeElement)
         return;
 
       const value: string = _value ? _value.name ?? _value.toString() : "";
-
       const button: HTMLButtonElement = this.querySelector("button");
       button.hidden = !value;
-
-      input.value = value;
+      this.input.value = value;
     }
 
     private hndClick = (_event: MouseEvent): void => {
-      const input: HTMLInputElement = this.querySelector("input");
-      input.value = "";
-      const button: HTMLButtonElement = this.querySelector("button");
-      button.hidden = true;
+      this.input.value = "";
+      this.button.hidden = true;
       this.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
     };
 
     private hndFocus = (_event: FocusEvent): void => {
-      const datalist: HTMLDataListElement = this.querySelector("datalist");
-      datalist.innerHTML = ""; // clear previous entries
+      this.datalist.innerHTML = ""; // clear previous entries
       const options: Record<string, unknown> = this.getOptions();
       for (const key in options) {
         const entry: HTMLOptionElement = document.createElement("option");
         entry.value = key;
-        datalist.appendChild(entry);
+        this.datalist.appendChild(entry);
       }
     };
 
     private hndInput = (_event: Event): void => {
-      const button: HTMLButtonElement = this.querySelector("button");
-      button.hidden = !(_event.target as HTMLInputElement).value;
-      _event.stopPropagation(); // prevent bubbling of input event to controller TODO: only stop propagation if input originates from button or the combo select input
+      this.button.hidden = !(_event.target as HTMLInputElement).value;
+      _event.stopPropagation();
     };
 
     private hndKey(_event: KeyboardEvent): void {
@@ -96,22 +88,20 @@ namespace FudgeUserInterface {
     };
 
     private hndChange = async (_event: Event): Promise<void> => {
-      const input: HTMLInputElement = this.querySelector("input");
       const options: Record<string, unknown> = this.getOptions();
-      const key: string = this.getAttribute("key");
-      const incoming: unknown = options[input.value];
-      const current: unknown = Reflect.get(this.#mutable, key);
 
-      if (incoming == current)
+      if (this.input.value != "" && !Reflect.has(options, this.input.value)) {
+        this.setMutatorValue(this.value);
         return;
-
-      this.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.#mutable, mutator: { [key]: current } } }));
-
-      Reflect.set(this.#mutable, key, incoming);
+      }
+      
+      this.value = options[this.input.value];
+      this.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: this.value } }));
     };
 
     private getOptions(): Record<string, unknown> {
-      return this.#getOptions.call(this.#mutable, this.getAttribute("key"));
+      this.dispatchEvent(new Event(EVENT.REQUEST_OPTIONS, { bubbles: true }));
+      return this.options;
     }
   }
 }

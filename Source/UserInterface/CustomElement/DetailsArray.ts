@@ -2,21 +2,19 @@ namespace FudgeUserInterface {
   import ƒ = FudgeCore;
 
   export class DetailsArray extends Details {
-
     public input: CustomElementNumber;
     public button: HTMLButtonElement;
 
-    public constructor(_legend: string, _length: number) {
+    public constructor(_legend: string) {
       super(_legend, "Array");
 
-      this.input = new CustomElementNumber({ key: "length", label: "length", value: _length.toString(), min: "0", step: "1" });
-      this.input.addEventListener("change", this.hndChangeInput);
+      this.input = new CustomElementNumber({ key: "length", label: "length", value: "0", min: "0", step: "1" });
+      this.input.addEventListener(EVENT.CHANGE, this.hndChangeInput);
       this.querySelector("summary").after(this.input);
 
       this.button = document.createElement("button");
       this.button.innerText = "+";
-      // button.onclick = this.hndClick;
-      // button.hidden = true;
+      this.button.addEventListener(EVENT.CLICK, this.hndClickButton);
       this.appendChild(this.button);
     }
 
@@ -24,16 +22,21 @@ namespace FudgeUserInterface {
       super.setContent(_content);
       for (let child of this.content.children as HTMLCollectionOf<HTMLElement>)
         this.addEventListeners(child);
+
+      if (this.input.isInitialized)
+        this.input.setMutatorValue(this.content.children.length);
+      else
+        this.input.setAttribute("value", this.content.children.length.toString());
     }
 
-    public getMutator(): ƒ.Mutator {
-      let mutator: ƒ.Mutator[] = [];
+    // public getMutator(): ƒ.Mutator {
+    //   let mutator: ƒ.Mutator[] = [];
 
-      for (let child of this.content.children as HTMLCollectionOf<CustomElement>)
-        mutator.push(child.getMutatorValue());
+    //   for (let child of this.content.children as HTMLCollectionOf<CustomElement>)
+    //     mutator.push(child.getMutatorValue());
 
-      return mutator;
-    }
+    //   return mutator;
+    // }
 
     private addEventListeners(_child: HTMLElement): void {
       _child.draggable = true;
@@ -123,8 +126,13 @@ namespace FudgeUserInterface {
       drag.focus();
     };
 
+    private hndClickButton = (_event: Event): void => {
+      this.input.setMutatorValue(this.input.getMutatorValue() + 1);
+      this.dispatchEvent(new CustomEvent(EVENT.RESTRUCTURE_ARRAY, { bubbles: true, detail: { length: this.input.value } }));
+    };
+
     private hndChangeInput = (_event: Event): void => {
-      this.dispatchEvent(new CustomEvent(EVENT.RESIZE_ARRAY, { bubbles: true, detail: { length: this.input.value } }));
+      this.dispatchEvent(new CustomEvent(EVENT.RESTRUCTURE_ARRAY, { bubbles: true, detail: { length: this.input.value } }));
     };
 
     private hndInsert = (_event: Event): void => {

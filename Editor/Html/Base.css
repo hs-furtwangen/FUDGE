@@ -315,14 +315,10 @@ option {
 /* Button */
 
 button {
-  border: none;
+  border: 1px outset var(--color-medium);
   background-color: var(--color-background-main);
   color: var(--color-text);
   cursor: pointer;
-}
-
-button {
-  border: 1px outset var(--color-medium);
 }
 
 button:active {
@@ -340,7 +336,8 @@ button:active {
 fudge-boolean,
 fudge-color,
 fudge-stepper,
-fudge-select {
+fudge-select,
+fudge-initializer {
   display: block;
 }
 

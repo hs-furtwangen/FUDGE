@@ -22,6 +22,7 @@ declare namespace FudgeUserInterface {
      * Updates the mutable on interaction with the element and the element in time intervals.
      */
     class Controller {
+        static readonly signatures: WeakMap<HTMLElement, string>;
         domElement: HTMLElement;
         protected timeUpdate: number;
         protected mutable: object;
@@ -41,11 +42,41 @@ declare namespace FudgeUserInterface {
          * Recursive method taking the mutator of a mutable and updating the UI-domElement accordingly.
          * If an additional mutator is passed, its values are used instead of those of the mutable.
          */
-        static updateUserInterface(_mutable: object, _domElement: HTMLElement, _mutator?: ƒ.Mutator): void;
+        static updateUserInterface(_mutable: object, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _parentMutable?: object, _parentKey?: string): void;
+        /**
+         * Ensures that a {@link Details} element matches the structure of the given {@link FudgeCore.Mutator}.
+         * Performs a shallow **structural integrity check** by comparing the element’s cached {@link Controller.createSignature signature} with the mutator’s signature.
+         * If they differ, the element’s content is rebuilt to reflect the new structure.
+         * @param _mutable - The original mutable object represented in the UI.
+         * @param _details - The {@link Details} element displaying the data.
+         * @param _mutator - The mutator object describing the current structure and values.
+         * @param _parentMutable - *(Optional)* The parent mutable object if nested.
+         * @param _parentKey - *(Optional)* The key referencing this mutable within its parent.
+         */
+        static updateUserInterfaceStructure(_mutable: object, _details: Details, _mutator: ƒ.Mutator, _parentMutable?: object, _parentKey?: string): void;
         /**
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
+        static initializeValue(_mutable: object, _key: string | number, _type: Function | Record<string, unknown>): void;
+        /**
+         * Creates a shallow **structural signature** string for the given object.
+         * The signature encodes each {@link Object.getOwnPropertyNames own property name} and its corresponding `typeof value`.
+         * Unlike the normal `typeof` behavior, when a property value is `null`, the signature will contain `undefined` instead of `object`.
+         *
+         * @example
+         * ```ts
+         * Controller.createSignature({ x: 1, y: 2 });
+         * // → "x:number|y:number"
+         *
+         * Controller.createSignature({ color: { r: 1 } });
+         * // → "color:object"
+         *
+         * Controller.createSignature({ ref: null });
+         * // → "ref:undefined"
+         * ```
+         */
+        static createSignature(_object: Record<string, unknown>): string;
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
         getMutable(): object;
@@ -53,7 +84,10 @@ declare namespace FudgeUserInterface {
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
-        protected restructureArray: (_event: Event) => Promise<void>;
+        protected resizeArray: (_event: Event) => Promise<void>;
+        protected setValue: (_event: Event) => void;
+        protected initializeValue: (_event: Event) => void;
+        protected provideOptions: (_event: Event) => void;
         protected refresh: (_event: Event) => void;
         private getMutatorPath;
         private getTarget;
@@ -72,11 +106,14 @@ declare namespace FudgeUserInterface {
         /**
          * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
-        static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator, _type?: Function | Record<string, unknown>, _optionsGetter?: ƒ.MutatorOptionsGetter): Details | DetailsArray;
+        static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator): Details;
+        static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): DetailsArray;
         /**
          * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
-        static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator, _containerType?: Function | Record<string, unknown>, _containerOptionsGetter?: ƒ.MutatorOptionsGetter): HTMLDivElement;
+        static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
+        static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): HTMLDivElement;
+        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter): HTMLElement;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -85,7 +122,7 @@ declare namespace FudgeUserInterface {
         /**
          * Create a specific CustomElement for the given data. Returns undefined if no element is {@link CustomElement.register registered} for the given type.
          */
-        static createMutatorElement(_key: string, _type: Function | object, _value: Object): CustomElement | undefined;
+        static createMutatorElement(_key: string, _type: Function | object, _value: unknown): CustomElement | undefined;
     }
 }
 declare namespace FudgeUserInterface {
@@ -126,6 +163,7 @@ declare namespace FudgeUserInterface {
          * Return the key (name) of the attribute this element represents
          */
         get key(): string;
+        get isInitialized(): boolean;
         /**
          * Add a label-element as child to this element
          */
@@ -191,9 +229,13 @@ declare namespace FudgeUserInterface {
 }
 declare namespace FudgeUserInterface {
     class CustomElementComboSelect extends CustomElement {
-        #private;
         private static customElement;
-        constructor(_attributes: CustomElementAttributes, _mutable: object, _get: (this: object, _key: string) => Record<string, unknown>);
+        options: Record<string, unknown>;
+        input: HTMLInputElement;
+        datalist: HTMLDataListElement;
+        button: HTMLButtonElement;
+        value: unknown;
+        constructor(_attributes: CustomElementAttributes, _value?: unknown, _options?: Record<string, unknown>);
         /**
          * Creates the content of the element when connected the first time
          */
@@ -223,6 +265,30 @@ declare namespace FudgeUserInterface {
         get value(): number;
         connectedCallback(): void;
         add(_addend: number): void;
+    }
+}
+declare namespace FudgeUserInterface {
+    /**
+     * A standard checkbox with a label to it
+     */
+    class CustomElementInitializer extends CustomElement {
+        private static customElement;
+        button: HTMLButtonElement;
+        output: HTMLOutputElement;
+        constructor(_attributes: CustomElementAttributes);
+        /**
+         * Creates the content of the element when connected the first time
+         */
+        connectedCallback(): void;
+        /**
+         * Retrieves the status of the checkbox as boolean value
+         */
+        getMutatorValue(): boolean;
+        /**
+         * Sets the status of the checkbox
+         */
+        setMutatorValue(_value: null): void;
+        private hndClick;
     }
 }
 declare namespace FudgeUserInterface {
@@ -484,19 +550,18 @@ declare namespace FudgeUserInterface {
     }
 }
 declare namespace FudgeUserInterface {
-    import ƒ = FudgeCore;
     class DetailsArray extends Details {
         input: CustomElementNumber;
         button: HTMLButtonElement;
-        constructor(_legend: string, _length: number);
+        constructor(_legend: string);
         setContent(_content: HTMLDivElement): void;
-        getMutator(): ƒ.Mutator;
         private addEventListeners;
         private rearrange;
         private setFocus;
         private hndDragStart;
         private hndDragOver;
         private hndDrop;
+        private hndClickButton;
         private hndChangeInput;
         private hndInsert;
         private hndKeySpecial;
@@ -848,6 +913,7 @@ declare namespace FudgeUserInterface {
         CLICK = "click",
         DOUBLE_CLICK = "dblclick",
         KEY_DOWN = "keydown",
+        KEY_UP = "keyup",
         DRAG_START = "dragstart",
         DRAG_ENTER = "dragenter",
         DRAG_OVER = "dragover",
@@ -860,6 +926,7 @@ declare namespace FudgeUserInterface {
         FOCUS_IN = "focusin",
         FOCUS_OUT = "focusout",
         FOCUS_SET = "focusSet",
+        FOCUS = "focus",
         BLUR = "blur",
         CHANGE = "change",
         DELETE = "delete",
@@ -877,11 +944,14 @@ declare namespace FudgeUserInterface {
         EXPAND = "expand",
         INPUT = "input",
         REARRANGE_ARRAY = "rearrangeArray",
-        RESIZE_ARRAY = "resizeArray",
+        RESTRUCTURE_ARRAY = "restructureArray",
         TOGGLE = "toggle",
         POINTER_MOVE = "pointermove",
         INSERT = "insert",
         SELECT_ALL = "selectAll",
-        SAVE_HISTORY = "saveHistory"
+        SAVE_HISTORY = "saveHistory",
+        REQUEST_OPTIONS = "requestOptions",
+        SET_VALUE = "setValue",
+        INITIALIZE_VALUE = "initializeValue"
     }
 }
