@@ -9,6 +9,12 @@ namespace FudgeCore {
   export type MutatorTypes = { [key: string]: Function | Record<string, unknown> };
 
   /**
+   * Map from each property of a mutator to its specified collcetion type, for now only {@link Array}.
+   * @see {@link Metadata}.
+   */
+  export type MutatorCollectionTypes = { [key: string]: typeof Array };
+
+  /**
    * Map from each property of a mutator to a function that returns a map of possible options for the property.
    */
   export type MutatorOptions = { [key: string]: MutatorOptionsGetter };
@@ -43,6 +49,12 @@ namespace FudgeCore {
     mutatorReferences?: Set<string>;
 
     /**
+     * A map from property keys to their specified collection types for the class's {@link Mutator}.
+     * Use the {@link edit} or {@link mutate} decorator to add collcetion type information to this map.
+     */
+    mutatorCollectionTypes?: MutatorCollectionTypes;
+
+    /**
      * A map from property keys to their specified order in the class's {@link Mutator}.
      * Use the {@link order} decorator to add to this map.
      */
@@ -63,9 +75,8 @@ namespace FudgeCore {
 
   export namespace Metadata {
     const emptyKeys: readonly string[] = Object.freeze([] as string[]);
-    const emptyTypes: MutatorTypes = Object.freeze({});
-    const emptyReferences: ReadonlySet<string> = Object.freeze(new Set<string>());
-    const emptyOptions: Readonly<MutatorOptions> = Object.freeze({});
+    const emptyObject: object = Object.freeze({});
+    const emptySet: ReadonlySet<string> = Object.freeze(new Set<string>());
 
     /**
      * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
@@ -78,22 +89,28 @@ namespace FudgeCore {
      * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
      */
     export function types(_from: Object): Readonly<MutatorTypes> {
-      return getMetadata(_from).mutatorTypes ?? emptyTypes;
+      return getMetadata(_from).mutatorTypes ?? <Readonly<MutatorTypes>>emptyObject;
     }
 
+    /**
+     * Returns the decorated {@link Metadata.mutatorCollectionTypes collection types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+     */
+    export function collectionTypes(_from: Object): Readonly<MutatorCollectionTypes> {
+      return getMetadata(_from).mutatorCollectionTypes ?? <Readonly<MutatorCollectionTypes>>emptyObject;
+    }
 
     /**
      * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
      */
     export function references(_from: object): ReadonlySet<string> {
-      return <ReadonlySet<string>>(getMetadata(_from).mutatorReferences ?? emptyReferences);
+      return <ReadonlySet<string>>(getMetadata(_from).mutatorReferences ?? emptySet);
     }
 
     /**
      * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
      */
     export function options(_from: Object): Readonly<MutatorOptions> {
-      return getMetadata(_from).mutatorOptions ?? emptyOptions;
+      return getMetadata(_from).mutatorOptions ?? <Readonly<MutatorOptions>>emptyObject;
     }
   }
 

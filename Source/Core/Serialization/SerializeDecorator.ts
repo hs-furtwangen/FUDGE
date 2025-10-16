@@ -208,7 +208,7 @@ namespace FudgeCore {
         strategy = "serializable";
       }
 
-      if (_collectionType != null)
+      if (_collectionType)
         strategy += _collectionType.name;
 
       if (!strategy)

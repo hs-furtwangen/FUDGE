@@ -93,6 +93,12 @@ namespace FudgeCore {
       const types: MutatorTypes = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
       types[key] = _type;
 
+      if (_collectionType) {
+        // add collection type information
+        const collectionTypes: MutatorCollectionTypes = getOwnProperty(metadata, "mutatorCollectionTypes") ?? (metadata.mutatorCollectionTypes = { ...metadata.mutatorCollectionTypes });
+        collectionTypes[key] = _collectionType;
+      }
+
       if (!_reference && !_function)
         return;
 

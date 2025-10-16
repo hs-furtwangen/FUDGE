@@ -623,6 +623,13 @@ declare namespace FudgeCore {
         [key: string]: Function | Record<string, unknown>;
     };
     /**
+     * Map from each property of a mutator to its specified collcetion type, for now only {@link Array}.
+     * @see {@link Metadata}.
+     */
+    type MutatorCollectionTypes = {
+        [key: string]: typeof Array;
+    };
+    /**
      * Map from each property of a mutator to a function that returns a map of possible options for the property.
      */
     type MutatorOptions = {
@@ -654,6 +661,11 @@ declare namespace FudgeCore {
          */
         mutatorReferences?: Set<string>;
         /**
+         * A map from property keys to their specified collection types for the class's {@link Mutator}.
+         * Use the {@link edit} or {@link mutate} decorator to add collcetion type information to this map.
+         */
+        mutatorCollectionTypes?: MutatorCollectionTypes;
+        /**
          * A map from property keys to their specified order in the class's {@link Mutator}.
          * Use the {@link order} decorator to add to this map.
          */
@@ -678,6 +690,10 @@ declare namespace FudgeCore {
          * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
          */
         function types(_from: Object): Readonly<MutatorTypes>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorCollectionTypes collection types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+         */
+        function collectionTypes(_from: Object): Readonly<MutatorCollectionTypes>;
         /**
          * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
          */
