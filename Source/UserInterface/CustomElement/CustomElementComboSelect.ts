@@ -45,6 +45,9 @@ namespace FudgeUserInterface {
       this.appendChild(this.button);
 
       this.addEventListener(EVENT.CHANGE, this.hndChange);
+
+      if (this.value)
+        this.setMutatorValue(this.value)
     }
 
     public getMutatorValue(): unknown {
@@ -94,7 +97,7 @@ namespace FudgeUserInterface {
         this.setMutatorValue(this.value);
         return;
       }
-      
+
       this.value = options[this.input.value];
       this.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: this.value } }));
     };

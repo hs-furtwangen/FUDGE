@@ -74,14 +74,6 @@ namespace FudgeUserInterface {
       const mutant: unknown = Reflect.get(_mutable, _key);
       const value: unknown = Reflect.get(_mutable, _key);
 
-      // if (mutant == undefined && _getOptions == undefined) { // try initialize value
-      //   try {
-      //     Controller.initializeValue(_mutable, _key, _type);
-      //   } catch {
-      //     console.warn("No initial value set for", _mutable.constructor.name, _key);
-      //   }
-      // }
-
       let element: HTMLElement;
 
       if (Array.isArray(mutant))
@@ -91,7 +83,7 @@ namespace FudgeUserInterface {
         element = Generator.createMutatorElement(_key, _type, value);
 
       if (!element && _getOptions)
-        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name }, value);
+        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name }, value, _getOptions.call(_mutable, _key));
 
       if (!element)
         element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
