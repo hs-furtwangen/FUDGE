@@ -103,7 +103,7 @@ namespace FudgeUserInterface {
     };
 
     private getOptions(): Record<string, unknown> {
-      this.dispatchEvent(new Event(EVENT.REQUEST_OPTIONS, { bubbles: true }));
+      this.dispatchEvent(new Event(EVENT.REFRESH_OPTIONS, { bubbles: true }));
       return this.options;
     }
   }

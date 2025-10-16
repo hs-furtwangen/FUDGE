@@ -28,12 +28,12 @@ namespace FudgeUserInterface {
     }
 
 
-    public static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): DetailsArray {
+    public static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray {
       if (!Array.isArray(_mutable))
         return null;
 
       let details: DetailsArray = new DetailsArray(_name);
-      details.setContent(Generator.createInterfaceFromArray(_mutable, _mutator, _type, _getOptions));
+      details.setContent(Generator.createInterfaceFromArray(_mutable, _mutator, _parentMutable, _parentKey));
       return details;
     }
 
@@ -41,7 +41,7 @@ namespace FudgeUserInterface {
      * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
     public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
-      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable)
+      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
       const types: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
       const options: ƒ.MutatorOptions = ƒ.Metadata.options(_mutable);
       const div: HTMLDivElement = document.createElement("div");
@@ -57,11 +57,13 @@ namespace FudgeUserInterface {
       return div;
     }
 
-    public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): HTMLDivElement {
+    public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement {
+      const type: Function | Record<string, unknown> = ƒ.Metadata.types(_parentMutable)[_parentKey];
+      const getOptions: ƒ.MutatorOptionsGetter = ƒ.Metadata.options(_parentMutable)[_parentKey];
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in _mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, _mutator, key, _type, _getOptions);
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, _mutator, key, type, getOptions, _parentMutable, _parentKey);
         if (!element)
           continue;
 
@@ -70,20 +72,20 @@ namespace FudgeUserInterface {
       return div;
     }
 
-    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter): HTMLElement {
+    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement {
       const mutant: unknown = Reflect.get(_mutable, _key);
       const value: unknown = Reflect.get(_mutable, _key);
 
       let element: HTMLElement;
 
       if (Array.isArray(mutant))
-        element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _type, _getOptions);
+        element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value,  _parentMutable, _parentKey);
 
       if (!element)
         element = Generator.createMutatorElement(_key, _type, value);
 
       if (!element && _getOptions)
-        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name }, value, _getOptions.call(_mutable, _key));
+        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name }, value, _getOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
 
       if (!element)
         element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);

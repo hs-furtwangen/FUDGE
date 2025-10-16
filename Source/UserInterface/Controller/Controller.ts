@@ -23,7 +23,7 @@ namespace FudgeUserInterface {
       this.domElement.addEventListener(EVENT.INPUT, this.mutateOnInput);
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
       this.domElement.addEventListener(EVENT.RESTRUCTURE_ARRAY, this.resizeArray);
-      this.domElement.addEventListener(EVENT.REQUEST_OPTIONS, this.provideOptions);
+      this.domElement.addEventListener(EVENT.REFRESH_OPTIONS, this.refreshOptions);
       this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
       this.domElement.addEventListener(EVENT.INITIALIZE_VALUE, this.initializeValue);
 
@@ -121,7 +121,7 @@ namespace FudgeUserInterface {
         let content: HTMLDivElement;
 
         if (Array.isArray(_mutable))
-          content = Generator.createInterfaceFromArray(_mutable, _mutator, ƒ.Metadata.types(_parentMutable)[_parentKey], ƒ.Metadata.options(_parentMutable)[_parentKey]);
+          content = Generator.createInterfaceFromArray(_mutable, _mutator, _parentMutable, _parentKey);
         else
           content = Generator.createInterfaceFromMutable(_mutable, _mutator);
 
@@ -307,7 +307,7 @@ namespace FudgeUserInterface {
       Controller.initializeValue(mutable, key, type);
     };
 
-    protected provideOptions = (_event: Event): void => {
+    protected refreshOptions = (_event: Event): void => {
       const target: EventTarget = _event.target;
       if (!(target instanceof CustomElementComboSelect))
         return;

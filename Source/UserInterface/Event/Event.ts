@@ -43,7 +43,7 @@ namespace FudgeUserInterface {
     INSERT = "insert",
     SELECT_ALL = "selectAll",
     SAVE_HISTORY = "saveHistory",
-    REQUEST_OPTIONS = "requestOptions",
+    REFRESH_OPTIONS = "refreshOptions",
     SET_VALUE = "setValue",
     INITIALIZE_VALUE = "initializeValue"
   }

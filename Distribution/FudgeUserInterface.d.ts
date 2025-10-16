@@ -87,7 +87,7 @@ declare namespace FudgeUserInterface {
         protected resizeArray: (_event: Event) => Promise<void>;
         protected setValue: (_event: Event) => void;
         protected initializeValue: (_event: Event) => void;
-        protected provideOptions: (_event: Event) => void;
+        protected refreshOptions: (_event: Event) => void;
         protected refresh: (_event: Event) => void;
         private getMutatorPath;
         private getTarget;
@@ -107,13 +107,13 @@ declare namespace FudgeUserInterface {
          * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
         static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator): Details;
-        static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): DetailsArray;
+        static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray;
         /**
          * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
-        static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _type: Function | Record<string, unknown>, _getOptions: ƒ.MutatorOptionsGetter): HTMLDivElement;
-        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter): HTMLElement;
+        static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
+        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -950,7 +950,7 @@ declare namespace FudgeUserInterface {
         INSERT = "insert",
         SELECT_ALL = "selectAll",
         SAVE_HISTORY = "saveHistory",
-        REQUEST_OPTIONS = "requestOptions",
+        REFRESH_OPTIONS = "refreshOptions",
         SET_VALUE = "setValue",
         INITIALIZE_VALUE = "initializeValue"
     }
