@@ -89,7 +89,7 @@ declare namespace FudgeUserInterface {
         protected initializeValue: (_event: Event) => void;
         protected refreshOptions: (_event: Event) => void;
         protected refresh: (_event: Event) => void;
-        private getMutatorPath;
+        protected getMutatorPath(_event: Event): string[];
     }
 }
 declare namespace FudgeUserInterface {

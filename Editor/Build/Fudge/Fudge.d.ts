@@ -402,7 +402,6 @@ declare namespace Fudge {
     class ControllerDetail extends ƒui.Controller {
         #private;
         constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View);
-        private hndInsert;
         private hndKey;
         private hndDragOver;
         private hndDrop;

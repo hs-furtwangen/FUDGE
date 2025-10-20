@@ -341,7 +341,7 @@ namespace FudgeUserInterface {
       window.clearInterval(this.idInterval);
     };
 
-    private getMutatorPath(_event: Event): string[] {
+    protected getMutatorPath(_event: Event): string[] {
       const path: string[] = [];
       for (const target of _event.composedPath()) {
         if (target == this.domElement)
