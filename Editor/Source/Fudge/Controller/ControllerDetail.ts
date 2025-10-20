@@ -112,7 +112,7 @@ namespace Fudge {
         mutable[key] = sources[0];
       }
 
-      this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true }); // TODO: maybe no longer neccessary...
+      // this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true }); // TODO: maybe no longer neccessary...
     };
 
 

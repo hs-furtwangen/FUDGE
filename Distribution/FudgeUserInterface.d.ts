@@ -59,6 +59,7 @@ declare namespace FudgeUserInterface {
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
         static initializeValue(_mutable: object, _key: string | number, _type: Function | Record<string, unknown>): void;
+        static copyValue<T = unknown>(_value: T): T | Promise<T>;
         /**
          * Creates a shallow **structural signature** string for the given object.
          * The signature encodes each {@link Object.getOwnPropertyNames own property name} and its corresponding `typeof value`.
@@ -84,13 +85,11 @@ declare namespace FudgeUserInterface {
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
-        protected resizeArray: (_event: Event) => Promise<void>;
         protected setValue: (_event: Event) => void;
         protected initializeValue: (_event: Event) => void;
         protected refreshOptions: (_event: Event) => void;
         protected refresh: (_event: Event) => void;
         private getMutatorPath;
-        private getTarget;
     }
 }
 declare namespace FudgeUserInterface {
@@ -274,7 +273,6 @@ declare namespace FudgeUserInterface {
     class CustomElementInitializer extends CustomElement {
         private static customElement;
         button: HTMLButtonElement;
-        output: HTMLOutputElement;
         constructor(_attributes: CustomElementAttributes);
         /**
          * Creates the content of the element when connected the first time
@@ -553,15 +551,18 @@ declare namespace FudgeUserInterface {
     class DetailsArray extends Details {
         input: CustomElementNumber;
         button: HTMLButtonElement;
+        private drag;
+        private dragDropIndicator;
         constructor(_legend: string);
         setContent(_content: HTMLDivElement): void;
         private addEventListeners;
         private rearrange;
         private setFocus;
         private hndDragStart;
+        private hndDragEnd;
         private hndDragOver;
         private hndDrop;
-        private hndClickButton;
+        private hndDragLeave;
         private hndChangeInput;
         private hndInsert;
         private hndKeySpecial;
@@ -915,6 +916,8 @@ declare namespace FudgeUserInterface {
         KEY_DOWN = "keydown",
         KEY_UP = "keyup",
         DRAG_START = "dragstart",
+        DRAG = "drag",
+        DRAG_END = "dragend",
         DRAG_ENTER = "dragenter",
         DRAG_OVER = "dragover",
         DRAG_LEAVE = "dragleave",
@@ -944,7 +947,6 @@ declare namespace FudgeUserInterface {
         EXPAND = "expand",
         INPUT = "input",
         REARRANGE_ARRAY = "rearrangeArray",
-        RESTRUCTURE_ARRAY = "restructureArray",
         TOGGLE = "toggle",
         POINTER_MOVE = "pointermove",
         INSERT = "insert",

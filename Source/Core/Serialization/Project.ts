@@ -155,6 +155,13 @@ namespace FudgeCore {
     }
 
     /**
+     * Returns whether there is a resource registered for the given id.
+     */
+    public static hasResource(_idResource: string): boolean {
+      return Project.resources[_idResource] != undefined || Project.serialization[_idResource] != undefined;
+    }
+
+    /**
      * Retrieves the resource stored with the given id.
      */
     public static async getResource<T extends SerializableResource>(_idResource: string): Promise<T> {

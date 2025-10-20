@@ -59,11 +59,11 @@ namespace FudgeCore {
      * Get the value from the given mutation path.
      */
     public static getValue<T = unknown>(_root: Record<string, General>, _path: string[]): T {
-      let object: Record<string, General> = _root;
-      for (let i: number = 0; i < _path.length - 1; i++)
-        object = object[_path[i]];
+      let object: General = _root;
+      for (let i: number = 0; i < _path.length; i++)
+        object = Reflect.get(object, _path[i]);
 
-      return object[_path[_path.length - 1]];
+      return object;
     }
 
     /**

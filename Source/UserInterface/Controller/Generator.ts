@@ -79,7 +79,7 @@ namespace FudgeUserInterface {
       let element: HTMLElement;
 
       if (Array.isArray(mutant))
-        element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value,  _parentMutable, _parentKey);
+        element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _parentMutable ?? _mutable, _parentKey ?? _key);
 
       if (!element)
         element = Generator.createMutatorElement(_key, _type, value);

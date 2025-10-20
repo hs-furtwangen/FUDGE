@@ -7,7 +7,7 @@ namespace FudgeUserInterface {
     private static customElement: void = CustomElement.register("fudge-initializer", CustomElementInitializer);
 
     public button: HTMLButtonElement;
-    public output: HTMLOutputElement;
+    // public output: HTMLOutputElement;
 
     public constructor(_attributes: CustomElementAttributes) {
       super(_attributes);
@@ -25,12 +25,12 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
-      this.output = document.createElement("output");
-      this.output.value = "<null>";
-      this.appendChild(this.output);
+      // this.output = document.createElement("output");
+      // this.output.value = "<undefined>";
+      // this.appendChild(this.output);
 
       this.button = document.createElement("button");
-      this.button.innerText = "+";
+      this.button.innerText = "<undefined>";
       this.button.addEventListener(EVENT.CLICK, this.hndClick);
       this.appendChild(this.button);
     }

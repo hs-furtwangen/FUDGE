@@ -371,6 +371,16 @@ fudge-number>input[type="text"] {
   flex: 1 1 auto;
 }
 
+fudge-initializer>button {
+  border: none;
+  background-color: transparent;
+  color: var(--color-medium);
+}
+
+fudge-initializer>button:hover {
+  color: var(--color-signal);
+}
+
 /* custom elements */
 
 custom-vector2 {

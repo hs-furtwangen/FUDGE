@@ -554,6 +554,10 @@ declare namespace FudgeCore {
          */
         static isResource(_object: Serializable): boolean;
         /**
+         * Returns whether there is a resource registered for the given id.
+         */
+        static hasResource(_idResource: string): boolean;
+        /**
          * Retrieves the resource stored with the given id.
          */
         static getResource<T extends SerializableResource>(_idResource: string): Promise<T>;

@@ -22,7 +22,6 @@ namespace FudgeUserInterface {
       this.startRefresh();
       this.domElement.addEventListener(EVENT.INPUT, this.mutateOnInput);
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
-      this.domElement.addEventListener(EVENT.RESTRUCTURE_ARRAY, this.resizeArray);
       this.domElement.addEventListener(EVENT.REFRESH_OPTIONS, this.refreshOptions);
       this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
       this.domElement.addEventListener(EVENT.INITIALIZE_VALUE, this.initializeValue);
@@ -171,6 +170,20 @@ namespace FudgeUserInterface {
       Reflect.set(_mutable, _key, value);
     }
 
+    public static copyValue<T = unknown>(_value: T): T | Promise<T> {
+      if (typeof _value == "object" && _value != null) {
+        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource))
+          return <Promise<T>>ƒ.Project.getResource(_value.idResource);
+
+        if (ƒ.isSerializable(_value))
+          return <Promise<T>>ƒ.Serializer.deserialize(ƒ.Serializer.serialize(_value));
+
+        throw new Error("No copy operation available for: " + _value.constructor.name);
+      }
+
+      return _value;
+    }
+
     /**
      * Creates a shallow **structural signature** string for the given object.
      * The signature encodes each {@link Object.getOwnPropertyNames own property name} and its corresponding `typeof value`.
@@ -241,39 +254,29 @@ namespace FudgeUserInterface {
     };
 
     protected rearrangeArray = async (_event: Event): Promise<void> => {
-      let sequence: number[] = (<CustomEvent>_event).detail.sequence;
-      let path: string[] = this.getMutatorPath(_event);
-      let target: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.getTarget(path);
-
-      // rearrange that mutable
-      (<ƒ.MutableArray<ƒ.Mutable>><unknown>target).rearrange(sequence);
-      await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable)); // TODO: rearrangement is not a mutation so dispatching this mutate is irritating...
-    };
-
-    protected resizeArray = async (_event: Event): Promise<void> => {
-      const target: EventTarget = _event.target;
-      if (!(target instanceof DetailsArray))
-        return;
-
-      const length: number = (<CustomEvent>_event).detail.length;
+      const sequence: number[] = (<CustomEvent>_event).detail.sequence;
       const path: string[] = this.getMutatorPath(_event);
-      const current: unknown[] = this.getTarget(path);
+      const target: unknown[] = ƒ.Mutable.getValue(this.mutable, path);
 
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current.concat() } } }));
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: target.concat() } } }));
 
-      const incoming: unknown[] = current.concat();
-      incoming.length = length;
-      for (let i: number = current.length; i < length; i++)
-        incoming[i] = null;
+      const incoming: unknown[] = new Array(sequence.length);
+      for (let i: number = 0; i < incoming.length; i++) {
+        const iTarget: number = sequence[i];
+        if (iTarget >= 0)
+          incoming[i] = target[iTarget];
+        else // negative indices imply copy
+          incoming[i] = await Controller.copyValue(target[Math.abs(iTarget)]);
+      }
 
-      current.splice(0, current.length, ...incoming);
+      target.splice(0, target.length, ...incoming);
 
-      await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable));
+      await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable)); // rearrangement is not a mutation?
     };
 
     protected setValue = (_event: Event): void => {
       const path: string[] = this.getMutatorPath(_event);
-      const mutable: object = this.getTarget(path.toSpliced(path.length - 1));
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
 
       const current: unknown = Reflect.get(mutable, key);
@@ -286,13 +289,13 @@ namespace FudgeUserInterface {
 
     protected initializeValue = (_event: Event): void => {
       const path: string[] = this.getMutatorPath(_event);
-      const mutable: object = this.getTarget(path.toSpliced(path.length - 1));
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
 
       let parent: object;
       let parentKey: string;
       if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
-        parent = this.getTarget(path.toSpliced(path.length - 2));
+        parent = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
         parentKey = path[path.length - 2];
       }
 
@@ -302,7 +305,7 @@ namespace FudgeUserInterface {
 
       const mutatorTypes: ƒ.MutatorTypes = ƒ.Mutable.getTypes(parent ?? mutable, ƒ.Mutable.getMutator(parent ?? mutable));
       const mutatorCollectionTypes: ƒ.MutatorCollectionTypes = ƒ.Metadata.collectionTypes(mutable);
-      const type: Function | Record<string, unknown> =mutatorCollectionTypes[key] ?? mutatorTypes[parentKey ?? key];
+      const type: Function | Record<string, unknown> = mutatorCollectionTypes[key] ?? mutatorTypes[parentKey ?? key];
 
       Controller.initializeValue(mutable, key, type);
     };
@@ -313,10 +316,10 @@ namespace FudgeUserInterface {
         return;
 
       const path: string[] = this.getMutatorPath(_event);
-      let mutable: unknown = this.getTarget(path.toSpliced(path.length - 1));
+      let mutable: unknown = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       let key: string = path[path.length - 1];
       if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
-        mutable = this.getTarget(path.toSpliced(path.length - 2));
+        mutable = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
         key = path[path.length - 2];
       }
 
@@ -347,15 +350,6 @@ namespace FudgeUserInterface {
       }
 
       return path.reverse();
-    }
-
-    private getTarget<T = unknown>(_path: string[]): T {
-      let target: object = this.mutable;
-
-      for (let key of _path)
-        target = Reflect.get(target, key);
-
-      return <T>target;
     }
   }
 }
