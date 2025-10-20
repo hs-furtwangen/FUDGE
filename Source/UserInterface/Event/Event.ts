@@ -41,7 +41,6 @@ namespace FudgeUserInterface {
     REARRANGE_ARRAY = "rearrangeArray",
     TOGGLE = "toggle",
     POINTER_MOVE = "pointermove",
-    INSERT = "insert",
     SELECT_ALL = "selectAll",
     SAVE_HISTORY = "saveHistory",
     REFRESH_OPTIONS = "refreshOptions",

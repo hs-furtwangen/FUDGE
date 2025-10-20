@@ -42,17 +42,18 @@ namespace FudgeUserInterface {
       _child.addEventListener(EVENT.DRAG_OVER, this.hndDragOver);
       _child.addEventListener(EVENT.DROP, this.hndDrop);
       _child.addEventListener(EVENT.KEY_DOWN, this.hndKeySpecial);
-      _child.addEventListener(EVENT.INSERT, this.hndInsert);
       _child.tabIndex = 0;
     }
 
     private rearrange(_focus: number = undefined): void {
-      let sequence: number[] = [];
-      for (let child of this.content.children)
-        sequence.push(parseInt(child.getAttribute("label")));
+      const sequence: number[] = new Array(this.content.children.length);
+      for (let i: number = 0; i < sequence.length; i++) {
+        const index: number = parseInt(this.content.children.item(i).getAttribute("key"));
+        sequence[i] = isNaN(index) ? undefined : index;
+      }
 
       this.setFocus(_focus);
-      this.dispatchEvent(new CustomEvent(EVENT.REARRANGE_ARRAY, { bubbles: true, detail: { key: this.getAttribute("key"), sequence: sequence } }));
+      this.dispatchEvent(new CustomEvent(EVENT.REARRANGE_ARRAY, { bubbles: true, detail: { sequence: sequence } }));
 
       let count: number = 0;
       for (let child of this.content.children as HTMLCollectionOf<CustomElement>) {
@@ -111,30 +112,26 @@ namespace FudgeUserInterface {
     };
 
     private hndDrop = (_event: DragEvent): void => {
-      let children: HTMLElement[] = <HTMLElement[]>Array.from(this.content.children);
-      let dragIndex: number = children.indexOf(this.drag);
-      let dropIndex: number = children.indexOf(this.dragDropIndicator);
-      children.splice(dropIndex, 1);
-      if (dropIndex > dragIndex)
-        dropIndex -= 1;
-      else
-        dragIndex -= 1;
-
-      if (!_event.ctrlKey && dropIndex == dragIndex)
+      if (!this.drag)
         return;
 
-      const sequence: number[] = children.map((_value, _index) => _index);
+      if (this.drag.parentElement != (<HTMLElement>_event.currentTarget).parentElement)
+        return;
 
+      _event.stopPropagation();
+
+      let drag: HTMLElement;
       if (_event.ctrlKey) {
-        sequence.splice(dropIndex, 0, -dragIndex);
+        this.dragDropIndicator.after(drag = <HTMLElement>this.drag.cloneNode(true));
+        drag.setAttribute("key", "-" + drag.getAttribute("key"));
       } else {
-        sequence[dragIndex] = dropIndex;
-        sequence[dropIndex] = dragIndex;
+        this.dragDropIndicator.after(drag = this.drag);
       }
 
-      children[dragIndex].blur(); // for now blur as the focus blocks the auto update from the controller...
+      this.dragDropIndicator.remove();
 
-      this.dispatchEvent(new CustomEvent(EVENT.REARRANGE_ARRAY, { bubbles: true, detail: { sequence: sequence } }));
+      this.rearrange();
+      drag.focus();
     };
 
     private hndDragLeave = (_event: DragEvent): void => {
@@ -156,10 +153,6 @@ namespace FudgeUserInterface {
       this.dispatchEvent(new CustomEvent(EVENT.REARRANGE_ARRAY, { bubbles: true, detail: { sequence: sequence } }));
     };
 
-    private hndInsert = (_event: Event): void => {
-      ƒ.Debug.fudge("hndInsert");
-    };
-
     private hndKeySpecial = (_event: KeyboardEvent): void => {
       let item: HTMLElement = <HTMLElement>_event.currentTarget;
 
@@ -170,54 +163,65 @@ namespace FudgeUserInterface {
       let focus: number = parseInt(item.getAttribute("label"));
       let sibling: HTMLElement = item;
       let insert: HTMLElement = item;
-      let passEvent: boolean = false;
+
+      let stopEvent: boolean = true;
 
       switch (_event.code) {
+        case ƒ.KEYBOARD_CODE.INSERT:
+          insert = <HTMLElement>item.cloneNode(true);
+          insert.setAttribute("key", "-" + insert.getAttribute("key"));
+
+          item.after(insert);
+          this.rearrange(++focus);
+          break;
         case ƒ.KEYBOARD_CODE.DELETE:
-          item.parentNode.removeChild(item);
+          item.remove();
           this.rearrange(focus);
           break;
-        // case ƒ.KEYBOARD_CODE.INSERT:
-        //   passEvent = true;
-        //   console.log("INSERT at DetailsArray");
-        //   break;
         case ƒ.KEYBOARD_CODE.ARROW_UP:
           if (!_event.altKey) {
             this.setFocus(--focus);
             break;
           }
+
           if (_event.shiftKey) {
             insert = <HTMLElement>item.cloneNode(true);
-            insert.setAttribute("label", item.getAttribute("label"));
-            this.addEventListeners(insert);
-          } else
+            insert.setAttribute("key", "-" + insert.getAttribute("key"));
+          } else {
             sibling = <HTMLElement>item.previousSibling;
+            focus--;
+          }
+
           if (sibling)
-            sibling.insertAdjacentElement("beforebegin", insert);
-          this.rearrange(--focus);
+            sibling.before(insert);
+
+          this.rearrange(focus);
           break;
         case ƒ.KEYBOARD_CODE.ARROW_DOWN:
           if (!_event.altKey) {
             this.setFocus(++focus);
             break;
           }
+
           if (_event.shiftKey) {
             insert = <HTMLElement>item.cloneNode(true);
-            insert.setAttribute("label", item.getAttribute("label"));
-            this.addEventListeners(insert);
-          } else
+            insert.setAttribute("key", "-" + insert.getAttribute("key"));
+          } else {
             sibling = <HTMLElement>item.nextSibling;
+          }
+
           if (sibling)
-            sibling.insertAdjacentElement("afterend", insert);
+            sibling.after(insert);
+
           this.rearrange(++focus);
           break;
         default:
-          passEvent = true;
+          stopEvent = false;
       }
 
-      if (!passEvent) {
+      if (stopEvent)
         _event.stopPropagation();
-      }
+
     };
   }
 

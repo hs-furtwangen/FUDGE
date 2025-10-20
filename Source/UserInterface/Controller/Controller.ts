@@ -91,7 +91,7 @@ namespace FudgeUserInterface {
         const mutant: unknown = Reflect.get(_mutable, key);
         const value: ƒ.General = mutator[key];
 
-        if (element instanceof CustomElement && element != document.activeElement)
+        if (element instanceof CustomElement)
           element.setMutatorValue(value);
         else {
           if (ƒ.isMutable(mutant) || Array.isArray(mutant))
@@ -117,6 +117,19 @@ namespace FudgeUserInterface {
       if (elementSignature == undefined) {
         Controller.signatures.set(_details, mutatorSignature);
       } else if (mutatorSignature !== elementSignature) {
+
+
+        // const focus: HTMLElement = <HTMLElement>document.activeElement;
+        // let focusedPath: string[];
+        // if (focus && _details.contains(focus)) {
+        //   focusedPath = [];
+        //   for (let element: HTMLElement = focus; element && element !== _details; element = element.parentElement)
+        //     if (element.hasAttribute("key"))
+        //       focusedPath.push(element.getAttribute("key"));
+
+        //   focusedPath.reverse();
+        // }
+
         let content: HTMLDivElement;
 
         if (Array.isArray(_mutable))
@@ -126,6 +139,15 @@ namespace FudgeUserInterface {
 
         _details.setContent(content);
         Controller.signatures.set(_details, mutatorSignature);
+
+        // if (focusedPath) {
+        //   let refocusElement: HTMLElement = _details;
+        //   for (const key of focusedPath)
+        //     refocusElement = Controller.findChildElementByKey(refocusElement, key);
+
+        //   if (refocusElement)
+        //     refocusElement.focus();
+        // }
       }
     }
 
@@ -259,20 +281,22 @@ namespace FudgeUserInterface {
     protected rearrangeArray = async (_event: Event): Promise<void> => {
       const sequence: number[] = (<CustomEvent>_event).detail.sequence;
       const path: string[] = this.getMutatorPath(_event);
-      const target: unknown[] = ƒ.Mutable.getValue(this.mutable, path);
+      const current: unknown[] = ƒ.Mutable.getValue(this.mutable, path);
 
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: target.concat() } } }));
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current.concat() } } }));
 
       const incoming: unknown[] = new Array(sequence.length);
-      for (let i: number = 0; i < incoming.length; i++) {
-        const iTarget: number = sequence[i];
-        if (iTarget >= 0)
-          incoming[i] = target[iTarget];
+      for (let iSequence: number = 0; iSequence < incoming.length; iSequence++) {
+        const iCurrent: number = sequence[iSequence];
+        if (iCurrent == undefined)
+          incoming[iSequence] = undefined;
+        else if (iCurrent == 0 ? iCurrent.toLocaleString()[0] != "-" : iCurrent >= 0) // check if sign is not "-", special check for "-0"...
+          incoming[iSequence] = current[iCurrent];
         else // negative indices imply copy
-          incoming[i] = await Controller.copyValue(target[Math.abs(iTarget)]);
+          incoming[iSequence] = await Controller.copyValue(current[Math.abs(iCurrent)]);
       }
 
-      target.splice(0, target.length, ...incoming);
+      current.splice(0, current.length, ...incoming);
 
       await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable)); // rearrangement is not a mutation?
     };

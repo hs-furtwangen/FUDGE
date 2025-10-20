@@ -88,10 +88,6 @@ namespace FudgeUserInterface {
       // let target: HTMLElement = <HTMLElement>_event.target;
 
       switch (_event.code) {
-        case ƒ.KEYBOARD_CODE.INSERT:
-          ƒ.Debug.log("INSERT at Details");
-          this.dispatchEvent(new CustomEvent(EVENT.INSERT, { bubbles: true, detail: this }));
-          break;
         case ƒ.KEYBOARD_CODE.DELETE:
           passEvent = true;
           break;
