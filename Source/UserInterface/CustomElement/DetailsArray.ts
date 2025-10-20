@@ -71,7 +71,9 @@ namespace FudgeUserInterface {
     private setFocus(_focus: number = undefined): void {
       if (_focus == undefined)
         return;
-      _focus = Math.max(0, Math.min(_focus, this.content.children.length - 1));
+
+      _focus = ƒ.Calc.clamp(_focus, 0, this.content.children.length - 1);
+
       let child: HTMLElement = <HTMLElement>this.content.children[_focus];
       child?.focus();
     }
@@ -161,7 +163,7 @@ namespace FudgeUserInterface {
         return;
 
       let focus: number = parseInt(item.getAttribute("label"));
-      let sibling: HTMLElement = item;
+      let sibling: HTMLElement;
       let insert: HTMLElement = item;
 
       let stopEvent: boolean = true;
@@ -187,15 +189,17 @@ namespace FudgeUserInterface {
           if (_event.shiftKey) {
             insert = <HTMLElement>item.cloneNode(true);
             insert.setAttribute("key", "-" + insert.getAttribute("key"));
+            sibling = item;
           } else {
             sibling = <HTMLElement>item.previousSibling;
             focus--;
           }
 
-          if (sibling)
+          if (sibling) {
             sibling.before(insert);
+            this.rearrange(focus);
+          }
 
-          this.rearrange(focus);
           break;
         case ƒ.KEYBOARD_CODE.ARROW_DOWN:
           if (!_event.altKey) {
@@ -206,14 +210,16 @@ namespace FudgeUserInterface {
           if (_event.shiftKey) {
             insert = <HTMLElement>item.cloneNode(true);
             insert.setAttribute("key", "-" + insert.getAttribute("key"));
+            sibling = item;
           } else {
             sibling = <HTMLElement>item.nextSibling;
           }
 
-          if (sibling)
+          if (sibling) {
             sibling.after(insert);
+            this.rearrange(++focus);
+          }
 
-          this.rearrange(++focus);
           break;
         default:
           stopEvent = false;

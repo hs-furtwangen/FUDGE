@@ -117,8 +117,6 @@ namespace FudgeUserInterface {
       if (elementSignature == undefined) {
         Controller.signatures.set(_details, mutatorSignature);
       } else if (mutatorSignature !== elementSignature) {
-
-
         // const focus: HTMLElement = <HTMLElement>document.activeElement;
         // let focusedPath: string[];
         // if (focus && _details.contains(focus)) {
