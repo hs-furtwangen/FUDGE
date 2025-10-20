@@ -175,6 +175,9 @@ namespace FudgeUserInterface {
         if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource))
           return <Promise<T>>ƒ.Project.getResource(_value.idResource);
 
+        if (_value.constructor == ƒ.Node)
+          return _value;
+
         if (ƒ.isSerializable(_value))
           return <Promise<T>>ƒ.Serializer.deserialize(ƒ.Serializer.serialize(_value));
 
