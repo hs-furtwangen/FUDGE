@@ -112,7 +112,7 @@ declare namespace FudgeUserInterface {
          */
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
-        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
+        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.MutatorOptionsGetter, _getSelectOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -272,8 +272,12 @@ declare namespace FudgeUserInterface {
      */
     class CustomElementInitializer extends CustomElement {
         private static customElement;
-        button: HTMLButtonElement;
-        constructor(_attributes: CustomElementAttributes);
+        btnCreate: HTMLButtonElement;
+        btnSelect: HTMLButtonElement;
+        options: Record<string, unknown>;
+        input: HTMLInputElement;
+        datalist: HTMLDataListElement;
+        constructor(_attributes: CustomElementAttributes, _createOptions?: Record<string, unknown>, _selectOptions?: Record<string, unknown>);
         /**
          * Creates the content of the element when connected the first time
          */
@@ -286,7 +290,12 @@ declare namespace FudgeUserInterface {
          * Sets the status of the checkbox
          */
         setMutatorValue(_value: null): void;
-        private hndClick;
+        private hndClickCreate;
+        private hndClickSelect;
+        private hndFocus;
+        private hndBlur;
+        private hndInput;
+        private hndChange;
     }
 }
 declare namespace FudgeUserInterface {

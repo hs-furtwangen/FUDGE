@@ -99,22 +99,31 @@ namespace FudgeCore {
         collectionTypes[key] = _collectionType;
       }
 
+      if (!_function) {
+        let getCreateOptions: MutatorOptionsGetter;
+        if ((<General>_type).subclasses)
+          getCreateOptions = getSubclassOptions;
+
+        if (getCreateOptions)
+          create(getCreateOptions)(_value, _context);
+      }
+
       if (!_reference && !_function)
         return;
 
       const references: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
       references.add(key);
 
-      let get: MutatorOptionsGetter | undefined;
+      let getSelectOptions: MutatorOptionsGetter | undefined;
       if (_function && (<General>_type).subclasses)
-        get = getSubclassOptions;
+        getSelectOptions = getSubclassOptions;
       else if (_type === Node)
-        get = getNodeOptions;
+        getSelectOptions = getNodeOptions;
       else
-        get = getResourceOptions;
+        getSelectOptions = getResourceOptions;
 
-      if (get)
-        select(get)(_value, _context);
+      if (getSelectOptions)
+        select(getSelectOptions)(_value, _context);
     };
   }
   //#endregion
@@ -169,7 +178,7 @@ namespace FudgeCore {
   //#region @select
   /**
    * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
-   * The provided function will be executed to retrieve the options.
+   * The provided function will be executed to retrieve the select options.
    * 
    * The combo select displays properties via their `name` property or {@link toString}.
    * 
@@ -188,7 +197,7 @@ namespace FudgeCore {
    * const instanceA: MyClass = new MyClass("Instance A");
    * const instanceB: MyClass = new MyClass("Instance B");
    *
-   * function getOptions(this: MyScript, _key: string): Record<string, MyClass> { // create an select options getter
+   * function getOptions(this: MyScript, _key: string): Record<string, MyClass> { // create a select options getter
    *   return {
    *     [instanceA.name]: instanceA,
    *     [instanceB.name]: instanceB
@@ -196,8 +205,10 @@ namespace FudgeCore {
    * }
    *
    * export class MyScript extends f.ComponentScript {
+   *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
+   * 
    *   @f.select(getOptions) // display a combo select with the options returned by getOptions
-   *   @f.type(MyClass) // no default select options for MyClass
+   *   @f.mutate(MyClass) // no default select options for MyClass
    *   public myOption: MyClass;
    * }
    * ```
@@ -206,18 +217,15 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2025
    */
   export function select<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
-    const getOptions: MutatorOptionsGetter = <MutatorOptionsGetter>_getOptions;
-
     return function (_value: unknown, _context: ClassPropertyContext): void {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
         return;
 
       const metadata: Metadata = _context.metadata;
-      const options: MutatorOptions = getOwnProperty(metadata, "mutatorOptions") ?? (metadata.mutatorOptions = { ...metadata.mutatorOptions });
-      options[key as string] = getOptions;
+      const options: MutatorOptions = getOwnProperty(metadata, "mutatorSelectOptions") ?? (metadata.mutatorSelectOptions = { ...metadata.mutatorSelectOptions });
+      options[key as string] = _getOptions;
     };
-
   }
 
   function getSubclassOptions(this: object, _key: string): Record<string, Function> {
@@ -247,4 +255,24 @@ namespace FudgeCore {
     return options;
   }
   //#endregion
+
+  //#region @create
+  /**
+   * Decorator to provide a list of options for creating new instances of a property.
+   * Similar to @select, but for creating new objects instead of selecting existing ones.
+   *
+   * @param _getOptions A function returning a map of display names to constructors or factory functions.
+   */
+  export function create<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
+    return function (_value: unknown, _context: ClassPropertyContext): void {
+      const key: PropertyKey = _context.name;
+      if (typeof key === "symbol") return;
+
+      const metadata: Metadata = _context.metadata;
+      const createOptions: MutatorOptions = getOwnProperty(metadata, "mutatorCreateOptions") ?? (metadata.mutatorCreateOptions = { ...metadata.mutatorCreateOptions });
+      createOptions[key as string] = _getOptions;
+    };
+  }
+  //#endregion
+
 }

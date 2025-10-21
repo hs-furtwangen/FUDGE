@@ -187,8 +187,14 @@ namespace FudgeUserInterface {
         value = true;
       else if (typeof type == "object")
         value = type[Object.getOwnPropertyNames(type).find(_name => !/^\d+$/.test(_name))]; // for enum get the first non numeric key
-      else if (typeof type == "function")
+      else if (typeof type == "function") {
         value = Reflect.construct(type, []);
+
+        if (ƒ.isSerializableResource(value)) {
+          ƒ.Project.deregister(value);
+          delete value.idResource;
+        }
+      }
 
       Reflect.set(_mutable, _key, value);
     }
@@ -320,27 +326,30 @@ namespace FudgeUserInterface {
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
 
-      let parent: object;
-      let parentKey: string;
-      if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
-        parent = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
-        parentKey = path[path.length - 2];
-      }
-
       const current: unknown = Reflect.get(mutable, key);
-
       this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
 
-      const mutatorTypes: ƒ.MutatorTypes = ƒ.Mutable.getTypes(parent ?? mutable, ƒ.Mutable.getMutator(parent ?? mutable));
-      const mutatorCollectionTypes: ƒ.MutatorCollectionTypes = ƒ.Metadata.collectionTypes(mutable);
-      const type: Function | Record<string, unknown> = mutatorCollectionTypes[key] ?? mutatorTypes[parentKey ?? key];
+      let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
+
+      if (!type) {
+        let parent: object;
+        let parentKey: string;
+        if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
+          parent = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+          parentKey = path[path.length - 2];
+        }
+
+        const mutatorTypes: ƒ.MutatorTypes = ƒ.Mutable.getTypes(parent ?? mutable, ƒ.Mutable.getMutator(parent ?? mutable));
+        const mutatorCollectionTypes: ƒ.MutatorCollectionTypes = ƒ.Metadata.collectionTypes(mutable);
+        type = mutatorCollectionTypes[key] ?? mutatorTypes[parentKey ?? key];
+      }
 
       Controller.initializeValue(mutable, key, type);
     };
 
     protected refreshOptions = (_event: Event): void => {
       const target: EventTarget = _event.target;
-      if (!(target instanceof CustomElementComboSelect))
+      if (!(target instanceof CustomElementComboSelect) && !(target instanceof CustomElementInitializer))
         return;
 
       const path: string[] = this.getMutatorPath(_event);
@@ -351,10 +360,17 @@ namespace FudgeUserInterface {
         key = path[path.length - 2];
       }
 
-      const mutatorOptions: ƒ.MutatorOptions = ƒ.Metadata.options(mutable);
-
-      const options: Record<string, unknown> = mutatorOptions[key].call(mutable, key);
-      target.options = options;
+      const action: "create" | "select" = (<CustomEvent>_event).detail?.action;
+      switch (action) {
+        case "select":
+          const mutatorSelectOptions: ƒ.MutatorOptions = ƒ.Metadata.selectOptions(mutable);
+          target.options = mutatorSelectOptions[key]?.call(mutable, key);
+          break;
+        case "create":
+          const mutatorCreateOptions: ƒ.MutatorOptions = ƒ.Metadata.createOptions(mutable);
+          target.options = mutatorCreateOptions[key]?.call(mutable, key);
+          break;
+      }
     };
 
     protected refresh = (_event: Event): void => {

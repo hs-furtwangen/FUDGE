@@ -61,10 +61,16 @@ namespace FudgeCore {
     mutatorOrder?: Record<string, number>;
 
     /**
-     * A map from property keys to functions that return a map of possible options for the property.
+     * A map from property keys to functions that return a map of possible select options for the property.
      * Use the {@link select} decorator to add to this map.
      */
-    mutatorOptions?: MutatorOptions;
+    mutatorSelectOptions?: MutatorOptions;
+
+    /**
+     * A map from property keys to functions that return a map of possible create options for the property.
+     * Use the {@link create} decorator to add to this map.
+     */
+    mutatorCreateOptions?: MutatorOptions;
 
     /**
      * A map of property keys to their serialization strategy.
@@ -107,10 +113,17 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+     * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
      */
-    export function options(_from: Object): Readonly<MutatorOptions> {
-      return getMetadata(_from).mutatorOptions ?? <Readonly<MutatorOptions>>emptyObject;
+    export function selectOptions(_from: Object): Readonly<MutatorOptions> {
+      return getMetadata(_from).mutatorSelectOptions ?? <Readonly<MutatorOptions>>emptyObject;
+    }
+
+    /**
+     * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+     */
+    export function createOptions(_from: Object): Readonly<MutatorOptions> {
+      return getMetadata(_from).mutatorCreateOptions ?? <Readonly<MutatorOptions>>emptyObject;
     }
   }
 

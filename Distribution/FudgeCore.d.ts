@@ -675,10 +675,15 @@ declare namespace FudgeCore {
          */
         mutatorOrder?: Record<string, number>;
         /**
-         * A map from property keys to functions that return a map of possible options for the property.
+         * A map from property keys to functions that return a map of possible select options for the property.
          * Use the {@link select} decorator to add to this map.
          */
-        mutatorOptions?: MutatorOptions;
+        mutatorSelectOptions?: MutatorOptions;
+        /**
+         * A map from property keys to functions that return a map of possible create options for the property.
+         * Use the {@link create} decorator to add to this map.
+         */
+        mutatorCreateOptions?: MutatorOptions;
         /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
@@ -703,9 +708,13 @@ declare namespace FudgeCore {
          */
         function references(_from: object): ReadonlySet<string>;
         /**
-         * Returns the decorated {@link Metadata.mutatorOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+         * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
          */
-        function options(_from: Object): Readonly<MutatorOptions>;
+        function selectOptions(_from: Object): Readonly<MutatorOptions>;
+        /**
+         * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+         */
+        function createOptions(_from: Object): Readonly<MutatorOptions>;
     }
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
@@ -777,7 +786,7 @@ declare namespace FudgeCore {
     function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
     /**
      * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
-     * The provided function will be executed to retrieve the options.
+     * The provided function will be executed to retrieve the select options.
      *
      * The combo select displays properties via their `name` property or {@link toString}.
      *
@@ -796,7 +805,7 @@ declare namespace FudgeCore {
      * const instanceA: MyClass = new MyClass("Instance A");
      * const instanceB: MyClass = new MyClass("Instance B");
      *
-     * function getOptions(this: MyScript, _key: string): Record<string, MyClass> { // create an select options getter
+     * function getOptions(this: MyScript, _key: string): Record<string, MyClass> { // create a select options getter
      *   return {
      *     [instanceA.name]: instanceA,
      *     [instanceB.name]: instanceB
@@ -804,8 +813,10 @@ declare namespace FudgeCore {
      * }
      *
      * export class MyScript extends f.ComponentScript {
+     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
+     *
      *   @f.select(getOptions) // display a combo select with the options returned by getOptions
-     *   @f.type(MyClass) // no default select options for MyClass
+     *   @f.mutate(MyClass) // no default select options for MyClass
      *   public myOption: MyClass;
      * }
      * ```
@@ -814,6 +825,13 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2025
      */
     function select<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
+    /**
+     * Decorator to provide a list of options for creating new instances of a property.
+     * Similar to @select, but for creating new objects instead of selecting existing ones.
+     *
+     * @param _getOptions A function returning a map of display names to constructors or factory functions.
+     */
+    function create<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
 }
 declare namespace FudgeCore {
     /**

@@ -49,6 +49,10 @@ img {
   border: 1px dashed var(--color-text);
 }
 
+input::placeholder {
+  color: var(--color-medium);
+}
+
 .lm_splitter:hover {
   background: var(--color-background-content);
 }
@@ -336,14 +340,14 @@ button:active {
 fudge-boolean,
 fudge-color,
 fudge-stepper,
-fudge-select,
-fudge-initializer {
+fudge-select {
   display: block;
 }
 
 fudge-textinput,
 fudge-comboselect,
-fudge-number {
+fudge-number,
+fudge-initializer {
   display: flex;
 }
 
@@ -375,6 +379,7 @@ fudge-initializer>button {
   border: none;
   background-color: transparent;
   color: var(--color-medium);
+  margin-right: 0.5em;
 }
 
 fudge-initializer>button:hover {
