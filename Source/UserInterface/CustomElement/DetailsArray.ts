@@ -126,14 +126,16 @@ namespace FudgeUserInterface {
       if (_event.ctrlKey) {
         this.dragDropIndicator.after(drag = <HTMLElement>this.drag.cloneNode(true));
         drag.setAttribute("key", "-" + drag.getAttribute("key"));
-      } else {
+      } else if (this.drag.previousSibling != this.dragDropIndicator && this.drag.nextSibling != this.dragDropIndicator) {
         this.dragDropIndicator.after(drag = this.drag);
       }
 
       this.dragDropIndicator.remove();
 
-      this.rearrange();
-      drag.focus();
+      if (drag) {
+        this.rearrange();
+        drag.focus();
+      }
     };
 
     private hndDragLeave = (_event: DragEvent): void => {
