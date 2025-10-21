@@ -117,16 +117,18 @@ namespace FudgeUserInterface {
       if (elementSignature == undefined) {
         Controller.signatures.set(_details, mutatorSignature);
       } else if (mutatorSignature !== elementSignature) {
-        // const focus: HTMLElement = <HTMLElement>document.activeElement;
-        // let focusedPath: string[];
-        // if (focus && _details.contains(focus)) {
-        //   focusedPath = [];
-        //   for (let element: HTMLElement = focus; element && element !== _details; element = element.parentElement)
-        //     if (element.hasAttribute("key"))
-        //       focusedPath.push(element.getAttribute("key"));
 
-        //   focusedPath.reverse();
-        // }
+        // create focus path
+        const focus: HTMLElement = <HTMLElement>document.activeElement;
+        let focusedPath: string[];
+        if (focus && _details.contains(focus)) {
+          focusedPath = [];
+          for (let element: HTMLElement = focus; element && element !== _details; element = element.parentElement)
+            if (element.hasAttribute("key"))
+              focusedPath.push(element.getAttribute("key"));
+
+          focusedPath.reverse();
+        }
 
         let content: HTMLDivElement;
 
@@ -138,14 +140,15 @@ namespace FudgeUserInterface {
         _details.setContent(content);
         Controller.signatures.set(_details, mutatorSignature);
 
-        // if (focusedPath) {
-        //   let refocusElement: HTMLElement = _details;
-        //   for (const key of focusedPath)
-        //     refocusElement = Controller.findChildElementByKey(refocusElement, key);
+        // refocus
+        if (focusedPath) {
+          let refocusElement: HTMLElement = _details;
+          for (const key of focusedPath)
+            refocusElement = Controller.findChildElementByKey(refocusElement, key);
 
-        //   if (refocusElement)
-        //     refocusElement.focus();
-        // }
+          if (refocusElement)
+            refocusElement.focus();
+        }
       }
     }
 
