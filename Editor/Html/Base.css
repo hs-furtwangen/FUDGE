@@ -361,12 +361,15 @@ button:active {
 
 /* standard fudge elements */
 
+fudge-stepper {
+  display: block;
+}
+
 fudge-boolean,
 fudge-color,
-fudge-stepper,
 fudge-select,
 fudge-textinput,
-fudge-output, 
+fudge-output,
 fudge-comboselect,
 fudge-number,
 fudge-initializer {
@@ -398,13 +401,17 @@ fudge-number>input[type="text"] {
 custom-vector2 {
   text-align: right;
   display: grid;
-  grid-template-columns: max-content 8em 8em;
+  column-gap: 1em;
+  grid-template-columns: min-content min-content min-content min-content;
+  /* grid-template-columns: max-content 8em 8em; */
 }
 
 custom-vector3 {
   text-align: right;
   display: grid;
-  grid-template-columns: max-content 8em 8em 8em;
+  column-gap: 1em;
+  grid-template-columns: min-content min-content min-content min-content;
+  /* grid-template-columns: max-content 8em 8em 8em; */
 }
 
 custom-matrix4x4 {
@@ -421,6 +428,11 @@ custom-matrix3x3 {
   column-gap: 1em;
   grid-template-columns: min-content min-content min-content;
   grid-template-rows: min-content min-content min-content min-content
+}
+
+custom-matrix4x4>label,
+custom-matrix3x3>label {
+  text-align: left
 }
 
 custom-matrix4x4 span.rowVector,

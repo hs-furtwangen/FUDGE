@@ -23,7 +23,6 @@ namespace FudgeUserInterface {
       let output: HTMLOutputElement = document.createElement("output");
       output.id = CustomElement.nextId;
       this.appendChild(output);
-      this.setMutatorValue(this.getAttribute("value"));
     }
 
     /**
@@ -32,18 +31,16 @@ namespace FudgeUserInterface {
     public getMutatorValue(): string {
       return null;
     }
+
     /**
      * Sets the content of the input element
      */
-    public setMutatorValue(_value: FudgeCore.General): void {
+    public setMutatorValue(_value: Object): void {
       let output: HTMLOutputElement = this.querySelector("output");
-      output.value = _value ?? this.getAttribute("placeholder");
-      if (_value)
-        output.classList.remove("placeholder");
+      if ("name" in _value && typeof _value.name == "string")
+        output.value = _value.name;
       else
-        output.classList.add("placeholder");
-
-      // this.querySelector("output").value = _value ?? this.getAttribute("placeholder");
+        output.value = _value.toString();
     }
   }
 }

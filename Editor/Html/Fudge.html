@@ -20,22 +20,22 @@
   <script>
     // TODO: make themes changeable from editor? maybe use localStorage?
     let theme = /* localStorage.getItem("Theme") || */ "LightGray";
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) 
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches)
       theme = "Black";
     document.write(`<link type="text/css" rel="stylesheet" href="../Themes/${theme}/Colors.css" />`);
   </script>
 
   <!-- GoldenLayout -->
   <script src="../GoldenLayout/golden-layout.js"></script>
-  
+
   <!-- Fudge -->
   <script type="text/javascript" src="../../Distribution/OimoPhysics.js"></script>
   <script type="text/javascript" src="../../Distribution/FudgeCore.js"></script>
   <script type="text/javascript" src="../../Distribution/FudgeAid.js"></script>
   <script type="text/javascript" src="../../Distribution/FudgeUserInterface.js"></script>
   <script type="text/javascript" src="../../Distribution/FudgeClient.js"></script>
-  
-  
+
+
   <!-- Editor -->
   <script type="text/javascript" src="../Build/Fudge/Fudge.js"></script>
   <script>window.addEventListener("load", Fudge.Page.start);</script>
@@ -44,9 +44,7 @@
 <body>
   <template>
     <custom-vector2>
-      <span>
-        <label>label</label>
-      </span>
+      <label>label</label>
       <fudge-stepper key="x" label="x"></fudge-stepper>
       <fudge-stepper key="y" label="y"></fudge-stepper>
     </custom-vector2>
@@ -58,9 +56,7 @@
 
   <template>
     <custom-vector3>
-      <span>
-        <label>label</label>
-      </span>
+      <label>label</label>
       <fudge-stepper key="x" label="x"></fudge-stepper>
       <fudge-stepper key="y" label="y"></fudge-stepper>
       <fudge-stepper key="z" label="z"></fudge-stepper>
@@ -72,10 +68,32 @@
   </script>
 
   <template>
+    <custom-matrix3x3>
+      <label>label</label>
+      <span>x</span>
+      <span>y</span>
+      <span class="rowVector">translation</span>
+      <div key="translation">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+      </div>
+      <span class="rowVector">scaling</span>
+      <div key="scaling">
+        <fudge-stepper key="x"></fudge-stepper>
+        <fudge-stepper key="y"></fudge-stepper>
+      </div>
+      <span class="rowVector">rotation</span>
+      <fudge-stepper key="rotation"></fudge-stepper>
+    </custom-matrix3x3>
+  </template>
+  <script>
+    FudgeUserInterface.CustomElementTemplate.register("custom-matrix3x3");
+    FudgeUserInterface.CustomElement.register("custom-matrix3x3", FudgeUserInterface.CustomElementMatrix3x3, FudgeCore.Matrix3x3);
+  </script>
+
+  <template>
     <custom-matrix4x4>
-      <span>
-        <label>label</label>
-      </span>
+      <label>label</label>
       <span>x</span>
       <span>y</span>
       <span>z</span>
@@ -102,32 +120,6 @@
   <script>
     FudgeUserInterface.CustomElementTemplate.register("custom-matrix4x4");
     FudgeUserInterface.CustomElement.register("custom-matrix4x4", FudgeUserInterface.CustomElementMatrix4x4, FudgeCore.Matrix4x4);
-  </script>
-
-  <template>
-    <custom-matrix3x3>
-      <span>
-        <label>label</label>
-      </span>
-      <span>x</span>
-      <span>y</span>
-      <span class="rowVector">translation</span>
-      <div key="translation">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-      </div>
-      <span class="rowVector">scaling</span>
-      <div key="scaling">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-      </div>
-      <span class="rowVector">rotation</span>
-      <fudge-stepper key="rotation"></fudge-stepper>
-    </custom-matrix3x3>
-  </template>
-  <script>
-    FudgeUserInterface.CustomElementTemplate.register("custom-matrix3x3");
-    FudgeUserInterface.CustomElement.register("custom-matrix3x3", FudgeUserInterface.CustomElementMatrix3x3, FudgeCore.Matrix3x3);
   </script>
 </body>
 
