@@ -261,7 +261,8 @@ label {
 /* details details {
   padding-left: 1em;
 } */
-details div, details>fudge-number {
+details div,
+details>fudge-number {
   padding-left: 1em;
 }
 
@@ -335,20 +336,42 @@ button:active {
   height: 25px;
 }
 
+.btn-subtle {
+  border: none;
+  background-color: transparent;
+  color: var(--color-medium);
+  min-width: 14px;
+}
+
+.btn-subtle:hover {
+  color: var(--color-signal);
+}
+
+.btn-actions-anchor {
+  anchor-scope: --actions;
+  anchor-name: --actions;
+}
+
+.btn-actions {
+  position: absolute;
+  position-anchor: --actions;
+  right: anchor(right);
+  top: anchor(top);
+}
+
 /* standard fudge elements */
 
 fudge-boolean,
 fudge-color,
 fudge-stepper,
-fudge-select {
-  display: block;
-}
-
+fudge-select,
 fudge-textinput,
+fudge-output, 
 fudge-comboselect,
 fudge-number,
 fudge-initializer {
   display: flex;
+  align-items: center;
 }
 
 fudge-comboselect {
@@ -361,10 +384,6 @@ fudge-comboselect>label {
   align-items: center;
 }
 
-fudge-comboselect>button::before {
-  content: "X";
-}
-
 fudge-digit {
   font-family: monospace;
 }
@@ -375,19 +394,7 @@ fudge-number>input[type="text"] {
   flex: 1 1 auto;
 }
 
-fudge-initializer>button {
-  border: none;
-  background-color: transparent;
-  color: var(--color-medium);
-  margin-right: 0.5em;
-}
-
-fudge-initializer>button:hover {
-  color: var(--color-signal);
-}
-
 /* custom elements */
-
 custom-vector2 {
   text-align: right;
   display: grid;

@@ -140,10 +140,10 @@ declare namespace FudgeUserInterface {
      * and to the data types and [[FudgeCore.Mutable]]s they render an interface for.
      */
     abstract class CustomElement extends HTMLElement {
+        #private;
         static tag: string;
         private static mapTypeToCustomElement;
         private static idCounter;
-        protected initialized: boolean;
         constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]);
         /**
          * Retrieve an id to use for children of this element, needed e.g. for standard interaction with the label
@@ -162,7 +162,8 @@ declare namespace FudgeUserInterface {
          * Return the key (name) of the attribute this element represents
          */
         get key(): string;
-        get isInitialized(): boolean;
+        get initialized(): boolean;
+        protected set initialized(_value: boolean);
         /**
          * Add a label-element as child to this element
          */

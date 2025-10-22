@@ -188,12 +188,15 @@ namespace FudgeUserInterface {
       else if (typeof type == "object")
         value = type[Object.getOwnPropertyNames(type).find(_name => !/^\d+$/.test(_name))]; // for enum get the first non numeric key
       else if (typeof type == "function") {
+        // if (!ƒ.isMutable(_type.prototype))
+          // return;
+
         value = Reflect.construct(type, []);
 
-        if (ƒ.isSerializableResource(value)) {
-          ƒ.Project.deregister(value);
-          delete value.idResource;
-        }
+        // if (ƒ.isSerializableResource(value)) {
+        //   ƒ.Project.deregister(value);
+        //   delete value.idResource;
+        // }
       }
 
       Reflect.set(_mutable, _key, value);

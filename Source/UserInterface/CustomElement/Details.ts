@@ -26,13 +26,21 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.TOGGLE, this.hndToggle);
     }
 
-
     public get isExpanded(): boolean {
       // return this.expander.checked;
       return this.open;
     }
 
     public setContent(_content: HTMLDivElement): void {
+      for (let child of _content.children as HTMLCollectionOf<HTMLElement>) {
+        let btnActions: HTMLButtonElement = document.createElement("button");
+        btnActions.innerText = "⋮"; // 🔍︎ ↪ ⤷ ⋮ ☍ ↗ ⟲ ✖ ⇄ 🔗︎ 📂︎ ⚠︎ // append the U+FE0E Variation Selector-15 for monochrome emoji
+        btnActions.classList.add("btn-subtle", "btn-actions");
+        child.prepend(btnActions);
+
+        child.classList.add("btn-actions-anchor");
+      }
+
       this.replaceChild(_content, this.content);
       this.content = _content;
     }

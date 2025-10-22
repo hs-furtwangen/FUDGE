@@ -42,12 +42,13 @@ namespace FudgeUserInterface {
       this.button = document.createElement("button");
       this.button.addEventListener(EVENT.CLICK, this.hndClick);
       this.button.hidden = true;
+      this.button.innerText = "✖";
       this.appendChild(this.button);
 
       this.addEventListener(EVENT.CHANGE, this.hndChange);
 
       if (this.value)
-        this.setMutatorValue(this.value)
+        this.setMutatorValue(this.value);
     }
 
     public getMutatorValue(): unknown {

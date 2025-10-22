@@ -28,7 +28,7 @@ namespace FudgeUserInterface {
       for (let child of this.content.children as HTMLCollectionOf<HTMLElement>)
         this.addEventListeners(child);
 
-      if (this.input.isInitialized)
+      if (this.input.initialized)
         this.input.setMutatorValue(this.content.children.length);
       else
         this.input.setAttribute("value", this.content.children.length.toString());

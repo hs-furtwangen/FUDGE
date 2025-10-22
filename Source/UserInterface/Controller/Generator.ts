@@ -79,6 +79,7 @@ namespace FudgeUserInterface {
     public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.MutatorOptionsGetter, _getSelectOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement {
       const mutant: unknown = Reflect.get(_mutable, _key);
       const value: unknown = Reflect.get(_mutator, _key);
+      const type: string = typeof _type == "function" ? _type.name : "Enum";
 
       let element: HTMLElement;
 
@@ -94,11 +95,14 @@ namespace FudgeUserInterface {
       if (!element)
         element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
 
-      if (!element) {
+      if (!element && mutant == null) {
         const mutable: object = _parentMutable ?? _mutable;
         const key: string = _parentKey ?? _key;
-        element = new CustomElementInitializer({ key: _key, label: _key, type: (<Function>_type).name }, _getCreateOptions?.call(mutable, key), _getSelectOptions?.call(mutable, key));
+        element = new CustomElementInitializer({ key: _key, label: _key, type: type }, _getCreateOptions?.call(mutable, key), _getSelectOptions?.call(mutable, key));
       }
+
+      if (!element)
+        element = new CustomElementOutput({ key: _key, label: _key, type: type, value: value?.toString() });
 
       if (!element) { // undefined values without a type can't be displayed
         console.warn("No interface created for", _mutable.constructor.name, _key);
@@ -133,6 +137,7 @@ namespace FudgeUserInterface {
     public static createMutatorElement(_key: string, _type: Function | object, _value: unknown): CustomElement | undefined {
       let element: CustomElement;
       let elementType: new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement;
+      const type: string = typeof _type == "function" ? _type.name : "Enum";
 
       if (_value == null)
         return null;
@@ -141,10 +146,10 @@ namespace FudgeUserInterface {
         if (typeof _type == "function") {
           elementType = CustomElement.get(_type);
           if (elementType)
-            element = new elementType({ key: _key, label: _key, value: _value?.toString() });
+            element = new elementType({ key: _key, label: _key, type: type, value: _value?.toString() });
         } else if (typeof _type == "object") {
           elementType = CustomElement.get(Object);
-          element = new elementType({ key: _key, label: _key, value: _value?.toString() }, _type);
+          element = new elementType({ key: _key, label: _key, type: type, value: _value?.toString() }, _type);
         }
       } catch (_error) {
         ƒ.Debug.fudge(_error);

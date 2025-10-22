@@ -21,7 +21,8 @@ namespace FudgeUserInterface {
     private static mapTypeToCustomElement: Map<Function, typeof CustomElement> = new Map();
 
     private static idCounter: number = 0;
-    protected initialized: boolean = false;
+
+    #initialized: boolean = false;
 
     public constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]) {
       super();
@@ -38,6 +39,8 @@ namespace FudgeUserInterface {
     protected static get nextId(): string {
       return "ƒ" + CustomElement.idCounter++;
     }
+
+
 
     /**
      * Register map the given element type to the given tag and the given type of data
@@ -72,8 +75,12 @@ namespace FudgeUserInterface {
       return this.getAttribute("key");
     }
 
-    public get isInitialized(): boolean {
-      return this.initialized;
+    public get initialized(): boolean {
+      return this.#initialized;
+    }
+
+    protected set initialized(_value: boolean) {
+      this.#initialized = _value;
     }
 
     /**
@@ -83,9 +90,11 @@ namespace FudgeUserInterface {
       let text: string = this.getAttribute("label");
       if (!text)
         return null;
+
       let label: HTMLLabelElement = document.createElement("label");
       label.textContent = text;
       this.appendChild(label);
+
       return label;
     }
 
@@ -94,7 +103,6 @@ namespace FudgeUserInterface {
       if (label)
         label.textContent = _label;
     }
-
 
     /**
      * Set the value of this element using a format compatible with [[FudgeCore.Mutator]]
