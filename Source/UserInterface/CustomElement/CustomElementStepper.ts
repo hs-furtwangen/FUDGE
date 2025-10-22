@@ -36,23 +36,30 @@ namespace FudgeUserInterface {
 
 
       let sign: HTMLSpanElement = document.createElement("span");
+      sign.setAttribute("name", "sign");
       sign.textContent = "+";
       this.appendChild(sign);
       for (let exp: number = 2; exp > -4; exp--) {
         let digit: CustomElementDigit = new CustomElementDigit();
         digit.setAttribute("exp", exp.toString());
         this.appendChild(digit);
-        if (exp == 0)
-          this.innerHTML += ".";
+        if (exp == 0) {
+          const dot: HTMLSpanElement = document.createElement("span");
+          dot.setAttribute("name", "dot");
+          dot.textContent = ".";
+          this.appendChild(dot);
+        }
       }
-      this.innerHTML += "e";
+      const e: HTMLSpanElement = document.createElement("span");
+      e.setAttribute("name", "e");
+      e.textContent = "e";
+      this.appendChild(e);
 
       let exp: HTMLSpanElement = document.createElement("span");
       exp.textContent = "+0";
       exp.tabIndex = -1;
       exp.setAttribute("name", "exp");
       this.appendChild(exp);
-
 
       // input.addEventListener(EVENT.CHANGE, this.hndInput);
       input.addEventListener(EVENT.BLUR, this.hndInput);
@@ -102,7 +109,7 @@ namespace FudgeUserInterface {
     public setMutatorValue(_value: number): void {
       if (_value == undefined)
         return;
-      
+
       this.value = _value;
       this.display();
     }
@@ -144,10 +151,10 @@ namespace FudgeUserInterface {
         }
         return;
       }
-      
+
       let [mantissa, exp]: string[] = this.toString().split("e");
       spans[0].textContent = this.value < 0 ? "-" : "+";
-      spans[1].textContent = exp;
+      spans[3].textContent = exp;
 
       mantissa = mantissa.substring(1);
       mantissa = mantissa.replace(".", "");
@@ -292,7 +299,7 @@ namespace FudgeUserInterface {
         let value: number = this.value * Math.pow(10, _amount);
         ƒ.Debug.log(value, this.value);
         if (isFinite(value))
-          this.value = value; 
+          this.value = value;
         this.display();
         return;
       }
