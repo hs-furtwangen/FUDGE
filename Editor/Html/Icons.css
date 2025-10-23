@@ -1,3 +1,56 @@
+:root {
+  /* default icons */
+  --icon-spacing: 0.25em;
+  --icon-width: 2ch;
+  --icon-construct: "➕︎";
+  --icon-assign: "↪";
+  --icon-clear: "✖︎";
+  --icon-actions: "⋮";
+}
+
+.icon::before,
+.icon::after {
+  display: inline-block;
+  width: var(--icon-width);
+  text-align: center;
+  vertical-align: baseline;
+  margin: 0;
+  padding: 0;
+}
+
+.icon.before::before {
+  margin-right: var(--icon-spacing);
+}
+
+.icon.after::after {
+  margin-left: var(--icon-spacing);
+}
+
+.icon.after:empty::after,
+.icon.before:empty::before {
+  margin: 0;
+}
+
+.icon.construct.before::before,
+.icon.construct.after::after {
+  content: var(--icon-construct);
+}
+
+.icon.assign.before::before,
+.icon.assign.after::after {
+  content: var(--icon-assign);
+}
+
+.icon.clear.before::before,
+.icon.clear.after::after {
+  content: var(--icon-clear);
+}
+
+.icon.actions.before::before,
+.icon.actions.after::after {
+  content: var(--icon-actions);
+}
+
 /* common */
 tr[icon]>td:first-child::before,
 div.lm_tab::before,
