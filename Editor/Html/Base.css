@@ -37,6 +37,11 @@ div[panel] .lm_close {
   padding-bottom: 0em;
   overflow: auto;
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-medium) var(--color-background-content);
+  scrollbar-gutter: stable;
+  anchor-name: --view;
+  anchor-scope: --view;
 }
 
 *[view="ViewRender"],
@@ -261,7 +266,7 @@ label {
 /* details details {
   padding-left: 1em;
 } */
-details div,
+details>div,
 details>fudge-number {
   padding-left: 1em;
 }
@@ -343,20 +348,76 @@ button:active {
   min-width: 14px;
 }
 
+.btn-subtle:active {
+  border: none;
+  transform: translateY(1px);
+}
+
 .btn-subtle:hover {
   color: var(--color-signal);
 }
 
-.btn-actions-anchor {
-  anchor-scope: --actions;
-  anchor-name: --actions;
+.property-anchor {
+  anchor-name: --property;
+  anchor-scope: --property;
 }
 
-.btn-actions {
+.property-menu {
   position: absolute;
-  position-anchor: --actions;
+  position-anchor: --property;
   right: anchor(right);
   top: anchor(top);
+  margin-right: 1em;
+}
+
+*[view] .property-menu {
+  right: anchor(--view right);
+}
+
+/* menu */
+
+.menu-toggle {
+  cursor: pointer;
+}
+
+.menu-list {
+  margin: 0;
+  padding: 0;
+  inset: auto;
+
+  box-sizing: border-box;
+  background: var(--color-background-content);
+  border: 1px solid var(--color-medium);
+  width: max-content;
+
+  position: absolute;
+  left: anchor(left);
+  top: anchor(top);
+  position-try-fallbacks: flip-inline, flip-block, flip-inline flip-block;
+}
+
+.menu-item {
+  display: block;
+  border: none;
+  outline: none;
+  background: none;
+  width: 100%;
+  padding: 0 0.2em;
+  text-align: left;
+}
+
+.menu-item:active {
+  border: none;
+}
+
+.menu-item:hover, .menu-item:focus {
+  background: var(--color-background-main);
+}
+
+.property:has(>.menu-container:hover),
+.property:has(>.menu-container:focus-within) {
+  background-color: color-mix(in srgb, var(--color-background-main) 75%, transparent);
+  z-index: 2;
 }
 
 /* standard fudge elements */
@@ -387,6 +448,7 @@ fudge-comboselect>label {
   align-items: center;
 }
 
+fudge-stepper>span[name="sign"],
 fudge-digit {
   font-family: monospace;
 }
@@ -394,7 +456,6 @@ fudge-digit {
 fudge-number>input[type="text"] {
   font-family: monospace;
   text-align: left;
-  flex: 1 1 auto;
 }
 
 /* custom elements */
@@ -402,7 +463,7 @@ custom-vector2 {
   text-align: right;
   display: grid;
   column-gap: 1em;
-  grid-template-columns: min-content min-content min-content min-content;
+  grid-template-columns: max-content max-content max-content max-content;
   /* grid-template-columns: max-content 8em 8em; */
 }
 
@@ -410,7 +471,7 @@ custom-vector3 {
   text-align: right;
   display: grid;
   column-gap: 1em;
-  grid-template-columns: min-content min-content min-content min-content;
+  grid-template-columns: max-content max-content max-content max-content;
   /* grid-template-columns: max-content 8em 8em 8em; */
 }
 
@@ -435,12 +496,12 @@ custom-matrix3x3>label {
   text-align: left
 }
 
-custom-matrix4x4 span.rowVector,
-custom-matrix3x3 span.rowVector {
+custom-matrix4x4>span.row-vector,
+custom-matrix3x3>span.row-vector {
   text-align: right
 }
 
-custom-matrix4x4>div,
-custom-matrix3x3>div {
+custom-matrix4x4>div.row-vector,
+custom-matrix3x3>div.row-vector {
   display: contents;
 }
