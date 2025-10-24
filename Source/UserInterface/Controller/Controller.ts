@@ -118,6 +118,7 @@ namespace FudgeUserInterface {
         Controller.signatures.set(_details, mutatorSignature);
       } else if (mutatorSignature !== elementSignature) {
 
+        // TODO: save and restore details.open state
         // create focus path
         const focus: HTMLElement = <HTMLElement>document.activeElement;
         let focusedPath: string[];
@@ -317,10 +318,13 @@ namespace FudgeUserInterface {
       const key: string = path[path.length - 1];
 
       const current: unknown = Reflect.get(mutable, key);
+      const incoming: unknown = (<CustomEvent>_event).detail.value;
+
+      if (current == incoming)
+        return;
 
       this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
 
-      const incoming: unknown = (<CustomEvent>_event).detail.value;
       Reflect.set(mutable, key, incoming);
     };
 
@@ -363,14 +367,14 @@ namespace FudgeUserInterface {
         key = path[path.length - 2];
       }
 
-      const action: "create" | "select" = (<CustomEvent>_event).detail?.action;
+      const action: "create" | "assign" = (<CustomEvent>_event).detail?.action;
       switch (action) {
-        case "select":
-          const mutatorSelectOptions: ƒ.MutatorOptions = ƒ.Metadata.selectOptions(mutable);
+        case "assign":
+          const mutatorSelectOptions: ƒ.PropertyAssignOptions = ƒ.Metadata.assignOptions(mutable);
           target.options = mutatorSelectOptions[key]?.call(mutable, key);
           break;
         case "create":
-          const mutatorCreateOptions: ƒ.MutatorOptions = ƒ.Metadata.createOptions(mutable);
+          const mutatorCreateOptions: ƒ.PropertyCreateOptions = ƒ.Metadata.createOptions(mutable);
           target.options = mutatorCreateOptions[key]?.call(mutable, key);
           break;
       }

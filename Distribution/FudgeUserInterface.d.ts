@@ -112,7 +112,7 @@ declare namespace FudgeUserInterface {
          */
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
-        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.MutatorOptionsGetter, _getSelectOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
+        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.PropertyCreateOptionsGetter, _getAssignOptions?: ƒ.PropertyAssignOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -235,7 +235,9 @@ declare namespace FudgeUserInterface {
         datalist: HTMLDataListElement;
         button: HTMLButtonElement;
         value: unknown;
-        constructor(_attributes: CustomElementAttributes, _value?: unknown, _options?: Record<string, unknown>);
+        constructor(_attributes: CustomElementAttributes & {
+            action: "create" | "assign";
+        }, _value?: unknown, _options?: Record<string, unknown>);
         /**
          * Creates the content of the element when connected the first time
          */
@@ -555,6 +557,7 @@ declare namespace FudgeUserInterface {
         private hndToggle;
         private hndFocus;
         private hndKey;
+        private addPropertyMenu;
     }
 }
 declare namespace FudgeUserInterface {
@@ -589,6 +592,17 @@ declare namespace FudgeUserInterface {
          * Use `await` on call, to continue after the user has pressed one of the buttons.
          */
         static prompt(_data: ƒ.Mutable | ƒ.Mutator | Object, _modal?: boolean, _head?: string, _callToAction?: string, _ok?: string, _cancel?: string): Promise<boolean>;
+    }
+}
+declare namespace FudgeUserInterface {
+    class Menu extends HTMLDivElement {
+        btnToggle: HTMLButtonElement;
+        list: HTMLMenuElement;
+        constructor(_title: string, ..._items: HTMLElement[]);
+        get items(): HTMLCollection;
+        setItems(..._items: HTMLElement[]): void;
+        addItem(_item: HTMLElement): void;
+        close(): void;
     }
 }
 declare namespace FudgeUserInterface {

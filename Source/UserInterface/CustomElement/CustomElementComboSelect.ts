@@ -10,7 +10,7 @@ namespace FudgeUserInterface {
     public button: HTMLButtonElement;
     public value: unknown;
 
-    public constructor(_attributes: CustomElementAttributes, _value?: unknown, _options?: Record<string, unknown>) {
+    public constructor(_attributes: CustomElementAttributes & { action: "create" | "assign" }, _value?: unknown, _options?: Record<string, unknown>) {
       super(_attributes);
       this.options = _options;
       this.value = _value;
@@ -32,7 +32,7 @@ namespace FudgeUserInterface {
 
       this.input = document.createElement("input");
       this.input.setAttribute("list", this.datalist.id);
-      this.input.placeholder = `${this.getAttribute("type")}...`;
+      this.input.placeholder = this.getAttribute("placeholder") ?? `${this.getAttribute("type")}...`;
       this.input.spellcheck = false;
       this.input.addEventListener(EVENT.FOCUS, this.hndFocus);
       this.input.addEventListener(EVENT.INPUT, this.hndInput);
@@ -42,7 +42,7 @@ namespace FudgeUserInterface {
       this.button = document.createElement("button");
       this.button.addEventListener(EVENT.CLICK, this.hndClick);
       this.button.hidden = true;
-      this.button.innerText = "✖";
+      this.button.classList.add("icon", "clear", "before");
       this.appendChild(this.button);
 
       this.addEventListener(EVENT.CHANGE, this.hndChange);
@@ -100,11 +100,18 @@ namespace FudgeUserInterface {
       }
 
       this.value = options[this.input.value];
-      this.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: this.value } }));
+      switch (this.getAttribute("action")) {
+        case "create":
+          this.dispatchEvent(new CustomEvent(EVENT.INITIALIZE_VALUE, { bubbles: true, detail: { type: this.value } }));
+          break;
+        case "assign":
+          this.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: this.value } }));
+          break;
+      }
     };
 
     private getOptions(): Record<string, unknown> {
-      this.dispatchEvent(new Event(EVENT.REFRESH_OPTIONS, { bubbles: true }));
+      this.dispatchEvent(new CustomEvent(EVENT.REFRESH_OPTIONS, { bubbles: true, detail: { action: this.getAttribute("action") } }));
       return this.options;
     }
   }

@@ -15,16 +15,30 @@ namespace FudgeCore {
   export type MutatorCollectionTypes = { [key: string]: typeof Array };
 
   /**
-   * Map from each property of a mutator to a function that returns a map of possible options for the property.
+   * A record mapping property keys to their associated {@link PropertyCreateOptionsGetter} functions.
    */
-  export type MutatorOptions = { [key: string]: MutatorOptionsGetter };
+  export type PropertyCreateOptions = { [key: string]: PropertyCreateOptionsGetter };
 
   /**
-   * A function that returns a map of possible select options for a mutator property.
-   * @param this The instance containing the property.
-   * @param _key The key of the property for which options are requested.
+   * A function that returns a record of available creation options for a property.
+   * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
+   * @param this The instance that owns the property.
+   * @param _key The property key for which creation options are requested.
    */
-  export type MutatorOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
+  export type PropertyCreateOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, (new () => V) | (() => V)>;
+
+  /**
+   * A record mapping property keys to their associated {@link PropertyAssignOptionsGetter} functions.
+   */
+  export type PropertyAssignOptions = { [key: string]: PropertyAssignOptionsGetter };
+
+  /**
+   * A function that returns a record of available assignment options for a property.
+   * Each entry maps an option name to a value that can be assigned to the property.
+   * @param this The instance that owns the property.
+   * @param _key The property key for which assignment options are requested.
+   */
+  export type PropertyAssignOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
 
   /**
    * Metadata for classes. Metadata needs to be explicitly specified using decorators.
@@ -64,13 +78,13 @@ namespace FudgeCore {
      * A map from property keys to functions that return a map of possible select options for the property.
      * Use the {@link select} decorator to add to this map.
      */
-    mutatorSelectOptions?: MutatorOptions;
+    propertyAssignOptions?: PropertyAssignOptions;
 
     /**
      * A map from property keys to functions that return a map of possible create options for the property.
      * Use the {@link create} decorator to add to this map.
      */
-    mutatorCreateOptions?: MutatorOptions;
+    propertyCreateOptions?: PropertyCreateOptions;
 
     /**
      * A map of property keys to their serialization strategy.
@@ -113,17 +127,17 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+     * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
      */
-    export function selectOptions(_from: Object): Readonly<MutatorOptions> {
-      return getMetadata(_from).mutatorSelectOptions ?? <Readonly<MutatorOptions>>emptyObject;
+    export function assignOptions(_from: Object): Readonly<PropertyAssignOptions> {
+      return getMetadata(_from).propertyAssignOptions ?? <Readonly<PropertyAssignOptions>>emptyObject;
     }
 
     /**
-     * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+     * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
      */
-    export function createOptions(_from: Object): Readonly<MutatorOptions> {
-      return getMetadata(_from).mutatorCreateOptions ?? <Readonly<MutatorOptions>>emptyObject;
+    export function createOptions(_from: Object): Readonly<PropertyAssignOptions> {
+      return getMetadata(_from).propertyCreateOptions ?? <Readonly<PropertyAssignOptions>>emptyObject;
     }
   }
 

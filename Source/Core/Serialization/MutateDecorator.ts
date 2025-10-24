@@ -100,7 +100,7 @@ namespace FudgeCore {
       }
 
       if (!_function) {
-        let getCreateOptions: MutatorOptionsGetter;
+        let getCreateOptions: PropertyCreateOptionsGetter;
         if ((<General>_type).subclasses)
           getCreateOptions = getSubclassOptions;
 
@@ -114,7 +114,7 @@ namespace FudgeCore {
       const references: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
       references.add(key);
 
-      let getSelectOptions: MutatorOptionsGetter | undefined;
+      let getSelectOptions: PropertyAssignOptionsGetter | undefined;
       if (_function && (<General>_type).subclasses)
         getSelectOptions = getSubclassOptions;
       else if (_type === Node)
@@ -216,21 +216,21 @@ namespace FudgeCore {
    * @param _getOptions A function that returns a map of display names to values.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function select<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
+  export function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
     return function (_value: unknown, _context: ClassPropertyContext): void {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
         return;
 
       const metadata: Metadata = _context.metadata;
-      const options: MutatorOptions = getOwnProperty(metadata, "mutatorSelectOptions") ?? (metadata.mutatorSelectOptions = { ...metadata.mutatorSelectOptions });
+      const options: PropertyAssignOptions = getOwnProperty(metadata, "propertyAssignOptions") ?? (metadata.propertyAssignOptions = { ...metadata.propertyAssignOptions });
       options[key as string] = _getOptions;
     };
   }
 
-  function getSubclassOptions(this: object, _key: string): Record<string, Function> {
-    const subclasses: Iterable<Function> = (<{ readonly subclasses: Iterable<Function> }>Metadata.types(this)[_key]).subclasses;
-    const options: Record<string, Function> = {};
+  function getSubclassOptions(this: object, _key: string): Record<string, () => General> {
+    const subclasses: Iterable<() => General> = (<{ readonly subclasses: Iterable<() => General> }>Metadata.types(this)[_key]).subclasses;
+    const options: Record<string, () => General> = {};
     for (const subclass of subclasses)
       options[subclass.name] = subclass;
 
@@ -263,13 +263,13 @@ namespace FudgeCore {
    *
    * @param _getOptions A function returning a map of display names to constructors or factory functions.
    */
-  export function create<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
+  export function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
     return function (_value: unknown, _context: ClassPropertyContext): void {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol") return;
 
       const metadata: Metadata = _context.metadata;
-      const createOptions: MutatorOptions = getOwnProperty(metadata, "mutatorCreateOptions") ?? (metadata.mutatorCreateOptions = { ...metadata.mutatorCreateOptions });
+      const createOptions: PropertyCreateOptions = getOwnProperty(metadata, "propertyCreateOptions") ?? (metadata.propertyCreateOptions = { ...metadata.propertyCreateOptions });
       createOptions[key as string] = _getOptions;
     };
   }

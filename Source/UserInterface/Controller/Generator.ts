@@ -43,13 +43,13 @@ namespace FudgeUserInterface {
     public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
       const types: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
-      const selectOptions: ƒ.MutatorOptions = ƒ.Metadata.selectOptions(_mutable);
-      const createOptions: ƒ.MutatorOptions = ƒ.Metadata.createOptions(_mutable);
+      const createOptions: ƒ.PropertyCreateOptions = ƒ.Metadata.createOptions(_mutable);
+      const assignOptions: ƒ.PropertyAssignOptions = ƒ.Metadata.assignOptions(_mutable);
 
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], createOptions[key], selectOptions[key]);
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], createOptions[key], assignOptions[key]);
         if (!element)
           continue;
 
@@ -61,13 +61,13 @@ namespace FudgeUserInterface {
 
     public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement {
       const type: Function | Record<string, unknown> = ƒ.Metadata.types(_parentMutable)[_parentKey];
-      const getSelectOptions: ƒ.MutatorOptionsGetter = ƒ.Metadata.selectOptions(_parentMutable)[_parentKey];
-      const getCreateOptions: ƒ.MutatorOptionsGetter = ƒ.Metadata.createOptions(_parentMutable)[_parentKey];
+      const getCreateOptions: ƒ.PropertyCreateOptionsGetter = ƒ.Metadata.createOptions(_parentMutable)[_parentKey];
+      const getAssignOptions: ƒ.PropertyAssignOptionsGetter = ƒ.Metadata.assignOptions(_parentMutable)[_parentKey];
 
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in _mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, _mutator, key, type, getCreateOptions, getSelectOptions, _parentMutable, _parentKey);
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, _mutator, key, type, getCreateOptions, getAssignOptions, _parentMutable, _parentKey);
         if (!element)
           continue;
 
@@ -76,14 +76,15 @@ namespace FudgeUserInterface {
       return div;
     }
 
-    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.MutatorOptionsGetter, _getSelectOptions?: ƒ.MutatorOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement {
+    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.PropertyCreateOptionsGetter, _getAssignOptions?: ƒ.PropertyAssignOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement {
       const mutant: unknown = Reflect.get(_mutable, _key);
       const value: unknown = Reflect.get(_mutator, _key);
       const type: string = typeof _type == "function" ? _type.name : "Enum";
+      const forArray: boolean = Array.isArray(mutant);
 
       let element: HTMLElement;
 
-      if (Array.isArray(mutant))
+      if (forArray)
         element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _parentMutable ?? _mutable, _parentKey ?? _key);
 
       if (!element)
@@ -98,7 +99,7 @@ namespace FudgeUserInterface {
       if (!element && mutant == null) {
         const mutable: object = _parentMutable ?? _mutable;
         const key: string = _parentKey ?? _key;
-        element = new CustomElementInitializer({ key: _key, label: _key, type: type }, _getCreateOptions?.call(mutable, key), _getSelectOptions?.call(mutable, key));
+        element = new CustomElementInitializer({ key: _key, label: _key, type: type }, _getCreateOptions?.call(mutable, key), _getAssignOptions?.call(mutable, key));
       }
 
       if (!element)
@@ -108,6 +109,12 @@ namespace FudgeUserInterface {
         console.warn("No interface created for", _mutable.constructor.name, _key);
         return null;
       }
+
+      if (_getCreateOptions && !forArray)
+        element.setAttribute("creatable", "");
+
+      if (_getAssignOptions && !forArray)
+        element.setAttribute("assignable", "");
 
       return element;
     }

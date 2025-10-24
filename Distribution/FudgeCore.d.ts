@@ -634,17 +634,31 @@ declare namespace FudgeCore {
         [key: string]: typeof Array;
     };
     /**
-     * Map from each property of a mutator to a function that returns a map of possible options for the property.
+     * A record mapping property keys to their associated {@link PropertyCreateOptionsGetter} functions.
      */
-    type MutatorOptions = {
-        [key: string]: MutatorOptionsGetter;
+    type PropertyCreateOptions = {
+        [key: string]: PropertyCreateOptionsGetter;
     };
     /**
-     * A function that returns a map of possible select options for a mutator property.
-     * @param this The instance containing the property.
-     * @param _key The key of the property for which options are requested.
+     * A function that returns a record of available creation options for a property.
+     * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
+     * @param this The instance that owns the property.
+     * @param _key The property key for which creation options are requested.
      */
-    type MutatorOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
+    type PropertyCreateOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, (new () => V) | (() => V)>;
+    /**
+     * A record mapping property keys to their associated {@link PropertyAssignOptionsGetter} functions.
+     */
+    type PropertyAssignOptions = {
+        [key: string]: PropertyAssignOptionsGetter;
+    };
+    /**
+     * A function that returns a record of available assignment options for a property.
+     * Each entry maps an option name to a value that can be assigned to the property.
+     * @param this The instance that owns the property.
+     * @param _key The property key for which assignment options are requested.
+     */
+    type PropertyAssignOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
     /**
      * Metadata for classes. Metadata needs to be explicitly specified using decorators.
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
@@ -678,12 +692,12 @@ declare namespace FudgeCore {
          * A map from property keys to functions that return a map of possible select options for the property.
          * Use the {@link select} decorator to add to this map.
          */
-        mutatorSelectOptions?: MutatorOptions;
+        propertyAssignOptions?: PropertyAssignOptions;
         /**
          * A map from property keys to functions that return a map of possible create options for the property.
          * Use the {@link create} decorator to add to this map.
          */
-        mutatorCreateOptions?: MutatorOptions;
+        propertyCreateOptions?: PropertyCreateOptions;
         /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
@@ -708,13 +722,13 @@ declare namespace FudgeCore {
          */
         function references(_from: object): ReadonlySet<string>;
         /**
-         * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+         * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
          */
-        function selectOptions(_from: Object): Readonly<MutatorOptions>;
+        function assignOptions(_from: Object): Readonly<PropertyAssignOptions>;
         /**
-         * Returns the decorated {@link Metadata.mutatorSelectOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
+         * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
          */
-        function createOptions(_from: Object): Readonly<MutatorOptions>;
+        function createOptions(_from: Object): Readonly<PropertyAssignOptions>;
     }
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
@@ -824,14 +838,14 @@ declare namespace FudgeCore {
      * @param _getOptions A function that returns a map of display names to values.
      * @author Jonas Plotzky, HFU, 2025
      */
-    function select<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
+    function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
     /**
      * Decorator to provide a list of options for creating new instances of a property.
      * Similar to @select, but for creating new objects instead of selecting existing ones.
      *
      * @param _getOptions A function returning a map of display names to constructors or factory functions.
      */
-    function create<T, V>(_getOptions: MutatorOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
+    function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
 }
 declare namespace FudgeCore {
     /**

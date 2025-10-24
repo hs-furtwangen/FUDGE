@@ -12,6 +12,11 @@
   --color-warning: yellow;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+
 object {
   width: 100%;
   height: 100%;
@@ -380,18 +385,24 @@ button:active {
   cursor: pointer;
 }
 
+.menu-toggle:focus {
+  outline-offset: -1px;
+}
+
 .menu-list {
   margin: 0;
   padding: 0;
   inset: auto;
+  border: none;
 
   box-sizing: border-box;
   background: var(--color-background-content);
-  border: 1px solid var(--color-medium);
+  outline: 1px solid var(--color-medium);
+  outline-offset: -1px;
   width: max-content;
-
+  height: max-content;
   position: absolute;
-  left: anchor(left);
+  left: anchor(right);
   top: anchor(top);
   position-try-fallbacks: flip-inline, flip-block, flip-inline flip-block;
 }
@@ -401,23 +412,27 @@ button:active {
   border: none;
   outline: none;
   background: none;
+  box-sizing: border-box;
   width: 100%;
   padding: 0 0.2em;
   text-align: left;
+  height: 1.6em;
 }
 
 .menu-item:active {
   border: none;
 }
 
-.menu-item:hover, .menu-item:focus {
+.menu-item:hover,
+.menu-item:focus,
+.menu-item:has(+.menu-list:hover),
+.menu-item:has(+.menu-list:focus-within) {
   background: var(--color-background-main);
 }
 
 .property:has(>.menu-container:hover),
 .property:has(>.menu-container:focus-within) {
   background-color: color-mix(in srgb, var(--color-background-main) 75%, transparent);
-  z-index: 2;
 }
 
 /* standard fudge elements */
