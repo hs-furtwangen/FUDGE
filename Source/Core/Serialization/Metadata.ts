@@ -2,22 +2,29 @@ namespace FudgeCore {
   // @ts-ignore - as of now we need to polyfill the symbol to make decorator metadata work, see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata
   Symbol.metadata ??= Symbol("Symbol.metadata");
 
-  /**
-   * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
-   * @see {@link Metadata}.
-   */
-  export type MutatorTypes = { [key: string]: Function | Record<string, unknown> };
+  /** A record of property keys and property descriptors of an object. */
+  export interface MetaPropertyDescriptors { [key: string]: MetaPropertyDescriptor }
 
-  /**
-   * Map from each property of a mutator to its specified collcetion type, for now only {@link Array}.
-   * @see {@link Metadata}.
-   */
-  export type MutatorCollectionTypes = { [key: string]: typeof Array };
+  /** An object describing the configuration of a specific property. */
+  export interface MetaPropertyDescriptor {
+    /** The type of the property. */
+    type?: Function | Record<string, unknown>;
 
-  /**
-   * A record mapping property keys to their associated {@link PropertyCreateOptionsGetter} functions.
-   */
-  export type PropertyCreateOptions = { [key: string]: PropertyCreateOptionsGetter };
+    /** The kind of the property. */
+    kind: "primitive" | "collection" | "object" | "enum" | "function";
+
+    /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
+    keyDescriptor?: MetaPropertyDescriptor;
+
+    /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
+    valueDescriptor?: MetaPropertyDescriptor;
+
+    /** Options for assignment (selectable values/instances). Use the {@link select} decorator to add assign options. */
+    getAssignOptions?: PropertyAssignOptionsGetter;
+
+    /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
+    getCreateOptions?: PropertyCreateOptionsGetter;
+  }
 
   /**
    * A function that returns a record of available creation options for a property.
@@ -26,11 +33,6 @@ namespace FudgeCore {
    * @param _key The property key for which creation options are requested.
    */
   export type PropertyCreateOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, (new () => V) | (() => V)>;
-
-  /**
-   * A record mapping property keys to their associated {@link PropertyAssignOptionsGetter} functions.
-   */
-  export type PropertyAssignOptions = { [key: string]: PropertyAssignOptionsGetter };
 
   /**
    * A function that returns a record of available assignment options for a property.
@@ -51,40 +53,13 @@ namespace FudgeCore {
      */
     mutatorKeys?: string[];
 
-    /**
-     * A map from property keys to their specified types for the class's {@link Mutator}.
-     * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
-     */
-    mutatorTypes?: MutatorTypes;
-
-    /**
-     * Keys of properties of the class's {@link Mutator} that are references to other objects.
-     */
-    mutatorReferences?: Set<string>;
-
-    /**
-     * A map from property keys to their specified collection types for the class's {@link Mutator}.
-     * Use the {@link edit} or {@link mutate} decorator to add collcetion type information to this map.
-     */
-    mutatorCollectionTypes?: MutatorCollectionTypes;
+    propertyDescriptors?: MetaPropertyDescriptors;
 
     /**
      * A map from property keys to their specified order in the class's {@link Mutator}.
      * Use the {@link order} decorator to add to this map.
      */
     mutatorOrder?: Record<string, number>;
-
-    /**
-     * A map from property keys to functions that return a map of possible select options for the property.
-     * Use the {@link select} decorator to add to this map.
-     */
-    propertyAssignOptions?: PropertyAssignOptions;
-
-    /**
-     * A map from property keys to functions that return a map of possible create options for the property.
-     * Use the {@link create} decorator to add to this map.
-     */
-    propertyCreateOptions?: PropertyCreateOptions;
 
     /**
      * A map of property keys to their serialization strategy.
@@ -95,50 +70,28 @@ namespace FudgeCore {
 
   export namespace Metadata {
     const emptyKeys: readonly string[] = Object.freeze([] as string[]);
-    const emptyObject: object = Object.freeze({});
-    const emptySet: ReadonlySet<string> = Object.freeze(new Set<string>());
 
     /**
      * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
      */
-    export function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
+    export function mutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
       return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
     }
 
     /**
-     * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+     * Returns an object describing the meta configuration of a specific property on a given object.
      */
-    export function types(_from: Object): Readonly<MutatorTypes> {
-      return getMetadata(_from).mutatorTypes ?? <Readonly<MutatorTypes>>emptyObject;
+    export function getPropertyDescriptor(_object: Object, _key: string): MetaPropertyDescriptor {
+      return getPropertyDescriptors(_object)?.[_key];
     }
 
     /**
-     * Returns the decorated {@link Metadata.mutatorCollectionTypes collection types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+     * Returns all meta property descriptors of a given object.
      */
-    export function collectionTypes(_from: Object): Readonly<MutatorCollectionTypes> {
-      return getMetadata(_from).mutatorCollectionTypes ?? <Readonly<MutatorCollectionTypes>>emptyObject;
+    export function getPropertyDescriptors(_from: Object): MetaPropertyDescriptors {
+      return getMetadata(_from).propertyDescriptors;
     }
 
-    /**
-     * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
-     */
-    export function references(_from: object): ReadonlySet<string> {
-      return <ReadonlySet<string>>(getMetadata(_from).mutatorReferences ?? emptySet);
-    }
-
-    /**
-     * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
-     */
-    export function assignOptions(_from: Object): Readonly<PropertyAssignOptions> {
-      return getMetadata(_from).propertyAssignOptions ?? <Readonly<PropertyAssignOptions>>emptyObject;
-    }
-
-    /**
-     * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
-     */
-    export function createOptions(_from: Object): Readonly<PropertyAssignOptions> {
-      return getMetadata(_from).propertyCreateOptions ?? <Readonly<PropertyAssignOptions>>emptyObject;
-    }
   }
 
   const emptyMetadata: Metadata = Object.freeze({});
@@ -166,5 +119,5 @@ namespace FudgeCore {
   }
 
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-  export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+  export type ClassPropertyDecoratorContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 }

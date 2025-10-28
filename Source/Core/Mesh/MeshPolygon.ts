@@ -21,7 +21,7 @@ namespace FudgeCore {
     @edit(Boolean)
     protected fitTexture: boolean;
     
-    @edit(Vector2, Array)
+    @edit(Array, Vector2)
     protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
 
     public constructor(_name: string = "MeshPolygon", _shape: Vector2[] = MeshPolygon.shapeDefault, _fitTexture: boolean = true) {

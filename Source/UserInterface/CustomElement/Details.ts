@@ -171,7 +171,7 @@ namespace FudgeUserInterface {
       selectCreate.removeAttribute("key");
       menuCreate.addItem(selectCreate);
 
-      const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: type, action: "assign", placeholder: `🔍︎ Select object...` });
+      const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: type, action: "assign", placeholder: `🔍︎ Select instance...` });
       selectAssign.removeAttribute("key");
       menuAssign.addItem(selectAssign);
 
@@ -179,6 +179,12 @@ namespace FudgeUserInterface {
         _item.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
         menu.close();
       });
+
+      btnCreate.addEventListener(EVENT.CLICK, _event => {
+        _item.dispatchEvent(new Event(EVENT.INITIALIZE_VALUE, { bubbles: true }));
+        menu.close();
+      });
+
     }
   }
 

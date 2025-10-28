@@ -58,22 +58,22 @@ namespace Fudge {
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
 
-      let colleciontType: Function = ƒ.Metadata.collectionTypes(mutable)[key]; // this is a collection, only allow drops on keys of the collection
-      if (colleciontType)
+      if (key == null)
         return;
+
+      const descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
 
       const parentMutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
       const parentKey: string = path[path.length - 2];
-
-      colleciontType = ƒ.Metadata.collectionTypes(parentMutable)[parentKey]; // check if drop is on key of a collection
-      if (colleciontType == Array && isNaN(parseInt(key))) // only drop on number keys for array
+      const parentDescriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(parentMutable, parentKey);
+      if (parentDescriptor?.type == Array && isNaN(parseInt(key))) // only drop on number keys for array
         return;
 
       let type: Object | Function;
-      if (colleciontType)
-        type = ƒ.Metadata.types(parentMutable)[parentKey]; // for collection get type of the collection elements
+      if (parentDescriptor?.valueDescriptor)
+        type = parentDescriptor.valueDescriptor.type; // for collection get type of the collection elements
       else
-        type = ƒ.Metadata.types(mutable)[key];
+        type = descriptor.type;
 
       let sources: Object[] = ƒui.Clipboard.dragDrop.get();
       if (!type || (type && typeof type == "function" && !(sources[0] instanceof type))) // check if 

@@ -42,7 +42,7 @@ namespace FudgeUserInterface {
       this.button = document.createElement("button");
       this.button.addEventListener(EVENT.CLICK, this.hndClick);
       this.button.hidden = true;
-      this.button.classList.add("icon", "clear", "before");
+      this.button.classList.add("btn-subtle", "icon", "clear", "before");
       this.appendChild(this.button);
 
       this.addEventListener(EVENT.CHANGE, this.hndChange);

@@ -58,7 +58,7 @@ declare namespace FudgeUserInterface {
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
-        static initializeValue(_mutable: object, _key: string | number, _type: Function | Record<string, unknown>): void;
+        static initializeValue(_mutable: object, _key: string, _type: Function | Record<string, unknown>): void;
         static copyValue<T = unknown>(_value: T): T | Promise<T>;
         /**
          * Creates a shallow **structural signature** string for the given object.

@@ -45,6 +45,11 @@ namespace FudgeCore {
   }
 
   /**
+   * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
+   */
+  export type MutatorAttributeTypes = { [key: string]: Function | Record<string, unknown> };
+
+  /**
    * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using graphical interfaces created at runtime.
    * 
    * Mutables provide a {@link Mutator} built by collecting all their {@link mutate decorated properties}.
@@ -187,11 +192,12 @@ namespace FudgeCore {
      * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
      * Does not recurse into objects! This will return the {@link Metadata.types decorated types} instead of the inferred runtime-types of the object, if available.
      */
-    public static getTypes(_instance: object, _mutator: Mutator): MutatorTypes {
-      const out: MutatorTypes = {};
-      const types: MutatorTypes = Metadata.types(_instance);
+    public static getTypes(_instance: object, _mutator: Mutator): MutatorAttributeTypes {
+      const out: MutatorAttributeTypes = {};
+      const descriptors: MetaPropertyDescriptors = Metadata.getPropertyDescriptors(_instance);
+
       for (const key in _mutator) {
-        const metaType: Function | Record<string, unknown> = types[key];
+        const metaType: Function | Record<string, unknown> = descriptors[key].type;
         let type: Function | Record<string, unknown>;
         switch (typeof metaType) {
           case "function":

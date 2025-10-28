@@ -20,7 +20,7 @@ namespace FudgeCore {
       new Vector2(0.5, -0.5)
     ];
 
-    @edit(Vector2, Array)
+    @edit(Array, Vector2)
     protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
 
     @edit(Number)

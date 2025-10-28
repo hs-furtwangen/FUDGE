@@ -86,7 +86,7 @@ namespace FudgeUserInterface {
     };
 
     private hndClickSelect = async (_event: MouseEvent): Promise<void> => {
-      this.dispatchEvent(new CustomEvent(EVENT.REFRESH_OPTIONS, { bubbles: true, detail: { action: "select" } }));
+      this.dispatchEvent(new CustomEvent(EVENT.REFRESH_OPTIONS, { bubbles: true, detail: { action: "assign" } }));
       if (!this.options)
         return;
 

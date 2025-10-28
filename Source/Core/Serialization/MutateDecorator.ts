@@ -24,22 +24,23 @@ namespace FudgeCore {
    * @author Jonas Plotzky, HFU, 2024-2025
    */
   // primitive type
-  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P>) => void) : never;
+  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
   // primitive type array
-  export function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P[]>) => void) : never;
+  export function mutate<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+
 
   // object type
-  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
+  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
   // object type array
-  export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+  export function mutate<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
 
   // enum type
-  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
+  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
   // enum type array
-  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+  export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
 
-  export function mutate(_type: Function | Record<string, unknown>, _collectionType?: typeof Array): ((_value: unknown, _context: ClassPropertyContext<General, General>) => void) {
-    return mutateFactory(_type, _collectionType, false);
+  export function mutate(_typePrimary: General, _typeSecondary?: General): ((_value: unknown, _context: ClassPropertyDecoratorContext) => void) {
+    return mutateFactory(_typePrimary, _typeSecondary, false);
   }
 
   /**
@@ -53,11 +54,11 @@ namespace FudgeCore {
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
-  export function mutateFunction<T extends Function>(_type: T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+  export function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
+  export function mutateFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
 
-  export function mutateFunction<T extends Function>(_type: T, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T | T[]>) => void {
-    return mutateFactory(_type, _collectionType, true);
+  export function mutateFunction(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
+    return mutateFactory(_typePrimary, _typeSecondary, true);
   }
 
   /**
@@ -67,17 +68,22 @@ namespace FudgeCore {
    * **Side effects:**
    * - Invokes the {@link select} decorator with default options.
    */
-  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
+  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
+  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
 
-  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _collectionType?: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T | T[]>) => void {
-    return mutateFactory(_type, _collectionType, false, true);
+  export function mutateReference(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
+    return mutateFactory(_typePrimary, _typeSecondary, false, true);
   }
+
+  const mapTypeToCreate: WeakMap<WeakKey, () => unknown> = new WeakMap();
+  mapTypeToCreate.set(Number, Number);
+  mapTypeToCreate.set(Boolean, Boolean);
+  mapTypeToCreate.set(String, String);
 
   /**
    * @internal
    */
-  export function mutateFactory(_type: Function | Record<string, unknown>, _collectionType?: typeof Array, _function?: boolean, _reference?: boolean): (_value: unknown, _context: ClassPropertyContext) => void {
+  export function mutateFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
@@ -85,46 +91,58 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      // include in mutator
+      let descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors");
+      if (!descriptors)
+        metadata.propertyDescriptors = descriptors = Object.create(metadata.propertyDescriptors ?? null);
+
+      descriptors[key] = createDescriptor(_typePrimary, _typeSecondary, _function, _reference);
+
       const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
       keys.push(key);
-
-      // add type information
-      const types: MutatorTypes = getOwnProperty(metadata, "mutatorTypes") ?? (metadata.mutatorTypes = { ...metadata.mutatorTypes });
-      types[key] = _type;
-
-      if (_collectionType) {
-        // add collection type information
-        const collectionTypes: MutatorCollectionTypes = getOwnProperty(metadata, "mutatorCollectionTypes") ?? (metadata.mutatorCollectionTypes = { ...metadata.mutatorCollectionTypes });
-        collectionTypes[key] = _collectionType;
-      }
-
-      if (!_function) {
-        let getCreateOptions: PropertyCreateOptionsGetter;
-        if ((<General>_type).subclasses)
-          getCreateOptions = getSubclassOptions;
-
-        if (getCreateOptions)
-          create(getCreateOptions)(_value, _context);
-      }
-
-      if (!_reference && !_function)
-        return;
-
-      const references: Set<string> = getOwnProperty(metadata, "mutatorReferences") ?? (metadata.mutatorReferences = new Set<string>(metadata.mutatorReferences));
-      references.add(key);
-
-      let getSelectOptions: PropertyAssignOptionsGetter | undefined;
-      if (_function && (<General>_type).subclasses)
-        getSelectOptions = getSubclassOptions;
-      else if (_type === Node)
-        getSelectOptions = getNodeOptions;
-      else
-        getSelectOptions = getResourceOptions;
-
-      if (getSelectOptions)
-        select(getSelectOptions)(_value, _context);
     };
+  }
+
+  function createDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean): MetaPropertyDescriptor {
+    const descriptor: MetaPropertyDescriptor = Object.create(null);
+    descriptor.type = _typePrimary;
+
+    if (_function && !_typeSecondary)
+      descriptor.kind = "function";
+    else if (_typePrimary === Array)
+      descriptor.kind = "collection";
+    else if (_typePrimary == Boolean || _typePrimary == Number || _typePrimary == String)
+      descriptor.kind = "primitive";
+    else if (typeof _typePrimary == "object")
+      descriptor.kind = "enum";
+    else
+      descriptor.kind = "object";
+
+    if (!_function) {
+      let getCreateOptions: PropertyCreateOptionsGetter;
+      if ((<General>_typePrimary).subclasses)
+        getCreateOptions = getSubclassOptions;
+
+      if (getCreateOptions)
+        descriptor.getCreateOptions = getCreateOptions;
+    }
+
+    if (_reference || _function) {
+      let getAssignOptions: PropertyAssignOptionsGetter | undefined;
+      if (_function && (<General>_typePrimary).subclasses)
+        getAssignOptions = getSubclassOptions;
+      else if (_typePrimary === Node)
+        getAssignOptions = getNodeOptions;
+      else
+        getAssignOptions = getResourceOptions;
+
+      if (getAssignOptions)
+        descriptor.getAssignOptions = getAssignOptions;
+    }
+
+    if (_typeSecondary)
+      descriptor.valueDescriptor = createDescriptor(_typeSecondary, undefined, _function, _reference);
+
+    return descriptor;
   }
   //#endregion
 
@@ -137,7 +155,7 @@ namespace FudgeCore {
    *
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function order(_order: number): (_value: unknown, _context: ClassPropertyContext<Mutable>) => void {
+  export function order(_order: number): (_value: unknown, _context: ClassPropertyDecoratorContext<Mutable>) => void {
     return (_value, _context) => {
       if (_context.static || _context.private)
         throw new Error("@order decorator can only order public instance members.");
@@ -216,20 +234,25 @@ namespace FudgeCore {
    * @param _getOptions A function that returns a map of display names to values.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
-    return function (_value: unknown, _context: ClassPropertyContext): void {
+  export function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
+    return function (_value: unknown, _context: ClassPropertyDecoratorContext): void {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
         return;
 
       const metadata: Metadata = _context.metadata;
-      const options: PropertyAssignOptions = getOwnProperty(metadata, "propertyAssignOptions") ?? (metadata.propertyAssignOptions = { ...metadata.propertyAssignOptions });
-      options[key as string] = _getOptions;
+      const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+      const descriptor: MetaPropertyDescriptor = descriptors[key];
+      if (descriptor.type == Array)
+        descriptor.valueDescriptor.getAssignOptions = _getOptions;
+      else
+        descriptor.getAssignOptions = _getOptions;
     };
   }
 
   function getSubclassOptions(this: object, _key: string): Record<string, () => General> {
-    const subclasses: Iterable<() => General> = (<{ readonly subclasses: Iterable<() => General> }>Metadata.types(this)[_key]).subclasses;
+    const descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
+    const subclasses: Iterable<() => General> = (<{ readonly subclasses: Iterable<() => General> }>(descriptor.valueDescriptor?.type ?? descriptor.type)).subclasses;
     const options: Record<string, () => General> = {};
     for (const subclass of subclasses)
       options[subclass.name] = subclass;
@@ -238,7 +261,8 @@ namespace FudgeCore {
   }
 
   function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
-    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>Metadata.types(this)[_key]);
+    const descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
+    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>(descriptor.valueDescriptor?.type ?? descriptor.type));
     const options: Record<string, SerializableResource> = {};
     for (const resource of resources)
       options[resource.name] = resource;
@@ -263,14 +287,18 @@ namespace FudgeCore {
    *
    * @param _getOptions A function returning a map of display names to constructors or factory functions.
    */
-  export function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void {
-    return function (_value: unknown, _context: ClassPropertyContext): void {
+  export function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
+    return function (_value: unknown, _context: ClassPropertyDecoratorContext): void {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol") return;
 
       const metadata: Metadata = _context.metadata;
-      const createOptions: PropertyCreateOptions = getOwnProperty(metadata, "propertyCreateOptions") ?? (metadata.propertyCreateOptions = { ...metadata.propertyCreateOptions });
-      createOptions[key as string] = _getOptions;
+      const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+      const descriptor: MetaPropertyDescriptor = descriptors[key];
+      if (descriptor.type == Array)
+        descriptor.valueDescriptor.getCreateOptions = _getOptions;
+      else
+        descriptor.getCreateOptions = _getOptions;
     };
   }
   //#endregion

@@ -25,7 +25,6 @@ namespace FudgeUserInterface {
       this.domElement.addEventListener(EVENT.REFRESH_OPTIONS, this.refreshOptions);
       this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
       this.domElement.addEventListener(EVENT.INITIALIZE_VALUE, this.initializeValue);
-
     }
 
     /**
@@ -176,31 +175,30 @@ namespace FudgeUserInterface {
       return closestElement;
     }
 
-    public static initializeValue(_mutable: object, _key: string | number, _type: Function | Record<string, unknown>): void {
-      const type: Function | Record<string, unknown> = _type ?? ƒ.Metadata.types(_mutable)[_key];
+    public static initializeValue(_mutable: object, _key: string, _type: Function | Record<string, unknown>): void {
+      const type: Function | Record<string, unknown> = _type ?? ƒ.Metadata.getPropertyDescriptor(_mutable, _key)?.type;
       let value: unknown;
 
-      if (type == Number)
-        value = 0;
-      else if (type == String)
-        value = "";
-      else if (type == Boolean)
-        value = true;
+      if (type == Boolean || type == Number || type == String)
+        value = type();
       else if (typeof type == "object")
         value = type[Object.getOwnPropertyNames(type).find(_name => !/^\d+$/.test(_name))]; // for enum get the first non numeric key
       else if (typeof type == "function") {
         // if (!ƒ.isMutable(_type.prototype))
-          // return;
+        // return;
 
-        value = Reflect.construct(type, []);
-
+        try {
+          value = Reflect.construct(type, []);
+        } catch {
+          value = type();
+        }
         // if (ƒ.isSerializableResource(value)) {
         //   ƒ.Project.deregister(value);
         //   delete value.idResource;
         // }
-      }
 
-      Reflect.set(_mutable, _key, value);
+        Reflect.set(_mutable, _key, value);
+      }
     }
 
     public static copyValue<T = unknown>(_value: T): T | Promise<T> {
@@ -338,18 +336,18 @@ namespace FudgeUserInterface {
 
       let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
 
-      if (!type) {
-        let parent: object;
-        let parentKey: string;
-        if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
-          parent = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
-          parentKey = path[path.length - 2];
-        }
-
-        const mutatorTypes: ƒ.MutatorTypes = ƒ.Mutable.getTypes(parent ?? mutable, ƒ.Mutable.getMutator(parent ?? mutable));
-        const mutatorCollectionTypes: ƒ.MutatorCollectionTypes = ƒ.Metadata.collectionTypes(mutable);
-        type = mutatorCollectionTypes[key] ?? mutatorTypes[parentKey ?? key];
+      let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
+      if (descriptor) {
+        type ??= descriptor.type;
+      } else { // must be a collection type, adjust to parent mutable
+        const parent: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+        const parentKey: string = path[path.length - 2];
+        descriptor = ƒ.Metadata.getPropertyDescriptor(parent, parentKey);
+        type ??= descriptor.valueDescriptor.type;
       }
+
+      if (descriptor.kind == "function" || descriptor.valueDescriptor?.kind == "function")
+        return;
 
       Controller.initializeValue(mutable, key, type);
     };
@@ -362,20 +360,21 @@ namespace FudgeUserInterface {
       const path: string[] = this.getMutatorPath(_event);
       let mutable: unknown = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       let key: string = path[path.length - 1];
-      if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
+      let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
+      if (!descriptor) { // must be a collection type, adjust to parent mutable
         mutable = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
         key = path[path.length - 2];
+        descriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
+        descriptor = descriptor.valueDescriptor;
       }
 
       const action: "create" | "assign" = (<CustomEvent>_event).detail?.action;
       switch (action) {
         case "assign":
-          const mutatorSelectOptions: ƒ.PropertyAssignOptions = ƒ.Metadata.assignOptions(mutable);
-          target.options = mutatorSelectOptions[key]?.call(mutable, key);
+          target.options = descriptor.getAssignOptions?.call(mutable, key);
           break;
         case "create":
-          const mutatorCreateOptions: ƒ.PropertyCreateOptions = ƒ.Metadata.createOptions(mutable);
-          target.options = mutatorCreateOptions[key]?.call(mutable, key);
+          target.options = descriptor.getCreateOptions?.call(mutable, key);
           break;
       }
     };

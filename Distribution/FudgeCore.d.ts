@@ -619,26 +619,25 @@ declare namespace FudgeCore {
     export {};
 }
 declare namespace FudgeCore {
-    /**
-     * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
-     * @see {@link Metadata}.
-     */
-    type MutatorTypes = {
-        [key: string]: Function | Record<string, unknown>;
-    };
-    /**
-     * Map from each property of a mutator to its specified collcetion type, for now only {@link Array}.
-     * @see {@link Metadata}.
-     */
-    type MutatorCollectionTypes = {
-        [key: string]: typeof Array;
-    };
-    /**
-     * A record mapping property keys to their associated {@link PropertyCreateOptionsGetter} functions.
-     */
-    type PropertyCreateOptions = {
-        [key: string]: PropertyCreateOptionsGetter;
-    };
+    /** A record of property keys and property descriptors of an object. */
+    interface MetaPropertyDescriptors {
+        [key: string]: MetaPropertyDescriptor;
+    }
+    /** An object describing the configuration of a specific property. */
+    interface MetaPropertyDescriptor {
+        /** The type of the property. */
+        type?: Function | Record<string, unknown>;
+        /** The kind of the property. */
+        kind: "primitive" | "collection" | "object" | "enum" | "function";
+        /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
+        keyDescriptor?: MetaPropertyDescriptor;
+        /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
+        valueDescriptor?: MetaPropertyDescriptor;
+        /** Options for assignment (selectable values/instances). Use the {@link select} decorator to add assign options. */
+        getAssignOptions?: PropertyAssignOptionsGetter;
+        /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
+        getCreateOptions?: PropertyCreateOptionsGetter;
+    }
     /**
      * A function that returns a record of available creation options for a property.
      * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
@@ -646,12 +645,6 @@ declare namespace FudgeCore {
      * @param _key The property key for which creation options are requested.
      */
     type PropertyCreateOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, (new () => V) | (() => V)>;
-    /**
-     * A record mapping property keys to their associated {@link PropertyAssignOptionsGetter} functions.
-     */
-    type PropertyAssignOptions = {
-        [key: string]: PropertyAssignOptionsGetter;
-    };
     /**
      * A function that returns a record of available assignment options for a property.
      * Each entry maps an option name to a value that can be assigned to the property.
@@ -669,35 +662,12 @@ declare namespace FudgeCore {
          * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
          */
         mutatorKeys?: string[];
-        /**
-         * A map from property keys to their specified types for the class's {@link Mutator}.
-         * Use the {@link edit} or {@link mutate} decorator to add type information to this map.
-         */
-        mutatorTypes?: MutatorTypes;
-        /**
-         * Keys of properties of the class's {@link Mutator} that are references to other objects.
-         */
-        mutatorReferences?: Set<string>;
-        /**
-         * A map from property keys to their specified collection types for the class's {@link Mutator}.
-         * Use the {@link edit} or {@link mutate} decorator to add collcetion type information to this map.
-         */
-        mutatorCollectionTypes?: MutatorCollectionTypes;
+        propertyDescriptors?: MetaPropertyDescriptors;
         /**
          * A map from property keys to their specified order in the class's {@link Mutator}.
          * Use the {@link order} decorator to add to this map.
          */
         mutatorOrder?: Record<string, number>;
-        /**
-         * A map from property keys to functions that return a map of possible select options for the property.
-         * Use the {@link select} decorator to add to this map.
-         */
-        propertyAssignOptions?: PropertyAssignOptions;
-        /**
-         * A map from property keys to functions that return a map of possible create options for the property.
-         * Use the {@link create} decorator to add to this map.
-         */
-        propertyCreateOptions?: PropertyCreateOptions;
         /**
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
@@ -708,34 +678,22 @@ declare namespace FudgeCore {
         /**
          * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
          */
-        function keys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
+        function mutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
         /**
-         * Returns the decorated {@link Metadata.mutatorTypes types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+         * Returns an object describing the meta configuration of a specific property on a given object.
          */
-        function types(_from: Object): Readonly<MutatorTypes>;
+        function getPropertyDescriptor(_object: Object, _key: string): MetaPropertyDescriptor;
         /**
-         * Returns the decorated {@link Metadata.mutatorCollectionTypes collection types} of the {@link Mutator} of the given instance or class. Returns an empty object if no types are decorated.
+         * Returns all meta property descriptors of a given object.
          */
-        function collectionTypes(_from: Object): Readonly<MutatorCollectionTypes>;
-        /**
-         * Returns the decorated {@link Metadata.mutatorReferences references} of the {@link Mutator} of the given instance or class. Returns an empty set if no references are decorated.
-         */
-        function references(_from: object): ReadonlySet<string>;
-        /**
-         * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
-         */
-        function assignOptions(_from: Object): Readonly<PropertyAssignOptions>;
-        /**
-         * Returns the decorated {@link Metadata.propertyAssignOptions select options} of the {@link Mutator} of the given instance or class. Returns an empty object if no select options are decorated.
-         */
-        function createOptions(_from: Object): Readonly<PropertyAssignOptions>;
+        function getPropertyDescriptors(_from: Object): MetaPropertyDescriptors;
     }
     /**
      * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
      */
     function getMetadata(_from: Object): Readonly<Metadata>;
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-    type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+    type ClassPropertyDecoratorContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 }
 declare namespace FudgeCore {
     /**
@@ -755,12 +713,12 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P>) => void) : never;
-    function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P[]>) => void) : never;
-    function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
-    function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
-    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
-    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+    function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
+    function mutate<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+    function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
+    function mutate<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
+    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation.
      * See {@link mutate} for additional information.
@@ -772,8 +730,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
-    function mutateFunction<T extends Function>(_type: T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+    function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
+    function mutateFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for reference-based mutation.
      * See {@link mutate} for additional information.
@@ -781,8 +739,8 @@ declare namespace FudgeCore {
      * **Side effects:**
      * - Invokes the {@link select} decorator with default options.
      */
-    function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-    function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
+    function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
+    function mutateReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
     /**
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
@@ -791,7 +749,7 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function order(_order: number): (_value: unknown, _context: ClassPropertyContext<Mutable>) => void;
+    function order(_order: number): (_value: unknown, _context: ClassPropertyDecoratorContext<Mutable>) => void;
     /**
      * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
      *
@@ -838,14 +796,14 @@ declare namespace FudgeCore {
      * @param _getOptions A function that returns a map of display names to values.
      * @author Jonas Plotzky, HFU, 2025
      */
-    function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
+    function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
     /**
      * Decorator to provide a list of options for creating new instances of a property.
      * Similar to @select, but for creating new objects instead of selecting existing ones.
      *
      * @param _getOptions A function returning a map of display names to constructors or factory functions.
      */
-    function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyContext<T, V>) => void;
+    function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
 }
 declare namespace FudgeCore {
     /**
@@ -912,12 +870,12 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
-    function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P>) => void) : never;
-    function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P[]>) => void) : never;
-    function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
-    function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
-    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
-    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+    function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
+    function serialize<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+    function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
+    function serialize<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
+    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for serialization.
      * See {@link serialize} decorator for additional information.
@@ -942,8 +900,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
-    function serializeFunction<T extends Function>(_type: T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+    function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
+    function serializeFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for reference-based serialization.
      * See {@link serialize} decorator for additional information.
@@ -966,8 +924,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-    function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
+    function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
+    function serializeReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for serialization with type information and polymorphic reconstruction.
      * The object will be serialized with type information and reconstructed from scratch during deserialization.
@@ -996,8 +954,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
-    function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+    function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
+    function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
     /**
      * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
      */
@@ -1074,12 +1032,12 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P>) => void) : never;
-    function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyContext<object, P[]>) => void) : never;
-    function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
-    function edit<T extends P, P>(_type: abstract new (...args: General[]) => T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
-    function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyContext<object, P>) => void;
-    function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, P[]>) => void;
+    function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
+    function edit<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+    function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
+    function edit<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
+    function edit<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
      * See {@link mutateFunction} and {@link serializeF} decorators for more information.
@@ -1107,8 +1065,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
-    function editFunction<T extends Function>(_type: T, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+    function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
+    function editFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for reference-based mutation and serialization.
      * See {@link mutateReference} and {@link serializeReference} decorators for more information.
@@ -1130,8 +1088,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function editReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-    function editReference<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
+    function editReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
+    function editReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for nested mutation and serialization with type information and polymorphic reconstruction.
      * See {@link serializableReconstruct} for more information.
@@ -1156,8 +1114,8 @@ declare namespace FudgeCore {
      *
      * @author Jonas Plotzky, HFU, 2025
      */
-    function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyContext<object, T>) => void;
-    function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C, _array: typeof Array): (_value: unknown, _context: ClassPropertyContext<object, T[]>) => void;
+    function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
+    function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
 }
 declare namespace FudgeCore {
     /**
@@ -1193,6 +1151,12 @@ declare namespace FudgeCore {
         mutate(_mutator: Mutator): void | Promise<void>;
     }
     function isMutable(_object: Object): _object is IMutable;
+    /**
+     * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
+     */
+    type MutatorAttributeTypes = {
+        [key: string]: Function | Record<string, unknown>;
+    };
     /**
      * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using graphical interfaces created at runtime.
      *
@@ -1250,7 +1214,7 @@ declare namespace FudgeCore {
          * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
          * Does not recurse into objects! This will return the {@link Metadata.types decorated types} instead of the inferred runtime-types of the object, if available.
          */
-        static getTypes(_instance: object, _mutator: Mutator): MutatorTypes;
+        static getTypes(_instance: object, _mutator: Mutator): MutatorAttributeTypes;
         /**
          * Returns an iterable of keys for the given source:
          *

@@ -18,7 +18,7 @@ namespace FudgeCore {
       Matrix4x4.TRANSLATION(Vector3.Z(-0.5))
     ];
 
-    @edit(Matrix4x4, Array)
+    @edit(Array, Matrix4x4)
     private mtxTransforms: MutableArray<Matrix4x4> = new MutableArray(Matrix4x4);
 
     public constructor(_name: string = "MeshExtrusion", _vertices: Vector2[] = MeshPolygon.shapeDefault, _mtxTransforms: Matrix4x4[] = MeshExtrusion.mtxDefaults, _fitTexture: boolean = true) {

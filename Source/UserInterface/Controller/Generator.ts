@@ -42,14 +42,14 @@ namespace FudgeUserInterface {
      */
     public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
-      const types: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
-      const createOptions: ƒ.PropertyCreateOptions = ƒ.Metadata.createOptions(_mutable);
-      const assignOptions: ƒ.PropertyAssignOptions = ƒ.Metadata.assignOptions(_mutable);
+      const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getTypes(_mutable, mutator);
+      const descriptors: ƒ.MetaPropertyDescriptors = ƒ.Metadata.getPropertyDescriptors(_mutable);
 
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], createOptions[key], assignOptions[key]);
+        const descriptor: ƒ.MetaPropertyDescriptor = descriptors[key];
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptor.getCreateOptions, descriptor.getAssignOptions);
         if (!element)
           continue;
 
@@ -60,9 +60,11 @@ namespace FudgeUserInterface {
     }
 
     public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement {
-      const type: Function | Record<string, unknown> = ƒ.Metadata.types(_parentMutable)[_parentKey];
-      const getCreateOptions: ƒ.PropertyCreateOptionsGetter = ƒ.Metadata.createOptions(_parentMutable)[_parentKey];
-      const getAssignOptions: ƒ.PropertyAssignOptionsGetter = ƒ.Metadata.assignOptions(_parentMutable)[_parentKey];
+      const descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(_parentMutable, _parentKey).valueDescriptor;
+
+      const type: Function | Record<string, unknown> = descriptor.type;
+      const getCreateOptions: ƒ.PropertyCreateOptionsGetter = descriptor.getCreateOptions;
+      const getAssignOptions: ƒ.PropertyAssignOptionsGetter = descriptor.getAssignOptions;
 
       const div: HTMLDivElement = document.createElement("div");
 
@@ -80,18 +82,15 @@ namespace FudgeUserInterface {
       const mutant: unknown = Reflect.get(_mutable, _key);
       const value: unknown = Reflect.get(_mutator, _key);
       const type: string = typeof _type == "function" ? _type.name : "Enum";
-      const forArray: boolean = Array.isArray(mutant);
+      const isArray: boolean = Array.isArray(mutant);
 
       let element: HTMLElement;
 
-      if (forArray)
+      if (isArray)
         element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _parentMutable ?? _mutable, _parentKey ?? _key);
 
       if (!element)
         element = Generator.createMutatorElement(_key, _type, value);
-
-      // if (!element && _getSelectOptions)
-      //   element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name }, value, _getSelectOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
 
       if (!element)
         element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
@@ -102,6 +101,9 @@ namespace FudgeUserInterface {
         element = new CustomElementInitializer({ key: _key, label: _key, type: type }, _getCreateOptions?.call(mutable, key), _getAssignOptions?.call(mutable, key));
       }
 
+      if (!element && _getAssignOptions)
+        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name, action: "assign" }, value, _getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
+
       if (!element)
         element = new CustomElementOutput({ key: _key, label: _key, type: type, value: value?.toString() });
 
@@ -110,10 +112,10 @@ namespace FudgeUserInterface {
         return null;
       }
 
-      if (_getCreateOptions && !forArray)
+      if (_getCreateOptions && !isArray)
         element.setAttribute("creatable", "");
 
-      if (_getAssignOptions && !forArray)
+      if (_getAssignOptions && !isArray)
         element.setAttribute("assignable", "");
 
       return element;

@@ -44,6 +44,10 @@
   --icon-stop: "⏹";
   --icon-previous: "⏮";
   --icon-next: "⏭";
+
+  /* Types */
+  --icon-array: "[ ]";
+  --icon-object: "{ }";
 }
 
 .icon::before,
@@ -228,4 +232,11 @@
 .icon.next.before::before,
 .icon.next.after::after {
   content: var(--icon-next);
+}
+
+details[type*=Array]>summary::after,
+fudge-comboselect[type*=Array]>label::after {
+  mask-image: none;
+  background: none;
+  content: var(--icon-array);
 }
