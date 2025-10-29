@@ -169,7 +169,7 @@ namespace FudgeCore {
 
       const type: Function | Record<string, unknown> = _typeSecondary ?? _typePrimary;
       switch (type) {
-        case Boolean: case Number: case String:
+        case Boolean: case Number: case String: case Object:
           strategy = "primitive";
           break;
         case Node:
@@ -184,6 +184,8 @@ namespace FudgeCore {
             strategy = "resource";
           else if (isSerializable(type.prototype))
             strategy = "serializable";
+          else if (typeof type == "object")
+            strategy = "primitive";
           break;
       }
 
