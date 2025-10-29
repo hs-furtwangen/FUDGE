@@ -327,24 +327,20 @@ namespace FudgeUserInterface {
       const path: string[] = this.getMutatorPath(_event);
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
-
+      
       let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
-
       let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
-      if (descriptor) {
-        type ??= descriptor.type;
-      } else { // must be a collection type, adjust to parent mutable
+      if (!descriptor) {
         const parent: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
         const parentKey: string = path[path.length - 2];
-        descriptor = ƒ.Metadata.getPropertyDescriptor(parent, parentKey);
-        type ??= descriptor.valueDescriptor.type;
+        descriptor = ƒ.Metadata.getPropertyDescriptor(parent, parentKey).valueDescriptor;
       }
 
-      if (descriptor.kind == "function" || descriptor.valueDescriptor?.kind == "function")
+      if (descriptor.kind == "function")
         return;
 
       const current: unknown = Reflect.get(mutable, key);
-      const incoming: unknown = Controller.createValue(type);
+      const incoming: unknown = Controller.createValue(type ?? descriptor.type);
 
       if (current == incoming)
         return;

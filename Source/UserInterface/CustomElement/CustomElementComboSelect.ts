@@ -37,18 +37,18 @@ namespace FudgeUserInterface {
       this.input.addEventListener(EVENT.FOCUS, this.hndFocus);
       this.input.addEventListener(EVENT.INPUT, this.hndInput);
       this.input.addEventListener(EVENT.KEY_UP, this.hndKey);
+      this.input.addEventListener(EVENT.CHANGE, this.hndChange);
       this.appendChild(this.input);
 
       this.button = document.createElement("button");
       this.button.addEventListener(EVENT.CLICK, this.hndClick);
-      this.button.hidden = true;
+      this.button.style.visibility = "hidden";
+
       this.button.classList.add("btn-subtle", "icon", "clear", "before");
       this.appendChild(this.button);
 
-      this.addEventListener(EVENT.CHANGE, this.hndChange);
-
       if (this.value)
-        this.setMutatorValue(this.value);
+        this.setValue(this.value);
     }
 
     public getMutatorValue(): unknown {
@@ -60,16 +60,27 @@ namespace FudgeUserInterface {
       if (this.input == document.activeElement)
         return;
 
-      const value: string = _value ? _value.name ?? _value.toString() : "";
-      const button: HTMLButtonElement = this.querySelector("button");
-      button.hidden = !value;
+      this.setValue(_value);
+    }
+
+    public setValue(_value: { name?: string } | string): void {
+      let value: string;
+      if (typeof _value == "string")
+        value = _value;
+      else if (!_value)
+        value = "";
+      else 
+        value = _value.name ?? _value.toString();
+
+      this.button.style.visibility = value ? "visible" : "hidden";
       this.input.value = value;
     }
 
     private hndClick = (_event: MouseEvent): void => {
       this.input.value = "";
-      this.button.hidden = true;
-      this.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
+      this.button.style.visibility = "visible";
+
+      this.input.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
     };
 
     private hndFocus = (_event: FocusEvent): void => {
@@ -83,7 +94,7 @@ namespace FudgeUserInterface {
     };
 
     private hndInput = (_event: Event): void => {
-      this.button.hidden = !(_event.target as HTMLInputElement).value;
+      this.button.style.visibility = (_event.target as HTMLInputElement).value ? "visible" : "hidden";
       _event.stopPropagation();
     };
 
@@ -94,8 +105,8 @@ namespace FudgeUserInterface {
     private hndChange = async (_event: Event): Promise<void> => {
       const options: Record<string, unknown> = this.getOptions();
 
-      if (this.input.value != "" && !Reflect.has(options, this.input.value)) {
-        this.setMutatorValue(this.value);
+      if (this.input.value != "" && (!options || !Reflect.has(options, this.input.value))) {
+        this.setValue(this.value);
         return;
       }
 

@@ -292,9 +292,9 @@ dialog {
   border: 1px solid var(--color-bright);
   color: var(--color-text);
   box-shadow: 0px 0px 10px 5px var(--color-background-main);
-  top: 50%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-50%);
+  position: fixed;
+  inset: 0;
+  margin: auto;
   z-index: 1000;
   padding: 2em;
   user-select: none;
@@ -372,11 +372,10 @@ button:active {
   position-anchor: --property;
   right: anchor(right);
   top: anchor(top);
-  margin-right: 1em;
 }
 
 *[view] .property-menu {
-  right: anchor(--view right);
+  right: calc(anchor(--view right) + 1em); /*  */
 }
 
 /* menu */
@@ -396,6 +395,7 @@ button:active {
   border: none;
 
   box-sizing: border-box;
+  overflow-y: hidden;
   background: var(--color-background-content);
   outline: 1px solid var(--color-medium);
   outline-offset: -1px;

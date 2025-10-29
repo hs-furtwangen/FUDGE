@@ -109,6 +109,7 @@ declare namespace FudgeUserInterface {
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
         static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.PropertyCreateOptionsGetter, _getAssignOptions?: ƒ.PropertyAssignOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
+        static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean): Menu;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -242,6 +243,9 @@ declare namespace FudgeUserInterface {
         setMutatorValue(_value: {
             name?: string;
         }): void;
+        setValue(_value: {
+            name?: string;
+        } | string): void;
         private hndClick;
         private hndFocus;
         private hndInput;
@@ -553,7 +557,6 @@ declare namespace FudgeUserInterface {
         private hndToggle;
         private hndFocus;
         private hndKey;
-        private addPropertyMenu;
     }
 }
 declare namespace FudgeUserInterface {

@@ -32,9 +32,6 @@ namespace FudgeUserInterface {
     }
 
     public setContent(_content: HTMLDivElement): void {
-      for (let child of _content.children as HTMLCollectionOf<HTMLElement>)
-        this.addPropertyMenu(child);
-
       this.replaceChild(_content, this.content);
       this.content = _content;
     }
@@ -137,55 +134,6 @@ namespace FudgeUserInterface {
       if (!passEvent)
         _event.stopPropagation();
     };
-
-    private addPropertyMenu(_item: HTMLElement): void {
-      const type: string = _item.getAttribute("type");
-
-      const btnCreate: HTMLButtonElement = document.createElement("button");
-      btnCreate.classList.add("menu-item", "icon", "construct", "before");
-      btnCreate.innerText = "New...";
-      btnCreate.title = `Create a new ${type}`;
-
-      const menuCreate: Menu = new Menu("New...");
-      menuCreate.btnToggle.classList.add("menu-item", "icon", "construct", "before");
-      menuCreate.btnToggle.title = `Create a new ${type}`;
-
-      const menuAssign: Menu = new Menu("Assign...")
-      menuAssign.btnToggle.classList.add("menu-item", "icon", "assign", "before");
-      menuAssign.btnToggle.title = `Assign an existing ${type}`;
-      menuAssign.hidden = !_item.hasAttribute("assignable");
-
-      const btnClear: HTMLButtonElement = document.createElement("button");
-      btnClear.classList.add("menu-item", "icon", "clear", "before");
-      btnClear.innerText = "Clear";
-      btnClear.title = `Set to <undefined>`;
-
-      const menu: Menu = new Menu("", _item.hasAttribute("creatable") ? menuCreate : btnCreate, menuAssign, btnClear);
-      menu.classList.add("property-menu");
-      menu.btnToggle.classList.add("btn-subtle", "icon", "actions", "before");
-
-      _item.prepend(menu);
-      _item.classList.add("property", "property-anchor");
-
-      const selectCreate: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: type, action: "create", placeholder: `🔍︎ Select type...` });
-      selectCreate.removeAttribute("key");
-      menuCreate.addItem(selectCreate);
-
-      const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: type, action: "assign", placeholder: `🔍︎ Select instance...` });
-      selectAssign.removeAttribute("key");
-      menuAssign.addItem(selectAssign);
-
-      btnClear.addEventListener(EVENT.CLICK, _event => {
-        _item.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
-        menu.close();
-      });
-
-      btnCreate.addEventListener(EVENT.CLICK, _event => {
-        _item.dispatchEvent(new Event(EVENT.CREATE_VALUE, { bubbles: true }));
-        menu.close();
-      });
-
-    }
   }
 
   customElements.define("ui-details", Details, { extends: "details" });

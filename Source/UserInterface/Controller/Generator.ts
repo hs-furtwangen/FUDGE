@@ -5,7 +5,7 @@ namespace FudgeUserInterface {
    * Static class generating UI-domElements from the information found in mutables and mutators
    */
   export class Generator {
-    
+
     /**
      * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
@@ -95,14 +95,14 @@ namespace FudgeUserInterface {
       if (!element)
         element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
 
+      if (!element && _getAssignOptions && !_getCreateOptions)
+        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name, action: "assign" }, value, _getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
+
       if (!element && mutant == null) {
         const mutable: object = _parentMutable ?? _mutable;
         const key: string = _parentKey ?? _key;
         element = new CustomElementInitializer({ key: _key, label: _key, type: type }, _getCreateOptions?.call(mutable, key), _getAssignOptions?.call(mutable, key));
       }
-
-      if (!element && _getAssignOptions)
-        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name, action: "assign" }, value, _getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
 
       if (!element)
         element = new CustomElementOutput({ key: _key, label: _key, type: type, value: value?.toString() });
@@ -112,13 +112,76 @@ namespace FudgeUserInterface {
         return null;
       }
 
-      if (_getCreateOptions && !isArray)
-        element.setAttribute("creatable", "");
-
-      if (_getAssignOptions && !isArray)
-        element.setAttribute("assignable", "");
+      if (element) {
+        element.classList.add("property", "property-anchor");
+        element.prepend(Generator.createInterfaceElementMenu(type, !!_getCreateOptions, !!_getAssignOptions));
+      }
 
       return element;
+    }
+
+    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean): Menu {
+      const menu: Menu = new Menu("");
+      menu.classList.add("property-menu");
+      menu.btnToggle.classList.add("btn-subtle", "icon", "actions", "before");
+
+      if (_createOptions) {
+        const menuCreate: Menu = new Menu("New...");
+        menuCreate.btnToggle.classList.add("menu-item", "icon", "construct", "before");
+        menuCreate.btnToggle.title = `Create a new ${_type}`;
+        menu.addItem(menuCreate);
+
+        const selectCreate: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "create", placeholder: `🔍︎ Select type...` });
+        selectCreate.removeAttribute("key");
+        selectCreate.addEventListener(EVENT.CHANGE, _event => {
+          selectCreate.setValue("");
+          menu.close();
+        });
+        menuCreate.addItem(selectCreate);
+      } else {
+        const btnCreate: HTMLButtonElement = document.createElement("button");
+        btnCreate.classList.add("menu-item", "icon", "construct", "before");
+        btnCreate.innerText = "New...";
+        btnCreate.title = `Create a new ${_type}`;
+        menu.addItem(btnCreate);
+
+        btnCreate.addEventListener(EVENT.CLICK, _event => {
+          menu.close();
+          btnCreate.dispatchEvent(new Event(EVENT.CREATE_VALUE, { bubbles: true }));
+        });
+      }
+
+      if (_assignOptions) {
+        const menuAssign: Menu = new Menu("Assign...")
+        menuAssign.btnToggle.classList.add("menu-item", "icon", "assign", "before");
+        menuAssign.btnToggle.title = `Assign an existing ${_type}`;
+        menu.addItem(menuAssign);
+
+        const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "assign", placeholder: `🔍︎ Select instance...` });
+        selectAssign.removeAttribute("key");
+        selectAssign.addEventListener(EVENT.CHANGE, _event => {
+          menu.close();
+          selectAssign.setValue("");
+        });
+        menuAssign.addItem(selectAssign);
+      }
+
+      const btnClear: HTMLButtonElement = document.createElement("button");
+      btnClear.classList.add("menu-item", "icon", "clear", "before");
+      btnClear.innerText = "Clear";
+      btnClear.title = `Set to <undefined>`;
+      menu.addItem(btnClear);
+
+      btnClear.addEventListener(EVENT.CLICK, _event => {
+        btnClear.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
+        menu.close();
+      });
+
+      menu.addEventListener(EVENT.CHANGE, _event => {
+        menu.close();
+      });
+
+      return menu;
     }
 
     /**
