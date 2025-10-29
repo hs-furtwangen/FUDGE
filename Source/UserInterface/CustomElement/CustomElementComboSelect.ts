@@ -102,7 +102,7 @@ namespace FudgeUserInterface {
       this.value = options[this.input.value];
       switch (this.getAttribute("action")) {
         case "create":
-          this.dispatchEvent(new CustomEvent(EVENT.INITIALIZE_VALUE, { bubbles: true, detail: { type: this.value } }));
+          this.dispatchEvent(new CustomEvent(EVENT.CREATE_VALUE, { bubbles: true, detail: { type: this.value } }));
           break;
         case "assign":
           this.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: this.value } }));

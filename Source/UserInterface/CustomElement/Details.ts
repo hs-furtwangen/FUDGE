@@ -181,7 +181,7 @@ namespace FudgeUserInterface {
       });
 
       btnCreate.addEventListener(EVENT.CLICK, _event => {
-        _item.dispatchEvent(new Event(EVENT.INITIALIZE_VALUE, { bubbles: true }));
+        _item.dispatchEvent(new Event(EVENT.CREATE_VALUE, { bubbles: true }));
         menu.close();
       });
 

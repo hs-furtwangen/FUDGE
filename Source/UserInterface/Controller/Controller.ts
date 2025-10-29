@@ -24,7 +24,7 @@ namespace FudgeUserInterface {
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
       this.domElement.addEventListener(EVENT.REFRESH_OPTIONS, this.refreshOptions);
       this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
-      this.domElement.addEventListener(EVENT.INITIALIZE_VALUE, this.initializeValue);
+      this.domElement.addEventListener(EVENT.CREATE_VALUE, this.createValue);
     }
 
     /**
@@ -175,30 +175,29 @@ namespace FudgeUserInterface {
       return closestElement;
     }
 
-    public static initializeValue(_mutable: object, _key: string, _type: Function | Record<string, unknown>): void {
-      const type: Function | Record<string, unknown> = _type ?? ƒ.Metadata.getPropertyDescriptor(_mutable, _key)?.type;
+    public static createValue(_type: Function | Record<string, unknown>): unknown {
       let value: unknown;
 
-      if (type == Boolean || type == Number || type == String)
-        value = type();
-      else if (typeof type == "object")
-        value = type[Object.getOwnPropertyNames(type).find(_name => !/^\d+$/.test(_name))]; // for enum get the first non numeric key
-      else if (typeof type == "function") {
+      if (_type == Boolean || _type == Number || _type == String)
+        value = _type();
+      else if (typeof _type == "object")
+        value = _type[Object.getOwnPropertyNames(_type).find(_name => !/^\d+$/.test(_name))]; // for enum get the first non numeric key
+      else if (typeof _type == "function") {
         // if (!ƒ.isMutable(_type.prototype))
         // return;
 
         try {
-          value = Reflect.construct(type, []);
+          value = Reflect.construct(_type, []);
         } catch {
-          value = type();
+          value = _type();
         }
         // if (ƒ.isSerializableResource(value)) {
         //   ƒ.Project.deregister(value);
         //   delete value.idResource;
         // }
-
-        Reflect.set(_mutable, _key, value);
       }
+
+      return value;
     }
 
     public static copyValue<T = unknown>(_value: T): T | Promise<T> {
@@ -326,13 +325,10 @@ namespace FudgeUserInterface {
       Reflect.set(mutable, key, incoming);
     };
 
-    protected initializeValue = (_event: Event): void => {
+    protected createValue = (_event: Event): void => {
       const path: string[] = this.getMutatorPath(_event);
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
-
-      const current: unknown = Reflect.get(mutable, key);
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
 
       let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
 
@@ -349,7 +345,15 @@ namespace FudgeUserInterface {
       if (descriptor.kind == "function" || descriptor.valueDescriptor?.kind == "function")
         return;
 
-      Controller.initializeValue(mutable, key, type);
+      const current: unknown = Reflect.get(mutable, key);
+      const incoming: unknown = Controller.createValue(type);
+
+      if (current == incoming)
+        return;
+
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
+
+      Reflect.set(mutable, key, incoming);
     };
 
     protected refreshOptions = (_event: Event): void => {

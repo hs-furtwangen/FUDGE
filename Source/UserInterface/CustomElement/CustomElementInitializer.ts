@@ -76,7 +76,7 @@ namespace FudgeUserInterface {
       this.dispatchEvent(new CustomEvent(EVENT.REFRESH_OPTIONS, { bubbles: true, detail: { action: "create" } }));
 
       if (!this.options) {
-        this.dispatchEvent(new Event(EVENT.INITIALIZE_VALUE, { bubbles: true }));
+        this.dispatchEvent(new Event(EVENT.CREATE_VALUE, { bubbles: true }));
         return;
       }
 
@@ -123,7 +123,7 @@ namespace FudgeUserInterface {
 
       if (!this.btnCreate.isConnected) {
         const constructor: new () => unknown = <new () => unknown>this.options[this.input.value];
-        this.dispatchEvent(new CustomEvent(EVENT.INITIALIZE_VALUE, { bubbles: true, detail: { type: constructor } }));
+        this.dispatchEvent(new CustomEvent(EVENT.CREATE_VALUE, { bubbles: true, detail: { type: constructor } }));
       } else if (!this.btnSelect.isConnected) {
         const value: unknown = this.options[this.input.value];
         this.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: value } }));

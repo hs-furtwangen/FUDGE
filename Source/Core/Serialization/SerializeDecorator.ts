@@ -178,10 +178,10 @@ namespace FudgeCore {
         default:
           if (_function)
             strategy = "function";
-          else if (isSerializableResource(type.prototype))
-            strategy = "resource";
           else if (_reconstruct)
             strategy = "reconstruct";
+          else if (isSerializableResource(type.prototype))
+            strategy = "resource";
           else if (isSerializable(type.prototype))
             strategy = "serializable";
           break;

@@ -58,7 +58,7 @@ declare namespace FudgeUserInterface {
          * Performs a breadth-first search on the given _domElement for an element with the given key.
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
-        static initializeValue(_mutable: object, _key: string, _type: Function | Record<string, unknown>): void;
+        static createValue(_type: Function | Record<string, unknown>): unknown;
         static copyValue<T = unknown>(_value: T): T | Promise<T>;
         /**
          * Creates a shallow **structural signature** string for the given object.
@@ -86,7 +86,7 @@ declare namespace FudgeUserInterface {
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
         protected setValue: (_event: Event) => void;
-        protected initializeValue: (_event: Event) => void;
+        protected createValue: (_event: Event) => void;
         protected refreshOptions: (_event: Event) => void;
         protected refresh: (_event: Event) => void;
         protected getMutatorPath(_event: Event): string[];
@@ -976,6 +976,6 @@ declare namespace FudgeUserInterface {
         SAVE_HISTORY = "saveHistory",
         REFRESH_OPTIONS = "refreshOptions",
         SET_VALUE = "setValue",
-        INITIALIZE_VALUE = "initializeValue"
+        CREATE_VALUE = "initializeValue"
     }
 }

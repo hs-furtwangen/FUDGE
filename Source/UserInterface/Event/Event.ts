@@ -45,6 +45,6 @@ namespace FudgeUserInterface {
     SAVE_HISTORY = "saveHistory",
     REFRESH_OPTIONS = "refreshOptions",
     SET_VALUE = "setValue",
-    INITIALIZE_VALUE = "initializeValue"
+    CREATE_VALUE = "initializeValue"
   }
 }
