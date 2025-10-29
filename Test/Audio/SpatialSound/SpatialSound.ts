@@ -87,7 +87,7 @@ namespace AudioSpace {
     // setup event handling
     canvas.addEventListener("pointermove", hndPointerMove);
     canvas.addEventListener("wheel", hndWheelMove);
-    canvas.addEventListener("mousedown", canvas.requestPointerLock);
+    // canvas.addEventListener("mousedown", canvas.requestPointerLock);
     canvas.addEventListener("mouseup", () => document.exitPointerLock());
     document.addEventListener("keydown", () => canvas.focus());
 

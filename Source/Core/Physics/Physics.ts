@@ -1,5 +1,3 @@
-/// <reference path="../../../Distribution/OimoPhysics.d.ts"/>
-
 namespace FudgeCore {
   /**
     * Manages the OIMO physics engine for FUDGE. Multiple instances may be created, one is active at a time.

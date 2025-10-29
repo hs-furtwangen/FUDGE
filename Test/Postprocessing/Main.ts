@@ -26,7 +26,7 @@ namespace PostprocessingTest {
     viewport.initialize("InteractiveViewport", graph, cmpCamera, canvas);
     ƒ.Debug.log("Viewport:", viewport);
     // hide the cursor when interacting, also suppressing right-click menu
-    canvas.addEventListener("mousedown", canvas.requestPointerLock);
+    // canvas.addEventListener("mousedown", canvas.requestPointerLock);
     canvas.addEventListener("mouseup", function () { document.exitPointerLock(); });
     // make the camera interactive (complex method in ƒAid)
     ƒAid.Viewport.expandCameraToInteractiveOrbit(viewport);

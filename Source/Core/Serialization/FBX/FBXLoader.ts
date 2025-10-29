@@ -208,7 +208,7 @@ namespace FudgeCore {
         texture.image = new Image();
         texture.image.onload = () => _resolve(texture);
         texture.image.onerror = _reject;
-        texture.image.src = URL.createObjectURL(new Blob([videoFBX.Content], { type: "image/png" }));
+        texture.image.src = URL.createObjectURL(new Blob([<BlobPart>videoFBX.Content], { type: "image/png" }));
         this.#textures[_index] = texture;
         // TODO: get and set mipmap information ???
       });

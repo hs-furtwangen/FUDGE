@@ -1,3 +1,5 @@
+/// <reference path="OimoPhysics.d.ts" preserve="true" />
+/// <reference types="webxr" preserve="true" />
 declare namespace FudgeCore {
     /**
      * Base class for the different DebugTargets, mainly for technical purpose of inheritance

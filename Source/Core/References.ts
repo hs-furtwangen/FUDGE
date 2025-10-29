@@ -1,3 +1,5 @@
+/// <reference types="webxr" preserve="true" />
+/// <reference path="../../Distribution/OimoPhysics.d.ts" preserve="true"/>
 /// <reference path="Debug/DebugTarget.ts"/>
 /// <reference path="Debug/Debug.ts"/>
 // / <reference path="Time/Time.ts"/>

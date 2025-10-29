@@ -16,9 +16,9 @@ namespace AudioSounds {
     cmpAudio.connect(true);
     cmpAudio.volume = 30;
 
-    function makeDistortionCurve(amount: number = 50): Float32Array {
+    function makeDistortionCurve(amount: number = 50): Float32Array<ArrayBuffer> {
       let samples: number = 44100;
-      let curve: Float32Array = new Float32Array(samples);
+      let curve: Float32Array<ArrayBuffer> = new Float32Array(samples);
       let deg: number = Math.PI / 180;
       let x: number;
       for (let i: number = 0; i < samples; ++i) {
