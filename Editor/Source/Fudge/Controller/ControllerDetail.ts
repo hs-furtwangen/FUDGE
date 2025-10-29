@@ -61,20 +61,17 @@ namespace Fudge {
       if (key == null)
         return;
 
-      const descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
+      let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
+      if (!descriptor) { // drop must be on collection
+        if (key == "length") // can't drop on array length
+          return;
 
-      const parentMutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
-      const parentKey: string = path[path.length - 2];
-      const parentDescriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(parentMutable, parentKey);
-      if (parentDescriptor?.type == Array && isNaN(parseInt(key))) // only drop on number keys for array
-        return;
+        const parent: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+        const parentKey: string = path[path.length - 2];
+        descriptor = ƒ.Metadata.getPropertyDescriptor(parent, parentKey).valueDescriptor;
+      }
 
-      let type: Object | Function;
-      if (parentDescriptor?.valueDescriptor)
-        type = parentDescriptor.valueDescriptor.type; // for collection get type of the collection elements
-      else
-        type = descriptor.type;
-
+      let type: unknown = descriptor.type; 
       let sources: Object[] = ƒui.Clipboard.dragDrop.get();
       if (!type || (type && typeof type == "function" && !(sources[0] instanceof type))) // check if 
         return;
