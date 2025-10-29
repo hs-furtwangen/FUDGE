@@ -116,35 +116,6 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark properties of a class for reference-based serialization.
-   * See {@link serialize} decorator for additional information.
-   * 
-   * - {@link SerializableResource}s will be serialized via their resource id and fetched from the project when deserialized.
-   * - {@link Node}s will be serialized as a path through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. Node references can only be serialized from a {@link Component}. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
-   * 
-   * **Example:**
-   * ```typescript
-   * import f = FudgeCore;
-   *
-   * export class MyScript extends f.ComponentScript {
-   *   @f.serializeReference(f.Material) // serialize a reference to a material in the project
-   *   public resource: f.Material;
-   *
-   *   @f.serializeReference(f.Node) // serialize a reference to a node in the hierarchy
-   *   public reference: f.Node;
-   * }
-   * ```
-   * 
-   * @author Jonas Plotzky, HFU, 2025
-   */
-  export function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-  export function serializeReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
-
-  export function serializeReference(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
-    return serializeFactory(_typePrimary, _typeSecondary, false, true);
-  }
-
-  /**
    * Decorator to mark properties of a class for serialization with type information and polymorphic reconstruction.
    * The object will be serialized with type information and reconstructed from scratch during deserialization.
    * 
@@ -176,13 +147,13 @@ namespace FudgeCore {
   export function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
 
   export function serializeReconstruct(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
-    return serializeFactory(_typePrimary, _typeSecondary, false, false, true);
+    return serializeFactory(_typePrimary, _typeSecondary, false, true);
   }
 
   /**
    * @internal
    */
-  export function serializeFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
+  export function serializeFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return (_value, _context) => { // could cache the decorator function for each class
       if (_context.static || _context.private)
         throw new Error("@serialize decorator can only serialize public instance members.");
@@ -197,16 +168,23 @@ namespace FudgeCore {
       let strategy: Metadata["serializables"][string];
 
       const type: Function | Record<string, unknown> = _typeSecondary ?? _typePrimary;
-      if (_function) {
-        strategy = "function";
-      } else if (_reference) {
-        strategy = type == Node ? "node" : "resource";
-      } else if (type == String || type == Number || type == Boolean || type == Object || typeof type == "object") { // primitive, plain object and enum 
-        strategy = "primitive";
-      } else if (_reconstruct) {
-        strategy = "reconstruct";
-      } else if (isSerializable(type.prototype)) {
-        strategy = "serializable";
+      switch (type) {
+        case Boolean: case Number: case String:
+          strategy = "primitive";
+          break;
+        case Node:
+          strategy = "node";
+          break;
+        default:
+          if (_function)
+            strategy = "function";
+          else if (isSerializableResource(type.prototype))
+            strategy = "resource";
+          else if (_reconstruct)
+            strategy = "reconstruct";
+          else if (isSerializable(type.prototype))
+            strategy = "serializable";
+          break;
       }
 
       if (_typeSecondary)
@@ -244,7 +222,8 @@ namespace FudgeCore {
           _serialization[key] = (<Serializable>value).serialize();
           break;
         case "resource":
-          _serialization[key] = (<SerializableResource>value).idResource;
+          const idResource: string = (<SerializableResource>value).idResource;
+          _serialization[key] = Project.hasResource(idResource) ? idResource : (<Serializable>value).serialize();
           break;
         case "node":
           _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, <Node>value);
@@ -307,7 +286,14 @@ namespace FudgeCore {
             await promise;
           break;
         case "resource":
-          Reflect.set(_instance, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
+          if (typeof value == "string") {
+            Reflect.set(_instance, key, Project.resources[value] ?? await Project.getResource(value)); // await is costly so first try to get resource directly
+          } else {
+            const promise: Promise<Serializable> | Serializable = (<Serializable>Reflect.get(_instance, key)).deserialize(value);
+            if (promise instanceof Promise)
+              await promise;
+            break;
+          }
           break;
         case "node":
         case "nodeArray":

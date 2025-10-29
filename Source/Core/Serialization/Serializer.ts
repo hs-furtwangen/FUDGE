@@ -98,10 +98,15 @@ namespace FudgeCore {
      * @param _object An object to serialize, implementing the {@link Serializable} interface
      */
     public static serialize(_object: Serializable): Serialization {
-      // TODO: save the namespace with the constructors name
       const path: string = this.getFunctionPath(_object);
       return { [path]: _object.serialize() };
     }
+
+    // public static serializeNew(_object: Serializable): Serialization {
+    //   const serialization: Serialization = _object.serialize();
+    //   serialization["@type"] = this.getFunctionPath(_object);
+    //   return serialization;
+    // }
 
     /**
      * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,

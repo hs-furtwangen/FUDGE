@@ -44,7 +44,7 @@ div[panel] .lm_close {
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: var(--color-medium) var(--color-background-content);
-  scrollbar-gutter: stable;
+  /* scrollbar-gutter: stable; */
   anchor-name: --view;
   anchor-scope: --view;
 }

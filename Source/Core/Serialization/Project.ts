@@ -7,15 +7,23 @@ namespace FudgeCore {
     PENDING, READY, ERROR
   }
 
-  /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
+  /** 
+   * A serializable implementing an id and a name so it can be managed by the {@link Project}.
+   */
   export interface SerializableResource extends Serializable {
     name: string;
     idResource: string;
     readonly type: string;
+
+    /** 
+     * Discriminant getter used to identify resources at runtime.
+     * Implemented as a getter so the type can be discerned from a class prototype.
+     */
+    get isResource(): true;
   }
 
   export function isSerializableResource(_object: Object): _object is SerializableResource {
-    return isSerializable(_object) && Reflect.has(_object, "idResource") && Reflect.has(_object, "name") && Reflect.has(_object, "type");
+    return isSerializable(_object) && (<SerializableResource>_object).isResource;
   }
 
   /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */

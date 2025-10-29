@@ -68,6 +68,10 @@ namespace FudgeCore {
 
         this.#properties = _properties;
       }
+      
+      public get isResource(): true {
+        return true;
+      }
 
       /**
        * Returns the {@link MaterialProperty} of the given class, if it exists in the material's properties.

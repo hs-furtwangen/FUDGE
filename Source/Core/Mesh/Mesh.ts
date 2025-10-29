@@ -57,12 +57,16 @@ namespace FudgeCore {
 
       return this.ƒbox;
     }
-    
+
     public get radius(): number {
       if (this.ƒradius == null)
         this.ƒradius = this.createRadius();
 
       return this.ƒradius;
+    }
+
+    public get isResource(): true {
+      return true;
     }
 
     /**

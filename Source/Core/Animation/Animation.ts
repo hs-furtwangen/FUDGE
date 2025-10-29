@@ -181,6 +181,10 @@ namespace FudgeCore {
       this.clearCache();
     }
 
+    public get isResource(): true {
+      return true;
+    }
+
     /**
      * Clear this animations cache.
      */
@@ -337,7 +341,7 @@ namespace FudgeCore {
       this.calculateTotalTime();
       return this;
     }
-    
+
     /**
      * Traverses an AnimationStructure and returns the Serialization of said Structure.
      * @param _structure The Animation Structure at the current level to transform into the Serialization.

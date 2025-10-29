@@ -8,7 +8,7 @@ namespace FudgeCore {
   /** An object describing the configuration of a specific property. */
   export interface MetaPropertyDescriptor {
     /** The type of the property. */
-    type?: Function | Record<string, unknown>;
+    type: Function | Record<string, unknown>;
 
     /** The kind of the property. */
     kind: "primitive" | "collection" | "object" | "enum" | "function";
@@ -19,7 +19,7 @@ namespace FudgeCore {
     /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
     valueDescriptor?: MetaPropertyDescriptor;
 
-    /** Options for assignment (selectable values/instances). Use the {@link select} decorator to add assign options. */
+    /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
     getAssignOptions?: PropertyAssignOptionsGetter;
 
     /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */

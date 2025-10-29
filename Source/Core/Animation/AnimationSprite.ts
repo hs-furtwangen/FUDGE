@@ -32,7 +32,7 @@ namespace FudgeCore {
     /**
      * The spritesheet texture
      */
-    @editReference(Texture)
+    @edit(Texture)
     public get texture(): Texture {
       return this.#texture;
     }

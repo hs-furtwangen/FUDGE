@@ -18,7 +18,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
 
     @order(1)
-    @editReference(ParticleSystem)
+    @edit(ParticleSystem)
     public particleSystem: ParticleSystem;
 
     /** When disabled try enabling {@link ComponentMaterial.sortForAlpha} */

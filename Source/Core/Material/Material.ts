@@ -20,7 +20,7 @@ namespace FudgeCore {
     private shader: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
 
-    public constructor(_name: string, _shader?: typeof Shader, _coat?: Coat) {
+    public constructor(_name: string = Material.name, _shader?: typeof Shader, _coat?: Coat) {
       super();
       this.name = _name;
       this.shader = _shader;
@@ -53,6 +53,10 @@ namespace FudgeCore {
           else
             throw (new Error("Shader and coat don't match"));
       this.#coat = _coat;
+    }
+
+    public get isResource(): true {
+      return true;
     }
 
     /**

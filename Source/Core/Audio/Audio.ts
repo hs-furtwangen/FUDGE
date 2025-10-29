@@ -31,6 +31,10 @@ namespace FudgeCore {
       return this.ready;
     }
 
+    public get isResource(): true {
+      return true;
+    }
+
     /**
      * Asynchronously loads the audio (mp3) from the given url
      */
@@ -48,6 +52,7 @@ namespace FudgeCore {
       this.dispatchEvent(event);
       RecyclableEvent.store(event);
     }
+
 
 
     public serialize(): Serialization {

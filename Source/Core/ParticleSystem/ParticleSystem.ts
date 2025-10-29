@@ -125,6 +125,10 @@ namespace FudgeCore {
       this.#mapShaderToShaderParticleSystem.clear();
     }
 
+    public get isResource(): true {
+      return true;
+    }
+
     /**
      * Returns a corresponding {@link ShaderParticleSystem} for the given shader universal derivate.
      * Used by the render system to render the particle system.

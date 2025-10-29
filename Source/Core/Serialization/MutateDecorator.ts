@@ -28,7 +28,6 @@ namespace FudgeCore {
   // primitive type array
   export function mutate<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
 
-
   // object type
   export function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
   // object type array
@@ -50,7 +49,7 @@ namespace FudgeCore {
    * If the given `_type` has an iterable property `subclasses`, a combo select containing the subclasses will be displayed in the editor.
    *
    * **Side effects:**
-   * - Invokes the {@link select} decorator with default options.
+   * - Invokes the {@link assign} decorator with default options.
    * 
    * @author Jonas Plotzky, HFU, 2025
    */
@@ -62,28 +61,9 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark properties of a class for reference-based mutation.
-   * See {@link mutate} for additional information.
-   * 
-   * **Side effects:**
-   * - Invokes the {@link select} decorator with default options.
-   */
-  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-  export function mutateReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
-
-  export function mutateReference(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
-    return mutateFactory(_typePrimary, _typeSecondary, false, true);
-  }
-
-  const mapTypeToCreate: WeakMap<WeakKey, () => unknown> = new WeakMap();
-  mapTypeToCreate.set(Number, Number);
-  mapTypeToCreate.set(Boolean, Boolean);
-  mapTypeToCreate.set(String, String);
-
-  /**
    * @internal
    */
-  export function mutateFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
+  export function mutateFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return (_value, _context) => {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
@@ -95,27 +75,33 @@ namespace FudgeCore {
       if (!descriptors)
         metadata.propertyDescriptors = descriptors = Object.create(metadata.propertyDescriptors ?? null);
 
-      descriptors[key] = createDescriptor(_typePrimary, _typeSecondary, _function, _reference);
+      descriptors[key] = createDescriptor(_typePrimary, _typeSecondary, _function);
 
       const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
       keys.push(key);
     };
   }
 
-  function createDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reference?: boolean): MetaPropertyDescriptor {
+  function createDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
     const descriptor: MetaPropertyDescriptor = Object.create(null);
     descriptor.type = _typePrimary;
 
-    if (_function && !_typeSecondary)
-      descriptor.kind = "function";
-    else if (_typePrimary === Array)
-      descriptor.kind = "collection";
-    else if (_typePrimary == Boolean || _typePrimary == Number || _typePrimary == String)
-      descriptor.kind = "primitive";
-    else if (typeof _typePrimary == "object")
-      descriptor.kind = "enum";
-    else
-      descriptor.kind = "object";
+    switch (_typePrimary) {
+      case Boolean: case Number: case String:
+        descriptor.kind = "primitive";
+        break;
+      case Array: case Set: case Map:
+        descriptor.kind = "collection";
+        break;
+      default:
+        if (_function && !_typeSecondary)
+          descriptor.kind = "function";
+        else if (typeof _typePrimary == "object")
+          descriptor.kind = "enum";
+        else
+          descriptor.kind = "object";
+        break;
+    }
 
     if (!_function) {
       let getCreateOptions: PropertyCreateOptionsGetter;
@@ -126,21 +112,20 @@ namespace FudgeCore {
         descriptor.getCreateOptions = getCreateOptions;
     }
 
-    if (_reference || _function) {
-      let getAssignOptions: PropertyAssignOptionsGetter | undefined;
-      if (_function && (<General>_typePrimary).subclasses)
-        getAssignOptions = getSubclassOptions;
-      else if (_typePrimary === Node)
-        getAssignOptions = getNodeOptions;
-      else
-        getAssignOptions = getResourceOptions;
+    let getAssignOptions: PropertyAssignOptionsGetter | undefined;
+    if (_function && (<General>_typePrimary).subclasses)
+      getAssignOptions = getSubclassOptions;
+    else if (_typePrimary === Node)
+      getAssignOptions = getNodeOptions;
+    else if (isSerializableResource(_typePrimary.prototype))
+      getAssignOptions = getResourceOptions;
 
-      if (getAssignOptions)
-        descriptor.getAssignOptions = getAssignOptions;
-    }
+    if (getAssignOptions)
+      descriptor.getAssignOptions = getAssignOptions;
+
 
     if (_typeSecondary)
-      descriptor.valueDescriptor = createDescriptor(_typeSecondary, undefined, _function, _reference);
+      descriptor.valueDescriptor = createDescriptor(_typeSecondary, undefined, _function);
 
     return descriptor;
   }
@@ -193,7 +178,30 @@ namespace FudgeCore {
   }
   //#endregion
 
-  //#region @select
+  //#region @create
+  /**
+   * Decorator to provide a list of options for creating new instances of a property.
+   * Similar to @select, but for creating new objects instead of selecting existing ones.
+   *
+   * @param _getOptions A function returning a map of display names to constructors or factory functions.
+   */
+  export function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
+    return function (_value: unknown, _context: ClassPropertyDecoratorContext): void {
+      const key: PropertyKey = _context.name;
+      if (typeof key === "symbol") return;
+
+      const metadata: Metadata = _context.metadata;
+      const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+      const descriptor: MetaPropertyDescriptor = descriptors[key];
+      if (descriptor.type == Array)
+        descriptor.valueDescriptor.getCreateOptions = _getOptions;
+      else
+        descriptor.getCreateOptions = _getOptions;
+    };
+  }
+  //#endregion
+
+  //#region @assign
   /**
    * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
    * The provided function will be executed to retrieve the select options.
@@ -234,7 +242,7 @@ namespace FudgeCore {
    * @param _getOptions A function that returns a map of display names to values.
    * @author Jonas Plotzky, HFU, 2025
    */
-  export function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
+  export function assign<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
     return function (_value: unknown, _context: ClassPropertyDecoratorContext): void {
       const key: PropertyKey = _context.name;
       if (typeof key === "symbol")
@@ -279,28 +287,4 @@ namespace FudgeCore {
     return options;
   }
   //#endregion
-
-  //#region @create
-  /**
-   * Decorator to provide a list of options for creating new instances of a property.
-   * Similar to @select, but for creating new objects instead of selecting existing ones.
-   *
-   * @param _getOptions A function returning a map of display names to constructors or factory functions.
-   */
-  export function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
-    return function (_value: unknown, _context: ClassPropertyDecoratorContext): void {
-      const key: PropertyKey = _context.name;
-      if (typeof key === "symbol") return;
-
-      const metadata: Metadata = _context.metadata;
-      const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
-      const descriptor: MetaPropertyDescriptor = descriptors[key];
-      if (descriptor.type == Array)
-        descriptor.valueDescriptor.getCreateOptions = _getOptions;
-      else
-        descriptor.getCreateOptions = _getOptions;
-    };
-  }
-  //#endregion
-
 }

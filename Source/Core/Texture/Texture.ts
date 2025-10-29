@@ -69,6 +69,10 @@ namespace FudgeCore {
       this.wrapDirty = true;
     }
 
+    public get isResource(): true {
+      return true;
+    }
+
     /**
      * Returns the image source of this texture.
      */

@@ -147,8 +147,8 @@ namespace FudgeCore {
     }
 
     @order(2)
-    @select(getConnectOptions)
-    @editReference(Node)
+    @assign(getConnectOptions)
+    @edit(Node)
     protected get connectedChild(): Node {
       return this.#connectedChild;
     }

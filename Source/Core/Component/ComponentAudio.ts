@@ -40,7 +40,7 @@ namespace FudgeCore {
     protected singleton: boolean = false;
 
     @order(2)
-    @editReference(Audio)
+    @edit(Audio)
     private audio: Audio;
     private gain: GainNode;
     private panner: PannerNode;

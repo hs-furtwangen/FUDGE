@@ -18,7 +18,7 @@ namespace Fudge {
     public fileSettings: string = "settings.json";
     public fileStyles: string = "styles.css";
 
-    @ƒ.editReference(ƒ.Graph)
+    @ƒ.edit(ƒ.Graph)
     private graphAutoView: ƒ.Graph;
     // private includeAutoViewScript: boolean = true;
 

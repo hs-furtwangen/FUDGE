@@ -34,6 +34,10 @@ namespace FudgeCore {
         Project.register(this);
       }
 
+      public get isResource(): true {
+        return true;
+      }
+
       public serialize(): SerializationOf<Animation> {
         const serialization: SerializationOf<Animation> = {
           idResource: this.idResource,

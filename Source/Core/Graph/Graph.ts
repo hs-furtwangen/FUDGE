@@ -17,6 +17,10 @@ namespace FudgeCore {
       return this.constructor.name;
     }
 
+    public get isResource(): true {
+      return true;
+    }
+
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       serialization.idResource = this.idResource;

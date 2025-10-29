@@ -481,11 +481,18 @@ declare namespace FudgeCore {
         READY = 1,
         ERROR = 2
     }
-    /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
+    /**
+     * A serializable implementing an id and a name so it can be managed by the {@link Project}.
+     */
     export interface SerializableResource extends Serializable {
         name: string;
         idResource: string;
         readonly type: string;
+        /**
+         * Discriminant getter used to identify resources at runtime.
+         * Implemented as a getter so the type can be discerned from a class prototype.
+         */
+        get isResource(): true;
     }
     export function isSerializableResource(_object: Object): _object is SerializableResource;
     /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
@@ -626,14 +633,14 @@ declare namespace FudgeCore {
     /** An object describing the configuration of a specific property. */
     interface MetaPropertyDescriptor {
         /** The type of the property. */
-        type?: Function | Record<string, unknown>;
+        type: Function | Record<string, unknown>;
         /** The kind of the property. */
         kind: "primitive" | "collection" | "object" | "enum" | "function";
         /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
         keyDescriptor?: MetaPropertyDescriptor;
         /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
         valueDescriptor?: MetaPropertyDescriptor;
-        /** Options for assignment (selectable values/instances). Use the {@link select} decorator to add assign options. */
+        /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
         getAssignOptions?: PropertyAssignOptionsGetter;
         /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
         getCreateOptions?: PropertyCreateOptionsGetter;
@@ -726,21 +733,12 @@ declare namespace FudgeCore {
      * If the given `_type` has an iterable property `subclasses`, a combo select containing the subclasses will be displayed in the editor.
      *
      * **Side effects:**
-     * - Invokes the {@link select} decorator with default options.
+     * - Invokes the {@link assign} decorator with default options.
      *
      * @author Jonas Plotzky, HFU, 2025
      */
     function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function mutateFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
-    /**
-     * Decorator to mark properties of a class for reference-based mutation.
-     * See {@link mutate} for additional information.
-     *
-     * **Side effects:**
-     * - Invokes the {@link select} decorator with default options.
-     */
-    function mutateReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-    function mutateReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
     /**
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
@@ -756,6 +754,13 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2025
      */
     function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
+    /**
+     * Decorator to provide a list of options for creating new instances of a property.
+     * Similar to @select, but for creating new objects instead of selecting existing ones.
+     *
+     * @param _getOptions A function returning a map of display names to constructors or factory functions.
+     */
+    function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
     /**
      * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
      * The provided function will be executed to retrieve the select options.
@@ -796,14 +801,7 @@ declare namespace FudgeCore {
      * @param _getOptions A function that returns a map of display names to values.
      * @author Jonas Plotzky, HFU, 2025
      */
-    function select<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
-    /**
-     * Decorator to provide a list of options for creating new instances of a property.
-     * Similar to @select, but for creating new objects instead of selecting existing ones.
-     *
-     * @param _getOptions A function returning a map of display names to constructors or factory functions.
-     */
-    function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
+    function assign<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
 }
 declare namespace FudgeCore {
     /**
@@ -902,30 +900,6 @@ declare namespace FudgeCore {
      */
     function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function serializeFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
-    /**
-     * Decorator to mark properties of a class for reference-based serialization.
-     * See {@link serialize} decorator for additional information.
-     *
-     * - {@link SerializableResource}s will be serialized via their resource id and fetched from the project when deserialized.
-     * - {@link Node}s will be serialized as a path through the hierarchy, if found. During deserialization, the path will be unwound to find the instance in the current hierarchy. Node references can only be serialized from a {@link Component}. They will be available ***after*** {@link EVENT.GRAPH_DESERIALIZED} / {@link EVENT.GRAPH_INSTANTIATED} was broadcast through the hierarchy.
-     *
-     * **Example:**
-     * ```typescript
-     * import f = FudgeCore;
-     *
-     * export class MyScript extends f.ComponentScript {
-     *   @f.serializeReference(f.Material) // serialize a reference to a material in the project
-     *   public resource: f.Material;
-     *
-     *   @f.serializeReference(f.Node) // serialize a reference to a node in the hierarchy
-     *   public reference: f.Node;
-     * }
-     * ```
-     *
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    function serializeReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-    function serializeReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for serialization with type information and polymorphic reconstruction.
      * The object will be serialized with type information and reconstructed from scratch during deserialization.
@@ -1067,29 +1041,6 @@ declare namespace FudgeCore {
      */
     function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function editFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
-    /**
-     * Decorator to mark properties of a class for reference-based mutation and serialization.
-     * See {@link mutateReference} and {@link serializeReference} decorators for more information.
-     *
-     * **Example:**
-     * ```typescript
-     * import f = FudgeCore;
-     *
-     * export class MyScript extends f.ComponentScript {
-     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
-     *
-     *   @f.editReference(f.Material) // edit and serialize a reference to a material in the project
-     *   public resource: f.Material;
-     *
-     *   @f.editReference(f.Node) // edit and serialize a reference to a node in the hierarchy
-     *   public reference: f.Node;
-     * }
-     * ```
-     *
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    function editReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-    function editReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
     /**
      * Decorator to mark properties of a class for nested mutation and serialization with type information and polymorphic reconstruction.
      * See {@link serializableReconstruct} for more information.
@@ -1272,6 +1223,7 @@ declare namespace FudgeCore {
         name: string;
         idResource: string;
         constructor(_name?: string, _register?: boolean);
+        get isResource(): true;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
     }
@@ -3916,6 +3868,7 @@ declare namespace FudgeCore {
         set mipmap(_mipmap: MIPMAP);
         get wrap(): WRAP;
         set wrap(_wrap: WRAP);
+        get isResource(): true;
         /**
          * Returns the image source of this texture.
          */
@@ -4018,6 +3971,7 @@ declare namespace FudgeCore {
         get renderMesh(): RenderMesh;
         get boundingBox(): Box;
         get radius(): number;
+        get isResource(): true;
         /**
          * Clears the bounds of this mesh aswell as the buffers of the associated {@link RenderMesh}.
          */
@@ -4104,7 +4058,7 @@ declare namespace FudgeCore {
         name: string;
         idResource: string;
         private shader;
-        constructor(_name: string, _shader?: typeof Shader, _coat?: Coat);
+        constructor(_name?: string, _shader?: typeof Shader, _coat?: Coat);
         /**
          * Returns the currently referenced {@link Coat} instance
          */
@@ -4113,6 +4067,7 @@ declare namespace FudgeCore {
          * Makes this material reference the given {@link Coat} if it is compatible with the referenced {@link Shader}
          */
         set coat(_coat: Coat);
+        get isResource(): true;
         /**
          * Creates a new {@link Coat} instance that is valid for the {@link Shader} referenced by this material
          */
@@ -4202,6 +4157,7 @@ declare namespace FudgeCore {
         constructor(_name?: string, _data?: ParticleData.System);
         get data(): ParticleData.System;
         set data(_data: ParticleData.System);
+        get isResource(): true;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
@@ -4331,6 +4287,7 @@ declare namespace FudgeCore {
         get getLabels(): Enumerator;
         get fps(): number;
         set fps(_fps: number);
+        get isResource(): true;
         /**
          * Clear this animations cache.
          */
@@ -4842,6 +4799,7 @@ declare namespace FudgeCore {
         private ready;
         constructor(_url?: RequestInfo);
         get isReady(): boolean;
+        get isResource(): true;
         /**
          * Asynchronously loads the audio (mp3) from the given url
          */
@@ -6007,6 +5965,7 @@ declare namespace FudgeCore {
             channels: AnimationChannel[];
             eventTrack: AnimationEventTrack;
             constructor(_name?: string, _duration?: number, _channels?: AnimationChannel[], _eventTrack?: AnimationEventTrack);
+            get isResource(): true;
             serialize(): SerializationOf<Animation>;
             deserialize(_serialization: Serialization): Promise<Animation>;
         }
@@ -6524,6 +6483,7 @@ declare namespace FudgeCore {
             get shader(): Shader;
             get properties(): MaterialProperty[];
             set properties(_properties: MaterialProperty[]);
+            get isResource(): true;
             /**
              * Returns the {@link MaterialProperty} of the given class, if it exists in the material's properties.
              */
@@ -6598,6 +6558,7 @@ declare namespace FudgeCore {
         idResource: string;
         constructor(_name?: string);
         get type(): string;
+        get isResource(): true;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         private hndMutate;
