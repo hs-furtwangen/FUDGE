@@ -8450,7 +8450,7 @@ var FudgeCore;
             this.hndEvent = (_event) => {
                 _event.preventDefault();
                 let touchFirst = _event.touches[0];
-                let position = this.calcAveragePosition(_event.touches);
+                let position = _event.touches.length == 0 ? this.posPrev : this.calcAveragePosition(_event.touches);
                 let offset;
                 switch (_event.type) {
                     case "touchstart":
@@ -8461,6 +8461,8 @@ var FudgeCore;
                             this.pinchDistance = pinch.magnitude;
                         }
                         let dispatchLong = (_eventTimer) => {
+                            if (this.moved)
+                                return;
                             this.moved = true;
                             this.target.dispatchEvent(new CustomEvent(EVENT_TOUCH.LONG, {
                                 bubbles: true, detail: { position: position, touches: _event.touches }
@@ -8492,7 +8494,7 @@ var FudgeCore;
                     case "touchmove":
                         this.detectPinch(_event, position);
                         offset = FudgeCore.Vector2.DIFFERENCE(this.posPrev, this.posStart);
-                        this.moved ||= (offset.magnitude < this.radiusTap);
+                        this.moved ||= (offset.magnitude > this.radiusTap);
                         let movement = FudgeCore.Vector2.DIFFERENCE(position, this.posPrev);
                         this.target.dispatchEvent(new CustomEvent(EVENT_TOUCH.MOVE, {
                             bubbles: true, detail: { position: position, touches: _event.touches, offset: offset, movement: movement }

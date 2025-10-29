@@ -1,6 +1,3 @@
-/// <reference types="electron" />
-/// <reference types="node" />
-/// <reference types="../../GoldenLayout/golden-layout" />
 declare namespace Fudge {
     export type ContextMenuCallback = (menuItem: Electron.MenuItem, browserWindow: Electron.BrowserWindow, event: Electron.KeyboardEvent) => void;
     type Subclass<T> = {
