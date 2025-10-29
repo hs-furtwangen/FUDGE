@@ -113,10 +113,7 @@ namespace FudgeUserInterface {
       const mutatorSignature: string = Controller.createSignature(_mutator);
       const elementSignature: string = Controller.signatures.get(_details);
 
-      if (elementSignature == undefined) {
-        Controller.signatures.set(_details, mutatorSignature);
-      } else if (mutatorSignature !== elementSignature) {
-
+      if (mutatorSignature !== elementSignature) {
         // TODO: save and restore details.open state
         // create focus path
         const focus: HTMLElement = <HTMLElement>document.activeElement;
@@ -138,6 +135,7 @@ namespace FudgeUserInterface {
           content = Generator.createInterfaceFromMutable(_mutable, _mutator);
 
         _details.setContent(content);
+
         Controller.signatures.set(_details, mutatorSignature);
 
         // refocus

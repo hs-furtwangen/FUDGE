@@ -99,10 +99,6 @@ declare namespace FudgeUserInterface {
      */
     class Generator {
         /**
-         * Creates a [[Controller]] from a [[FudgeCore.Mutable]] with expandable details or a list
-         */
-        static createController(_mutable: object, _name?: string): Controller;
-        /**
          * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
         static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator): Details;

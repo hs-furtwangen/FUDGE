@@ -5,15 +5,7 @@ namespace FudgeUserInterface {
    * Static class generating UI-domElements from the information found in mutables and mutators
    */
   export class Generator {
-    /**
-     * Creates a [[Controller]] from a [[FudgeCore.Mutable]] with expandable details or a list
-     */
-    public static createController(_mutable: object, _name?: string): Controller {
-      let controller: Controller = new Controller(_mutable, Generator.createDetailsFromMutable(_mutable, _name));
-      controller.updateUserInterface();
-      return controller;
-    }
-
+    
     /**
      * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
@@ -21,9 +13,13 @@ namespace FudgeUserInterface {
       if (!ƒ.isMutable(_mutable))
         return null;
 
-      let name: string = _name || _mutable.constructor.name;
-      let details: Details = new Details(name, _mutable.type);
-      details.setContent(Generator.createInterfaceFromMutable(_mutable, _mutator));
+      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
+      const name: string = _name || _mutable.constructor.name;
+      const details: Details = new Details(name, _mutable.type);
+      details.setContent(Generator.createInterfaceFromMutable(_mutable, mutator));
+
+      Controller.signatures.set(details, Controller.createSignature(mutator));
+
       return details;
     }
 
@@ -32,8 +28,12 @@ namespace FudgeUserInterface {
       if (!Array.isArray(_mutable))
         return null;
 
-      let details: DetailsArray = new DetailsArray(_name);
-      details.setContent(Generator.createInterfaceFromArray(_mutable, _mutator, _parentMutable, _parentKey));
+      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
+      const details: DetailsArray = new DetailsArray(_name);
+      details.setContent(Generator.createInterfaceFromArray(_mutable, mutator, _parentMutable, _parentKey));
+
+      Controller.signatures.set(details, Controller.createSignature(mutator));
+
       return details;
     }
 
