@@ -69,7 +69,7 @@ namespace FudgeUserInterface {
         value = _value;
       else if (!_value)
         value = "";
-      else 
+      else
         value = _value.name ?? _value.toString();
 
       this.button.style.visibility = value ? "visible" : "hidden";
@@ -78,8 +78,7 @@ namespace FudgeUserInterface {
 
     private hndClick = (_event: MouseEvent): void => {
       this.input.value = "";
-      this.button.style.visibility = "visible";
-
+      this.button.style.visibility = "hidden";
       this.input.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
     };
 

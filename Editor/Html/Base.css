@@ -266,14 +266,20 @@ label {
   /* text-shadow: 1px 1px var(--color-background-main) ; */
 }
 
-/* set (details) */
+/* Details */
 
-/* details details {
-  padding-left: 1em;
-} */
+details:not(details details) {
+  anchor-name: --details;
+  anchor-scope: --details;
+}
+
 details>div,
 details>fudge-number {
   padding-left: 1em;
+}
+
+details>div {
+  min-width: max-content;
 }
 
 details.selected>summary {
@@ -375,7 +381,8 @@ button:active {
 }
 
 *[view] .property-menu {
-  right: calc(anchor(--view right) + 1em); /*  */
+  /* anchor to view but adjust for width difference to shift anchor position when the scrollbar appears */
+  right: calc(anchor(--view right) + max(calc(anchor-size(--view width) - anchor-size(--details width) - 0.5em), 0px));
 }
 
 /* menu */
@@ -450,10 +457,6 @@ fudge-comboselect,
 fudge-number,
 fudge-initializer {
   display: flex;
-  align-items: center;
-}
-
-fudge-comboselect {
   align-items: center;
 }
 
