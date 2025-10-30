@@ -61,8 +61,14 @@ namespace Fudge {
             this.gizmosFilter[gizmo] = gizmosFilter[gizmo];
       }
 
-      if (_state["renderContinuously"])
+      if (Reflect.has(_state, "renderContinuously"))
         this.setRenderContinously(_state["renderContinuously"]);
+
+      if (Reflect.has(_state, "selectionOutline")) {
+        const menuItem =  this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY));
+        menuItem.checked = _state["selectionOutline"];
+        this.cmpOutline.activate(_state["selectionOutline"]);
+      }
     }
 
     private get gizmosFilter(): ƒ.Viewport["gizmosFilter"] {
@@ -104,7 +110,6 @@ namespace Fudge {
 
       item = new remote.MenuItem({ label: "Render Continuously", id: String(CONTEXTMENU.RENDER_CONTINUOUSLY), type: "checkbox", click: _callback });
       menu.append(item);
-
 
       item = new remote.MenuItem({ label: "Selection Outline", id: String(CONTEXTMENU.SELECTION_OUTLINE), type: "checkbox", click: _callback, checked: true });
       menu.append(item);
@@ -192,6 +197,7 @@ namespace Fudge {
       let state: ViewState = super.getState();
       state["gizmosFilter"] = this.gizmosFilter;
       state["renderContinuously"] = this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked;
+      state["selectionOutline"] = this.contextMenu.getMenuItemById(String(CONTEXTMENU.SELECTION_OUTLINE)).checked;
       return state;
     }
 
@@ -222,6 +228,8 @@ namespace Fudge {
 
       this.cmpOutline = new ƒ.ComponentOutline([], ƒ.Color.CSS("DeepPink"), ƒ.Color.CSS("DeepPink", 0.3));
       this.cmpOutline.selection = this.#selection;
+      this.cmpOutline.activate(false);
+      this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked = false;
       cmpCamera.node.addComponent(this.cmpOutline);
 
       this.setGraph(null);
