@@ -15,8 +15,11 @@ namespace FudgeCore {
     public static initialize(_renderWebGL: typeof RenderWebGL): void {
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
 
+      let blockSize: number = (16 + 16 + 16 + 3) * 4; // mat4 mtxView, mat4 mtxProjection, mat4 mtxViewProjection, vec3 vctCameraPosition
+      blockSize = Math.ceil(blockSize / 16) * 16; // std140 alignment
+
       RenderWebGLComponentCamera.#buffer = _renderWebGL.assert(crc3.createBuffer());
-      RenderWebGLComponentCamera.#data = new Float32Array(16 + 16 + 16 + 3);
+      RenderWebGLComponentCamera.#data = new Float32Array(new ArrayBuffer(blockSize));
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#buffer);
       crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
