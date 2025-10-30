@@ -65,8 +65,7 @@ namespace Fudge {
         this.setRenderContinously(_state["renderContinuously"]);
 
       if (Reflect.has(_state, "selectionOutline")) {
-        const menuItem =  this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY));
-        menuItem.checked = _state["selectionOutline"];
+        this.contextMenu.getMenuItemById(String(CONTEXTMENU.SELECTION_OUTLINE)).checked = _state["selectionOutline"];
         this.cmpOutline.activate(_state["selectionOutline"]);
       }
     }
@@ -228,8 +227,6 @@ namespace Fudge {
 
       this.cmpOutline = new ƒ.ComponentOutline([], ƒ.Color.CSS("DeepPink"), ƒ.Color.CSS("DeepPink", 0.3));
       this.cmpOutline.selection = this.#selection;
-      this.cmpOutline.activate(false);
-      this.contextMenu.getMenuItemById(String(CONTEXTMENU.RENDER_CONTINUOUSLY)).checked = false;
       cmpCamera.node.addComponent(this.cmpOutline);
 
       this.setGraph(null);
