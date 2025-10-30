@@ -32,12 +32,15 @@ namespace FudgeCore {
       this.blockSize = _blockSize;
       this.blockBinding = _blockBinding;
 
+      this.blockSize = Math.ceil(this.blockSize / 16) * 16; // Round up to 16 bytes for std140 alignment. Actual shader-reported block size may differ across platforms; could query UNIFORM_BLOCK_DATA_SIZE from the shader program after compilation.
+
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
       const alignment: number = crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
       this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment; // round to multiple of alignment
       this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
-      this.data = new Float32Array(this.spaceData * _maxObjects);
-      this.dataUInt = new Uint32Array(this.data.buffer);
+      const buffer: ArrayBuffer = new ArrayBuffer(this.spaceBuffer * _maxObjects);
+      this.data = new Float32Array(buffer);
+      this.dataUInt = new Uint32Array(buffer);
       this.count = 0;
 
       this.buffer = _renderWebGL.assert<WebGLBuffer>(crc3.createBuffer());
