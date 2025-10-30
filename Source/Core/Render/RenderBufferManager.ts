@@ -32,10 +32,19 @@ namespace FudgeCore {
       this.blockSize = _blockSize;
       this.blockBinding = _blockBinding;
 
+      // TODO: Remove debug code once UBOs are verified working
+
+      Debug.log(this.name + " requested block size", _blockSize);
+
       this.blockSize = Math.ceil(this.blockSize / 16) * 16; // Round up to 16 bytes for std140 alignment. Actual shader-reported block size may differ across platforms; could query UNIFORM_BLOCK_DATA_SIZE from the shader program after compilation.
+
+      Debug.log(this.name + " padded block size", this.blockSize);
 
       const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
       const alignment: number = crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+
+      Debug.log(this.name + " UNIFORM_BUFFER_OFFSET_ALIGNMENT", alignment);
+
       this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment; // round to multiple of alignment
       this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
       const buffer: ArrayBuffer = new ArrayBuffer(this.spaceBuffer * _maxObjects);
@@ -43,9 +52,14 @@ namespace FudgeCore {
       this.dataUInt = new Uint32Array(buffer);
       this.count = 0;
 
+      Debug.log(this.name + " spaceBuffer", this.spaceBuffer);
+      Debug.log(this.name + " spaceData", this.spaceData);
+      Debug.log(this.name + " buffer byte length", buffer.byteLength);
+
+
       this.buffer = _renderWebGL.assert<WebGLBuffer>(crc3.createBuffer());
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+      crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, buffer.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
     }
 
     protected static resetRenderData(): void {

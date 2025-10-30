@@ -75,7 +75,7 @@ namespace FudgeCore {
         let uniform: WebGLUniformLocation = this.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM];
         if (uniform)
           crc3.uniform1i(uniform, TEXTURE_LOCATION.COLOR.INDEX);
-        
+
         uniform = this.uniforms[TEXTURE_LOCATION.NORMAL.UNIFORM];
         if (uniform)
           crc3.uniform1i(uniform, TEXTURE_LOCATION.NORMAL.INDEX);
@@ -87,6 +87,15 @@ namespace FudgeCore {
         uniform = this.uniforms[TEXTURE_LOCATION.PARTICLE.UNIFORM];
         if (uniform)
           crc3.uniform1i(uniform, TEXTURE_LOCATION.PARTICLE.INDEX);
+
+        // TODO: Remove debug code once UBOs are verified working
+        let idx = crc3.getUniformBlockIndex(program, "Node");
+        let size = crc3.getActiveUniformBlockParameter(program, idx, crc3.UNIFORM_BLOCK_DATA_SIZE);
+        Debug.log("UBO 'Node' block size on GPU:", size);
+
+        idx = crc3.getUniformBlockIndex(program, "Material");
+        size = crc3.getActiveUniformBlockParameter(program, idx, crc3.UNIFORM_BLOCK_DATA_SIZE);
+        Debug.log("UBO 'Material' block size on GPU:", size);
 
       } catch (_error) {
         Debug.error(_error);
