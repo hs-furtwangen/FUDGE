@@ -13,16 +13,11 @@
 
   --color-focus-background: color-mix(in srgb, var(--color-focus) 15%, transparent);
 
-  --color-background-details: color-mix(in srgb, yellow 50%, black);
-  --color-background-property: color-mix(in srgb, red 50%, black);
-  --color-background-property-label: color-mix(in srgb, red 50%, black);
-  --color-background-property-content: color-mix(in srgb, green 50%, black);
-  --color-background-property-input: color-mix(in srgb, blue 50%, black);
-
+  --color-background-details: var(--color-background-main);
+  --color-background-property: none;
   --color-background-property-label: none;
   --color-background-property-content: var(--color-background-content);
   --color-background-property-input: none;
-  --color-background-details: var(--color-background-main);
 
   --min-propety-label-height: 1.5em;
 }
@@ -58,9 +53,6 @@ div[panel] .lm_close {
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: var(--color-medium) var(--color-background-content);
-  /* scrollbar-gutter: stable; */
-  /* anchor-name: --view;
-  anchor-scope: --view; */
 }
 
 *[view="ViewRender"],
@@ -391,6 +383,10 @@ button:active {
   color: var(--color-signal);
 }
 
+.property {
+  background-color: var(--color-background-property);
+}
+
 .property-anchor {
   anchor-name: --property;
   anchor-scope: --property;
@@ -402,11 +398,6 @@ button:active {
   right: anchor(right);
   top: anchor(top);
   width: 2ch;
-}
-
-*[view] .property-menu {
-  /* anchor to view but adjust for width difference to shift anchor position when the scrollbar appears */
-  /* right: calc(anchor(--view right) + max(calc(anchor-size(--view width) - anchor-size(--details width) - 0.5em), 0px)); */
 }
 
 details[open] .property-menu {
@@ -474,20 +465,7 @@ details[open] .property-menu {
   background-color: var(--color-focus-background)
 }
 
-/* .property:has(>summary>.menu-container:hover)::after,
-.property:has(>summary>.menu-container:focus-within)::after {
-  position-anchor: --property;
-  left: anchor(left);
-  top: anchor(top);
-  right: calc(anchor(right) - 2ch);
-  bottom: anchor(bottom);
-  content: "";
-  position: absolute;
-  background: var(--color-focus-background);
-  pointer-events: none;
-} */
-
-/* standard fudge elements */
+/* custom elements */
 
 fudge-stepper>.content>span[name="sign"],
 fudge-digit {
@@ -499,7 +477,6 @@ fudge-number>input[type="text"] {
   text-align: left;
 }
 
-/* custom elements */
 fudge-initializer,
 fudge-boolean,
 fudge-number,
@@ -517,10 +494,6 @@ custom-matrix4x4 {
   flex-wrap: wrap;
 }
 
-.fudge-element:not(.fudge-element .fudge-element) {
-  /* padding: 2px; */
-}
-
 .fudge-element>label {
   flex: 1 1 50%;
   background-color: var(--color-background-property-label);
@@ -528,7 +501,6 @@ custom-matrix4x4 {
   /* word-break: break-all; */
   overflow: hidden;
   text-overflow: ellipsis;
-
   align-content: center;
 }
 
@@ -536,7 +508,6 @@ custom-matrix4x4 {
   box-sizing: border-box;
   min-height: var(--min-propety-label-height);
   padding: 2px;
-  /* padding-left: 0; */
 }
 
 .fudge-element>.content {
