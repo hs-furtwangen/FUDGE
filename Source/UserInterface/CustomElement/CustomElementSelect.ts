@@ -5,13 +5,13 @@ namespace FudgeUserInterface {
   export class CustomElementSelect extends CustomElement {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-select", CustomElementSelect, Object);
-    public content: Object;
+    public options: Object;
 
-    public constructor(_attributes: CustomElementAttributes, _content: Object = {}) {
+    public constructor(_attributes: CustomElementAttributes, _options: Object = {}) {
       super(_attributes);
       if (!_attributes.label)
         this.setAttribute("label", _attributes.key);
-      this.content = _content;
+      this.options = _options;
     }
 
     /**
@@ -24,10 +24,12 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       let select: HTMLSelectElement = document.createElement("select");
-      for (let key in this.content) {
-        let value: string | number = Reflect.get(this.content, key);
-        if (Reflect.has(this.content, value) && Reflect.get(this.content, value) !== key) // filter number keys out of simple enum 
+      for (let key in this.options) {
+        let value: string | number = Reflect.get(this.options, key);
+        if (Reflect.has(this.options, value) && Reflect.get(this.options, value) !== key) // filter number keys out of simple enum 
           continue;
         let entry: HTMLOptionElement = document.createElement("option");
         entry.text = key;
@@ -40,14 +42,14 @@ namespace FudgeUserInterface {
         select.add(entry);
       }
       select.tabIndex = 0;
-      this.appendChild(select);
+      content.appendChild(select);
     }
 
     /**
      * Retrieves the status of the checkbox as boolean value
      */
     public getMutatorValue(): string | number {
-      let select: HTMLSelectElement = this.querySelector("select");
+      let select: HTMLSelectElement = this.content.querySelector("select");
       let type: string = select.options[select.selectedIndex]?.getAttribute("type") || "string";
       return type == "number" ? parseFloat(select.value) : select.value;
     }
@@ -55,7 +57,7 @@ namespace FudgeUserInterface {
      * Sets the status of the checkbox
      */
     public setMutatorValue(_value: string): void {
-      this.querySelector("select").value = _value;
+      this.content.querySelector("select").value = _value;
       // this.value = _value;
     }
   }

@@ -20,9 +20,11 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       let output: HTMLOutputElement = document.createElement("output");
       output.id = CustomElement.nextId;
-      this.appendChild(output);
+      content.appendChild(output);
     }
 
     /**
@@ -36,7 +38,7 @@ namespace FudgeUserInterface {
      * Sets the content of the input element
      */
     public setMutatorValue(_value: Object): void {
-      let output: HTMLOutputElement = this.querySelector("output");
+      let output: HTMLOutputElement = this.content.querySelector("output");
       if ("name" in _value && typeof _value.name == "string")
         output.value = _value.name;
       else

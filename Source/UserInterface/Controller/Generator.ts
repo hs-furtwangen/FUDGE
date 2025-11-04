@@ -42,14 +42,12 @@ namespace FudgeUserInterface {
      */
     public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
-      const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getTypes(_mutable, mutator);
+      const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
       const descriptors: ƒ.MetaPropertyDescriptors = ƒ.Metadata.getPropertyDescriptors(_mutable);
-
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in mutator) {
-        const descriptor: ƒ.MetaPropertyDescriptor = descriptors[key];
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptor.getCreateOptions, descriptor.getAssignOptions);
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptors[key]);
         if (!element)
           continue;
 
@@ -60,16 +58,13 @@ namespace FudgeUserInterface {
     }
 
     public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement {
+      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
+      const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
       const descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(_parentMutable, _parentKey).valueDescriptor;
-
-      const type: Function | Record<string, unknown> = descriptor.type;
-      const getCreateOptions: ƒ.PropertyCreateOptionsGetter = descriptor.getCreateOptions;
-      const getAssignOptions: ƒ.PropertyAssignOptionsGetter = descriptor.getAssignOptions;
-
       const div: HTMLDivElement = document.createElement("div");
 
-      for (const key in _mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, _mutator, key, type, getCreateOptions, getAssignOptions, _parentMutable, _parentKey);
+      for (const key in mutator) {
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptor, _parentMutable, _parentKey);
         if (!element)
           continue;
 
@@ -78,10 +73,11 @@ namespace FudgeUserInterface {
       return div;
     }
 
-    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.PropertyCreateOptionsGetter, _getAssignOptions?: ƒ.PropertyAssignOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement {
+    public static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _descriptor?: ƒ.MetaPropertyDescriptor, _parentMutable?: object, _parentKey?: string): HTMLElement {
       const mutant: unknown = Reflect.get(_mutable, _key);
       const value: unknown = Reflect.get(_mutator, _key);
-      const type: string = typeof _type == "function" ? _type.name : "Enum";
+      const type: Function | Record<string, unknown> = _descriptor?.type ?? _type;
+      const typeName: string = typeof type == "function" ? type.name : "Enum";
       const isArray: boolean = Array.isArray(mutant);
 
       let element: HTMLElement;
@@ -90,22 +86,23 @@ namespace FudgeUserInterface {
         element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _parentMutable ?? _mutable, _parentKey ?? _key);
 
       if (!element)
-        element = Generator.createMutatorElement(_key, _type, value);
+        element = Generator.createMutatorElement(_key, type, value);
 
       if (!element)
         element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
 
-      if (!element && _getAssignOptions && !_getCreateOptions)
-        element = new CustomElementComboSelect({ key: _key, label: _key, type: (<Function>_type).name, action: "assign" }, value, _getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
+      if (!element && _descriptor.getAssignOptions && !_descriptor.getCreateOptions) {
+        element = new CustomElementComboSelect({ key: _key, label: _key, type: typeName, action: "assign", placeholder: `${typeName}...` }, value, _descriptor.getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
+      }
 
       if (!element && mutant == null) {
         const mutable: object = _parentMutable ?? _mutable;
         const key: string = _parentKey ?? _key;
-        element = new CustomElementInitializer({ key: _key, label: _key, type: type }, _getCreateOptions?.call(mutable, key), _getAssignOptions?.call(mutable, key));
+        element = new CustomElementInitializer({ key: _key, label: _key, type: typeName }, _descriptor.getCreateOptions?.call(mutable, key), _descriptor.getAssignOptions?.call(mutable, key));
       }
 
       if (!element)
-        element = new CustomElementOutput({ key: _key, label: _key, type: type, value: value?.toString() });
+        element = new CustomElementOutput({ key: _key, label: _key, type: typeName, value: value?.toString() });
 
       if (!element) { // undefined values without a type can't be displayed
         console.warn("No interface created for", _mutable.constructor.name, _key);
@@ -114,7 +111,12 @@ namespace FudgeUserInterface {
 
       if (element) {
         element.classList.add("property", "property-anchor");
-        element.prepend(Generator.createInterfaceElementMenu(type, !!_getCreateOptions, !!_getAssignOptions));
+
+        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions);
+        if (element instanceof Details || element instanceof DetailsArray)
+          element.summary.appendChild(menu);
+        else
+          element.prepend(menu);
       }
 
       return element;
@@ -157,7 +159,7 @@ namespace FudgeUserInterface {
         menuAssign.btnToggle.title = `Assign an existing ${_type}`;
         menu.addItem(menuAssign);
 
-        const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "assign", placeholder: `🔍︎ Select instance...` });
+        const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "assign", placeholder: `🔍︎ Select ${_type}...` });
         selectAssign.removeAttribute("key");
         selectAssign.addEventListener(EVENT.CHANGE, _event => {
           menu.close();

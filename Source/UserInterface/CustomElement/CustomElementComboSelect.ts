@@ -10,7 +10,7 @@ namespace FudgeUserInterface {
     public button: HTMLButtonElement;
     public value: unknown;
 
-    public constructor(_attributes: CustomElementAttributes & { action: "create" | "assign" }, _value?: unknown, _options?: Record<string, unknown>) {
+    public constructor(_attributes: CustomElementAttributes & { action: "create" | "assign"; placeholder?: string }, _value?: unknown, _options?: Record<string, unknown>) {
       super(_attributes);
       this.options = _options;
       this.value = _value;
@@ -26,9 +26,11 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       this.datalist = document.createElement("datalist");
       this.datalist.id = CustomElement.nextId.toString();
-      this.appendChild(this.datalist);
+      content.appendChild(this.datalist);
 
       this.input = document.createElement("input");
       this.input.setAttribute("list", this.datalist.id);
@@ -38,14 +40,14 @@ namespace FudgeUserInterface {
       this.input.addEventListener(EVENT.INPUT, this.hndInput);
       this.input.addEventListener(EVENT.KEY_UP, this.hndKey);
       this.input.addEventListener(EVENT.CHANGE, this.hndChange);
-      this.appendChild(this.input);
+      content.appendChild(this.input);
 
       this.button = document.createElement("button");
       this.button.addEventListener(EVENT.CLICK, this.hndClick);
       this.button.style.visibility = "hidden";
 
       this.button.classList.add("btn-subtle", "icon", "clear", "before");
-      this.appendChild(this.button);
+      // content.appendChild(this.button);
 
       if (this.value)
         this.setValue(this.value);

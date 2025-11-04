@@ -45,6 +45,8 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       this.input = document.createElement("input");
       this.input.type = "text"; // use text to enforce decimal point notation
       this.input.min = this.getAttribute("min") ?? "";
@@ -60,7 +62,7 @@ namespace FudgeUserInterface {
       this.input.onpointerdown = this.hndPointerdownInput;
       this.input.onpointerup = this.hndPointerupInput;
 
-      this.appendChild(this.input);
+      content.appendChild(this.input);
 
       this.setMutatorValue(parseFloat(this.getAttribute("value")));
     }

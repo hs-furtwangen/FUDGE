@@ -1163,9 +1163,9 @@ declare namespace FudgeCore {
         static updateMutator(_mutable: object, _mutator: Mutator): Mutator;
         /**
          * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
-         * Does not recurse into objects! This will return the {@link Metadata.types decorated types} instead of the inferred runtime-types of the object, if available.
+         * Does not recurse into objects!
          */
-        static getTypes(_instance: object, _mutator: Mutator): MutatorAttributeTypes;
+        static getMutatorTypes(_object: object, _mutator: Mutator): MutatorAttributeTypes;
         /**
          * Returns an iterable of keys for the given source:
          *

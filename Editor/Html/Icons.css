@@ -8,7 +8,6 @@ details>summary::after,
 .lm_maximised .lm_controls .lm_maximise::before,
 div[view=ViewAnimation] fudge-stepper::after,
 .buttonIcon::before,
-fudge-comboselect>label::after,
 fudge-boolean input[type="checkbox"]::before {
   width: 16px;
   height: 16px;
@@ -200,49 +199,32 @@ details[key^=coat]>summary::after {
   margin: 0px;
 }
 
-fudge-comboselect>label::after {
-  margin-left: 0.5em;
-  margin-right: 3px;
-  mask-image: url(../Html/Icon/Script.svg);
-}
-
-fudge-comboselect[type*=Graph]>label::after {
-  mask-image: url(../Html/Icon/Graph.svg);
-}
-
-details[type*=Texture]>summary::after,
-fudge-comboselect[type*=Texture]>label::after {
+details[type*=Texture]>summary::after {
   mask-image: url(../Html/Icon/Texture.svg);
 }
 
-details[type*=Material]>summary::after,
-fudge-comboselect[type*=Material]>label::after {
+details[type*=Material]>summary::after {
   mask-image: url(../Html/Icon/Material.svg);
 }
 
-details[type*=Mesh]>summary::after,
-fudge-comboselect[type*=Mesh]>label::after {
+details[type*=Mesh]>summary::after {
   mask-image: url(../Html/Icon/Mesh.svg);
 }
 
-details[type*=Light]>summary::after,
-fudge-comboselect[type*=Light]>label::after {
+details[type*=Light]>summary::after {
   mask-image: url(../Html/Icon/Light.svg);
 }
 
 details[type*=Animation]>summary::after,
-details[type^=ComponentAnimation]>summary::after,
-fudge-comboselect[type*=Animation]>label::after {
+details[type^=ComponentAnimation]>summary::after {
   mask-image: url(../Html/Icon/Animation.svg);
 }
 
-details[type*=ParticleSystem]>summary::after,
-fudge-comboselect[type*=ParticleSystem]>label::after {
+details[type*=ParticleSystem]>summary::after {
   mask-image: url(../Html/Icon/Particles.svg);
 }
 
-details[type*=Audio]>summary::after,
-fudge-comboselect[type*=Audio]>label::after {
+details[type*=Audio]>summary::after {
   mask-image: url(../Html/Icon/Audio.svg);
 }
 

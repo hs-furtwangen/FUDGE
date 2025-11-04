@@ -234,8 +234,13 @@
   content: var(--icon-next);
 }
 
-details[type*=Array]>summary::after,
-fudge-comboselect[type*=Array]>label::after {
+/* fudge-comboselect>label::after {
+  mask-image: none;
+  background: none;
+  content: var(--icon-array);
+} */
+
+details[type*=Array]>summary::after {
   mask-image: none;
   background: none;
   content: var(--icon-array);

@@ -190,33 +190,21 @@ namespace FudgeCore {
 
     /**
      * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
-     * Does not recurse into objects! This will return the {@link Metadata.types decorated types} instead of the inferred runtime-types of the object, if available.
+     * Does not recurse into objects!
      */
-    public static getTypes(_instance: object, _mutator: Mutator): MutatorAttributeTypes {
+    public static getMutatorTypes(_object: object, _mutator: Mutator): MutatorAttributeTypes {
       const out: MutatorAttributeTypes = {};
-      const descriptors: MetaPropertyDescriptors = Metadata.getPropertyDescriptors(_instance);
 
       for (const key in _mutator) {
-        const metaType: Function | Record<string, unknown> = descriptors[key].type;
         let type: Function | Record<string, unknown>;
-        switch (typeof metaType) {
-          case "function":
-            type = metaType;
-            break;
-          case "object":
-            type = metaType;
-            break;
-          case "undefined":
-            let value: unknown = _mutator[key];
-            if (value != undefined)
-              if (typeof value == "object")
-                type = Reflect.get(_instance, key).constructor;
-              else if (typeof value == "function")
-                type = value;
-              else
-                type = value.constructor;
-            break;
-        }
+        let value: unknown = _mutator[key];
+        if (value != undefined)
+          if (typeof value == "object")
+            type = Reflect.get(_object, key).constructor;
+          else if (typeof value == "function")
+            type = value;
+          else
+            type = value.constructor;
 
         out[key] = type;
       }

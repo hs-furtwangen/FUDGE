@@ -108,7 +108,7 @@ declare namespace FudgeUserInterface {
          */
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
-        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _getCreateOptions?: ƒ.PropertyCreateOptionsGetter, _getAssignOptions?: ƒ.PropertyAssignOptionsGetter, _parentMutable?: object, _parentKey?: string): HTMLElement;
+        static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _descriptor?: ƒ.MetaPropertyDescriptor, _parentMutable?: object, _parentKey?: string): HTMLElement;
         static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean): Menu;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
@@ -141,6 +141,7 @@ declare namespace FudgeUserInterface {
         static tag: string;
         private static mapTypeToCustomElement;
         private static idCounter;
+        content: HTMLSpanElement;
         constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]);
         /**
          * Retrieve an id to use for children of this element, needed e.g. for standard interaction with the label
@@ -166,6 +167,10 @@ declare namespace FudgeUserInterface {
          */
         appendLabel(): HTMLLabelElement;
         setLabel(_label: string): void;
+        /**
+         * Add a label-element as child to this element
+         */
+        appendContent(): HTMLSpanElement;
         /**
          * Set the value of this element using a format compatible with [[FudgeCore.Mutator]]
          */
@@ -234,6 +239,7 @@ declare namespace FudgeUserInterface {
         value: unknown;
         constructor(_attributes: CustomElementAttributes & {
             action: "create" | "assign";
+            placeholder?: string;
         }, _value?: unknown, _options?: Record<string, unknown>);
         /**
          * Creates the content of the element when connected the first time
@@ -404,8 +410,8 @@ declare namespace FudgeUserInterface {
      */
     class CustomElementSelect extends CustomElement {
         private static customElement;
-        content: Object;
-        constructor(_attributes: CustomElementAttributes, _content?: Object);
+        options: Object;
+        constructor(_attributes: CustomElementAttributes, _options?: Object);
         /**
          * Creates the content of the element when connected the first time
          */
@@ -549,6 +555,7 @@ declare namespace FudgeUserInterface {
 }
 declare namespace FudgeUserInterface {
     class Details extends HTMLDetailsElement {
+        summary: HTMLElement;
         content: HTMLDivElement;
         constructor(_legend: string, _type: string);
         get isExpanded(): boolean;

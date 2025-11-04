@@ -10,12 +10,26 @@
   --color-error: red;
   /* default warning color */
   --color-warning: yellow;
+
+  --color-focus-background: color-mix(in srgb, var(--color-focus) 15%, transparent);
+
+  --color-background-details: color-mix(in srgb, yellow 50%, black);
+  --color-background-property: color-mix(in srgb, red 50%, black);
+  --color-background-property-label: color-mix(in srgb, red 50%, black);
+  --color-background-property-content: color-mix(in srgb, green 50%, black);
+  --color-background-property-input: color-mix(in srgb, blue 50%, black);
+
+  --color-background-property-label: none;
+  --color-background-property-content: var(--color-background-content);
+  --color-background-property-input: none;
+  --color-background-details: var(--color-background-main);
+
+  --min-propety-label-height: 1.5em;
 }
 
 [hidden] {
   display: none !important;
 }
-
 
 object {
   width: 100%;
@@ -45,8 +59,8 @@ div[panel] .lm_close {
   scrollbar-width: thin;
   scrollbar-color: var(--color-medium) var(--color-background-content);
   /* scrollbar-gutter: stable; */
-  anchor-name: --view;
-  anchor-scope: --view;
+  /* anchor-name: --view;
+  anchor-scope: --view; */
 }
 
 *[view="ViewRender"],
@@ -262,8 +276,6 @@ input[type="number"] {
 
 label {
   padding-right: 0.5em;
-  /* text-decoration: wavy; */
-  /* text-shadow: 1px 1px var(--color-background-main) ; */
 }
 
 /* Details */
@@ -271,15 +283,26 @@ label {
 details:not(details details) {
   anchor-name: --details;
   anchor-scope: --details;
+  padding-right: 2ch;
+  background-color: var(--color-background-details);
+}
+
+details>summary {
+  box-sizing: border-box;
+  min-height: var(--min-propety-label-height);
+  padding: 2px;
+  padding-left: 0;
+  align-content: center;
+}
+
+details[open]:not(details details),
+details[open]:has(+ *) {
+  padding-bottom: 4px;
 }
 
 details>div,
 details>fudge-number {
   padding-left: 1em;
-}
-
-details>div {
-  min-width: max-content;
 }
 
 details.selected>summary {
@@ -378,11 +401,16 @@ button:active {
   position-anchor: --property;
   right: anchor(right);
   top: anchor(top);
+  width: 2ch;
 }
 
 *[view] .property-menu {
   /* anchor to view but adjust for width difference to shift anchor position when the scrollbar appears */
-  right: calc(anchor(--view right) + max(calc(anchor-size(--view width) - anchor-size(--details width) - 0.5em), 0px));
+  /* right: calc(anchor(--view right) + max(calc(anchor-size(--view width) - anchor-size(--details width) - 0.5em), 0px)); */
+}
+
+details[open] .property-menu {
+  right: anchor(--details right);
 }
 
 /* menu */
@@ -437,36 +465,31 @@ button:active {
   background: var(--color-background-main);
 }
 
+/* .property-menu:hover, */
+/* .property-menu:focus-within, */
+.property:has(>summary>.menu-container:hover),
+.property:has(>summary>.menu-container:focus-within),
 .property:has(>.menu-container:hover),
 .property:has(>.menu-container:focus-within) {
-  background-color: color-mix(in srgb, var(--color-background-main) 75%, transparent);
+  background-color: var(--color-focus-background)
 }
+
+/* .property:has(>summary>.menu-container:hover)::after,
+.property:has(>summary>.menu-container:focus-within)::after {
+  position-anchor: --property;
+  left: anchor(left);
+  top: anchor(top);
+  right: calc(anchor(right) - 2ch);
+  bottom: anchor(bottom);
+  content: "";
+  position: absolute;
+  background: var(--color-focus-background);
+  pointer-events: none;
+} */
 
 /* standard fudge elements */
 
-fudge-stepper {
-  display: block;
-}
-
-fudge-boolean,
-fudge-color,
-fudge-select,
-fudge-textinput,
-fudge-output,
-fudge-comboselect,
-fudge-number,
-fudge-initializer {
-  display: flex;
-  align-items: center;
-}
-
-fudge-comboselect>label {
-  padding-right: 0;
-  display: flex;
-  align-items: center;
-}
-
-fudge-stepper>span[name="sign"],
+fudge-stepper>.content>span[name="sign"],
 fudge-digit {
   font-family: monospace;
 }
@@ -477,49 +500,182 @@ fudge-number>input[type="text"] {
 }
 
 /* custom elements */
-custom-vector2 {
-  text-align: right;
-  display: grid;
-  column-gap: 1em;
-  grid-template-columns: max-content max-content max-content max-content;
-  /* grid-template-columns: max-content 8em 8em; */
-}
-
-custom-vector3 {
-  text-align: right;
-  display: grid;
-  column-gap: 1em;
-  grid-template-columns: max-content max-content max-content max-content;
-  /* grid-template-columns: max-content 8em 8em 8em; */
-}
-
+fudge-initializer,
+fudge-boolean,
+fudge-number,
+fudge-stepper,
+fudge-textinput,
+fudge-select,
+fudge-comboselect,
+fudge-color,
+fudge-output,
+custom-vector2,
+custom-vector3,
+custom-matrix3x3,
 custom-matrix4x4 {
-  text-align: center;
-  display: grid;
-  column-gap: 1em;
-  grid-template-columns: min-content min-content min-content min-content;
-  grid-template-rows: min-content min-content min-content min-content;
+  display: flex;
+  flex-wrap: wrap;
 }
 
-custom-matrix3x3 {
-  text-align: center;
-  display: grid;
-  column-gap: 1em;
-  grid-template-columns: min-content min-content min-content;
-  grid-template-rows: min-content min-content min-content min-content
+.fudge-element:not(.fudge-element .fudge-element) {
+  /* padding: 2px; */
 }
 
-custom-matrix4x4>label,
-custom-matrix3x3>label {
-  text-align: left
+.fudge-element>label {
+  flex: 1 1 50%;
+  background-color: var(--color-background-property-label);
+  padding: 0;
+  /* word-break: break-all; */
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  align-content: center;
 }
 
-custom-matrix4x4>span.row-vector,
-custom-matrix3x3>span.row-vector {
-  text-align: right
+.fudge-element>label:not(.fudge-element .fudge-element>label) {
+  box-sizing: border-box;
+  min-height: var(--min-propety-label-height);
+  padding: 2px;
+  /* padding-left: 0; */
 }
 
-custom-matrix4x4>div.row-vector,
-custom-matrix3x3>div.row-vector {
-  display: contents;
+.fudge-element>.content {
+  flex: 1 1 50%;
+  background-color: var(--color-background-property-content);
+}
+
+.fudge-element>.content:not(.fudge-element .fudge-element>.content) {
+  box-sizing: border-box;
+  padding: 2px;
+}
+
+fudge-number input,
+fudge-textinput input,
+fudge-comboselect input,
+fudge-select select {
+  width: 100%;
+  text-overflow: ellipsis;
+  min-width: 12ch;
+}
+
+fudge-color>.content {
+  display: inline-flex;
+}
+
+fudge-color input[type="color"] {
+  flex: 1 1 50%;
+  height: 1.5em;
+  width: 0;
+  min-width: 4ch;
+}
+
+fudge-color input[type="range"] {
+  flex: 1 1 50%;
+  height: 1.5em;
+  width: 0;
+  min-width: 8ch;
+}
+
+.fudge-element input,
+.fudge-element select,
+fudge-digit,
+fudge-stepper>.content>span[name="exp"] {
+  background-color: var(--color-background-property-input);
+}
+
+/* custom vector */
+
+custom-vector2,
+custom-vector3 {
+  container-type: inline-size;
+}
+
+custom-vector2>.content,
+custom-vector3>.content {
+  display: inline-grid;
+  column-gap: 1ch;
+  grid-template-columns: minmax(max-content, 1fr) minmax(max-content, 1fr) minmax(max-content, 1fr);
+}
+
+@container (width < 24ch) {
+  custom-vector2>label {
+    align-content: baseline !important;
+    ;
+  }
+
+  custom-vector2>.content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container (width < 36ch) {
+  custom-vector3>label {
+    align-content: baseline !important;
+    ;
+  }
+
+  custom-vector3>.content {
+    grid-template-columns: 1fr;
+  }
+}
+
+custom-vector2 fudge-stepper,
+custom-vector3 fudge-stepper {
+  display: block;
+}
+
+/* custom matrix */
+
+custom-matrix3x3,
+custom-matrix4x4 {
+  container: custom-matrix / inline-size;
+}
+
+custom-matrix3x3>label,
+custom-matrix4x4>label {
+  align-content: baseline !important;
+}
+
+@container custom-matrix (width < 68ch) {
+  custom-matrix3x3>label {
+    flex: 1 1 100% !important;
+    align-content: center !important;
+  }
+}
+
+@container custom-matrix (width < 96ch) {
+  custom-matrix4x4>label {
+    flex: 1 1 100% !important;
+    align-content: center !important;
+  }
+}
+
+custom-matrix3x3>.content>.fudge-element>label,
+custom-matrix4x4>.content>.fudge-element>label {
+  flex: 0 1 fit-content;
+  text-align: right;
+  padding-right: 1ch;
+}
+
+custom-matrix3x3>.content>.fudge-element>label::after,
+custom-matrix4x4>.content>.fudge-element>label::after {
+  content: "translation";
+  visibility: hidden;
+  height: 0;
+  display: block;
+  overflow: hidden;
+}
+
+@container custom-matrix (width < 36ch) {
+  custom-matrix3x3>.content>.fudge-element>label {
+    text-align: left;
+    align-content: baseline;
+  }
+}
+
+@container custom-matrix (width < 48ch) {
+  custom-matrix4x4>.content>.fudge-element>label {
+    text-align: left;
+    align-content: baseline;
+  }
 }

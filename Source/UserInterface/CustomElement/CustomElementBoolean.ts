@@ -22,27 +22,33 @@ namespace FudgeUserInterface {
 
       // TODO: delete tabindex from checkbox and get space-key on this
       // this.tabIndex = 0;
+      let label: HTMLLabelElement = this.appendLabel();
+      let content: HTMLSpanElement = this.appendContent();
 
       let input: HTMLInputElement = document.createElement("input");
       input.type = "checkbox";
       input.id = CustomElement.nextId;
       input.checked = this.getAttribute("value") == "true";
-      this.appendChild(input);
+      content.appendChild(input);
 
-      this.appendLabel().htmlFor = input.id;
+      let text: HTMLSpanElement = document.createElement("span");
+      text.textContent = "On";
+      content.appendChild(text);
+
+      label.htmlFor = input.id;
     }
 
     /**
      * Retrieves the status of the checkbox as boolean value
      */
     public getMutatorValue(): boolean {
-      return this.querySelector("input").checked;
+      return this.content.querySelector("input").checked;
     }
     /**
      * Sets the status of the checkbox
      */
     public setMutatorValue(_value: boolean): void {
-      this.querySelector("input").checked = _value;
+      this.content.querySelector("input").checked = _value;
     }
   }
 }

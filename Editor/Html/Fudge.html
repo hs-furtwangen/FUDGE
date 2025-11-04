@@ -46,8 +46,10 @@
   <template>
     <custom-vector2>
       <label>label</label>
-      <fudge-stepper key="x" label="x"></fudge-stepper>
-      <fudge-stepper key="y" label="y"></fudge-stepper>
+      <span class="content">
+        <fudge-stepper key="x" label="x"></fudge-stepper>
+        <fudge-stepper key="y" label="y"></fudge-stepper>
+      </span>
     </custom-vector2>
   </template>
   <script>
@@ -58,9 +60,11 @@
   <template>
     <custom-vector3>
       <label>label</label>
-      <fudge-stepper key="x" label="x"></fudge-stepper>
-      <fudge-stepper key="y" label="y"></fudge-stepper>
-      <fudge-stepper key="z" label="z"></fudge-stepper>
+      <span class="content">
+        <fudge-stepper key="x" label="x"></fudge-stepper>
+        <fudge-stepper key="y" label="y"></fudge-stepper>
+        <fudge-stepper key="z" label="z"></fudge-stepper>
+      </span>
     </custom-vector3>
   </template>
   <script>
@@ -71,20 +75,11 @@
   <template>
     <custom-matrix3x3>
       <label>label</label>
-      <span>x</span>
-      <span>y</span>
-      <span class="row-vector">translation</span>
-      <div class="row-vector" key="translation">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-      </div>
-      <span class="row-vector">scaling</span>
-      <div class="row-vector" key="scaling">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-      </div>
-      <span class="row-vector">rotation</span>
-      <fudge-stepper key="rotation"></fudge-stepper>
+      <span class="content">
+        <custom-vector2 label="translation" key="translation"></custom-vector2>
+        <custom-vector2 label="scaling" key="scaling"></custom-vector2>
+        <fudge-stepper label="rotation" key="rotation"></fudge-stepper>
+      </span>
     </custom-matrix3x3>
   </template>
   <script>
@@ -95,27 +90,34 @@
   <template>
     <custom-matrix4x4>
       <label>label</label>
-      <span>x</span>
-      <span>y</span>
-      <span>z</span>
-      <span class="row-vector">translation</span>
-      <div class="row-vector" key="translation">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-        <fudge-stepper key="z"></fudge-stepper>
-      </div>
-      <span class="row-vector">rotation</span>
-      <div class="row-vector" key="rotation">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-        <fudge-stepper key="z"></fudge-stepper>
-      </div>
-      <span class="row-vector">scaling</span>
-      <div class="row-vector" key="scaling">
-        <fudge-stepper key="x"></fudge-stepper>
-        <fudge-stepper key="y"></fudge-stepper>
-        <fudge-stepper key="z"></fudge-stepper>
-      </div>
+      <span class="content">
+        <custom-vector3 label="translation" key="translation"></custom-vector3>
+        <custom-vector3 label="rotation" key="rotation"></custom-vector3>
+        <custom-vector3 label="scaling" key="scaling"></custom-vector3>
+
+        <!-- <span></span>
+        <span>x</span>
+        <span>y</span>
+        <span>z</span>
+        <span class="row-vector">translation</span>
+        <div class="row-vector" key="translation">
+          <fudge-stepper key="x"></fudge-stepper>
+          <fudge-stepper key="y"></fudge-stepper>
+          <fudge-stepper key="z"></fudge-stepper>
+        </div>
+        <span class="row-vector">rotation</span>
+        <div class="row-vector" key="rotation">
+          <fudge-stepper key="x"></fudge-stepper>
+          <fudge-stepper key="y"></fudge-stepper>
+          <fudge-stepper key="z"></fudge-stepper>
+        </div>
+        <span class="row-vector">scaling</span>
+        <div class="row-vector" key="scaling">
+          <fudge-stepper key="x"></fudge-stepper>
+          <fudge-stepper key="y"></fudge-stepper>
+          <fudge-stepper key="z"></fudge-stepper>
+        </div> -->
+      </span>
     </custom-matrix4x4>
   </template>
   <script>

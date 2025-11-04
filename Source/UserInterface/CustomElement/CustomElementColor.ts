@@ -26,18 +26,22 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       let picker: HTMLInputElement = document.createElement("input");
       picker.type = "color";
+      // @ts-ignore
+      picker.alpha = true;
 
       picker.tabIndex = 0;
-      this.appendChild(picker);
+      content.appendChild(picker);
 
       let slider: HTMLInputElement = document.createElement("input");
       slider.type = "range";
       slider.min = "0";
       slider.max = "1";
       slider.step = "0.01";
-      this.appendChild(slider);
+      content.appendChild(slider);
       slider.addEventListener(EVENT.WHEEL, this.hndWheel);
     }
 
@@ -45,8 +49,8 @@ namespace FudgeUserInterface {
      * Retrieves the values of picker and slider as ƒ.Mutator
      */
     public getMutatorValue(): ƒ.Mutator {
-      let hex: string = (<HTMLInputElement>this.querySelector("input[type=color")).value;
-      let alpha: string = (<HTMLInputElement>this.querySelector("input[type=range")).value;
+      let hex: string = (<HTMLInputElement>this.content.querySelector("input[type=color")).value;
+      let alpha: string = (<HTMLInputElement>this.content.querySelector("input[type=range")).value;
       this.color.setHex(hex.substr(1, 6) + "ff");
       this.color.a = parseFloat(alpha);
       return this.color.getMutator(true);
@@ -57,8 +61,8 @@ namespace FudgeUserInterface {
     public setMutatorValue(_value: ƒ.Mutator): void {
       this.color.mutate(_value);
       let hex: string = this.color.toHex();
-      (<HTMLInputElement>this.querySelector("input[type=color")).value = "#" + hex.slice(0, 6);
-      (<HTMLInputElement>this.querySelector("input[type=range")).value = this.color.a.toString();
+      (<HTMLInputElement>this.content.querySelector("input[type=color")).value = "#" + hex.slice(0, 6);
+      (<HTMLInputElement>this.content.querySelector("input[type=range")).value = this.color.a.toString();
     }
 
     private hndKey(_event: KeyboardEvent): void {

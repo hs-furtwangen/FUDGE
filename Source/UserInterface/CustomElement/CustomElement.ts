@@ -22,6 +22,8 @@ namespace FudgeUserInterface {
 
     private static idCounter: number = 0;
 
+    public content: HTMLSpanElement;
+
     #initialized: boolean = false;
 
     public constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]) {
@@ -31,6 +33,7 @@ namespace FudgeUserInterface {
           if (_attributes[name] != undefined)
             this.setAttribute(name, _attributes[name]);
         }
+      this.classList.add("fudge-element");
     }
 
     /**
@@ -93,6 +96,7 @@ namespace FudgeUserInterface {
 
       let label: HTMLLabelElement = document.createElement("label");
       label.textContent = text;
+      label.classList.add("label");
       this.appendChild(label);
 
       return label;
@@ -102,6 +106,17 @@ namespace FudgeUserInterface {
       let label: HTMLLabelElement = this.querySelector("label");
       if (label)
         label.textContent = _label;
+    }
+
+    /**
+     * Add a label-element as child to this element
+     */
+    public appendContent(): HTMLSpanElement {
+      this.content = document.createElement("span");
+      this.content.classList.add("content");
+      this.appendChild(this.content);
+
+      return this.content;
     }
 
     /**

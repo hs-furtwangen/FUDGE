@@ -27,39 +27,40 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       let input: HTMLInputElement = document.createElement("input");
       input.type = "number";
       input.style.position = "absolute";
       input.style.display = "none";
       input.addEventListener(EVENT.INPUT, (_event: Event): void => { _event.stopPropagation(); });
-      this.appendChild(input);
-
+      content.appendChild(input);
 
       let sign: HTMLSpanElement = document.createElement("span");
       sign.setAttribute("name", "sign");
       sign.textContent = "+";
-      this.appendChild(sign);
+      content.appendChild(sign);
       for (let exp: number = 2; exp > -4; exp--) {
         let digit: CustomElementDigit = new CustomElementDigit();
         digit.setAttribute("exp", exp.toString());
-        this.appendChild(digit);
+        content.appendChild(digit);
         if (exp == 0) {
           const dot: HTMLSpanElement = document.createElement("span");
           dot.setAttribute("name", "dot");
           dot.textContent = ".";
-          this.appendChild(dot);
+          content.appendChild(dot);
         }
       }
       const e: HTMLSpanElement = document.createElement("span");
       e.setAttribute("name", "e");
       e.textContent = "e";
-      this.appendChild(e);
+      content.appendChild(e);
 
       let exp: HTMLSpanElement = document.createElement("span");
       exp.textContent = "+0";
       exp.tabIndex = -1;
       exp.setAttribute("name", "exp");
-      this.appendChild(exp);
+      content.appendChild(exp);
 
       // input.addEventListener(EVENT.CHANGE, this.hndInput);
       input.addEventListener(EVENT.BLUR, this.hndInput);
@@ -75,10 +76,10 @@ namespace FudgeUserInterface {
     public activateInnerTabs(_on: boolean): void {
       let index: number = _on ? 0 : -1;
 
-      let spans: NodeListOf<HTMLSpanElement> = this.querySelectorAll("span");
+      let spans: NodeListOf<HTMLSpanElement> = this.content.querySelectorAll("span");
       spans[1].tabIndex = index;
 
-      let digits: NodeListOf<CustomElementDigit> = this.querySelectorAll("fudge-digit");
+      let digits: NodeListOf<CustomElementDigit> = this.content.querySelectorAll("fudge-digit");
       for (let digit of digits)
         digit.tabIndex = index;
     }
@@ -140,8 +141,8 @@ namespace FudgeUserInterface {
      * Displays this value by setting the contents of the digits and the exponent
      */
     private display(): void {
-      let digits: NodeListOf<CustomElementDigit> = this.querySelectorAll("fudge-digit");
-      let spans: NodeListOf<HTMLSpanElement> = this.querySelectorAll("span");
+      let digits: NodeListOf<CustomElementDigit> = this.content.querySelectorAll("fudge-digit");
+      let spans: NodeListOf<HTMLSpanElement> = this.content.querySelectorAll("span");
 
       if (!isFinite(this.value)) {
         for (let pos: number = 0; pos < digits.length; pos++) {
@@ -186,7 +187,7 @@ namespace FudgeUserInterface {
           case ƒ.KEYBOARD_CODE.ARROW_UP:
           case ƒ.KEYBOARD_CODE.ARROW_DOWN:
             this.activateInnerTabs(true);
-            (<HTMLElement>this.querySelectorAll("fudge-digit")[2]).focus();
+            (<HTMLElement>this.content.querySelectorAll("fudge-digit")[2]).focus();
             break;
           case ƒ.KEYBOARD_CODE.F2:
             this.openInput(true);

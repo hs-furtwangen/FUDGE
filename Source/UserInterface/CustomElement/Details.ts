@@ -2,6 +2,7 @@ namespace FudgeUserInterface {
   import ƒ = FudgeCore;
 
   export class Details extends HTMLDetailsElement {
+    public summary: HTMLElement;
     public content: HTMLDivElement;
 
     public constructor(_legend: string = "", _type: string) {
@@ -11,9 +12,10 @@ namespace FudgeUserInterface {
       this.setAttribute("label", _legend);
       this.setAttribute("type", _type);
       this.open = true;
-      let lblSummary: HTMLElement = document.createElement("summary");
-      lblSummary.textContent = _legend;
-      this.appendChild(lblSummary);
+      this.summary = document.createElement("summary");
+      this.summary.textContent = _legend;
+      this.summary.classList.add("label");
+      this.appendChild(this.summary);
 
       this.content = document.createElement("div");
       this.appendChild(this.content);

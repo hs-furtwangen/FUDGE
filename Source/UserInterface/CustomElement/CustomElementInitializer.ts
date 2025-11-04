@@ -30,9 +30,11 @@ namespace FudgeUserInterface {
 
       this.appendLabel();
 
+      let content: HTMLSpanElement = this.appendContent();
+
       this.datalist = document.createElement("datalist");
       this.datalist.id = CustomElement.nextId.toString();
-      this.appendChild(this.datalist);
+      content.appendChild(this.datalist);
 
       this.input = document.createElement("input");
 
@@ -48,14 +50,14 @@ namespace FudgeUserInterface {
       this.btnCreate.addEventListener(EVENT.CLICK, this.hndClickCreate);
       this.btnCreate.title = `Create a new ${this.getAttribute("type")}`;
       this.btnCreate.classList.add("btn-subtle");
-      this.appendChild(this.btnCreate);
+      content.appendChild(this.btnCreate);
 
       this.btnSelect = document.createElement("button");
       this.btnSelect.innerText = "📂︎"; // 🔍︎ ↪ ⤷ ⋮ ☍ ↗ ⟲ ⇄ 🔗︎ 📂︎ ⚠︎ ➕︎ ❌︎ // append the U+FE0E Variation Selector-15 for monochrome emoji
       this.btnSelect.title = `Select an existing ${this.getAttribute("type")}`;
       this.btnSelect.addEventListener(EVENT.CLICK, this.hndClickSelect);
       this.btnSelect.classList.add("btn-subtle");
-      this.appendChild(this.btnSelect);
+      content.appendChild(this.btnSelect);
     }
 
     /**
