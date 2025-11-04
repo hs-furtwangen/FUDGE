@@ -385,23 +385,17 @@ button:active {
 
 .property {
   background-color: var(--color-background-property);
-}
-
-.property-anchor {
   anchor-name: --property;
   anchor-scope: --property;
 }
 
-.property-menu {
+.property>summary>.property-menu,
+.property>.property-menu {
   position: absolute;
   position-anchor: --property;
-  right: anchor(right);
+  right: anchor(--details right, anchor(right));
   top: anchor(top);
   width: 2ch;
-}
-
-details[open] .property-menu {
-  right: anchor(--details right);
 }
 
 /* menu */
@@ -431,6 +425,7 @@ details[open] .property-menu {
   left: anchor(right);
   top: anchor(top);
   position-try-fallbacks: flip-inline, flip-block, flip-inline flip-block;
+  position-visibility: anchors-visible;
 }
 
 .menu-item {
@@ -475,6 +470,15 @@ fudge-digit {
 fudge-number>input[type="text"] {
   font-family: monospace;
   text-align: left;
+}
+
+fudge-initializer>.content {
+  --icon-actions: "<undefined>";
+  --icon-width: fit-content;
+}
+
+fudge-initializer>.content>.menu-container>.menu-list {
+  left: anchor(left);
 }
 
 fudge-initializer,

@@ -98,7 +98,7 @@ namespace FudgeUserInterface {
       if (!element && mutant == null) {
         const mutable: object = _parentMutable ?? _mutable;
         const key: string = _parentKey ?? _key;
-        element = new CustomElementInitializer({ key: _key, label: _key, type: typeName }, _descriptor.getCreateOptions?.call(mutable, key), _descriptor.getAssignOptions?.call(mutable, key));
+        element = new CustomElementInitializer({ key: _key, label: _key, type: typeName }, _descriptor);
       }
 
       if (!element)
@@ -110,9 +110,9 @@ namespace FudgeUserInterface {
       }
 
       if (element) {
-        element.classList.add("property", "property-anchor");
+        element.classList.add("property");
 
-        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions);
+        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, _descriptor.kind != "function", true);
         if (element instanceof Details || element instanceof DetailsArray)
           element.summary.appendChild(menu);
         else
@@ -122,7 +122,7 @@ namespace FudgeUserInterface {
       return element;
     }
 
-    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean): Menu {
+    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean): Menu {
       const menu: Menu = new Menu("");
       menu.classList.add("property-menu");
       menu.btnToggle.classList.add("btn-subtle", "icon", "actions", "before");
@@ -140,7 +140,7 @@ namespace FudgeUserInterface {
           menu.close();
         });
         menuCreate.addItem(selectCreate);
-      } else {
+      } else if (_creatable) {
         const btnCreate: HTMLButtonElement = document.createElement("button");
         btnCreate.classList.add("menu-item", "icon", "construct", "before");
         btnCreate.innerText = "New...";
@@ -168,16 +168,18 @@ namespace FudgeUserInterface {
         menuAssign.addItem(selectAssign);
       }
 
-      const btnClear: HTMLButtonElement = document.createElement("button");
-      btnClear.classList.add("menu-item", "icon", "clear", "before");
-      btnClear.innerText = "Clear";
-      btnClear.title = `Set to <undefined>`;
-      menu.addItem(btnClear);
+      if (_clearable) {
+        const btnClear: HTMLButtonElement = document.createElement("button");
+        btnClear.classList.add("menu-item", "icon", "clear", "before");
+        btnClear.innerText = "Clear";
+        btnClear.title = `Set to <undefined>`;
+        menu.addItem(btnClear);
 
-      btnClear.addEventListener(EVENT.CLICK, _event => {
-        btnClear.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
-        menu.close();
-      });
+        btnClear.addEventListener(EVENT.CLICK, _event => {
+          btnClear.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
+          menu.close();
+        });
+      }
 
       menu.addEventListener(EVENT.CHANGE, _event => {
         menu.close();

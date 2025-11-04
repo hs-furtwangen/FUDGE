@@ -352,7 +352,7 @@ namespace FudgeUserInterface {
 
     protected refreshOptions = (_event: Event): void => {
       const target: EventTarget = _event.target;
-      if (!(target instanceof CustomElementComboSelect) && !(target instanceof CustomElementInitializer))
+      if (!(target instanceof CustomElementComboSelect))
         return;
 
       const path: string[] = this.getMutatorPath(_event);
