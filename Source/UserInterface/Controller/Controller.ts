@@ -10,6 +10,7 @@ namespace FudgeUserInterface {
 
     // TODO: examine the use of the attribute key vs name. Key signals the use by FUDGE while name is standard and supported by forms
     public domElement: HTMLElement;
+    public openStates: Map<string, boolean> = new Map();
     protected timeUpdate: number = 190;
     protected mutable: object;
 
@@ -25,6 +26,9 @@ namespace FudgeUserInterface {
       this.domElement.addEventListener(EVENT.REFRESH_OPTIONS, this.refreshOptions);
       this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
       this.domElement.addEventListener(EVENT.CREATE_VALUE, this.createValue);
+      this.domElement.addEventListener(EVENT.EXPAND, this.hndExpand);
+      this.domElement.addEventListener(EVENT.COLLAPSE, this.hndExpand);
+      this.domElement.addEventListener("reopen", this.hndReopen);
     }
 
     /**
@@ -106,15 +110,14 @@ namespace FudgeUserInterface {
      * @param _mutable - The original mutable object represented in the UI.
      * @param _details - The {@link Details} element displaying the data.
      * @param _mutator - The mutator object describing the current structure and values.
-     * @param _parentMutable - *(Optional)* The parent mutable object if nested.
-     * @param _parentKey - *(Optional)* The key referencing this mutable within its parent.
+     * @param _parentMutable - (optional) The parent mutable object if nested.
+     * @param _parentKey - (optional) The key referencing this mutable within its parent.
      */
     public static updateUserInterfaceStructure(_mutable: object, _details: Details, _mutator: ƒ.Mutator, _parentMutable?: object, _parentKey?: string): void {
       const mutatorSignature: string = Controller.createSignature(_mutator);
       const elementSignature: string = Controller.signatures.get(_details);
 
       if (mutatorSignature !== elementSignature) {
-        // TODO: save and restore details.open state
         // create focus path
         const focus: HTMLElement = <HTMLElement>document.activeElement;
         let focusedPath: string[];
@@ -137,6 +140,9 @@ namespace FudgeUserInterface {
         _details.setContent(content);
 
         Controller.signatures.set(_details, mutatorSignature);
+
+        // restore open/closed state
+        _details.dispatchEvent(new Event("reopen", { bubbles: true }));
 
         // refocus
         if (focusedPath) {
@@ -247,6 +253,10 @@ namespace FudgeUserInterface {
       return signature.join("|");
     }
 
+    public get isRefreshing(): boolean {
+      return this.idInterval != null;
+    }
+
     public getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator {
       return Controller.getMutator(this.mutable, this.domElement, _mutator, _types);
     }
@@ -327,7 +337,7 @@ namespace FudgeUserInterface {
       const path: string[] = this.getMutatorPath(_event);
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
-      
+
       let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
       let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
       if (!descriptor) {
@@ -377,6 +387,28 @@ namespace FudgeUserInterface {
       }
     };
 
+    protected hndExpand = (_event: Event): void => {
+      const path: string[] = this.getMutatorPath(_event);
+      const open: boolean = _event.type == EVENT.EXPAND;
+      this.openStates.set(path.join("/"), open);
+    };
+
+    protected hndReopen = (_event: Event): void => {
+      for (const path of this.openStates.keys()) {
+        const open: boolean = this.openStates.get(path);
+
+        let reopenElement: HTMLElement = this.domElement;
+        for (const key of path.split("/")) {
+          reopenElement = Controller.findChildElementByKey(reopenElement, key);
+          if (!reopenElement)
+            break;
+        }
+
+        if (reopenElement && reopenElement instanceof Details)
+          reopenElement.open = open;
+      }
+    };
+
     protected refresh = (_event: Event): void => {
       if (document.body.contains(this.domElement)) {
         this.updateUserInterface();
@@ -384,6 +416,7 @@ namespace FudgeUserInterface {
       }
 
       window.clearInterval(this.idInterval);
+      this.idInterval = null;
     };
 
     protected getMutatorPath(_event: Event): string[] {

@@ -17,9 +17,10 @@
   --color-background-property: none;
   --color-background-property-label: none;
   --color-background-property-content: var(--color-background-content);
-  --color-background-property-input: none;
+  --color-background-property-input: var(--color-background-content);
 
-  --min-propety-label-height: 1.5em;
+  --property-label-min-height: 1.5em;
+  --property-label-padding: 2px;
 }
 
 [hidden] {
@@ -281,9 +282,8 @@ details:not(details details) {
 
 details>summary {
   box-sizing: border-box;
-  min-height: var(--min-propety-label-height);
-  padding: 2px;
-  padding-left: 0;
+  min-height: var(--property-label-min-height);
+  padding: var(--property-label-padding);
   align-content: center;
 }
 
@@ -462,25 +462,6 @@ button:active {
 
 /* custom elements */
 
-fudge-stepper>.content>span[name="sign"],
-fudge-digit {
-  font-family: monospace;
-}
-
-fudge-number>input[type="text"] {
-  font-family: monospace;
-  text-align: left;
-}
-
-fudge-initializer>.content {
-  --icon-actions: "<undefined>";
-  --icon-width: fit-content;
-}
-
-fudge-initializer>.content>.menu-container>.menu-list {
-  left: anchor(left);
-}
-
 fudge-initializer,
 fudge-boolean,
 fudge-number,
@@ -498,6 +479,27 @@ custom-matrix4x4 {
   flex-wrap: wrap;
 }
 
+fudge-stepper>.content>span,
+fudge-digit {
+  font-family: monospace;
+  align-content: center;
+  box-sizing: border-box;
+}
+
+fudge-number>input[type="text"] {
+  font-family: monospace;
+  text-align: left;
+}
+
+fudge-initializer>.content {
+  --icon-actions: "<undefined>";
+  --icon-width: fit-content;
+}
+
+fudge-initializer>.content>.menu-container>.menu-list {
+  left: anchor(left);
+}
+
 .fudge-element>label {
   flex: 1 1 50%;
   background-color: var(--color-background-property-label);
@@ -510,8 +512,8 @@ custom-matrix4x4 {
 
 .fudge-element>label:not(.fudge-element .fudge-element>label) {
   box-sizing: border-box;
-  min-height: var(--min-propety-label-height);
-  padding: 2px;
+  min-height: var(--property-label-min-height);
+  padding: var(--property-label-padding);
 }
 
 .fudge-element>.content {
@@ -524,6 +526,10 @@ custom-matrix4x4 {
   padding: 2px;
 }
 
+.fudge-element span {
+  align-content: center;
+}
+
 fudge-number input,
 fudge-textinput input,
 fudge-comboselect input,
@@ -533,20 +539,24 @@ fudge-select select {
   min-width: 12ch;
 }
 
-fudge-color>.content {
+fudge-boolean input {
+  align-content: center;
+}
+
+fudge-boolean>.content,
+fudge-color>.content,
+fudge-stepper>.content {
   display: inline-flex;
 }
 
 fudge-color input[type="color"] {
   flex: 1 1 50%;
-  height: 1.5em;
   width: 0;
   min-width: 4ch;
 }
 
 fudge-color input[type="range"] {
   flex: 1 1 50%;
-  height: 1.5em;
   width: 0;
   min-width: 8ch;
 }
@@ -554,7 +564,13 @@ fudge-color input[type="range"] {
 .fudge-element input,
 .fudge-element select,
 fudge-digit,
-fudge-stepper>.content>span[name="exp"] {
+fudge-stepper>.content>span {
+  height: 1.4em;
+}
+
+.fudge-element input,
+.fudge-element select,
+fudge-stepper>.content {
   background-color: var(--color-background-property-input);
 }
 

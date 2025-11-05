@@ -28,26 +28,17 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.TOGGLE, this.hndToggle);
     }
 
-    public get isExpanded(): boolean {
-      // return this.expander.checked;
-      return this.open;
-    }
-
     public setContent(_content: HTMLDivElement): void {
       this.replaceChild(_content, this.content);
       this.content = _content;
     }
 
     public expand(_expand: boolean): void {
-      // this.expander.checked = _expand;
       this.open = _expand;
-      this.hndToggle(null);
     }
 
     private hndToggle = (_event: Event): void => {
-      if (_event)
-        _event.stopPropagation();
-      this.dispatchEvent(new Event(this.isExpanded ? EVENT.EXPAND : EVENT.COLLAPSE, { bubbles: true }));
+      this.dispatchEvent(new Event(this.open ? EVENT.EXPAND : EVENT.COLLAPSE, { bubbles: true }));
     };
 
     private hndFocus = (_event: Event): void => {
@@ -93,13 +84,13 @@ namespace FudgeUserInterface {
           passEvent = true;
           break;
         case ƒ.KEYBOARD_CODE.ARROW_RIGHT:
-          if (!this.isExpanded) {
-            this.expand(true);
+          if (!this.open) {
+            this.open = true;
             break;
           }
         case ƒ.KEYBOARD_CODE.ARROW_DOWN:
           let next: HTMLElement = this;
-          if (this.isExpanded)
+          if (this.open)
             next = this.querySelector("details");
           else
             do {
@@ -113,8 +104,8 @@ namespace FudgeUserInterface {
             this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_NEXT, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.ARROW_LEFT:
-          if (this.isExpanded) {
-            this.expand(false);
+          if (this.open) {
+            this.open = false;
             break;
           }
         case ƒ.KEYBOARD_CODE.ARROW_UP:
@@ -124,7 +115,7 @@ namespace FudgeUserInterface {
           } while (previous && !(previous instanceof Details));
 
           if (previous)
-            if ((<Details>previous).isExpanded)
+            if ((<Details>previous).open)
               this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
             else
               previous.focus();

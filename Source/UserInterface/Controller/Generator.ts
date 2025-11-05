@@ -95,11 +95,8 @@ namespace FudgeUserInterface {
         element = new CustomElementComboSelect({ key: _key, label: _key, type: typeName, action: "assign", placeholder: `${typeName}...` }, value, _descriptor.getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
       }
 
-      if (!element && mutant == null) {
-        const mutable: object = _parentMutable ?? _mutable;
-        const key: string = _parentKey ?? _key;
+      if (!element && mutant == null)
         element = new CustomElementInitializer({ key: _key, label: _key, type: typeName }, _descriptor);
-      }
 
       if (!element)
         element = new CustomElementOutput({ key: _key, label: _key, type: typeName, value: value?.toString() });
@@ -112,7 +109,7 @@ namespace FudgeUserInterface {
       if (element) {
         element.classList.add("property");
 
-        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, _descriptor.kind != "function", true);
+        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, _descriptor.kind != "function", !(element instanceof CustomElementInitializer));
         if (element instanceof Details || element instanceof DetailsArray)
           element.summary.appendChild(menu);
         else
@@ -180,6 +177,19 @@ namespace FudgeUserInterface {
           menu.close();
         });
       }
+
+      // if (_deletable) {
+      //   const btnDelete: HTMLButtonElement = document.createElement("button");
+      //   btnDelete.classList.add("menu-item", "icon", "delete", "before");
+      //   btnDelete.innerText = "Delete";
+      //   btnDelete.title = `Remove element from its container`;
+      //   menu.addItem(btnDelete);
+
+      //   btnDelete.addEventListener(EVENT.CLICK, _event => {
+      //     btnDelete.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
+      //     menu.close();
+      //   });
+      // }
 
       menu.addEventListener(EVENT.CHANGE, _event => {
         menu.close();

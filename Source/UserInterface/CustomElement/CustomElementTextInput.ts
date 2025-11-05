@@ -25,6 +25,7 @@ namespace FudgeUserInterface {
       let input: HTMLInputElement = document.createElement("input");
       input.id = CustomElement.nextId;
       input.value = this.getAttribute("value");
+      input.placeholder = "<empty>";
       content.appendChild(input);
     }
 

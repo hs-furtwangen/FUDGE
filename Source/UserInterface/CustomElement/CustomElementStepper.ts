@@ -88,7 +88,7 @@ namespace FudgeUserInterface {
      * Opens/Closes a standard number input for typing the value at once
      */
     public openInput(_open: boolean): void {
-      let input: HTMLInputElement = <HTMLInputElement>this.querySelector("input");
+      let input: HTMLInputElement = <HTMLInputElement>this.content.querySelector("input");
       if (_open) {
         input.style.display = "inline";
         input.value = this.value.toString();
@@ -195,7 +195,7 @@ namespace FudgeUserInterface {
         }
         if ((numEntered >= 0 && numEntered <= 9) || _event.key == "-" || _event.key == "+") {
           this.openInput(true);
-          this.querySelector("input").value = "";
+          this.content.querySelector("input").value = "";
           // _event.stopImmediatePropagation();
         }
         return;
@@ -268,6 +268,9 @@ namespace FudgeUserInterface {
     };
 
     private hndWheel = (_event: WheelEvent): void => {
+      if (!this.contains(document.activeElement))
+        return;
+
       _event.stopPropagation();
       _event.preventDefault();
       let change: number = _event.deltaY < 0 ? +1 : -1;
@@ -295,7 +298,7 @@ namespace FudgeUserInterface {
       if (_amount == 0)
         return;
 
-      if (digit == this.querySelector("[name=exp]")) {
+      if (digit == this.content.querySelector("[name=exp]")) {
         // console.log(this.value);
         let value: number = this.value * Math.pow(10, _amount);
         ƒ.Debug.log(value, this.value);

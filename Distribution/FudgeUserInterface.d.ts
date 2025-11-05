@@ -24,6 +24,7 @@ declare namespace FudgeUserInterface {
     class Controller {
         static readonly signatures: WeakMap<HTMLElement, string>;
         domElement: HTMLElement;
+        openStates: Map<string, boolean>;
         protected timeUpdate: number;
         protected mutable: object;
         private idInterval;
@@ -50,8 +51,8 @@ declare namespace FudgeUserInterface {
          * @param _mutable - The original mutable object represented in the UI.
          * @param _details - The {@link Details} element displaying the data.
          * @param _mutator - The mutator object describing the current structure and values.
-         * @param _parentMutable - *(Optional)* The parent mutable object if nested.
-         * @param _parentKey - *(Optional)* The key referencing this mutable within its parent.
+         * @param _parentMutable - (optional) The parent mutable object if nested.
+         * @param _parentKey - (optional) The key referencing this mutable within its parent.
          */
         static updateUserInterfaceStructure(_mutable: object, _details: Details, _mutator: ƒ.Mutator, _parentMutable?: object, _parentKey?: string): void;
         /**
@@ -78,6 +79,7 @@ declare namespace FudgeUserInterface {
          * ```
          */
         static createSignature(_object: Record<string, unknown>): string;
+        get isRefreshing(): boolean;
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
         getMutable(): object;
@@ -88,6 +90,8 @@ declare namespace FudgeUserInterface {
         protected setValue: (_event: Event) => void;
         protected createValue: (_event: Event) => void;
         protected refreshOptions: (_event: Event) => void;
+        protected hndExpand: (_event: Event) => void;
+        protected hndReopen: (_event: Event) => void;
         protected refresh: (_event: Event) => void;
         protected getMutatorPath(_event: Event): string[];
     }
@@ -548,7 +552,6 @@ declare namespace FudgeUserInterface {
         summary: HTMLElement;
         content: HTMLDivElement;
         constructor(_legend: string, _type: string);
-        get isExpanded(): boolean;
         setContent(_content: HTMLDivElement): void;
         expand(_expand: boolean): void;
         private hndToggle;
