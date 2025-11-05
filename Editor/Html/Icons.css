@@ -6,7 +6,7 @@ details>summary::after,
 .lm_controls .lm_maximise::before,
 .lm_controls .lm_tabdropdown::before,
 .lm_maximised .lm_controls .lm_maximise::before,
-div[view=ViewAnimation] fudge-stepper::after,
+div[view=ViewAnimation] fudge-stepper>label::after,
 .buttonIcon::before,
 fudge-boolean input[type="checkbox"]::before {
   width: 16px;
@@ -295,7 +295,7 @@ div[view=ViewAnimation] fudge-stepper {
   /* will be overriten by ControllerAnimation code */
 }
 
-div[view=ViewAnimation] fudge-stepper::after {
+div[view=ViewAnimation] fudge-stepper>label::after {
   margin-right: 0px;
   margin-left: 5px;
   background: var(--color-animation-property);

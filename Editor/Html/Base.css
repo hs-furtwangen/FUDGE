@@ -641,6 +641,12 @@ custom-matrix4x4>.content>.fudge-element>label::after {
   overflow: hidden;
 }
 
+custom-matrix3x3>.content>fudge-stepper>.content::before {
+  content: "x";
+  visibility: hidden;
+  display: inline;
+}
+
 @container custom-matrix (width < 36ch) {
   custom-matrix3x3>.content>.fudge-element>label {
     text-align: left;
