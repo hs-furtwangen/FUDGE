@@ -1,7 +1,7 @@
 namespace Fudge {
   import ƒ = FudgeCore;
 
-  export type historySource = object | ƒ.Node | ƒ.Project;
+  export type historySource = object | ƒ.Node | typeof ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
   export enum HISTORY { MUTATE, ADD, REMOVE, LINK, RESTRUCTURE };
   type historyStep = [HISTORY, historySource, historyTarget];
@@ -56,8 +56,8 @@ namespace Fudge {
 
       if (source instanceof ƒ.Node)
         History.processNode(DO.RE, action, source, target);
-      else if (source instanceof ƒ.Project)
-        History.processProject(DO.RE, action, source, target);
+      else if (source == ƒ.Project)
+        History.processProject(DO.RE, action, <typeof ƒ.Project>source, target);
       else if (ƒ.isMutable(source))
         History.processMutation(DO.UN, step, source, target);
 
@@ -84,8 +84,8 @@ namespace Fudge {
         let [action, source, target] = step;
         if (source instanceof ƒ.Node)
           History.processNode(DO.UN, action, source, target);
-        else if (source instanceof ƒ.Project)
-          History.processProject(DO.UN, action, source, target);
+        else if (source == ƒ.Project)
+          History.processProject(DO.UN, action, <typeof ƒ.Project>source, target);
         else if (ƒ.isMutable(source))
           History.processMutation(DO.UN, step, source, target);
 
@@ -166,7 +166,7 @@ namespace Fudge {
     /**
      * Process deletion and addition of {@link ƒ.SerializableResource}s in the {@link ƒ.Project}
      */
-    private static processProject(_do: DO, _action: HISTORY, _source: ƒ.Project, _target: historyTarget): void {
+    private static processProject(_do: DO, _action: HISTORY, _source: typeof ƒ.Project, _target: historyTarget): void {
       let action: HISTORY = _action;
       if (_do == DO.UN) // reverse action
         action = action == HISTORY.ADD ? HISTORY.REMOVE : HISTORY.ADD;

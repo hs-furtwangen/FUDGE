@@ -77,9 +77,9 @@ namespace Fudge {
       }
 
       for (let expendable of expendables) {
-        let usage: string[] = usages[expendables.indexOf(expendable) + ". " + expendable.name + " " + expendable.type] = [];
+        let usage: string[] = usages[expendables.indexOf(expendable) + " " + expendable.name + " " + expendable.type] = [];
         for (let dependend of dependency.get(expendable))
-          usage.push(". " + dependend.name + " " + dependend.idResource);
+          usage.push(dependend.name + " " + dependend.idResource);
       }
 
       if (await openDialog()) {

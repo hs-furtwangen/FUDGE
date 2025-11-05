@@ -174,7 +174,7 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    type historySource = object | ƒ.Node | ƒ.Project;
+    type historySource = object | ƒ.Node | typeof ƒ.Project;
     type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
     enum HISTORY {
         MUTATE = 0,
@@ -917,6 +917,9 @@ declare namespace Fudge {
      */
     class ViewProperties extends View {
         private resource;
+        private details;
+        private controller;
+        private mapMutableToController;
         constructor(_container: ComponentContainer, _state: ViewState);
         private fillContent;
         private hndEvent;

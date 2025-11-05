@@ -8,6 +8,10 @@ namespace Fudge {
    */
   export class ViewProperties extends View {
     private resource: ƒ.SerializableResource;
+    private details: ƒui.Details;
+    private controller: ControllerDetail;
+
+    private mapMutableToController: WeakMap<ƒ.Mutable, ControllerDetail> = new WeakMap();
 
     public constructor(_container: ComponentContainer, _state: ViewState) {
       super(_container, _state);
@@ -28,9 +32,13 @@ namespace Fudge {
       if (this.resource) {
         this.setTitle("Properties | " + this.resource.name);
         if (this.resource instanceof ƒ.Mutable) {
-          let fieldset: ƒui.Details = ƒui.Generator.createDetailsFromMutable(this.resource);
-          let uiMutable: ControllerDetail = new ControllerDetail(this.resource, fieldset, this);
-          content = uiMutable.domElement;
+          let controller: ControllerDetail = this.mapMutableToController.get(this.resource);
+          if (!controller)
+            this.mapMutableToController.set(this.resource, controller = new ControllerDetail(this.resource, ƒui.Generator.createDetailsFromMutable(this.resource), this));
+
+          content = controller.domElement;
+          if (!controller.isRefreshing)
+            controller.startRefresh();
         } else if (this.resource instanceof DirectoryEntry && this.resource.stats) {
           content.innerHTML += "Size: " + (this.resource.stats["size"] / 1024).toFixed(2) + " KiB<br/>";
           content.innerHTML += "Created: " + this.resource.stats["birthtime"].toLocaleString() + "<br/>";
