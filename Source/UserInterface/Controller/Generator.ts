@@ -128,10 +128,15 @@ namespace FudgeUserInterface {
         const menuCreate: Menu = new Menu("New...");
         menuCreate.btnToggle.classList.add("menu-item", "icon", "create", "before");
         menuCreate.btnToggle.title = `Create a new ${_type}`;
+        menuCreate.list.addEventListener(EVENT.TOGGLE, _event => {
+          if (_event.newState == "open")
+            selectCreate.input.focus();
+        });
         menu.addItem(menuCreate);
 
         const selectCreate: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "create", placeholder: `🔍︎ Select type...` });
         selectCreate.removeAttribute("key");
+        selectCreate.classList.add("menu-item");
         selectCreate.addEventListener(EVENT.CHANGE, _event => {
           selectCreate.setValue("");
           menu.close();
@@ -151,13 +156,18 @@ namespace FudgeUserInterface {
       }
 
       if (_assignOptions) {
-        const menuAssign: Menu = new Menu("Assign...")
+        const menuAssign: Menu = new Menu("Assign...");
         menuAssign.btnToggle.classList.add("menu-item", "icon", "assign", "before");
         menuAssign.btnToggle.title = `Assign an existing ${_type}`;
+        menuAssign.list.addEventListener(EVENT.TOGGLE, _event => {
+          if (_event.newState == "open")
+            selectAssign.input.focus();
+        });
         menu.addItem(menuAssign);
 
         const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "assign", placeholder: `🔍︎ Select ${_type}...` });
         selectAssign.removeAttribute("key");
+        selectAssign.classList.add("menu-item");
         selectAssign.addEventListener(EVENT.CHANGE, _event => {
           menu.close();
           selectAssign.setValue("");
