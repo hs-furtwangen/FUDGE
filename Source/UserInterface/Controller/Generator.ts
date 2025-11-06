@@ -136,7 +136,6 @@ namespace FudgeUserInterface {
 
         const selectCreate: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "create", placeholder: `🔍︎ Select type...` });
         selectCreate.removeAttribute("key");
-        selectCreate.classList.add("menu-item");
         selectCreate.addEventListener(EVENT.CHANGE, _event => {
           selectCreate.setValue("");
           menu.close();
@@ -167,7 +166,6 @@ namespace FudgeUserInterface {
 
         const selectAssign: CustomElementComboSelect = new CustomElementComboSelect({ key: "", type: _type, action: "assign", placeholder: `🔍︎ Select ${_type}...` });
         selectAssign.removeAttribute("key");
-        selectAssign.classList.add("menu-item");
         selectAssign.addEventListener(EVENT.CHANGE, _event => {
           menu.close();
           selectAssign.setValue("");

@@ -505,6 +505,7 @@ custom-matrix4x4 {
   background-color: var(--color-background-property-content);
 }
 
+fudge-comboselect>.content,
 .fudge-element>.content:not(.fudge-element .fudge-element>.content) {
   box-sizing: border-box;
   padding: 2px;
@@ -538,10 +539,6 @@ fudge-select select {
   width: 100%;
   text-overflow: ellipsis;
   min-width: 12ch;
-}
-
-fudge-comboselect.menu-item {
-  padding: 2px;
 }
 
 fudge-initializer>.content,
