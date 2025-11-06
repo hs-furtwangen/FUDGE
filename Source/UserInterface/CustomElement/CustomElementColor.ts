@@ -14,6 +14,7 @@ namespace FudgeUserInterface {
         this.setAttribute("label", _attributes.key);
 
       this.addEventListener(EVENT.KEY_DOWN, this.hndKey);
+      this.tabIndex = 0;
     }
 
     /**

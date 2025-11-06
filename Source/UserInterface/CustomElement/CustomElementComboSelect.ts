@@ -14,6 +14,7 @@ namespace FudgeUserInterface {
       super(_attributes);
       this.options = _options;
       this.value = _value;
+      this.tabIndex = 0;
     }
 
     /**

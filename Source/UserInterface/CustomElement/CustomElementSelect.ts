@@ -12,6 +12,7 @@ namespace FudgeUserInterface {
       if (!_attributes.label)
         this.setAttribute("label", _attributes.key);
       this.options = _options;
+      this.tabIndex = 0;
     }
 
     /**

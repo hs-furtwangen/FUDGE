@@ -13,6 +13,7 @@ namespace FudgeUserInterface {
       super(_attributes);
       if (_attributes && _attributes["value"])
         this.value = parseFloat(_attributes["value"]);
+      this.tabIndex = 0;
     }
 
     /**
@@ -22,8 +23,6 @@ namespace FudgeUserInterface {
       if (this.initialized)
         return;
       this.initialized = true;
-
-      this.tabIndex = 0;
 
       this.appendLabel();
 

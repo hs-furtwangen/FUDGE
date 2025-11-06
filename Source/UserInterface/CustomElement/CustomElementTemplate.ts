@@ -9,6 +9,7 @@ namespace FudgeUserInterface {
 
     public constructor(_attributes?: CustomElementAttributes) {
       super(_attributes);
+      this.tabIndex = 0;
     }
 
     /**
