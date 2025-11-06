@@ -109,7 +109,7 @@ namespace FudgeUserInterface {
       if (element) {
         element.classList.add("property");
 
-        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, _descriptor.kind != "function", !(element instanceof CustomElementInitializer));
+        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, _descriptor.kind != "function", !(element instanceof CustomElementInitializer), !!_parentMutable);
         if (element instanceof Details || element instanceof DetailsArray)
           element.summary.appendChild(menu);
         else
@@ -119,14 +119,14 @@ namespace FudgeUserInterface {
       return element;
     }
 
-    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean): Menu {
+    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean): Menu {
       const menu: Menu = new Menu("");
       menu.classList.add("property-menu");
       menu.btnToggle.classList.add("btn-subtle", "icon", "actions", "before");
 
       if (_createOptions) {
         const menuCreate: Menu = new Menu("New...");
-        menuCreate.btnToggle.classList.add("menu-item", "icon", "construct", "before");
+        menuCreate.btnToggle.classList.add("menu-item", "icon", "create", "before");
         menuCreate.btnToggle.title = `Create a new ${_type}`;
         menu.addItem(menuCreate);
 
@@ -139,14 +139,14 @@ namespace FudgeUserInterface {
         menuCreate.addItem(selectCreate);
       } else if (_creatable) {
         const btnCreate: HTMLButtonElement = document.createElement("button");
-        btnCreate.classList.add("menu-item", "icon", "construct", "before");
-        btnCreate.innerText = "New...";
+        btnCreate.classList.add("menu-item", "icon", "create", "before");
+        btnCreate.innerText = "New";
         btnCreate.title = `Create a new ${_type}`;
         menu.addItem(btnCreate);
 
         btnCreate.addEventListener(EVENT.CLICK, _event => {
           menu.close();
-          btnCreate.dispatchEvent(new Event(EVENT.CREATE_VALUE, { bubbles: true }));
+          btnCreate.dispatchEvent(new Event(EVENT.CREATE, { bubbles: true }));
         });
       }
 
@@ -173,23 +173,23 @@ namespace FudgeUserInterface {
         menu.addItem(btnClear);
 
         btnClear.addEventListener(EVENT.CLICK, _event => {
-          btnClear.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
+          btnClear.dispatchEvent(new CustomEvent(EVENT.ASSIGN, { bubbles: true, detail: { value: undefined } }));
           menu.close();
         });
       }
 
-      // if (_deletable) {
-      //   const btnDelete: HTMLButtonElement = document.createElement("button");
-      //   btnDelete.classList.add("menu-item", "icon", "delete", "before");
-      //   btnDelete.innerText = "Delete";
-      //   btnDelete.title = `Remove element from its container`;
-      //   menu.addItem(btnDelete);
+      if (_deletable) {
+        const btnDelete: HTMLButtonElement = document.createElement("button");
+        btnDelete.classList.add("menu-item", "icon", "delete", "before");
+        btnDelete.innerText = "Delete";
+        btnDelete.title = `Remove element`;
+        menu.addItem(btnDelete);
 
-      //   btnDelete.addEventListener(EVENT.CLICK, _event => {
-      //     btnDelete.dispatchEvent(new CustomEvent(EVENT.SET_VALUE, { bubbles: true, detail: { value: undefined } }));
-      //     menu.close();
-      //   });
-      // }
+        btnDelete.addEventListener(EVENT.CLICK, _event => {
+          btnDelete.dispatchEvent(new Event(EVENT.DELETE, { bubbles: true }));
+          menu.close();
+        });
+      }
 
       menu.addEventListener(EVENT.CHANGE, _event => {
         menu.close();

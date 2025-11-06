@@ -87,8 +87,9 @@ declare namespace FudgeUserInterface {
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
-        protected setValue: (_event: Event) => void;
-        protected createValue: (_event: Event) => void;
+        protected hndCreate: (_event: Event) => void;
+        protected hndAssign: (_event: Event) => void;
+        protected hndDelete: (_event: Event) => void;
         protected refreshOptions: (_event: Event) => void;
         protected hndExpand: (_event: Event) => void;
         protected hndReopen: (_event: Event) => void;
@@ -113,7 +114,7 @@ declare namespace FudgeUserInterface {
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
         static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _descriptor?: ƒ.MetaPropertyDescriptor, _parentMutable?: object, _parentKey?: string): HTMLElement;
-        static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean): Menu;
+        static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean): Menu;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!
@@ -974,7 +975,7 @@ declare namespace FudgeUserInterface {
         SELECT_ALL = "selectAll",
         SAVE_HISTORY = "saveHistory",
         REFRESH_OPTIONS = "refreshOptions",
-        SET_VALUE = "setValue",
-        CREATE_VALUE = "initializeValue"
+        ASSIGN = "assign",
+        CREATE = "create"
     }
 }

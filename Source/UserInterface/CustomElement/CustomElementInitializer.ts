@@ -34,7 +34,7 @@ namespace FudgeUserInterface {
       const creatable: boolean = this.#descriptor.kind != "function";
 
       if (createOptions || assignOptions) {
-        let menu: Menu = Generator.createInterfaceElementMenu(this.getAttribute("type"), createOptions, assignOptions, false, false);
+        let menu: Menu = Generator.createInterfaceElementMenu(this.getAttribute("type"), createOptions, assignOptions, false, false, false);
         content.appendChild(menu);
       } else if (creatable) {
         const btnCreate: HTMLButtonElement = document.createElement("button");
@@ -42,7 +42,7 @@ namespace FudgeUserInterface {
         btnCreate.title = `Create a new ${this.getAttribute("type")}`;
 
         btnCreate.addEventListener(EVENT.CLICK, _event => {
-          btnCreate.dispatchEvent(new Event(EVENT.CREATE_VALUE, { bubbles: true }));
+          btnCreate.dispatchEvent(new Event(EVENT.CREATE, { bubbles: true }));
         });
 
         content.appendChild(btnCreate);

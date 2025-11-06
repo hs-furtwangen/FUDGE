@@ -180,7 +180,7 @@ declare namespace Fudge {
         MUTATE = 0,
         ADD = 1,
         REMOVE = 2,
-        LINK = 3,
+        ASSIGN = 3,
         RESTRUCTURE = 4
     }
     /**

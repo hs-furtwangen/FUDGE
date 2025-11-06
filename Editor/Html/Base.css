@@ -435,9 +435,11 @@ button:active {
   background: none;
   box-sizing: border-box;
   width: 100%;
-  padding: 0 0.2em;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 2px;
+  padding-right: 6px;
   text-align: left;
-  height: 1.6em;
 }
 
 .menu-item:active {
@@ -482,7 +484,6 @@ custom-matrix4x4 {
 fudge-stepper>.content>span,
 fudge-digit {
   font-family: monospace;
-  align-content: center;
   box-sizing: border-box;
 }
 
@@ -526,10 +527,6 @@ fudge-initializer>.content>.menu-container>.menu-list {
   padding: 2px;
 }
 
-.fudge-element span {
-  align-content: center;
-}
-
 fudge-number input,
 fudge-textinput input,
 fudge-comboselect input,
@@ -539,10 +536,7 @@ fudge-select select {
   min-width: 12ch;
 }
 
-fudge-boolean input {
-  align-content: center;
-}
-
+fudge-initializer>.content,
 fudge-boolean>.content,
 fudge-color>.content,
 fudge-stepper>.content {
@@ -563,9 +557,12 @@ fudge-color input[type="range"] {
 
 .fudge-element input,
 .fudge-element select,
-fudge-digit,
-fudge-stepper>.content>span {
-  height: 1.4em;
+fudge-stepper>.content>*,
+fudge-initializer>.content>*,
+fudge-initializer>.content>.menu-container>.menu-toggle,
+fudge-boolean>.content>* {
+  /* height: 1.4em; */
+  align-content: center;
 }
 
 .fudge-element input,

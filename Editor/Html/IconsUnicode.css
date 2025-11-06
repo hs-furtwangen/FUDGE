@@ -30,10 +30,11 @@
   --icon-unlock: "🔓︎";
 
   --icon-actions: "⋮";
-  --icon-construct: "➕︎";
+  --icon-create: "➕︎";
   --icon-assign: "↪";
-  --icon-clear: "✖︎";
-  --icon-search: "🔍︎";
+  --icon-clear: "✖";
+  --icon-delete: "➖︎";
+  --icon-search: "🔍︎"; 
 
   /* Navigation */
   --icon-forward: "➜";
@@ -176,9 +177,9 @@
   content: var(--icon-actions);
 }
 
-.icon.construct.before::before,
-.icon.construct.after::after {
-  content: var(--icon-construct);
+.icon.create.before::before,
+.icon.create.after::after {
+  content: var(--icon-create);
 }
 
 .icon.assign.before::before,
@@ -189,6 +190,11 @@
 .icon.clear.before::before,
 .icon.clear.after::after {
   content: var(--icon-clear);
+}
+
+.icon.delete.before::before,
+.icon.delete.after::after {
+  content: var(--icon-delete);
 }
 
 .icon.search.before::before,

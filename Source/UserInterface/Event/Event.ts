@@ -44,7 +44,7 @@ namespace FudgeUserInterface {
     SELECT_ALL = "selectAll",
     SAVE_HISTORY = "saveHistory",
     REFRESH_OPTIONS = "refreshOptions",
-    SET_VALUE = "setValue",
-    CREATE_VALUE = "initializeValue"
+    ASSIGN = "assign",
+    CREATE = "create"
   }
 }

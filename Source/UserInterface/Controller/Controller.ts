@@ -24,8 +24,10 @@ namespace FudgeUserInterface {
       this.domElement.addEventListener(EVENT.INPUT, this.mutateOnInput);
       this.domElement.addEventListener(EVENT.REARRANGE_ARRAY, this.rearrangeArray);
       this.domElement.addEventListener(EVENT.REFRESH_OPTIONS, this.refreshOptions);
-      this.domElement.addEventListener(EVENT.SET_VALUE, this.setValue);
-      this.domElement.addEventListener(EVENT.CREATE_VALUE, this.createValue);
+      this.domElement.addEventListener(EVENT.CREATE, this.hndCreate);
+      this.domElement.addEventListener(EVENT.ASSIGN, this.hndAssign);
+      this.domElement.addEventListener(EVENT.DELETE, this.hndDelete);
+
       this.domElement.addEventListener(EVENT.EXPAND, this.hndExpand);
       this.domElement.addEventListener(EVENT.COLLAPSE, this.hndExpand);
       this.domElement.addEventListener("reopen", this.hndReopen);
@@ -317,23 +319,7 @@ namespace FudgeUserInterface {
       await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable)); // rearrangement is not a mutation?
     };
 
-    protected setValue = (_event: Event): void => {
-      const path: string[] = this.getMutatorPath(_event);
-      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
-      const key: string = path[path.length - 1];
-
-      const current: unknown = Reflect.get(mutable, key);
-      const incoming: unknown = (<CustomEvent>_event).detail.value;
-
-      if (current == incoming)
-        return;
-
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
-
-      Reflect.set(mutable, key, incoming);
-    };
-
-    protected createValue = (_event: Event): void => {
+    protected hndCreate = (_event: Event): void => {
       const path: string[] = this.getMutatorPath(_event);
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
       const key: string = path[path.length - 1];
@@ -358,6 +344,33 @@ namespace FudgeUserInterface {
       this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
 
       Reflect.set(mutable, key, incoming);
+    };
+
+    protected hndAssign = (_event: Event): void => {
+      const path: string[] = this.getMutatorPath(_event);
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const key: string = path[path.length - 1];
+
+      const current: unknown = Reflect.get(mutable, key);
+      const incoming: unknown = (<CustomEvent>_event).detail.value;
+
+      if (current == incoming)
+        return;
+
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
+
+      Reflect.set(mutable, key, incoming);
+    };
+
+    protected hndDelete = (_event: Event): void => {
+      const path: string[] = this.getMutatorPath(_event);
+      const current: unknown[] = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const key: string = path[path.length - 1];
+
+      if (Array.isArray(current)) {
+        this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path.toSpliced(path.length - 1), value: current.concat() } } }));
+        current.splice(parseInt(key), 1);
+      }
     };
 
     protected refreshOptions = (_event: Event): void => {

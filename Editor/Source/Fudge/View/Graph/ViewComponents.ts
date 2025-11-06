@@ -274,7 +274,7 @@ namespace Fudge {
           break;
         case ƒui.EVENT.DELETE:
         case EVENT_EDITOR.DELETE:
-          let component: ƒ.Component = <ƒ.Component>_event.detail.mutable;
+          let component: ƒ.Component = <ƒ.Component>_event.detail?.mutable;
           if (this.protectGraphInstance() || !component)
             return;
           History.save(HISTORY.REMOVE, this.node, component);

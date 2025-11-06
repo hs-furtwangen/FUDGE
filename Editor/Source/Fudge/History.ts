@@ -3,7 +3,7 @@ namespace Fudge {
 
   export type historySource = object | ƒ.Node | typeof ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-  export enum HISTORY { MUTATE, ADD, REMOVE, LINK, RESTRUCTURE };
+  export enum HISTORY { MUTATE, ADD, REMOVE, ASSIGN, RESTRUCTURE };
   type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
@@ -142,14 +142,14 @@ namespace Fudge {
           current = ƒ.Mutable.updateMutator(_source, ƒ.Mutable.cloneMutator(_target)); // cache the current state
           await _source.mutate(_target);
           break;
-        case HISTORY.LINK: 
-          current = { path: atomicMutator.path, value: ƒ.Mutable.getValue(_source, atomicMutator.path) };
+        case HISTORY.ASSIGN: 
+          current = { path: atomicMutator.path.concat(), value: ƒ.Mutable.getValue(_source, atomicMutator.path) };
 
           ƒ.Mutable.setValue(_source, atomicMutator.path, atomicMutator.value);
           break;
         case HISTORY.RESTRUCTURE:
           const source: Array<unknown> = ƒ.Mutable.getValue(_source, atomicMutator.path);
-          current = { path: atomicMutator.path, value: source.concat() };
+          current = { path: atomicMutator.path.concat(), value: source.concat() };
 
           source.splice(0, source.length, ...<Array<unknown>>atomicMutator.value);
       }
