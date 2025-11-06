@@ -129,7 +129,7 @@ namespace FudgeUserInterface {
         menuCreate.btnToggle.classList.add("menu-item", "icon", "create", "before");
         menuCreate.btnToggle.title = `Create a new ${_type}`;
         menuCreate.list.addEventListener(EVENT.TOGGLE, _event => {
-          if (_event.newState == "open")
+          if ((<ToggleEvent>_event).newState == "open")
             selectCreate.input.focus();
         });
         menu.addItem(menuCreate);
@@ -159,7 +159,7 @@ namespace FudgeUserInterface {
         menuAssign.btnToggle.classList.add("menu-item", "icon", "assign", "before");
         menuAssign.btnToggle.title = `Assign an existing ${_type}`;
         menuAssign.list.addEventListener(EVENT.TOGGLE, _event => {
-          if (_event.newState == "open")
+          if ((<ToggleEvent>_event).newState == "open")
             selectAssign.input.focus();
         });
         menu.addItem(menuAssign);
