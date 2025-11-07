@@ -45,7 +45,10 @@ namespace Fudge {
     PANEL_PROJECT_OPEN = "panelProjectOpen",
     PANEL_HELP_OPEN = "panelHelpOpen",
     PANEL_PARTICLE_SYSTEM_OPEN = "panelParticleSystemOpen",
-    FULLSCREEN = "fullscreen"
+    FULLSCREEN = "fullscreen",
+    ZOOM_IN = "zoomIn",
+    ZOOM_OUT = "zoomOut",
+    ZOOM_RESET = "zoomReset"
   }
 
   export enum PANEL {

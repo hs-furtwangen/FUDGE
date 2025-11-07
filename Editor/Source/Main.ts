@@ -88,12 +88,24 @@ namespace Main {
   function menuSelect(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.KeyboardEvent): void {
     console.log(`MenuSelect: Item-id=${Fudge.MENU[_item.id]}`);
     // TODO: simplify switch using enums as messages
+    const webContents: Electron.WebContents = _window.webContents;
+    const zoomLevel: number = webContents.getZoomLevel();
+
     switch (_item.id) {
       case Fudge.MENU.DEVTOOLS_OPEN:
         _window.webContents.openDevTools();
         break;
       case Fudge.MENU.FULLSCREEN:
         _window.fullScreen = !_window.isFullScreen();
+        break;
+      case Fudge.MENU.ZOOM_IN:
+        webContents.setZoomLevel(zoomLevel + 1);
+        break;
+      case Fudge.MENU.ZOOM_OUT:
+        webContents.setZoomLevel(zoomLevel - 1);
+        break;
+      case Fudge.MENU.ZOOM_RESET:
+        webContents.setZoomLevel(0);
         break;
       case Fudge.MENU.QUIT:
         quit({ type: "Ctrl+Q" });
@@ -126,7 +138,10 @@ namespace Main {
       {
         label: "Debug", submenu: [
           { label: "DevTool", id: Fudge.MENU.DEVTOOLS_OPEN, click: menuSelect, accelerator: process.platform == "darwin" ? "F12" : "F12" },
-          { label: "Fullscreen", id: Fudge.MENU.FULLSCREEN, click: menuSelect, accelerator: process.platform == "darwin" ? "F11" : "F11" }
+          { label: "Fullscreen", id: Fudge.MENU.FULLSCREEN, click: menuSelect, accelerator: process.platform == "darwin" ? "F11" : "F11" },
+          { label: "Zoom In", id: Fudge.MENU.ZOOM_IN, click: menuSelect, accelerator: process.platform === "darwin" ? "Command+=" : "Ctrl+=" },
+          { label: "Zoom Out", id: Fudge.MENU.ZOOM_OUT, click: menuSelect, accelerator: process.platform === "darwin" ? "Command+-" : "Ctrl+-" },
+          { label: "Reset Zoom", id: Fudge.MENU.ZOOM_RESET, click: menuSelect, accelerator: process.platform === "darwin" ? "Command+0" : "Ctrl+0" }
         ]
       }];
     return menu;
