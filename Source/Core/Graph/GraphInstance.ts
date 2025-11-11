@@ -135,7 +135,7 @@ namespace FudgeCore {
       if (this.isFiltered())
         return;
 
-      await this.reflectMutation(_event, <Graph>_event.currentTarget, this, _event.detail.path);
+      await this.reflectMutation(_event, <Graph>_event.currentTarget, this, _event.detail.path, false);
       this.dispatchEvent(new Event(EVENT.MUTATE_INSTANCE, { bubbles: true }));
     };
 
@@ -146,18 +146,18 @@ namespace FudgeCore {
       if (this.isFiltered())
         return;
 
-      await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"));
-      this.get().dispatchEvent(new CustomEvent(EVENT.MUTATE, { detail: _event.detail }));
+      await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"), true);
+      // this.get().dispatchEvent(new CustomEvent(EVENT.MUTATE, { detail: _event.detail })); // TODO: This dispatch seems to create an invalid mutation path as it implies the mutation happened on the graph instance when it actually happened on one of its children
     };
 
     // reflect mutation from a source graph or instance to a destination instance or graph
-    private async reflectMutation(_event: CustomEvent, _source: Node, _destination: Node, _path: Node[]): Promise<void> {
+    private async reflectMutation(_event: CustomEvent, _source: Node, _destination: Node, _path: Node[], _dispatchMutate: boolean): Promise<void> {
       for (let node of _path) // iterate up the event path, which may contain regular Nodes or GraphInstances
-        if (node instanceof GraphInstance) // until this GraphInstance is found (or no GraphInstance...)
+        if (node instanceof GraphInstance) // until this GraphInstance is found (or no GraphInstance...) 
           if (node == this)
             break;
           else {
-            console.log("Sync aborted, target already synced");
+            console.log("Sync aborted, target already synced"); // TODO: likely unreachable now, so we do get double syncing
             return;
           }
 
@@ -172,7 +172,7 @@ namespace FudgeCore {
       // mutate the corresponding component in the destination
       let cmpMutate: Component = _destination.getComponent(_event.detail.component.constructor);
       if (cmpMutate)
-        await cmpMutate.mutate(_event.detail.mutator, null, false);
+        await cmpMutate.mutate(_event.detail.mutator, null, _dispatchMutate);
     }
 
     private isFiltered(): boolean {
