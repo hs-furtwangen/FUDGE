@@ -90,7 +90,6 @@ namespace FudgeCore {
     }
 
     public deserialize(_serialization: Serialization): Promise<Serializable> {
-      Project.register(this, _serialization.idResource);
       return deserializeDecorations(this, _serialization);
     }
   }

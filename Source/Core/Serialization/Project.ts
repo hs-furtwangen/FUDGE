@@ -163,7 +163,7 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns whether there is a resource registered for the given id.
+     * Returns whether there is a resource or a resource serialization registered for the given id.
      */
     public static hasResource(_idResource: string): boolean {
       return Project.resources[_idResource] != undefined || Project.serialization[_idResource] != undefined;
@@ -369,7 +369,12 @@ namespace FudgeCore {
     }
 
     private static async deserializeResource(_serialization: Serialization): Promise<SerializableResource> {
-      return <Promise<SerializableResource>>Serializer.deserialize(_serialization);
+      return Serializer.deserialize(_serialization, Project.reregister);
+    }
+
+    private static reregister(_resource: SerializableResource, _serialization: Serialization): void {
+      if (_serialization.idResource != null)
+        Project.register(_resource, _serialization.idResource); // (Re-)register before deserializing, enabling cyclic resource references
     }
   }
 }

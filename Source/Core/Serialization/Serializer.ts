@@ -110,18 +110,22 @@ namespace FudgeCore {
 
     /**
      * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
-     * including attached components, children, superclass-objects
+     * including attached components, children, superclass-objects.
+     * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
      */
-    public static async deserialize<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T> {
-      let reconstruct: Serializable;
+    public static async deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> {
+      let reconstruct: T;
       let path: string;
       try {
         // loop constructed solely to access type-property. Only one expected!
         for (path in _serialization) {
+          const serialization: Serialization = _serialization[path];
           reconstruct = Serializer.reconstruct(path);
-          reconstruct = await reconstruct.deserialize(_serialization[path]);
 
-          return <T>reconstruct;
+          if (_onConstruct)
+            _onConstruct(reconstruct, serialization);
+
+          return <Promise<T>>reconstruct.deserialize(serialization);
         }
       } catch (_error) {
         let message: string = `Deserialization of ${path}, ${reconstruct ? Reflect.get(reconstruct, "idResource") : ""} failed: ` + _error;
@@ -156,9 +160,9 @@ namespace FudgeCore {
      */
     public static async deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]> {
       const serializables: (Promise<Serializable> | Serializable)[] = new Array(_serializations.length);
-      if (!Array.isArray(_serializations)) 
+      if (!Array.isArray(_serializations))
         return this.deserializeArrayLegacy<T>(_serializations); // legacy support for old serializations. TODO: remove in future versions 
-      
+
       if (_constructor)
         for (let i: number = 0; i < _serializations.length; i++)
           serializables[i] = new _constructor().deserialize(_serializations[i]);
@@ -202,7 +206,7 @@ namespace FudgeCore {
     public static serializeResources(_resources: SerializableResource[]): string[] {
       const serializations: string[] = new Array(_resources.length);
       for (let i: number = 0; i < _resources.length; i++)
-        serializations[i] = _resources[i].idResource;
+        serializations[i] = _resources[i]?.idResource;
 
       return serializations;
     }
@@ -211,11 +215,11 @@ namespace FudgeCore {
      * Returns an array of resources retrieved with the given resource IDs.
      */
     public static async deserializeResources<T extends SerializableResource = SerializableResource>(_resourceIds: string[]): Promise<T[]> {
-      const resources: (Promise<SerializableResource> | SerializableResource)[] = new Array(_resourceIds.length);
+      const resources: SerializableResource[] = new Array(_resourceIds.length);
       for (let i: number = 0; i < _resourceIds.length; i++)
-        resources[i] = Project.resources[_resourceIds[i]] ?? Project.getResource(_resourceIds[i]);
+        resources[i] = Project.resources[_resourceIds[i]] ?? await Project.getResource(_resourceIds[i]);
 
-      return <Promise<T[]>>Promise.all(resources);
+      return <T[]>resources;
     }
 
     /**
@@ -268,9 +272,9 @@ namespace FudgeCore {
      * Creates an object of the class defined with the full path including the namespaceName(s) and the className seperated by dots(.) 
      * @param _path 
      */
-    public static reconstruct(_path: string): Serializable {
+    public static reconstruct<T extends Serializable = Serializable>(_path: string): T {
       let constructor: new () => Serializable = Serializer.getFunction(_path);
-      let reconstruction: Serializable = new constructor();
+      let reconstruction: T = <T>new constructor();
       return reconstruction;
     }
 
@@ -351,7 +355,6 @@ namespace FudgeCore {
       }
 
       public async deserialize(_serialization: Serialization): Promise<Serializable> {
-        Project.register(this, _serialization.idResource);
         this.url = _serialization.url;
         this.name = _serialization.name;
         return this.load();

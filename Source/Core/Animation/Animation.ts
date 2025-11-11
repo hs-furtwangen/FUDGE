@@ -317,7 +317,6 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      Project.register(this, _serialization.idResource);
       await deserializeDecorations(this, _serialization);
 
       // TODO: backwards compatibility, remove in future version

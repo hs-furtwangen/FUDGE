@@ -269,8 +269,11 @@ namespace FudgeCore {
   }
 
   function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
-    const descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
-    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>(descriptor.valueDescriptor?.type ?? descriptor.type));
+    let descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
+    if (descriptor.valueDescriptor)
+      descriptor = descriptor.valueDescriptor;
+
+    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>(descriptor.type));
     const options: Record<string, SerializableResource> = {};
     for (const resource of resources)
       options[resource.name] = resource;

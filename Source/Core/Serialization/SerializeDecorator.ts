@@ -225,7 +225,7 @@ namespace FudgeCore {
           break;
         case "resource":
           const idResource: string = (<SerializableResource>value).idResource;
-          _serialization[key] = Project.hasResource(idResource) ? idResource : (<Serializable>value).serialize();
+          _serialization[key] = Project.resources[idResource] ? idResource : (<Serializable>value).serialize();
           break;
         case "node":
           _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, <Node>value);

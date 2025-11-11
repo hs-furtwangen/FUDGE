@@ -141,8 +141,11 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       // TODO: backwards compatibility, remove in future version
-      if (_serialization[super.constructor.name] != undefined)
+      if (_serialization[super.constructor.name] != undefined) { 
+        Project.register(this, _serialization[super.constructor.name].idResource);
         await super.deserialize(_serialization[super.constructor.name]);
+      }
+      
       // TODO: backwards compatibility, remove in future version
       if (_serialization.idTexture)
         this.#texture = <Texture>await Project.getResource(_serialization.idTexture);

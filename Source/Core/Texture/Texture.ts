@@ -104,7 +104,6 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      Project.register(this, _serialization.idResource);
       await deserializeDecorations(this, _serialization);
 
       // TODO: Backward compatibility, remove in future version
@@ -168,8 +167,13 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      if (_serialization[super.constructor.name] != undefined)
+
+      // TODO: backwards compatibility, remove in future version
+      if (_serialization[super.constructor.name] != undefined) { 
+        Project.register(this, _serialization[super.constructor.name].idResource);
         await super.deserialize(_serialization[super.constructor.name]);
+      }
+
       await super.deserialize(_serialization);
       await this.load(_serialization.url);
       return this;
@@ -309,8 +313,11 @@ namespace FudgeCore {
 
     // TODO: backward compatibility, remove in future version
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      if (_serialization[super.constructor.name] != undefined)
+      if (_serialization[super.constructor.name] != undefined) { 
+        Project.register(this, _serialization[super.constructor.name].idResource);
         await super.deserialize(_serialization[super.constructor.name]);
+      }
+
       await super.deserialize(_serialization);
       return this;
     }

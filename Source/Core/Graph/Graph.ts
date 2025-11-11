@@ -30,7 +30,6 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      Project.register(this, _serialization.idResource);
       await Project.resyncGraphInstances(this);
       this.broadcastEvent(new Event(EVENT.GRAPH_DESERIALIZED));
       Debug.log("Deserialized", this.name);

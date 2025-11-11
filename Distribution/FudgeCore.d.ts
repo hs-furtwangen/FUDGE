@@ -392,9 +392,10 @@ declare namespace FudgeCore {
         static serialize(_object: Serializable): Serialization;
         /**
          * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
-         * including attached components, children, superclass-objects
+         * including attached components, children, superclass-objects.
+         * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
          */
-        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T>;
+        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T>;
         /**
         * Serializes an array of {@link Serializable} objects.
         * By default, the method creates an array of {@link Serialization}s, each with type information.
@@ -448,7 +449,7 @@ declare namespace FudgeCore {
          * Creates an object of the class defined with the full path including the namespaceName(s) and the className seperated by dots(.)
          * @param _path
          */
-        static reconstruct(_path: string): Serializable;
+        static reconstruct<T extends Serializable = Serializable>(_path: string): T;
         /**
          * Returns the function (constructor) from the given path to a function, if found in the {@link registerNamespace registered namespaces}.
          */
@@ -561,7 +562,7 @@ declare namespace FudgeCore {
          */
         static isResource(_object: Serializable): boolean;
         /**
-         * Returns whether there is a resource registered for the given id.
+         * Returns whether there is a resource or a resource serialization registered for the given id.
          */
         static hasResource(_idResource: string): boolean;
         /**
@@ -622,6 +623,7 @@ declare namespace FudgeCore {
          */
         static deserialize(_serialization: SerializationOfResources): Promise<Resources>;
         private static deserializeResource;
+        private static reregister;
     }
     export {};
 }
