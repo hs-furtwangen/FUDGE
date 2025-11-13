@@ -7303,10 +7303,10 @@ declare namespace FudgeCore {
      */
     class MeshRotation extends Mesh {
         static readonly iSubclass: number;
-        protected static verticesDefault: Vector2[];
         protected shape: Vector2[];
         protected longitudes: number;
         constructor(_name?: string, _shape?: Vector2[], _longitudes?: number);
+        protected static getShapeDefault(): Vector2[];
         protected get minVertices(): number;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;

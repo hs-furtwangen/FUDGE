@@ -15,10 +15,6 @@ namespace FudgeCore {
    */
   export class MeshRotation extends Mesh {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshRotation);
-    protected static verticesDefault: Vector2[] = [ // line is the minimal shape
-      new Vector2(0.5, 0.5),
-      new Vector2(0.5, -0.5)
-    ];
 
     @edit(Array, Vector2)
     protected shape: Vector2[];
@@ -26,10 +22,17 @@ namespace FudgeCore {
     @edit(Number)
     protected longitudes: number;
 
-    public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.verticesDefault.map(_vertex => _vertex.clone), _longitudes: number = 3) {
+    public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.getShapeDefault(), _longitudes: number = 3) {
       super(_name);
       this.rotate(_shape, _longitudes);
       // console.log("Mutator", this.getMutator());
+    }
+
+    protected static getShapeDefault(): Vector2[] {
+      return [ // line is the minimal shape
+        new Vector2(0.5, 0.5),
+        new Vector2(0.5, -0.5)
+      ];
     }
 
     protected get minVertices(): number {
