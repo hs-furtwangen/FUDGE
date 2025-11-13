@@ -226,7 +226,7 @@ namespace ScreenToRay {
 
   function logMutatorInfo(_title: string, _mutable: ƒ.Mutable): void {
     let mutator: ƒ.Mutator = _mutable.getMutator();
-    let types: ƒ.MutatorTypes = ƒ.Mutable.getTypes(_mutable, mutator);
+    let types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
     console.group(_title);
     console.log("Types: ", types);
     console.log("Mutator: ", mutator);
