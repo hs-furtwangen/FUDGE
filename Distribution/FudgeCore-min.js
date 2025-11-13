@@ -655,16 +655,18 @@ var FudgeCore;
         static initialize(_renderWebGL, _blockBinding, _blockSize, _maxObjects) {
             this.blockSize = _blockSize;
             this.blockBinding = _blockBinding;
+            this.blockSize = Math.ceil(this.blockSize / 16) * 16;
             const crc3 = _renderWebGL.getRenderingContext();
             const alignment = crc3.getParameter(WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT);
             this.spaceBuffer = Math.ceil(this.blockSize / alignment) * alignment;
             this.spaceData = this.spaceBuffer / Float32Array.BYTES_PER_ELEMENT;
-            this.data = new Float32Array(this.spaceData * _maxObjects);
-            this.dataUInt = new Uint32Array(this.data.buffer);
+            const buffer = new ArrayBuffer(this.spaceBuffer * _maxObjects);
+            this.data = new Float32Array(buffer);
+            this.dataUInt = new Uint32Array(buffer);
             this.count = 0;
             this.buffer = _renderWebGL.assert(crc3.createBuffer());
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, this.buffer);
-            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, this.data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
+            crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, buffer.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
         }
         static resetRenderData() {
             this.count = 0;
@@ -885,7 +887,9 @@ var FudgeCore;
             const COLOR_FLOATS = 4;
             const MATRIX_FLOATS = 16;
             const LIGHT_FLOATS = COLOR_FLOATS + MATRIX_FLOATS + MATRIX_FLOATS;
-            RenderWebGLComponentLight.#data = new Float32Array(HEADER_UINTS + COLOR_FLOATS + (MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * LIGHT_FLOATS);
+            let blockSize = (HEADER_UINTS + COLOR_FLOATS + (MAX_LIGHTS_DIRECTIONAL + MAX_LIGHTS_POINT + MAX_LIGHTS_SPOT) * LIGHT_FLOATS) * 4;
+            blockSize = Math.ceil(blockSize / 16) * 16;
+            RenderWebGLComponentLight.#data = new Float32Array(new ArrayBuffer(blockSize));
             RenderWebGLComponentLight.#dataHeader = new Uint32Array(RenderWebGLComponentLight.#data.buffer, 0, HEADER_UINTS);
             RenderWebGLComponentLight.#dataAmbient = new Float32Array(RenderWebGLComponentLight.#data.buffer, RenderWebGLComponentLight.#dataHeader.byteOffset + RenderWebGLComponentLight.#dataHeader.byteLength, COLOR_FLOATS);
             RenderWebGLComponentLight.#dataDirectional = new Float32Array(RenderWebGLComponentLight.#data.buffer, RenderWebGLComponentLight.#dataAmbient.byteOffset + RenderWebGLComponentLight.#dataAmbient.byteLength, MAX_LIGHTS_DIRECTIONAL * LIGHT_FLOATS);
@@ -954,8 +958,10 @@ var FudgeCore;
         static #data;
         static initialize(_renderWebGL) {
             const crc3 = _renderWebGL.getRenderingContext();
+            let blockSize = (1 + 1 + 1 + 1 + 4) * 4;
+            blockSize = Math.ceil(blockSize / 16) * 16;
             RenderWebGLComponentFog.#buffer = _renderWebGL.assert(crc3.createBuffer());
-            RenderWebGLComponentFog.#data = new Float32Array(8);
+            RenderWebGLComponentFog.#data = new Float32Array(new ArrayBuffer(blockSize));
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#buffer);
             crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
             crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.FOG.BINDING, RenderWebGLComponentFog.#buffer);
@@ -982,8 +988,10 @@ var FudgeCore;
         static #data;
         static initialize(_renderWebGL) {
             const crc3 = _renderWebGL.getRenderingContext();
+            let blockSize = (16 + 16 + 16 + 3) * 4;
+            blockSize = Math.ceil(blockSize / 16) * 16;
             RenderWebGLComponentCamera.#buffer = _renderWebGL.assert(crc3.createBuffer());
-            RenderWebGLComponentCamera.#data = new Float32Array(16 + 16 + 16 + 3);
+            RenderWebGLComponentCamera.#data = new Float32Array(new ArrayBuffer(blockSize));
             crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#buffer);
             crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
             crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, FudgeCore.UNIFORM_BLOCK.CAMERA.BINDING, RenderWebGLComponentCamera.#buffer);
@@ -1319,20 +1327,21 @@ var FudgeCore;
             const crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             const vao = FudgeCore.RenderWebGL.assert(crc3.createVertexArray());
             crc3.bindVertexArray(vao);
+            const renderMesh = this.renderMesh;
             buffers = {
-                indices: createBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, this.renderMesh.indices),
-                positions: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.positions),
-                normals: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.normals),
-                textureUVs: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.textureUVs),
-                colors: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.colors),
-                tangents: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.tangents),
-                nIndices: this.renderMesh.indices.length,
+                indices: createBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, renderMesh.indices),
+                positions: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.positions),
+                normals: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.normals),
+                textureUVs: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.textureUVs),
+                colors: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.colors),
+                tangents: createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.tangents),
+                nIndices: renderMesh.indices.length,
                 vao: vao
             };
-            if (this.renderMesh.bones)
-                buffers.bones = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.bones);
-            if (this.renderMesh.weights)
-                buffers.weights = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.renderMesh.weights);
+            if (renderMesh.bones)
+                buffers.bones = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.bones);
+            if (renderMesh.weights)
+                buffers.weights = createBuffer(WebGL2RenderingContext.ARRAY_BUFFER, renderMesh.weights);
             setAttributeBuffer(buffers.positions, FudgeCore.SHADER_ATTRIBUTE.POSITION, 3, WebGL2RenderingContext.FLOAT);
             setAttributeBuffer(buffers.normals, FudgeCore.SHADER_ATTRIBUTE.NORMAL, 3, WebGL2RenderingContext.FLOAT);
             setAttributeBuffer(buffers.textureUVs, FudgeCore.SHADER_ATTRIBUTE.TEXCOORDS, 2, WebGL2RenderingContext.FLOAT);
@@ -1342,7 +1351,7 @@ var FudgeCore;
                 setAttributeBuffer(buffers.bones, FudgeCore.SHADER_ATTRIBUTE.BONES, 4, WebGL2RenderingContext.UNSIGNED_BYTE);
             if (buffers.weights)
                 setAttributeBuffer(buffers.weights, FudgeCore.SHADER_ATTRIBUTE.WEIGHTS, 4, WebGL2RenderingContext.FLOAT);
-            return this.renderMesh.buffers = buffers;
+            return renderMesh.buffers = buffers;
             function createBuffer(_type, _array) {
                 let buffer = FudgeCore.RenderWebGL.assert(crc3.createBuffer());
                 crc3.bindBuffer(_type, buffer);
@@ -1368,6 +1377,7 @@ var FudgeCore;
             let crc3 = FudgeCore.RenderWebGL.getRenderingContext();
             if (_renderBuffers) {
                 crc3.deleteVertexArray(_renderBuffers.vao);
+                crc3.bindVertexArray(null);
                 crc3.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
                 crc3.bindBuffer(WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER, null);
                 Object.values(_renderBuffers)
@@ -8634,14 +8644,13 @@ var FudgeCore;
             this.hndMutationGraph = async (_event) => {
                 if (this.isFiltered())
                     return;
-                await this.reflectMutation(_event, _event.currentTarget, this, _event.detail.path);
+                await this.reflectMutation(_event, _event.currentTarget, this, _event.detail.path, false);
                 this.dispatchEvent(new Event("mutateGraphDone", { bubbles: true }));
             };
             this.hndMutationInstance = async (_event) => {
                 if (this.isFiltered())
                     return;
-                await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"));
-                this.get().dispatchEvent(new CustomEvent("mutate", { detail: _event.detail }));
+                await this.reflectMutation(_event, this, this.get(), Reflect.get(_event, "path"), true);
             };
             this.addEventListener("mutate", this.hndMutationInstance);
             if (!_graph)
@@ -8714,7 +8723,7 @@ var FudgeCore;
         get() {
             return FudgeCore.Project.resources[this.#idSource];
         }
-        async reflectMutation(_event, _source, _destination, _path) {
+        async reflectMutation(_event, _source, _destination, _path, _dispatchMutate) {
             for (let node of _path)
                 if (node instanceof GraphInstance)
                     if (node == this)
@@ -8730,7 +8739,7 @@ var FudgeCore;
             }
             let cmpMutate = _destination.getComponent(_event.detail.component.constructor);
             if (cmpMutate)
-                await cmpMutate.mutate(_event.detail.mutator, null, false);
+                await cmpMutate.mutate(_event.detail.mutator, null, _dispatchMutate);
         }
         isFiltered() {
             let cmpFilter = this.getComponent(FudgeCore.ComponentGraphFilter);
@@ -15836,6 +15845,7 @@ var FudgeCore;
             this.#weights = _weights;
         }
         clear() {
+            this.buffers = null;
             this.#positions = null;
             this.#indices = null;
             this.#textureUVs = null;

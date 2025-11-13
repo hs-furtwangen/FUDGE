@@ -256,13 +256,14 @@ namespace FudgeCore {
      * Clears this render mesh and all its buffers
      */
     public clear(): void {
+      this.buffers = null;
+
       this.#positions = null;
       this.#indices = null;
       this.#textureUVs = null;
       this.#normals = null;
       this.#colors = null;
       this.#tangents = null;
-
       this.#bones = null;
       this.#weights = null;
     }
