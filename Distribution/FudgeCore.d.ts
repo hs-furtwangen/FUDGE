@@ -330,9 +330,13 @@ declare namespace FudgeCore {
     /**
      * Holds information needed to recreate an object identical to the one it originated from.
      * A serialization is used to create copies of existing objects at runtime or to store objects as strings or recreate them.
+     *
+     * The optional `@type` property specifies the fully qualified {@link Serializer.getFunctionPath type path} used by {@link Serializer.deserializeFlat} to restore the correct constructor.
      */
     interface Serialization {
         [type: string]: General;
+        /** The fully qualified type path used to reconstruct the serialized object. The type constructor can be restored from the path using {@link Serializer.getFunction} */
+        ["@type"]?: string;
     }
     /**
      * Generic type for a {@link Serialization} of a specific {@link Serializable} object.
@@ -385,31 +389,58 @@ declare namespace FudgeCore {
          */
         static registerNamespace(_namespace: Object): string;
         /**
-         * Returns a javascript object representing the serializable FUDGE-object given,
-         * including attached components, children, superclass-objects all information needed for reconstruction
-         * @param _object An object to serialize, implementing the {@link Serializable} interface
+         * Serializes a FUDGE-object into a nested {@link Serialization} format:
+         *
+         * ```
+         * { "<typePath>": { ...object data... } }
+         * ```
+         *
+         * This format includes all information required for full reconstruction,
+         * including components, children, and inherited data.
          */
         static serialize(_object: Serializable): Serialization;
         /**
-         * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
-         * including attached components, children, superclass-objects.
-         * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+         * Serializes a FUDGE-object into a flat {@link Serialization} format:
+         *
+         * ```
+         * { "@type": "<typePath>", ...object data... }
+         * ```
+         *
+         * The object can later be reconstructed using {@link Serializer.deserializeFlat}.
          */
-        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T>;
+        static serializeFlat(_object: Serializable): Serialization;
         /**
-        * Serializes an array of {@link Serializable} objects.
-        * By default, the method creates an array of {@link Serialization}s, each with type information.
-        * If all objects are of the same type, pass the constructor to create a more compact serialization.
-        * @param _constructor If given, all objects are expected to be of this type.
-        */
-        static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _constructor?: new () => T): Serialization[];
+         * Reconstructs an object serialized using {@link Serializer.serialize}.
+         * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+         * @returns Either the reconstructed object directly, or a `Promise` if the object's `deserialize` method performs asynchronous work.
+         */
+        static deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> | T;
+        /**
+         * Reconstructs an object serialized using {@link Serializer.serializeFlat}.
+         * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+         * @returns Either the reconstructed object directly, or a `Promise` if the object's `deserialize` method performs asynchronous work.
+         */
+        static deserializeFlat<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> | T;
+        /**
+         * Serializes an array of {@link Serializable} objects.
+         *
+         * If a constructor type is provided, objects whose constructor matches exactly
+         * are serialized **without type information** (`@type` field is omitted).
+         *
+         * Objects of a different type include type information (`@type`)
+         * to enable polymorphic reconstruction.
+         */
+        static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _type?: abstract new () => T): Serialization[];
         /**
          * Deserializes an array of {@link Serializable} objects from an array of {@link Serialization}s.
-         * By default, the method expects an array of {@link Serialization}s, each with type information.
-         * If all objects are of the same type and serialized without type information, pass the constructor to deserialize them.
-         * @param _constructor If given, all objects are expected to be of this type and the serializations are expected to be without type information.
+         *
+         * If a constructor type is provided, it is used to reconstruct objects
+         * whose serializations **do not contain type information** (`@type` field is missing).
+         *
+         * Serializations that include type information (`@type`) are deserialized via {@link Serializer.deserializeFlat},
+         * enabling polymorphic reconstruction of mixed or derived types within the same array.
          */
-        static deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]>;
+        static deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _type?: new () => T): Promise<T[]>;
         /**
          * @deprecated Use {@link Serializer.deserializeArray} instead.
          */
@@ -568,7 +599,7 @@ declare namespace FudgeCore {
         /**
          * Retrieves the resource stored with the given id.
          */
-        static getResource<T extends SerializableResource>(_idResource: string): Promise<T>;
+        static getResource<T extends SerializableResource>(_idResource: string): Promise<T> | T;
         static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
         /**
          * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
@@ -642,10 +673,10 @@ declare namespace FudgeCore {
         keyDescriptor?: MetaPropertyDescriptor;
         /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
         valueDescriptor?: MetaPropertyDescriptor;
-        /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
-        getAssignOptions?: PropertyAssignOptionsGetter;
         /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
         getCreateOptions?: PropertyCreateOptionsGetter;
+        /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
+        getAssignOptions?: PropertyAssignOptionsGetter;
     }
     /**
      * A function that returns a record of available creation options for a property.
@@ -681,7 +712,7 @@ declare namespace FudgeCore {
          * A map of property keys to their serialization strategy.
          * Use the {@link serialize} decorator to add to this map.
          */
-        serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray" | "reconstructArray">;
+        serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
     }
     namespace Metadata {
         /**
@@ -903,36 +934,6 @@ declare namespace FudgeCore {
     function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function serializeFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
     /**
-     * Decorator to mark properties of a class for serialization with type information and polymorphic reconstruction.
-     * The object will be serialized with type information and reconstructed from scratch during deserialization.
-     *
-     * **⚠️ Warning:** Do not use with {@link SerializableResource}s unless you manually deregister them from the project.
-     * Resources reconstructed this way will automatically register themselves, potentially causing ID conflicts.
-     *
-     * **Example:**
-     * ```typescript
-     * import f = FudgeCore;
-     *
-     * export class MySpecialScriptA extends f.ComponentScript {}
-     * export class MySpecialScriptB extends f.ComponentScript {}
-     *
-     * export class MyScript extends f.ComponentScript {
-     *   @f.serializeReconstruct(f.ComponentScript) // serialize with type information
-     *   public myReconstruct: f.ComponentScript;
-     * }
-     *
-     * // Usage:
-     * let myScript: Test.MyScript = new Test.MyScript();
-     * myScript.myReconstruct = new Test.MySpecialScriptA(); // or new Test.MySpecialScriptB();
-     * let serialization: f.Serialization = f.Serializer.serialize(myScript);
-     * let deserialization: Test.MyScript = await f.Serializer.deserialize(serialization); // myScript.myReconstruct is now an instance of MySpecialScriptA
-     * ```
-     *
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
-    function serializeReconstruct<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
-    /**
      * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
      */
     function serializeDecorations(_instance: object, _serialization?: Serialization): Serialization;
@@ -1015,7 +1016,7 @@ declare namespace FudgeCore {
     function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
     function edit<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     /**
-     * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
+     * Decorator to mark callable properties (functions, typeof `_type`) of a class for mutation and serialization.
      * See {@link mutateFunction} and {@link serializeF} decorators for more information.
      *
      * **Example:**
@@ -1043,32 +1044,6 @@ declare namespace FudgeCore {
      */
     function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function editFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
-    /**
-     * Decorator to mark properties of a class for nested mutation and serialization with type information and polymorphic reconstruction.
-     * See {@link serializableReconstruct} for more information.
-     *
-     * **⚠️ Warning:** Do not use with {@link SerializableResource}s unless you manually deregister them from the project.
-     * Resources reconstructed this way will automatically register themselves, potentially causing ID conflicts.
-     *
-     * **Example:**
-     * ```typescript
-     * import f = FudgeCore;
-     *
-     * export class MySpecialScriptA extends f.ComponentScript {}
-     * export class MySpecialScriptB extends f.ComponentScript {}
-     *
-     * export class MyScript extends f.ComponentScript {
-     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
-     *
-     *   @f.editReconstruct(f.ComponentScript) // serialize with type information
-     *   public myReconstruct: f.ComponentScript;
-     * }
-     * ```
-     *
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
-    function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
 }
 declare namespace FudgeCore {
     /**
@@ -1232,6 +1207,7 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
+     * @deprecated
      * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
      * @author Jirka Dell'Oro-Friedl, HFU, 2021
      */
@@ -7102,16 +7078,15 @@ declare namespace FudgeCore {
      */
     class MeshPolygon extends Mesh {
         static readonly iSubclass: number;
-        protected static shapeDefault: Vector2[];
         protected fitTexture: boolean;
-        protected shape: MutableArray<Vector2>;
+        protected shape: Vector2[];
         constructor(_name?: string, _shape?: Vector2[], _fitTexture?: boolean);
+        protected static getShapeDefault(): Vector2[];
         protected get minVertices(): number;
         /**
          * Create this mesh from the given vertices.
          */
         create(_shape?: Vector2[], _fitTexture?: boolean): void;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
     }
@@ -7130,10 +7105,9 @@ declare namespace FudgeCore {
      */
     class MeshExtrusion extends MeshPolygon {
         static readonly iSubclass: number;
-        protected static mtxDefaults: Matrix4x4[];
         private mtxTransforms;
         constructor(_name?: string, _vertices?: Vector2[], _mtxTransforms?: Matrix4x4[], _fitTexture?: boolean);
-        serialize(): Serialization;
+        static getMtxTransformsDefault(): Matrix4x4[];
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
         private extrude;
@@ -7330,11 +7304,10 @@ declare namespace FudgeCore {
     class MeshRotation extends Mesh {
         static readonly iSubclass: number;
         protected static verticesDefault: Vector2[];
-        protected shape: MutableArray<Vector2>;
+        protected shape: Vector2[];
         protected longitudes: number;
         constructor(_name?: string, _shape?: Vector2[], _longitudes?: number);
         protected get minVertices(): number;
-        serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
         protected rotate(_shape: Vector2[], _longitudes: number): void;

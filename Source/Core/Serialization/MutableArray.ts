@@ -1,5 +1,6 @@
 namespace FudgeCore {
   /**
+   * @deprecated
    * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
    * @author Jirka Dell'Oro-Friedl, HFU, 2021
    */

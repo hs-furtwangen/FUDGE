@@ -13,32 +13,26 @@ namespace FudgeCore {
    */
   export class MeshExtrusion extends MeshPolygon {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshExtrusion);
-    protected static mtxDefaults: Matrix4x4[] = [ // offset of +0.5z and -0.5z as default
-      Matrix4x4.TRANSLATION(Vector3.Z(0.5)),
-      Matrix4x4.TRANSLATION(Vector3.Z(-0.5))
-    ];
 
     @edit(Array, Matrix4x4)
-    private mtxTransforms: MutableArray<Matrix4x4> = new MutableArray(Matrix4x4);
+    private mtxTransforms: Matrix4x4[];
 
-    public constructor(_name: string = "MeshExtrusion", _vertices: Vector2[] = MeshPolygon.shapeDefault, _mtxTransforms: Matrix4x4[] = MeshExtrusion.mtxDefaults, _fitTexture: boolean = true) {
+    public constructor(_name: string = "MeshExtrusion", _vertices: Vector2[] = MeshPolygon.getShapeDefault(), _mtxTransforms: Matrix4x4[] = MeshExtrusion.getMtxTransformsDefault(), _fitTexture: boolean = true) {
       super(_name, _vertices, _fitTexture);
       this.extrude(_mtxTransforms);
       // console.log("Mutator", this.getMutator());
     }
 
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.transforms = Serializer.serializeArray(this.mtxTransforms, Matrix4x4);
-      return serialization;
+    public static getMtxTransformsDefault(): Matrix4x4[] {
+      return [ // offset of +0.5z and -0.5z as default
+        Matrix4x4.TRANSLATION(Vector3.Z(0.5)),
+        Matrix4x4.TRANSLATION(Vector3.Z(-0.5))
+      ];
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      let mtxTransforms: Matrix4x4[];
-      if (_serialization.transforms)
-        mtxTransforms = await Serializer.deserializeArray(_serialization.transforms, Matrix4x4);
-      this.extrude(mtxTransforms);
+      this.extrude(this.mtxTransforms);
       return this;
     }
 
@@ -48,8 +42,8 @@ namespace FudgeCore {
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }
 
-    private extrude(_mtxTransforms: Matrix4x4[] = MeshExtrusion.mtxDefaults): void {
-      this.mtxTransforms = new MutableArray(Matrix4x4, ..._mtxTransforms);
+    private extrude(_mtxTransforms: Matrix4x4[]): void {
+      this.mtxTransforms = _mtxTransforms;
       let nTransforms: number = _mtxTransforms.length;
       let nVerticesShape: number = this.vertices.length;
 

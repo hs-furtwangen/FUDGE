@@ -11,7 +11,7 @@ namespace FudgeCore {
   export interface Serialization {
     [type: string]: General;
 
-    /** The fully qualified type path used to reconstruct the serialized object. The type can be restored from the path using {@link Serializer.getFunction} */
+    /** The fully qualified type path used to reconstruct the serialized object. The type constructor can be restored from the path using {@link Serializer.getFunction} */
     ["@type"]?: string;
   }
 

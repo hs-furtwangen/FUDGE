@@ -127,7 +127,7 @@ namespace Fudge {
     }
 
     /**
-     * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator. 
+     * Process mutation of {@link ƒ.Mutable}s by using a stored mutator. 
      * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
      */
     private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator): Promise<void> {

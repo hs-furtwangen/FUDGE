@@ -21,12 +21,12 @@ namespace FudgeCore {
     ];
 
     @edit(Array, Vector2)
-    protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
+    protected shape: Vector2[];
 
     @edit(Number)
     protected longitudes: number;
 
-    public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.verticesDefault, _longitudes: number = 3) {
+    public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.verticesDefault.map(_vertex => _vertex.clone), _longitudes: number = 3) {
       super(_name);
       this.rotate(_shape, _longitudes);
       // console.log("Mutator", this.getMutator());
@@ -36,16 +36,10 @@ namespace FudgeCore {
       return 2;
     }
 
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.shape = Serializer.serializeArray(this.shape, Vector2);
-      return serialization;
-    }
-
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
       if (_serialization.shape)
-        this.rotate(await Serializer.deserializeArray(_serialization.shape, Vector2), this.longitudes);
+        this.rotate(this.shape, this.longitudes);
 
       return this;
     }
@@ -58,7 +52,7 @@ namespace FudgeCore {
 
     protected rotate(_shape: Vector2[], _longitudes: number): void {
       this.clear();
-      this.shape = new MutableArray(Vector2, ..._shape.map(_vertex => _vertex.clone));
+      this.shape = _shape;
       this.longitudes = Math.round(_longitudes);
       let angle: number = 360 / this.longitudes;
       let mtxRotate: Matrix4x4 = Matrix4x4.ROTATION_Y(angle);
