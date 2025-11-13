@@ -268,7 +268,7 @@ input[type="number"] {
 }
 
 label {
-  padding-right: 0.5em;
+  padding-right: 1ch;
 }
 
 /* Details */
@@ -487,7 +487,6 @@ custom-matrix4x4 {
 .fudge-element>label {
   flex: 1 1 50%;
   background-color: var(--color-background-property-label);
-  padding: 0;
   /* word-break: break-all; */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -496,6 +495,7 @@ custom-matrix4x4 {
 
 .fudge-element>label:not(.fudge-element .fudge-element>label) {
   box-sizing: border-box;
+  padding: 0;
   min-height: var(--property-label-min-height);
   padding: var(--property-label-padding);
 }
@@ -660,7 +660,7 @@ custom-matrix4x4>.content>.fudge-element>label::after {
 }
 
 custom-matrix3x3>.content>fudge-stepper>.content::before {
-  content: "x";
+  content: "x0";
   visibility: hidden;
   display: inline;
 }

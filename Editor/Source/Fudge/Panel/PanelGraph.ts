@@ -48,7 +48,7 @@ namespace Fudge {
       this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.TRANSFORM, this.hndEvent);
       this.dom.addEventListener(EVENT_EDITOR.CLOSE, this.hndEvent);
-      
+
       this.dom.addEventListener(ƒui.EVENT.DROP, this.hndDrop); //TODO: remove this
 
       this.restoreGraph().then(_graph => {
@@ -56,15 +56,21 @@ namespace Fudge {
           this.dispatch(EVENT_EDITOR.SELECT, { detail: { graph: _graph, node: this.restoreNode(_graph) } });
           return;
         }
-    
+
         if (_state["graph"]) {
-          ƒ.Project.getResource(_state["graph"]).then((_graph: ƒ.Graph) => {
+          const restoreGraph = (_graph: ƒ.Graph): void => {
             const node: ƒ.Node = _state["node"] && ƒ.Node.FIND(_graph, _state["node"]);
             if (!node && !_graph)
               return;
-            
+
             this.dispatch(EVENT_EDITOR.SELECT, { detail: { graph: _graph, node: node } });
-          });
+          };
+
+          const graph: Promise<ƒ.Graph> | ƒ.Graph = ƒ.Project.getResource(_state["graph"]);
+          if (graph instanceof Promise) 
+            graph.then(restoreGraph);
+          else
+            restoreGraph(graph);
         }
       });
     }
@@ -79,7 +85,7 @@ namespace Fudge {
     }
 
     // TODO: this should be done in ViewRender, drop shouldn't be passed to Panel
-    protected hndDrop = (_event: DragEvent): void =>  {
+    protected hndDrop = (_event: DragEvent): void => {
       if (!this.views.find(_view => _view instanceof ViewRender).dom.contains(<Node>_event.target)) // accept drop only from render view
         return;
 

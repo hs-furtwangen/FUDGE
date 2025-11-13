@@ -6,13 +6,13 @@ namespace Fudge {
 
     public createContent(_object: ƒ.Node): HTMLElement {
       let input: HTMLInputElement = document.createElement("input");
-      if (_object instanceof ƒ.GraphInstance)
-        ƒ.Project.getResource(_object.idSource).then(_graph => {
-          _object.name = _graph.name;
-          input.value = _graph.name;
-          input.disabled = true;
-          input.readOnly = true;
-        });
+      if (_object instanceof ƒ.GraphInstance) {
+        const source: ƒ.Graph = <ƒ.Graph>ƒ.Project.resources[_object.idSource];
+        _object.name = source.name;
+        input.value = source.name;
+        input.disabled = true;
+        input.readOnly = true;
+      }
       input.value = _object.name;
       return input;
     }

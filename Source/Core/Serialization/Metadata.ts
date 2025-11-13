@@ -19,11 +19,11 @@ namespace FudgeCore {
     /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
     valueDescriptor?: MetaPropertyDescriptor;
 
-    /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
-    getAssignOptions?: PropertyAssignOptionsGetter;
-
     /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
     getCreateOptions?: PropertyCreateOptionsGetter;
+
+    /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
+    getAssignOptions?: PropertyAssignOptionsGetter;
   }
 
   /**
@@ -65,7 +65,7 @@ namespace FudgeCore {
      * A map of property keys to their serialization strategy.
      * Use the {@link serialize} decorator to add to this map.
      */
-    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "reconstruct" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray" | "reconstructArray">;
+    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
   }
 
   export namespace Metadata {

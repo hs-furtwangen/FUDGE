@@ -152,7 +152,7 @@ namespace FudgeUserInterface {
       const length: number = this.input.value;
       sequence.length = length;
       for (let i: number = children.length; i < length; i++)
-        sequence[i] = null;
+        sequence[i] = undefined;
 
       this.dispatchEvent(new CustomEvent(EVENT.REARRANGE_ARRAY, { bubbles: true, detail: { sequence: sequence } }));
     };

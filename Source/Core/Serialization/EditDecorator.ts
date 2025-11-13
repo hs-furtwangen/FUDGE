@@ -89,7 +89,7 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark function properties (typeof `_type`) of a class for mutation and serialization.
+   * Decorator to mark callable properties (functions, typeof `_type`) of a class for mutation and serialization.
    * See {@link mutateFunction} and {@link serializeF} decorators for more information.
    * 
    * **Example:**
@@ -150,42 +150,10 @@ namespace FudgeCore {
   //   return editFactory(_typePrimary, _typeSecondary, false, true);
   // }
 
-  /**
-   * Decorator to mark properties of a class for nested mutation and serialization with type information and polymorphic reconstruction.
-   * See {@link serializableReconstruct} for more information.
-   * 
-   * **⚠️ Warning:** Do not use with {@link SerializableResource}s unless you manually deregister them from the project.
-   * Resources reconstructed this way will automatically register themselves, potentially causing ID conflicts.
-   *
-   * **Example:**
-   * ```typescript
-   * import f = FudgeCore;
-   *
-   * export class MySpecialScriptA extends f.ComponentScript {}
-   * export class MySpecialScriptB extends f.ComponentScript {}
-   *
-   * export class MyScript extends f.ComponentScript {
-   *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
-   * 
-   *   @f.editReconstruct(f.ComponentScript) // serialize with type information
-   *   public myReconstruct: f.ComponentScript;
-   * }
-   * ```
-   * 
-   * @author Jonas Plotzky, HFU, 2025
-   */
-  export function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
-  export function editReconstruct<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
-
-  export function editReconstruct(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
-    return editFactory(_typePrimary, _typeSecondary, false, true);
-  }
-
-  function editFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean, _reconstruct?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
+  function editFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return (_value, _context) => {
-      serializeFactory(_typePrimary, _typeSecondary, _function, _reconstruct)(_value, _context);
+      serializeFactory(_typePrimary, _typeSecondary, _function)(_value, _context);
       mutateFactory(_typePrimary, _typeSecondary, _function)(_value, _context);
     };
   }
-
 }

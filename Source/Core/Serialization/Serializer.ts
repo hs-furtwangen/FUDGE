@@ -5,9 +5,14 @@ namespace FudgeCore {
   /**
    * Holds information needed to recreate an object identical to the one it originated from. 
    * A serialization is used to create copies of existing objects at runtime or to store objects as strings or recreate them.
+   * 
+   * The optional `@type` property specifies the fully qualified {@link Serializer.getFunctionPath type path} used by {@link Serializer.deserializeFlat} to restore the correct constructor.
    */
   export interface Serialization {
     [type: string]: General;
+
+    /** The fully qualified type path used to reconstruct the serialized object. The type can be restored from the path using {@link Serializer.getFunction} */
+    ["@type"]?: string;
   }
 
   /**
@@ -91,29 +96,40 @@ namespace FudgeCore {
       return name;
     }
 
-
     /**
-     * Returns a javascript object representing the serializable FUDGE-object given,
-     * including attached components, children, superclass-objects all information needed for reconstruction
-     * @param _object An object to serialize, implementing the {@link Serializable} interface
+     * Serializes a FUDGE-object into a nested {@link Serialization} format:
+     *
+     * ```
+     * { "<typePath>": { ...object data... } }
+     * ```
+     *
+     * This format includes all information required for full reconstruction,
+     * including components, children, and inherited data.
      */
     public static serialize(_object: Serializable): Serialization {
       const path: string = this.getFunctionPath(_object);
       return { [path]: _object.serialize() };
     }
 
-    // public static serializeNew(_object: Serializable): Serialization {
-    //   const serialization: Serialization = _object.serialize();
-    //   serialization["@type"] = this.getFunctionPath(_object);
-    //   return serialization;
-    // }
+    /**
+     * Serializes a FUDGE-object into a flat {@link Serialization} format:
+     *
+     * ```
+     * { "@type": "<typePath>", ...object data... }
+     * ```
+     *
+     * The object can later be reconstructed using {@link Serializer.deserializeFlat}.
+     */
+    public static serializeFlat(_object: Serializable): Serialization {
+      return { "@type": this.getFunctionPath(_object), ..._object.serialize() };
+    }
 
     /**
-     * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
-     * including attached components, children, superclass-objects.
+     * Reconstructs an object serialized using {@link Serializer.serialize}.
      * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+     * @returns Either the reconstructed object directly, or a `Promise` if the object's `deserialize` method performs asynchronous work.
      */
-    public static async deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> {
+    public static deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> | T {
       let reconstruct: T;
       let path: string;
       try {
@@ -125,7 +141,7 @@ namespace FudgeCore {
           if (_onConstruct)
             _onConstruct(reconstruct, serialization);
 
-          return <Promise<T>>reconstruct.deserialize(serialization);
+          return <T>reconstruct.deserialize(serialization);
         }
       } catch (_error) {
         let message: string = `Deserialization of ${path}, ${reconstruct ? Reflect.get(reconstruct, "idResource") : ""} failed: ` + _error;
@@ -135,40 +151,83 @@ namespace FudgeCore {
     }
 
     /**
-    * Serializes an array of {@link Serializable} objects.
-    * By default, the method creates an array of {@link Serialization}s, each with type information.
-    * If all objects are of the same type, pass the constructor to create a more compact serialization.
-    * @param _constructor If given, all objects are expected to be of this type.
-    */
-    public static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _constructor?: new () => T): Serialization[] {
+     * Reconstructs an object serialized using {@link Serializer.serializeFlat}.
+     * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+     * @returns Either the reconstructed object directly, or a `Promise` if the object's `deserialize` method performs asynchronous work.
+     */
+    public static deserializeFlat<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> | T {
+      let reconstruct: T;
+      try {
+        reconstruct = Serializer.reconstruct(_serialization["@type"]);
+
+        if (_onConstruct)
+          _onConstruct(reconstruct, _serialization);
+
+        return <T>reconstruct.deserialize(_serialization);
+      } catch (_error) {
+        let message: string = `Deserialization of ${_serialization["@type"]}, ${reconstruct ? Reflect.get(reconstruct, "idResource") : ""} failed: ` + _error;
+        throw new Error(message);
+      }
+    }
+
+    /**
+     * Serializes an array of {@link Serializable} objects.
+     * 
+     * If a constructor type is provided, objects whose constructor matches exactly
+     * are serialized **without type information** (`@type` field is omitted).
+     * 
+     * Objects of a different type include type information (`@type`)
+     * to enable polymorphic reconstruction.
+     */
+    public static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _type?: abstract new () => T): Serialization[] {
       const serializations: Serialization[] = new Array(_serializables.length);
-      if (_constructor)
-        for (let i: number = 0; i < _serializables.length; i++)
-          serializations[i] = _serializables[i].serialize();
-      else
-        for (let i: number = 0; i < _serializables.length; i++)
-          serializations[i] = Serializer.serialize(_serializables[i]);
+      for (let i: number = 0; i < _serializables.length; i++) {
+        const value: Serializable = _serializables[i];
+        if (!value)
+          continue;
+
+        if (value.constructor == _type)
+          serializations[i] = value.serialize(); // compact serialization if non polymorphic
+        else
+          serializations[i] = Serializer.serializeFlat(value);
+      }
 
       return serializations;
     }
 
     /**
      * Deserializes an array of {@link Serializable} objects from an array of {@link Serialization}s.
-     * By default, the method expects an array of {@link Serialization}s, each with type information.
-     * If all objects are of the same type and serialized without type information, pass the constructor to deserialize them.
-     * @param _constructor If given, all objects are expected to be of this type and the serializations are expected to be without type information.
+     *
+     * If a constructor type is provided, it is used to reconstruct objects
+     * whose serializations **do not contain type information** (`@type` field is missing).
+     * 
+     * Serializations that include type information (`@type`) are deserialized via {@link Serializer.deserializeFlat},
+     * enabling polymorphic reconstruction of mixed or derived types within the same array.
      */
-    public static async deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _constructor?: new () => T): Promise<T[]> {
-      const serializables: (Promise<Serializable> | Serializable)[] = new Array(_serializations.length);
+    public static async deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _type?: new () => T): Promise<T[]> {
+      // legacy support for old serializations. TODO: remove in future versions 
       if (!Array.isArray(_serializations))
-        return this.deserializeArrayLegacy<T>(_serializations); // legacy support for old serializations. TODO: remove in future versions 
+        return this.deserializeArrayLegacy<T>(_serializations);
 
-      if (_constructor)
-        for (let i: number = 0; i < _serializations.length; i++)
-          serializables[i] = new _constructor().deserialize(_serializations[i]);
-      else
-        for (let i: number = 0; i < _serializations.length; i++)
-          serializables[i] = Serializer.deserialize(_serializations[i]);
+      const serializables: (Promise<Serializable> | Serializable)[] = new Array(_serializations.length);
+      for (let i: number = 0; i < _serializations.length; i++) {
+        const value: Serialization = _serializations[i];
+        if (!value)
+          continue;
+
+        let serializable: Promise<Serializable> | Serializable;
+        if (typeof value == "object" && "@type" in value) {
+          serializable = Serializer.deserializeFlat(value);
+        } else {
+          if (!_type)
+            throw new Error(`${Serializer.deserializeArray.name}: missing "_type" argument. Serialization at index "${i}" contains no "@type" information`);
+
+          serializable = new _type();
+          serializable = (<Serializable>serializable).deserialize(value);
+        }
+
+        serializables[i] = serializable;
+      }
 
       return <Promise<T[]>>Promise.all(serializables);
     }
@@ -247,13 +306,22 @@ namespace FudgeCore {
      * Prettify a JSON-String, to make it more readable.
      * not implemented yet
      */
-    public static prettify(_json: string): string { return _json; }
+    public static prettify(_json: string): string {
+      const compactTypes = [Serializer.getFunctionPath(Vector2), Serializer.getFunctionPath(Vector3)];
+      for (const type of compactTypes) {
+        const pattern: RegExp = new RegExp(`{[^{}]*"@type"\\s*:\\s*"${type}"[^{}]*}`, "g");
+        _json = _json.replace(pattern, (_m) => _m.replace(/\s+/g, ' '));
+      }
+
+      return _json;
+    }
 
     /**
      * Returns a formatted, human readable JSON-String, representing the given {@link Serialization} that may have been created by {@link Serializer}.serialize
      * @param _serialization
      */
     public static stringify(_serialization: Serialization): string {
+      console.log("stringify");
       // adjustments to serialization can be made here before stringification, if desired
       let json: string = JSON.stringify(_serialization, null, 2);
       let pretty: string = Serializer.prettify(json);

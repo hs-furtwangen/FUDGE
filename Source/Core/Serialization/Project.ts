@@ -172,7 +172,7 @@ namespace FudgeCore {
     /**
      * Retrieves the resource stored with the given id.
      */
-    public static async getResource<T extends SerializableResource>(_idResource: string): Promise<T> {
+    public static getResource<T extends SerializableResource>(_idResource: string): Promise<T> | T {
       const resource: T | Promise<T> = <T>Project.resources[_idResource];
       if (resource)
         return resource;
@@ -368,7 +368,7 @@ namespace FudgeCore {
       return Project.resources;
     }
 
-    private static async deserializeResource(_serialization: Serialization): Promise<SerializableResource> {
+    private static deserializeResource(_serialization: Serialization): Promise<SerializableResource> | SerializableResource {
       return Serializer.deserialize(_serialization, Project.reregister);
     }
 

@@ -167,7 +167,7 @@ namespace Fudge {
           this.dispatch(EVENT_EDITOR.CREATE, {});
           break;
         case CONTEXTMENU.DELETE_PARTICLE_DATA:
-          let remove: ƒ.Serialization[] = await this.controller.delete([focus]);
+          let remove: ƒ.ParticleData.Recursive[] = await this.controller.delete([focus]);
           this.tree.delete(remove);
           this.tree.clearSelection();
           this.dispatch(EVENT_EDITOR.DELETE, {});
