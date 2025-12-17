@@ -124,8 +124,8 @@ namespace FudgeUserInterface {
 
       let drag: HTMLElement;
       if (_event.ctrlKey) {
-        this.dragDropIndicator.after(drag = <HTMLElement>this.drag.cloneNode(true));
-        drag.setAttribute("key", "-" + drag.getAttribute("key"));
+        this.dragDropIndicator.after(drag = <HTMLElement>this.drag.cloneNode(false));
+        drag.setAttribute("key", "-" + this.drag.getAttribute("key"));
       } else if (this.drag.previousSibling != this.dragDropIndicator && this.drag.nextSibling != this.dragDropIndicator) {
         this.dragDropIndicator.after(drag = this.drag);
       }
