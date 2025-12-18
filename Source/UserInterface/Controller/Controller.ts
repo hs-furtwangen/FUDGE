@@ -2,6 +2,16 @@ namespace FudgeUserInterface {
   import ƒ = FudgeCore;
 
   /**
+   * Describes a single property change at a path within a mutable.
+   * Stores both the value before application of the change (`from`) and the target value (`to`).
+   */
+  export interface PropertyChangeRecord<T = unknown> {
+    path: string[];
+    from: T;
+    to: T;
+  }
+
+  /**
    * Connects a mutable object to a DOM-Element and synchronizes that mutable with the mutator stored within.
    * Updates the mutable on interaction with the element and the element in time intervals.
    */
@@ -12,11 +22,11 @@ namespace FudgeUserInterface {
     public domElement: HTMLElement;
     public openStates: Map<string, boolean> = new Map();
     protected timeUpdate: number = 190;
-    protected mutable: object;
+    protected mutable: ƒ.IMutable;
 
     private idInterval: number;
 
-    public constructor(_mutable: object, _domElement: HTMLElement) {
+    public constructor(_mutable: ƒ.IMutable, _domElement: HTMLElement) {
       this.domElement = _domElement;
       this.setMutable(_mutable);
       // TODO: examine, if this should register to one common interval, instead of each installing its own.
@@ -206,21 +216,36 @@ namespace FudgeUserInterface {
       return value;
     }
 
+    /**
+     * Copy the given property value. This performs differnt operations depending on the type of the value:
+     * 
+     * - For identity objects ({@link SerializableResource}, {@link Node} and {@link Function}), the reference is returned.
+     * - For value objects:
+     *    - {@link Serializable}: a copy is created through serialization.
+     *    - {@link Array}, {@link Set}, {@link Map}: a shallow copy is created.
+     * - For primitive types, the value is returned as is.
+     */
     public static copyValue<T = unknown>(_value: T): T | Promise<T> {
       if (typeof _value == "object" && _value != null) {
-        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource))
-          return <Promise<T>>ƒ.Project.getResource(_value.idResource);
 
-        if (_value.constructor == ƒ.Node)
-          return _value;
+        // identity objects are returned as references
+        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource) || _value instanceof Node) 
+          return <T>_value;
 
+        // otherwise, value objects are copied
         if (ƒ.isSerializable(_value))
           return <Promise<T>>ƒ.Serializer.deserialize(ƒ.Serializer.serialize(_value));
+
+        if (Array.isArray(_value))
+          return <T>_value.concat();
+
+        if (_value instanceof Map || _value instanceof Set)
+          return <T>new (<ƒ.General>_value.constructor)(_value);
 
         throw new Error("No copy operation available for: " + _value.constructor.name);
       }
 
-      return _value;
+      return <T>_value;
     }
 
     /**
@@ -267,11 +292,11 @@ namespace FudgeUserInterface {
       Controller.updateUserInterface(this.mutable, this.domElement);
     }
 
-    public getMutable(): object {
+    public getMutable(): ƒ.IMutable {
       return this.mutable;
     }
 
-    public setMutable(_mutable: object): void {
+    public setMutable(_mutable: ƒ.IMutable): void {
       this.mutable = _mutable;
     }
 
@@ -301,8 +326,6 @@ namespace FudgeUserInterface {
       const path: string[] = this.getMutatorPath(_event);
       const current: unknown[] = ƒ.Mutable.getValue(this.mutable, path);
 
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current.concat() } } }));
-
       const incoming: unknown[] = new Array(sequence.length);
       for (let iSequence: number = 0; iSequence < incoming.length; iSequence++) {
         const iCurrent: number = sequence[iSequence];
@@ -314,20 +337,22 @@ namespace FudgeUserInterface {
           incoming[iSequence] = await Controller.copyValue(current[Math.abs(iCurrent)]);
       }
 
-      current.splice(0, current.length, ...incoming);
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: path, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming) } } }));
 
-      await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable)); // rearrangement is not a mutation?
+      ƒ.Mutable.setValue(this.mutable, path, incoming);
+
+      await ƒ.Mutable.mutate(this.mutable, ƒ.Mutable.getMutator(this.mutable)); // TODO: structural changes are not a mutation?
     };
 
-    protected hndCreate = (_event: Event): void => {
+    protected hndCreate = async (_event: Event): Promise<void> => {
       const path: string[] = this.getMutatorPath(_event);
-      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.slice(0, -1));
       const key: string = path[path.length - 1];
 
       let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
       let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
       if (!descriptor) {
-        const parent: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+        const parent: object = ƒ.Mutable.getValue(this.mutable, path.slice(0, -2));
         const parentKey: string = path[path.length - 2];
         descriptor = ƒ.Metadata.getPropertyDescriptor(parent, parentKey).valueDescriptor;
       }
@@ -338,38 +363,33 @@ namespace FudgeUserInterface {
       const current: unknown = Reflect.get(mutable, key);
       const incoming: unknown = Controller.createValue(type ?? descriptor.type);
 
-      if (current == incoming)
-        return;
-
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: path, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming) } } }));
 
       Reflect.set(mutable, key, incoming);
     };
 
-    protected hndAssign = (_event: Event): void => {
+    protected hndAssign = async (_event: Event): Promise<void> => {
       const path: string[] = this.getMutatorPath(_event);
-      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
-      const key: string = path[path.length - 1];
-
-      const current: unknown = Reflect.get(mutable, key);
+      const current: unknown = ƒ.Mutable.getValue(this.mutable, path);
       const incoming: unknown = (<CustomEvent>_event).detail.value;
 
-      if (current == incoming)
-        return;
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: path, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming) } } }));
 
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path, value: current } } }));
-
-      Reflect.set(mutable, key, incoming);
+      ƒ.Mutable.setValue(this.mutable, path, incoming);
     };
 
-    protected hndDelete = (_event: Event): void => {
+    protected hndDelete = async (_event: Event): Promise<void> => {
       const path: string[] = this.getMutatorPath(_event);
-      const current: unknown[] = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const parentPath: string[] = path.slice(0, -1);
+      const current: unknown[] = ƒ.Mutable.getValue(this.mutable, parentPath);
       const key: string = path[path.length - 1];
 
       if (Array.isArray(current)) {
-        this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 4, mutable: this.mutable, mutator: <ƒ.AtomicMutator>{ path: path.toSpliced(path.length - 1), value: current.concat() } } }));
-        current.splice(parseInt(key), 1);
+        const incoming: unknown[] = current.toSpliced(parseInt(key), 1);
+
+        this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: parentPath, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming) } } }));
+        
+        ƒ.Mutable.setValue(this.mutable, parentPath, incoming);
       }
     };
 
@@ -379,11 +399,11 @@ namespace FudgeUserInterface {
         return;
 
       const path: string[] = this.getMutatorPath(_event);
-      let mutable: unknown = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      let mutable: unknown = ƒ.Mutable.getValue(this.mutable, path.slice(0, -1));
       let key: string = path[path.length - 1];
       let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
       if (!descriptor) { // must be a collection type, adjust to parent mutable
-        mutable = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+        mutable = ƒ.Mutable.getValue(this.mutable, path.slice(0, -2));
         key = path[path.length - 2];
         descriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
         descriptor = descriptor.valueDescriptor;

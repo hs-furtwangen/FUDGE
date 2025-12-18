@@ -15,14 +15,6 @@ namespace FudgeCore {
     [attribute: string]: Float32Array;
   }
 
-  /**
-   * A property path and value.
-   */
-  export interface AtomicMutator<T = unknown> {
-    path: string[];
-    value: T;
-  }
-
   const emptyKeys: readonly string[] = Object.freeze([] as string[]);
 
   export interface IMutable {
@@ -107,7 +99,7 @@ namespace FudgeCore {
      * 
      * @param _mutable The instance to copy the decorated properties from.
      * @param _mutator - (optional) the receiving mutator.
-     * @returns `_out` or a new mutator if none is provided.
+     * @returns `_mutator` or a new mutator if none is provided.
      */
     public static getMutatorBase(_mutable: object, _mutator: Mutator = {}): Mutator {
       for (const key of Mutable.getKeys(_mutable)) {
@@ -127,7 +119,6 @@ namespace FudgeCore {
     }
 
     /**
-     * 
      * Update the properties of the given instance according to the state of the given {@link Mutator}. See {@link getKeys} for information on which properties are updated.
      * @param _mutable The instance to update.
      * @param _mutator The mutator to update from.
@@ -217,7 +208,7 @@ namespace FudgeCore {
      * 
      * - Returns the decorated keys ({@link mutate @mutate}) of the given instance, if available. 
      * - Returns {@link Array.keys()} for arrays.
-     * - Returns {@link Object.getOwnPropertyNames} for objects.
+     * - Returns {@link Object.getOwnPropertyNames} for plain objects.
      * - Returns an empty iterable otherwise.
      */
     public static getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
@@ -228,7 +219,7 @@ namespace FudgeCore {
       if (Array.isArray(_from))
         return <Iterable<K>>_from.keys();
 
-      if (typeof _from == "object" && _from != null)
+      if (_from != null && Object.getPrototypeOf(_from) === Object.prototype)
         return <Iterable<K>>Object.getOwnPropertyNames(_from);
 
       return <Iterable<K>>emptyKeys;

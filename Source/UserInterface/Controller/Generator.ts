@@ -109,7 +109,15 @@ namespace FudgeUserInterface {
       if (element) {
         element.classList.add("property");
 
-        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, _descriptor.kind != "function", !(element instanceof CustomElementInitializer), !!_parentMutable);
+        const prototype: object = type.prototype;
+        const creatable: boolean = 
+          _descriptor.kind != "function" &&
+          // mutant?.constructor !== type &&
+          (_descriptor.kind != "object" || (_descriptor.kind == "object" && prototype && (ƒ.isMutable(prototype) || ƒ.isSerializableResource(prototype))));
+        const clearable: boolean = !(element instanceof CustomElementInitializer);
+        const deletable: boolean = !!_parentMutable; 
+
+        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, creatable, clearable, deletable);
         if (element instanceof Details || element instanceof DetailsArray)
           element.summary.appendChild(menu);
         else

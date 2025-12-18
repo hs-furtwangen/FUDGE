@@ -174,20 +174,20 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    type historySource = object | ƒ.Node | typeof ƒ.Project;
-    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+    import ƒui = FudgeUserInterface;
+    type historySource = ƒ.IMutable | ƒ.Node | typeof ƒ.Project;
+    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | ƒui.PropertyChangeRecord;
     enum HISTORY {
         MUTATE = 0,
         ADD = 1,
         REMOVE = 2,
-        ASSIGN = 3,
-        RESTRUCTURE = 4
+        CHANGE_PROPERTY = 3
     }
     /**
      * Static class to record the history of manipulations of various entities. Enables undo and redo.
      * A manipulation is recorded as a step with the action taken, the source, which is the entity affected,
      * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2024
+     * @author Jirka Dell'Oro-Friedl, HFU, 2024 | Jonas Plotzky, HFU, 2025
      */
     class History {
         #private;
@@ -212,10 +212,17 @@ declare namespace Fudge {
          */
         static swap(): void;
         /**
-         * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator.
-         * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
+         * Process changes to {@link ƒ.Mutable}s, either by mutation or direct property changes.
+         *
+         * **Mutation:**
+         * Process mutation of {@link ƒ.Mutable}s by using a stored {@link ƒ.Mutator}.
+         * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo.
+         *
+         * **Property Change:**
+         * Process direct property changes on {@link ƒ.Mutable}s by using a stored {@link ƒui.PropertyChangeRecord}.
+         * Each time, a property change gets processed, the property at the given path is set to either a copy (via {@link ƒui.Controller.copyValue}) of the `from` or `to` value depending on undo or redo.
          */
-        private static processMutation;
+        private static processMutable;
         /**
          * Process deletion and addition of {@link ƒ.SerializableResource}s in the {@link ƒ.Project}
          */

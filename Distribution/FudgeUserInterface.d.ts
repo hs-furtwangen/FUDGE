@@ -18,6 +18,15 @@ declare namespace FudgeUserInterface {
 declare namespace FudgeUserInterface {
     import ƒ = FudgeCore;
     /**
+     * Describes a single property change at a path within a mutable.
+     * Stores both the value before application of the change (`from`) and the target value (`to`).
+     */
+    interface PropertyChangeRecord<T = unknown> {
+        path: string[];
+        from: T;
+        to: T;
+    }
+    /**
      * Connects a mutable object to a DOM-Element and synchronizes that mutable with the mutator stored within.
      * Updates the mutable on interaction with the element and the element in time intervals.
      */
@@ -26,9 +35,9 @@ declare namespace FudgeUserInterface {
         domElement: HTMLElement;
         openStates: Map<string, boolean>;
         protected timeUpdate: number;
-        protected mutable: object;
+        protected mutable: ƒ.IMutable;
         private idInterval;
-        constructor(_mutable: object, _domElement: HTMLElement);
+        constructor(_mutable: ƒ.IMutable, _domElement: HTMLElement);
         /**
          * Recursive method taking an existing mutator as a template
          * and updating its values with those found in the given UI-domElement.
@@ -60,6 +69,15 @@ declare namespace FudgeUserInterface {
          */
         static findChildElementByKey(_domElement: HTMLElement, _key: string): HTMLElement;
         static createValue(_type: Function | Record<string, unknown>): unknown;
+        /**
+         * Copy the given property value. This performs differnt operations depending on the type of the value:
+         *
+         * - For identity objects ({@link SerializableResource}, {@link Node} and {@link Function}), the reference is returned.
+         * - For value objects:
+         *    - {@link Serializable}: a copy is created through serialization.
+         *    - {@link Array}, {@link Set}, {@link Map}: a shallow copy is created.
+         * - For primitive types, the value is returned as is.
+         */
         static copyValue<T = unknown>(_value: T): T | Promise<T>;
         /**
          * Creates a shallow **structural signature** string for the given object.
@@ -82,14 +100,14 @@ declare namespace FudgeUserInterface {
         get isRefreshing(): boolean;
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
-        getMutable(): object;
-        setMutable(_mutable: object): void;
+        getMutable(): ƒ.IMutable;
+        setMutable(_mutable: ƒ.IMutable): void;
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
-        protected hndCreate: (_event: Event) => void;
-        protected hndAssign: (_event: Event) => void;
-        protected hndDelete: (_event: Event) => void;
+        protected hndCreate: (_event: Event) => Promise<void>;
+        protected hndAssign: (_event: Event) => Promise<void>;
+        protected hndDelete: (_event: Event) => Promise<void>;
         protected refreshOptions: (_event: Event) => void;
         protected hndExpand: (_event: Event) => void;
         protected hndReopen: (_event: Event) => void;

@@ -1,9 +1,10 @@
 namespace Fudge {
   import ƒ = FudgeCore;
+  import ƒui = FudgeUserInterface;
 
-  export type historySource = object | ƒ.Node | typeof ƒ.Project;
-  export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
-  export enum HISTORY { MUTATE, ADD, REMOVE, ASSIGN, RESTRUCTURE };
+  export type historySource = ƒ.IMutable | ƒ.Node | typeof ƒ.Project;
+  export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | ƒui.PropertyChangeRecord;
+  export enum HISTORY { MUTATE, ADD, REMOVE, CHANGE_PROPERTY };
   type historyStep = [HISTORY, historySource, historyTarget];
   enum DO { UN, RE };
 
@@ -12,7 +13,7 @@ namespace Fudge {
    * Static class to record the history of manipulations of various entities. Enables undo and redo.
    * A manipulation is recorded as a step with the action taken, the source, which is the entity affected, 
    * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation. 
-   * @author Jirka Dell'Oro-Friedl, HFU, 2024  
+   * @author Jirka Dell'Oro-Friedl, HFU, 2024 | Jonas Plotzky, HFU, 2025
    */
   export class History {
     static #steps: historyStep[] = [];
@@ -50,7 +51,6 @@ namespace Fudge {
       if (!step)
         return;
 
-
       History.#block = true;
       let [action, source, target] = step;
 
@@ -59,7 +59,7 @@ namespace Fudge {
       else if (source == ƒ.Project)
         History.processProject(DO.RE, action, <typeof ƒ.Project>source, target);
       else if (ƒ.isMutable(source))
-        History.processMutation(DO.UN, step, source, target);
+        History.processMutable(DO.RE, step, source, target);
 
       History.#pointer++;
       History.print();
@@ -87,7 +87,7 @@ namespace Fudge {
         else if (source == ƒ.Project)
           History.processProject(DO.UN, action, <typeof ƒ.Project>source, target);
         else if (ƒ.isMutable(source))
-          History.processMutation(DO.UN, step, source, target);
+          History.processMutable(DO.UN, step, source, target);
 
       } catch (_a) {
         ƒ.Debug.error(_a);
@@ -127,13 +127,19 @@ namespace Fudge {
     }
 
     /**
-     * Process mutation of {@link ƒ.Mutable}s by using a stored mutator. 
-     * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
+     * Process changes to {@link ƒ.Mutable}s, either by mutation or direct property changes.
+     * 
+     * **Mutation:**
+     * Process mutation of {@link ƒ.Mutable}s by using a stored {@link ƒ.Mutator}. 
+     * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo.
+     * 
+     * **Property Change:**
+     * Process direct property changes on {@link ƒ.Mutable}s by using a stored {@link ƒui.PropertyChangeRecord}.
+     * Each time, a property change gets processed, the property at the given path is set to either a copy (via {@link ƒui.Controller.copyValue}) of the `from` or `to` value depending on undo or redo.
      */
-    private static async processMutation(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator): Promise<void> {
+    private static async processMutable(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator | ƒui.PropertyChangeRecord): Promise<void> {
       let current: ƒ.Mutator;
-      let atomicMutator: ƒ.AtomicMutator = <ƒ.AtomicMutator<Array<unknown>>>_target;
-
+      
       switch (_step[0]) {
         case HISTORY.MUTATE:
           if (!ƒ.isMutable(_source))
@@ -141,20 +147,16 @@ namespace Fudge {
 
           current = ƒ.Mutable.updateMutator(_source, ƒ.Mutable.cloneMutator(_target)); // cache the current state
           await _source.mutate(_target);
+          _step[2] = current;
           break;
-        case HISTORY.ASSIGN: 
-          current = { path: atomicMutator.path.concat(), value: ƒ.Mutable.getValue(_source, atomicMutator.path) };
+        case HISTORY.CHANGE_PROPERTY:
+          const record: ƒui.PropertyChangeRecord = <ƒui.PropertyChangeRecord>_target;
+          const value: unknown = _do == DO.UN ? record.from : record.to;
+          const copiedValue: unknown = await ƒui.Controller.copyValue(value);
 
-          ƒ.Mutable.setValue(_source, atomicMutator.path, atomicMutator.value);
+          ƒ.Mutable.setValue(_source, record.path, copiedValue);
           break;
-        case HISTORY.RESTRUCTURE:
-          const source: Array<unknown> = ƒ.Mutable.getValue(_source, atomicMutator.path);
-          current = { path: atomicMutator.path.concat(), value: source.concat() };
-
-          source.splice(0, source.length, ...<Array<unknown>>atomicMutator.value);
       }
-
-      _step[2] = current; // replace target in step with previous state
 
       if (_source instanceof ƒ.ComponentRigidbody) {
         _source.isInitialized = false;
