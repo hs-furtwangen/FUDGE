@@ -6,11 +6,6 @@ namespace FudgeUserInterface {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-textinput", CustomElementTextInput, String);
 
-    public constructor(_attributes: CustomElementAttributes) {
-      super(_attributes);
-      this.tabIndex = 0;
-    }
-
     /**
      * Creates the content of the element when connected the first time
      */

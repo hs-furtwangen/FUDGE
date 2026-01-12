@@ -21,7 +21,6 @@ namespace FudgeUserInterface {
       super(_attributes);
       if (_attributes && _attributes["value"])
         this.value = parseFloat(_attributes["value"]);
-      this.tabIndex = 0;
     }
 
     public get min(): number {

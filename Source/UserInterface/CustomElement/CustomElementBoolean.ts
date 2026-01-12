@@ -10,7 +10,6 @@ namespace FudgeUserInterface {
       super(_attributes);
       if (!_attributes.label)
         this.setAttribute("label", _attributes.key);
-      this.tabIndex = 0;
     }
 
     /**

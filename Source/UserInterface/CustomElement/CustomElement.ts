@@ -26,7 +26,7 @@ namespace FudgeUserInterface {
 
     #initialized: boolean = false;
 
-    public constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]) {
+    public constructor(_attributes: CustomElementAttributes, ..._args: unknown[]) {
       super();
       if (_attributes)
         for (let name in _attributes) {
@@ -109,7 +109,7 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Add a label-element as child to this element
+     * Add a span-element as child to this element
      */
     public appendContent(): HTMLSpanElement {
       this.content = document.createElement("span");

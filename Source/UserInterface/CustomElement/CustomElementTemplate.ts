@@ -7,11 +7,6 @@ namespace FudgeUserInterface {
   export abstract class CustomElementTemplate extends CustomElement {
     private static fragment: Map<string, DocumentFragment> = new Map();
 
-    public constructor(_attributes?: CustomElementAttributes) {
-      super(_attributes);
-      this.tabIndex = 0;
-    }
-
     /**
      * Browses through the templates in the current document and registers the one defining the given tagname.
      * To be called from a script tag implemented with the template in HTML.

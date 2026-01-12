@@ -13,7 +13,6 @@ namespace FudgeUserInterface {
       super(_attributes);
       if (_attributes && _attributes["value"])
         this.value = parseFloat(_attributes["value"]);
-      this.tabIndex = 0;
     }
 
     /**
@@ -24,9 +23,10 @@ namespace FudgeUserInterface {
         return;
       this.initialized = true;
 
-      this.appendLabel();
+      this.appendLabel(); 
 
       let content: HTMLSpanElement = this.appendContent();
+      content.tabIndex = 0;
 
       let input: HTMLInputElement = document.createElement("input");
       input.type = "number";
@@ -178,7 +178,7 @@ namespace FudgeUserInterface {
       _event.stopPropagation();
 
       // if focus is on stepper, enter it and focus digit
-      if (active == this) {
+      if (active == this.content) {
         switch (_event.code) {
           case ƒ.KEYBOARD_CODE.ENTER:
           case ƒ.KEYBOARD_CODE.NUMPAD_ENTER:
