@@ -120,8 +120,8 @@ namespace FudgeUserInterface {
         const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, creatable, clearable, deletable);
         if (element instanceof Details || element instanceof DetailsArray)
           element.summary.appendChild(menu);
-        else
-          element.prepend(menu);
+        else 
+          queueMicrotask(() => element.append(menu)); // append after possible connectedCallback
       }
 
       return element;
