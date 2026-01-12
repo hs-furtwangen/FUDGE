@@ -17,10 +17,11 @@
   --color-background-property: none;
   --color-background-property-label: none;
   --color-background-property-content: var(--color-background-content);
-  --color-background-property-input: var(--color-background-content);
+  --color-background-property-input: none;
 
   --property-label-min-height: 1.5em;
   --property-label-padding: 2px;
+  --property-content-padding: 2px;
 }
 
 [hidden] {
@@ -285,6 +286,9 @@ details>summary {
   min-height: var(--property-label-min-height);
   padding: var(--property-label-padding);
   align-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 details[open]:not(details details),
@@ -475,13 +479,8 @@ fudge-textinput,
 fudge-select,
 fudge-comboselect,
 fudge-color,
-fudge-output,
-custom-vector2,
-custom-vector3,
-custom-matrix3x3,
-custom-matrix4x4 {
+fudge-output {
   display: flex;
-  flex-wrap: wrap;
 }
 
 .fudge-element>label {
@@ -491,6 +490,7 @@ custom-matrix4x4 {
   overflow: hidden;
   text-overflow: ellipsis;
   align-content: center;
+  user-select: text;
 }
 
 .fudge-element>label:not(.fudge-element .fudge-element>label) {
@@ -508,7 +508,7 @@ custom-matrix4x4 {
 fudge-comboselect>.content,
 .fudge-element>.content:not(.fudge-element .fudge-element>.content) {
   box-sizing: border-box;
-  padding: 2px;
+  padding: var(--property-content-padding);
 }
 
 fudge-stepper>.content>span,
@@ -580,74 +580,30 @@ fudge-stepper>.content {
 
 custom-vector2,
 custom-vector3 {
-  container-type: inline-size;
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 custom-vector2>.content,
 custom-vector3>.content {
-  display: inline-grid;
+  display: grid;
   column-gap: 1ch;
-  grid-template-columns: minmax(max-content, 1fr) minmax(max-content, 1fr) minmax(max-content, 1fr);
-}
-
-@container (width < 24ch) {
-  custom-vector2>label {
-    align-content: baseline !important;
-    ;
-  }
-
-  custom-vector2>.content {
-    grid-template-columns: 1fr;
-  }
-}
-
-@container (width < 36ch) {
-  custom-vector3>label {
-    align-content: baseline !important;
-    ;
-  }
-
-  custom-vector3>.content {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 custom-vector2 fudge-stepper,
-custom-vector3 fudge-stepper {
+custom-vector3 fudge-stepper  {
   display: block;
+  white-space: nowrap;
 }
 
 /* custom matrix */
 
 custom-matrix3x3,
+custom-matrix3x3>.content>fudge-stepper,
 custom-matrix4x4 {
-  container: custom-matrix / inline-size;
-}
-
-custom-matrix3x3>label,
-custom-matrix4x4>label {
-  align-content: baseline !important;
-}
-
-@container custom-matrix (width < 68ch) {
-  custom-matrix3x3>label {
-    flex: 1 1 100% !important;
-    align-content: center !important;
-  }
-}
-
-@container custom-matrix (width < 96ch) {
-  custom-matrix4x4>label {
-    flex: 1 1 100% !important;
-    align-content: center !important;
-  }
-}
-
-custom-matrix3x3>.content>.fudge-element>label,
-custom-matrix4x4>.content>.fudge-element>label {
-  flex: 0 1 fit-content;
-  text-align: right;
-  padding-right: 1ch;
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 custom-matrix3x3>.content>.fudge-element>label::after,
@@ -663,18 +619,4 @@ custom-matrix3x3>.content>fudge-stepper>.content::before {
   content: "x0";
   visibility: hidden;
   display: inline;
-}
-
-@container custom-matrix (width < 36ch) {
-  custom-matrix3x3>.content>.fudge-element>label {
-    text-align: left;
-    align-content: baseline;
-  }
-}
-
-@container custom-matrix (width < 48ch) {
-  custom-matrix4x4>.content>.fudge-element>label {
-    text-align: left;
-    align-content: baseline;
-  }
 }
