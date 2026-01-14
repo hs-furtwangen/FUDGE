@@ -156,6 +156,7 @@ namespace FudgeCore {
      * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: effect the matrix ignoring its rotation and scaling
      */
+    @edit(Vector2)
     public get translation(): Vector2 {
       if (this.#translationDirty) {
         this.#translationDirty = false;
@@ -171,6 +172,7 @@ namespace FudgeCore {
      * - get: a copy of the calculated rotation {@link Vector2}   
      * - set: effect the matrix
      */
+    @edit(Number)
     public get rotation(): number {
       if (this.#rotationDirty) {
         let scaling: Vector2 = this.scaling;
@@ -207,6 +209,7 @@ namespace FudgeCore {
      * **Caution!** Do not manipulate result, instead create a clone!    
      * - set: effect the matrix
      */
+    @edit(Vector2)
     public get scaling(): Vector2 {
       if (this.#scalingDirty) {
         this.#scaling.set(

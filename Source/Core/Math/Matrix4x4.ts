@@ -488,6 +488,7 @@ namespace FudgeCore {
      * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: effect the matrix ignoring its rotation and scaling
      */
+    @edit(Vector3)
     public get translation(): Vector3 {
       if (this.#translationDirty) {
         this.#translation.set(this.data[12], this.data[13], this.data[14]);
@@ -504,6 +505,7 @@ namespace FudgeCore {
      * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: effect the matrix
      */
+    @edit(Vector3)
     public get rotation(): Vector3 {
       if (this.#rotationDirty) {
         let scaling: Vector3 = this.scaling;
@@ -557,6 +559,7 @@ namespace FudgeCore {
      * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: effect the matrix
      */
+    @edit(Vector3)
     public get scaling(): Vector3 {
       if (this.#scalingDirty) {
         this.#scaling.set(
