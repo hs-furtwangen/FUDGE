@@ -14,7 +14,7 @@ namespace FudgeUserInterface {
       super(_attributes);
       this.options = _options;
       this.value = _value;
-      this.tabIndex = 0;
+      // this.tabIndex = 0;
     }
 
     /**
@@ -82,6 +82,7 @@ namespace FudgeUserInterface {
     private hndClick = (_event: MouseEvent): void => {
       this.input.value = "";
       this.button.style.visibility = "hidden";
+      this.input.focus();
       this.input.dispatchEvent(new Event(EVENT.CHANGE, { bubbles: true }));
     };
 

@@ -12,9 +12,11 @@ namespace FudgeUserInterface {
       this.setAttribute("label", _legend);
       this.setAttribute("type", _type);
       this.open = true;
+
       this.summary = document.createElement("summary");
-      this.summary.textContent = _legend;
-      this.summary.classList.add("label");
+      const span: HTMLSpanElement = document.createElement("span");
+      span.textContent = _legend;
+      this.summary.appendChild(span);
       this.appendChild(this.summary);
 
       this.content = document.createElement("div");

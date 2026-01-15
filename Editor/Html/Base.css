@@ -12,16 +12,6 @@
   --color-warning: yellow;
 
   --color-focus-background: color-mix(in srgb, var(--color-focus) 15%, transparent);
-
-  --color-background-details: var(--color-background-main);
-  --color-background-property: none;
-  --color-background-property-label: none;
-  --color-background-property-content: var(--color-background-content);
-  --color-background-property-input: none;
-
-  --property-label-min-height: 1.5em;
-  --property-label-padding: 2px;
-  --property-content-padding: 2px;
 }
 
 [hidden] {
@@ -269,31 +259,30 @@ input[type="number"] {
 }
 
 label {
-  padding-right: 1ch;
+  padding-right: 0.5em;
 }
 
 /* Details */
 
-details:not(details details) {
-  anchor-name: --details;
-  anchor-scope: --details;
-  padding-right: 2ch;
-  background-color: var(--color-background-details);
+details>summary {
+  display: flex;
+  white-space: nowrap;
+  box-sizing: border-box;
+  user-select: text;
 }
 
-details>summary {
-  box-sizing: border-box;
-  min-height: var(--property-label-min-height);
-  padding: var(--property-label-padding);
-  align-content: center;
-  white-space: nowrap;
+details>summary>span {
+  flex: 0 1 content;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-details[open]:not(details details),
-details[open]:has(+ *) {
-  padding-bottom: 4px;
+details>summary::before {
+  content: "►";
+}
+
+details[open]>summary::before {
+  content: "▼";
 }
 
 details>div,
@@ -387,21 +376,6 @@ button:active {
   color: var(--color-signal);
 }
 
-.property {
-  background-color: var(--color-background-property);
-  anchor-name: --property;
-  anchor-scope: --property;
-}
-
-.property>summary>.property-menu,
-.property>.property-menu {
-  position: absolute;
-  position-anchor: --property;
-  right: anchor(--details right, anchor(right));
-  top: anchor(top);
-  width: 2ch;
-}
-
 /* menu */
 
 .menu-toggle {
@@ -460,6 +434,10 @@ button:active {
   background: var(--color-background-main);
 }
 
+.menu-list>fudge-comboselect button {
+  display: none;
+}
+
 /* .property-menu:hover, */
 /* .property-menu:focus-within, */
 .property:has(>summary>.menu-container:hover),
@@ -469,7 +447,37 @@ button:active {
   background-color: var(--color-focus-background)
 }
 
+.property>summary>.property-menu,
+.property>.property-menu {
+  order: 1;
+  margin-left: auto;
+  width: 2ch;
+  /* position: absolute; */
+  /* position-anchor: --property; */
+  /* right: anchor(--details right, anchor(right)); */
+  /* top: anchor(top); */
+}
+
 /* custom elements */
+
+.fudge-element>label {
+  box-sizing: border-box;
+  flex: 0 1 content;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-content: center;
+  user-select: text;
+  padding: 0;
+  margin-right: 1.5ch;
+}
+
+.fudge-element>.content {
+  flex: 1 0 content;
+}
+
+.fudge-element>.content>*:not(fudge-stepper>.content>input) {
+  background: none;
+}
 
 fudge-initializer,
 fudge-boolean,
@@ -479,36 +487,10 @@ fudge-textinput,
 fudge-select,
 fudge-comboselect,
 fudge-color,
-fudge-output {
+fudge-output,
+custom-vector2,
+custom-vector3 {
   display: flex;
-}
-
-.fudge-element>label {
-  flex: 1 1 50%;
-  background-color: var(--color-background-property-label);
-  /* word-break: break-all; */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  align-content: center;
-  user-select: text;
-}
-
-.fudge-element>label:not(.fudge-element .fudge-element>label) {
-  box-sizing: border-box;
-  padding: 0;
-  min-height: var(--property-label-min-height);
-  padding: var(--property-label-padding);
-}
-
-.fudge-element>.content {
-  flex: 1 1 50%;
-  background-color: var(--color-background-property-content);
-}
-
-fudge-comboselect>.content,
-.fudge-element>.content:not(.fudge-element .fudge-element>.content) {
-  box-sizing: border-box;
-  padding: var(--property-content-padding);
 }
 
 fudge-stepper>.content>span,
@@ -532,91 +514,81 @@ fudge-initializer>.content>.menu-container>.menu-list {
   left: anchor(left);
 }
 
+fudge-initializer>.content,
+fudge-boolean>.content,
+fudge-color>.content,
+fudge-stepper>.content,
+fudge-comboselect>.content {
+  display: inline-flex;
+}
+
 fudge-number input,
 fudge-textinput input,
 fudge-comboselect input,
 fudge-select select {
-  width: 100%;
   text-overflow: ellipsis;
-  min-width: 12ch;
-}
-
-fudge-initializer>.content,
-fudge-boolean>.content,
-fudge-color>.content,
-fudge-stepper>.content {
-  display: inline-flex;
-}
-
-fudge-color input[type="color"] {
-  flex: 1 1 50%;
-  width: 0;
-  min-width: 4ch;
-}
-
-fudge-color input[type="range"] {
-  flex: 1 1 50%;
-  width: 0;
-  min-width: 8ch;
-}
-
-.fudge-element input,
-.fudge-element select,
-fudge-stepper>.content>*,
-fudge-initializer>.content>*,
-fudge-initializer>.content>.menu-container>.menu-toggle,
-fudge-boolean>.content>* {
-  /* height: 1.4em; */
-  align-content: center;
-}
-
-.fudge-element input,
-.fudge-element select,
-fudge-stepper>.content {
-  background-color: var(--color-background-property-input);
+  width: 100%;
 }
 
 /* custom vector */
-
-custom-vector2,
-custom-vector3 {
-  display: grid;
-  grid-template-columns: 1fr;
-}
 
 custom-vector2>.content,
 custom-vector3>.content {
   display: grid;
   column-gap: 1ch;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: max-content min-content min-content min-content;
 }
 
-custom-vector2 fudge-stepper,
-custom-vector3 fudge-stepper  {
-  display: block;
-  white-space: nowrap;
+custom-vector2 fudge-stepper>label,
+custom-vector3 fudge-stepper>label {
+  min-width: unset !important;
+  margin-right: 1ch !important;
 }
 
 /* custom matrix */
 
 custom-matrix3x3,
-custom-matrix3x3>.content>fudge-stepper,
 custom-matrix4x4 {
+  /* display: grid; */
+  /* grid-template-columns: minmax(0, 100%) min-content; */
+  display: flex;
+  /* position: relative; */
+}
+
+custom-matrix4x4>label {
+  align-content: unset !important;
+  /* position: absolute; */
+  /* left: 0; */
+  /* top: 0; */
+  /* overflow: visible !important; */
+  /* flex: 0 1 auto !important; */
+  /* min-width: 0 !important; */
+}
+
+custom-matrix3x3>.content,
+custom-matrix4x4>.content {
+  margin-left: -10ch;
+  /* order: 2; */
+  /* grid-column: 1 / -1; */
+}
+
+custom-matrix4x4>.content {
+  text-align: center;
   display: grid;
-  grid-template-columns: 1fr;
+  column-gap: 1em;
+  grid-template-columns: min-content min-content min-content min-content;
+  grid-template-rows: min-content min-content min-content min-content;
 }
 
-custom-matrix3x3>.content>.fudge-element>label::after,
-custom-matrix4x4>.content>.fudge-element>label::after {
-  content: "translation";
-  visibility: hidden;
-  height: 0;
-  display: block;
-  overflow: hidden;
+custom-matrix3x3>.content {
+  text-align: center;
+  display: inline-grid;
+  column-gap: 1em;
+  grid-template-columns: min-content min-content min-content;
+  grid-template-rows: min-content min-content min-content min-content
 }
 
-custom-matrix3x3>.content>fudge-stepper>.content::before {
-  content: "x0";
-  visibility: hidden;
-  display: inline;
+custom-matrix4x4>.content>div,
+custom-matrix3x3>.content>div {
+  display: contents;
 }

@@ -165,7 +165,7 @@ declare namespace FudgeUserInterface {
         private static mapTypeToCustomElement;
         private static idCounter;
         content: HTMLSpanElement;
-        constructor(_attributes?: CustomElementAttributes, ..._args: unknown[]);
+        constructor(_attributes: CustomElementAttributes, ..._args: unknown[]);
         /**
          * Retrieve an id to use for children of this element, needed e.g. for standard interaction with the label
          */
@@ -191,7 +191,7 @@ declare namespace FudgeUserInterface {
         appendLabel(): HTMLLabelElement;
         setLabel(_label: string): void;
         /**
-         * Add a label-element as child to this element
+         * Add a span-element as child to this element
          */
         appendContent(): HTMLSpanElement;
         /**
@@ -291,7 +291,6 @@ declare namespace FudgeUserInterface {
     class CustomElementDigit extends HTMLElement {
         private static customElement;
         protected initialized: boolean;
-        constructor();
         set value(_value: number);
         get value(): number;
         connectedCallback(): void;
@@ -327,7 +326,6 @@ declare namespace FudgeUserInterface {
      */
     abstract class CustomElementTemplate extends CustomElement {
         private static fragment;
-        constructor(_attributes?: CustomElementAttributes);
         /**
          * Browses through the templates in the current document and registers the one defining the given tagname.
          * To be called from a script tag implemented with the template in HTML.
@@ -402,7 +400,6 @@ declare namespace FudgeUserInterface {
      */
     class CustomElementOutput extends CustomElement {
         private static customElement;
-        constructor(_attributes: CustomElementAttributes);
         /**
          * Creates the content of the element when connected the first time
          */
@@ -496,7 +493,6 @@ declare namespace FudgeUserInterface {
      */
     class CustomElementTextInput extends CustomElement {
         private static customElement;
-        constructor(_attributes: CustomElementAttributes);
         /**
          * Creates the content of the element when connected the first time
          */

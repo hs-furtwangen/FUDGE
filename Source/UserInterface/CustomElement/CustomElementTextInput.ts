@@ -22,6 +22,7 @@ namespace FudgeUserInterface {
       input.id = CustomElement.nextId;
       input.value = this.getAttribute("value");
       input.placeholder = "<empty>";
+      input.spellcheck = false;
       content.appendChild(input);
     }
 
