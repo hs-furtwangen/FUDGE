@@ -13,7 +13,7 @@ namespace FudgeCore {
     public static pickBuffer: Int32Array;   // TODO: research if picking should be optimized using radius picking to filter
     public static readonly nodesPhysics: RecycableArray<Node> = new RecycableArray();
     public static readonly componentsPick: RecycableArray<ComponentPick> = new RecycableArray();
-    public static readonly lights: MapLightTypeToLightList = new Map();
+    public static readonly lights: MapLightTypeToLightList = new Map(); // TODO: could buffer lights directly, no need to collecting them in a map
     private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();

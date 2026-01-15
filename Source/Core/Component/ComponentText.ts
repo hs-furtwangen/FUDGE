@@ -9,28 +9,25 @@ namespace FudgeCore {
   export class ComponentText extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentText);
 
+    @edit(TextureText)
     public readonly texture: TextureText;
+
     public readonly mtxWorld: Matrix4x4;
 
     /** - on: The texts size is fixed to match the set font size
      *  - off: The font size is stretched to match the attached meshes size
      */
+    @edit(Boolean)
     public fixedSize: boolean;
 
     public constructor(_text?: string, _font?: string) {
       super();
       this.texture = new TextureText(ComponentText.name, _text, _font);
+      Project.deregister(this.texture);
+      delete this.texture.name;
+      delete this.texture.idResource;
       this.mtxWorld = Matrix4x4.IDENTITY();
       this.fixedSize = false;
-    }
-
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
-      return this;
     }
 
     public useRenderData(_mtxMeshToWorld: Matrix4x4, _cmpCamera: ComponentCamera): Matrix4x4 {
@@ -58,12 +55,15 @@ namespace FudgeCore {
       if (mesh == null || cmpMaterial == null)
         return;
 
-      Gizmos.drawWireMesh(mesh, this.mtxWorld, cmpMaterial.clrPrimary);
+      Gizmos.drawWireMesh(mesh, this.mtxWorld, cmpMaterial.color);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.texture.name;
+    public override async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization);
+      Project.deregister(this.texture);
+      delete this.texture.name;
+      delete this.texture.idResource;
+      return this;
     }
   }
 }

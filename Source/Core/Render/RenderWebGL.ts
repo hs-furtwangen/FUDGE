@@ -1,4 +1,5 @@
-///<reference path="RenderBufferManager.ts"/>
+///<reference path="RenderbufferManager.ts"/>
+///<reference path="../Experimental/Render/RenderManagerMaterial.ts"/>
 ///<reference path="RenderManagerCoat.ts"/>
 ///<reference path="RenderManagerNode.ts"/>
 ///<reference path="RenderWebGLPicking.ts"/>
@@ -157,6 +158,7 @@ namespace FudgeCore {
       RenderWebGLComponentLight.initialize(RenderWebGL);
       RenderManagerNode.initialize(RenderWebGL);
       RenderManagerCoat.initialize(RenderWebGL);
+      RenderManagerMaterial.initialize(RenderWebGL);
 
       return crc3;
     }
@@ -530,7 +532,7 @@ namespace FudgeCore {
         coat.useRenderData();
 
         let mtxMeshToWorld: Matrix4x4 = RenderWebGL.faceCamera(node, cmpMesh.mtxWorld, _cmpCamera.mtxWorld);
-        RenderWebGL.useNodeUniforms(shader, mtxMeshToWorld, cmpMaterial.mtxPivot, cmpMaterial.clrPrimary, picks.length);
+        RenderWebGL.useNodeUniforms(shader, mtxMeshToWorld, cmpMaterial.mtxPivot, cmpMaterial.color, picks.length);
 
         const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers();
         RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);

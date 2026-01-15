@@ -1,9 +1,10 @@
 namespace FudgeCore {
   /**
+   * @deprecated
    * Mutable array of {@link Mutable}s. The {@link Mutator}s of the entries are included as array in the {@link Mutator}
    * @author Jirka Dell'Oro-Friedl, HFU, 2021
    */
-  export class MutableArray<T extends Mutable> extends Array<T> {
+  export class MutableArray<T extends Mutable = Mutable> extends Array<T> {
     #type: new () => T;
 
     public constructor(_type: new () => T, ..._args: T[]) {
@@ -32,28 +33,10 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns an associative array with this arrays elements corresponding types as string-values
-     */
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = {};
-      for (let entry in this)
-        types[entry] = this[entry].constructor.name;
-
-      return types;
-    }
-
-    /**
      * Returns an array with each elements mutator by invoking {@link Mutable.getMutator} on them
      */
     public getMutator(): Mutator {
-      return this.map((_value) => _value.getMutator());
-    }
-
-    /**
-     * See {@link Mutable.getMutatorForUserInterface}
-     */
-    public getMutatorForUserInterface(): Mutator {
-      return this.getMutator();
+      return Mutable.getMutatorBase(this);
     }
 
     /**
@@ -62,7 +45,7 @@ namespace FudgeCore {
     public mutate(_mutator: Mutator): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator): Promise<void> {
       for (let entry in _mutator)
-        await this[<General>entry].mutate(_mutator[entry]);
+        await this[<General>entry]?.mutate(_mutator[entry]);
     }
 
     /**

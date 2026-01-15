@@ -1,3 +1,5 @@
+/// <reference path="../Render/RenderInjectorTexture.ts"/>
+
 namespace FudgeCore {
   /** {@link TexImageSource} is a union type which as of now includes {@link VideoFrame}. All other parts of this union have a .width and .height property but VideoFrame does not. And since we only ever use {@link HTMLImageElement} and {@link OffscreenCanvas} currently VideoFrame can be excluded for convenience of accessing .width and .height */
   type ImageSource = Exclude<TexImageSource, VideoFrame>;
@@ -21,9 +23,15 @@ namespace FudgeCore {
    * @authors Jirka Dell'Oro-Friedl, HFU, 2019
    */
   @RenderInjectorTexture.decorate
+  @orderFlat
   export abstract class Texture extends Mutable implements SerializableResource {
+    @order(0)
+    @edit(String)
     public name: string;
-    public idResource: string = undefined;
+
+    @order(1)
+    @edit(String)
+    public idResource: string;
 
     protected renderData: unknown;
 
@@ -39,8 +47,10 @@ namespace FudgeCore {
       this.name = _name;
     }
 
-    public get isSerializableResource(): true {
-      return true;
+    @order(2)
+    @edit(MIPMAP)
+    public get mipmap(): MIPMAP {
+      return this.#mipmap;
     }
 
     public set mipmap(_mipmap: MIPMAP) {
@@ -48,8 +58,10 @@ namespace FudgeCore {
       this.mipmapDirty = true;
     }
 
-    public get mipmap(): MIPMAP {
-      return this.#mipmap;
+    @order(3)
+    @edit(WRAP)
+    public get wrap(): WRAP {
+      return this.#wrap;
     }
 
     public set wrap(_wrap: WRAP) {
@@ -57,8 +69,8 @@ namespace FudgeCore {
       this.wrapDirty = true;
     }
 
-    public get wrap(): WRAP {
-      return this.#wrap;
+    public get isResource(): true {
+      return true;
     }
 
     /**
@@ -87,55 +99,34 @@ namespace FudgeCore {
       this.textureDirty = true;
     }
 
-    //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        idResource: this.idResource,
-        name: this.name,
-        mipmap: MIPMAP[this.#mipmap],
-        wrap: WRAP[this.#wrap]
-      };
-      return serialization;
+      return serializeDecorations(this);
     }
+
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      Project.register(this, _serialization.idResource);
-      this.name = _serialization.name;
-      this.#mipmap = <number><unknown>MIPMAP[_serialization.mipmap];
-      this.#wrap = <number><unknown>WRAP[_serialization.wrap];
+      await deserializeDecorations(this, _serialization);
+
+      // TODO: Backward compatibility, remove in future version
+      if (typeof _serialization.mipmap == "string")
+        this.#mipmap = <number><unknown>MIPMAP[<General>_serialization.mipmap];
+
+      // TODO: Backward compatibility, remove in future version
+      if (typeof _serialization.wrap == "string")
+        this.#wrap = <number><unknown>WRAP[<General>_serialization.wrap];
+
       return this;
-    }
-
-    public getMutator(_extendable?: boolean): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.mipmap = this.#mipmap;
-      mutator.wrap = this.#wrap;
-      return mutator;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.mipmap)
-        types.mipmap = MIPMAP;
-      if (types.wrap)
-        types.wrap = WRAP;
-      return types;
-    }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.idResource;
-      delete _mutator.renderData;
-      delete _mutator.textureDirty;
-      delete _mutator.mipmapDirty;
-      delete _mutator.mipmapGenerated;
-      delete _mutator.wrapDirty;
     }
   }
 
   /**
    * Texture created from an existing image
    */
+  @orderFlat
   export class TextureImage extends Texture {
     public image: HTMLImageElement = null;
+
+    @order(4)
+    @edit(String)
     public url: RequestInfo;
 
     public constructor(_url?: RequestInfo) {
@@ -175,31 +166,28 @@ namespace FudgeCore {
       });
     }
 
-    //#region Transfer
-    public serialize(): Serialization {
-      return {
-        url: this.url,
-        type: this.type, // serialize for editor views
-        [super.constructor.name]: super.serialize()
-      };
-    }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
+
+      // TODO: backwards compatibility, remove in future version
+      if (_serialization[super.constructor.name] != undefined) { 
+        Project.register(this, _serialization[super.constructor.name].idResource);
+        await super.deserialize(_serialization[super.constructor.name]);
+      }
+
+      await super.deserialize(_serialization);
       await this.load(_serialization.url);
-      // this.type is an accessor of Mutable doesn't need to be deserialized
       return this;
     }
 
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
       if (_mutator.url && _mutator.url != this.url.toString())
         await this.load(_mutator.url);
       // except url from mutator for further processing
-      delete (_mutator.url);
-      await super.mutate(_mutator, _selection, _dispatchMutate);
+      // delete (_mutator.url);
+      return super.mutate(_mutator, _dispatchMutate);
       // TODO: examine necessity to reconstruct, if mutator is kept by caller
       // _mutator.url = this.url; 
     }
-    //#endregion
   }
 
   /**
@@ -242,16 +230,23 @@ namespace FudgeCore {
    * Texture created from a text. Texture upates when the text or font changes. The texture is resized to fit the text.
    * @authors Jonas Plotzky, HFU, 2024
    */
+  @orderFlat
   export class TextureText extends Texture {
     protected crc2: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
     #text: string;
     #font: string;
 
-    public constructor(_name: string, _text: string = "Text", _font: string = "20px monospace") {
+    public constructor(_name: string = TextureText.name, _text: string = "Text", _font: string = "20px monospace") {
       super(_name);
       this.crc2 = document.createElement("canvas").getContext("2d");
       this.text = _text;
       this.font = _font;
+    }
+
+    @order(4)
+    @edit(String)
+    public get text(): string {
+      return this.#text;
     }
 
     public set text(_text: string) {
@@ -259,8 +254,10 @@ namespace FudgeCore {
       this.textureDirty = true;
     }
 
-    public get text(): string {
-      return this.#text;
+    @order(5)
+    @edit(String)
+    public get font(): string {
+      return this.#font;
     }
 
     public set font(_font: string) {
@@ -268,10 +265,6 @@ namespace FudgeCore {
       document.fonts.load(this.#font)
         .catch((_error) => Debug.error(`${TextureText.name}: ${_error}`))
         .finally(() => this.textureDirty = true);
-    }
-
-    public get font(): string {
-      return this.#font;
     }
 
     public get texImageSource(): ImageSource {
@@ -318,26 +311,15 @@ namespace FudgeCore {
       super.useRenderData(_textureUnit);
     }
 
-    public serialize(): Serialization {
-      return {
-        [super.constructor.name]: super.serialize(),
-        text: this.text,
-        font: this.font
-      };
-    }
-
+    // TODO: backward compatibility, remove in future version
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
-      this.text = _serialization.text;
-      this.font = _serialization.font;
-      return this;
-    }
+      if (_serialization[super.constructor.name] != undefined) { 
+        Project.register(this, _serialization[super.constructor.name].idResource);
+        await super.deserialize(_serialization[super.constructor.name]);
+      }
 
-    public getMutator(_extendable?: boolean): Mutator {
-      let mutator: Mutator = super.getMutator(true);
-      mutator.text = this.text;
-      mutator.font = this.font;
-      return mutator;
+      await super.deserialize(_serialization);
+      return this;
     }
   }
 

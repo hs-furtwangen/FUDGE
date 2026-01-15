@@ -6,10 +6,6 @@ namespace FudgeUserInterface {
     // @ts-ignore
     private static customElement: void = CustomElement.register("fudge-textinput", CustomElementTextInput, String);
 
-    public constructor(_attributes: CustomElementAttributes) {
-      super(_attributes);
-    }
-
     /**
      * Creates the content of the element when connected the first time
      */
@@ -19,24 +15,28 @@ namespace FudgeUserInterface {
       this.initialized = true;
 
       this.appendLabel();
+
+      let content: HTMLSpanElement = this.appendContent();
       
       let input: HTMLInputElement = document.createElement("input");
       input.id = CustomElement.nextId;
       input.value = this.getAttribute("value");
-      this.appendChild(input);
+      input.placeholder = "<empty>";
+      input.spellcheck = false;
+      content.appendChild(input);
     }
 
     /**
      * Retrieves the content of the input element
      */
     public getMutatorValue(): string {
-      return this.querySelector("input").value;
+      return this.content.querySelector("input").value;
     }
     /**
      * Sets the content of the input element
      */
     public setMutatorValue(_value: string): void {
-      this.querySelector("input").value = _value;
+      this.content.querySelector("input").value = _value;
     }
   }
 }

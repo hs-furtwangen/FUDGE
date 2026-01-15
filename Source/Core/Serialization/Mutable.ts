@@ -1,12 +1,7 @@
 namespace FudgeCore {
+
   /**
-   * Interface describing the datatypes of the attributes a mutator as strings 
-   */
-  export interface MutatorAttributeTypes {
-    [attribute: string]: string | Object;
-  }
-  /**
-   * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values
+   * Interface describing a mutator, which is an associative array with names of attributes and their corresponding values.
    */
   export interface Mutator {
     [attribute: string]: General;
@@ -20,170 +15,263 @@ namespace FudgeCore {
     [attribute: string]: Float32Array;
   }
 
-  /*
-   * Interfaces dedicated for each purpose. Extra attribute necessary for compiletime type checking, not existent at runtime
-   */
-  export interface MutatorForAnimation extends Mutator { readonly forAnimation: null }
-  export interface MutatorForUserInterface extends Mutator { readonly forUserInterface: null }
-  // export interface MutatorForComponent extends Mutator { readonly forUserComponent: null; }
+  const emptyKeys: readonly string[] = Object.freeze([] as string[]);
 
-  /**
-   * Collect applicable attributes of the instance and copies of their values in a Mutator-object
-   */
-  export function getMutatorOfArbitrary(_object: Object): Mutator {
-    let mutator: Mutator = {};
-    let attributes: (string | number | symbol)[] = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
-    for (let attribute of attributes) {
-      let value: Object = Reflect.get(_object, attribute);
-      if (value instanceof Function)
-        continue;
-      // if (value instanceof Object && !(value instanceof Mutable))
-      //   continue;
-      mutator[attribute.toString()] = value;
-    }
-    return mutator;
-  }
-
-  // @ts-ignore - as of now we need to polyfill the symbol to make decorator metadata work, see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata
-  Symbol.metadata ??= Symbol("Symbol.metadata");
-
-  /**
-   * Association of an attribute with its specified type (constructor).
-   * @see {@link Metadata}.
-   */
-  export type MetaAttributeTypes = Record<PropertyKey, Function | Object>;
-
-  /**
-   * Metadata for classes extending {@link Mutable}. Metadata needs to be explicitly specified using decorators.
-   * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
-   */
-  export interface Metadata extends DecoratorMetadataObject {
-    /**
-     * The specified types of the attributes of a class. Use the {@link type} decorator to add type information to the metadata of a class.
-     */
-    attributeTypes?: MetaAttributeTypes;
-    enumerateKeys?: PropertyKey[];
+  export interface IMutable {
+    type: string;
 
     /**
-     * Map of property names to the type of serialization that should be used for that property.
+     * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
+     * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
      */
-    serializables?: { [key: string]: "primitive" | "serializable" | "resource" | "node" };
-    implements?: Set<Function>;
+    getMutator(_extendable?: boolean): Mutator;
+
+    /**
+     * Updates the attribute values of the instance according to the state of the given mutator.
+     */
+    mutate(_mutator: Mutator): void | Promise<void>;
   }
 
-  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-  export type ClassPropertyContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+  export function isMutable(_object: Object): _object is IMutable {
+    return typeof _object === "object" && _object != null && Reflect.has(_object, "getMutator") && Reflect.has(_object, "mutate");
+  }
+
   /**
-   * Decorator to specify a type (constructor) for an attribute within a class's {@link Metadata | metadata}.
-   * This allows the intended type of an attribute to be known at runtime, making it a valid drop target in the editor.
-   *
-   * **Note:** Attributes with a specified meta-type will always be included in the {@link Mutator base-mutator} 
-   * (via {@link Mutable.getMutator}), regardless of their own type. Non-{@link Mutable mutable} objects 
-   * will be displayed via their {@link toString} method in the editor.
-   * @author Jonas Plotzky, HFU, 2024-2025
+   * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
    */
-  // TODO: add support for arrays and maybe other collections?
-  // object type
-  export function type<T, C extends abstract new (...args: General[]) => T>(_constructor: C): (_value: unknown, _context: ClassPropertyContext<T extends Node ? Node extends T ? Component : Serializable : Serializable, T>) => void;
-  // primitive type
-  export function type<T extends Boolean | Number | String>(_constructor: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  // enum type
-  export function type<T, E extends Record<keyof E, T>>(_enum: E): (_value: unknown, _context: ClassPropertyContext<Serializable, T>) => void;
-  export function type(_constructor: Function | Object): (_value: unknown, _context: ClassPropertyContext) => void {
-    return (_value, _context) => { // could cache the decorator function for each class
-      let meta: Metadata = _context.metadata;
-      if (!Object.hasOwn(meta, "attributeTypes"))
-        meta.attributeTypes = { ...meta.attributeTypes };
-      meta.attributeTypes[_context.name] = _constructor;
-    };
-  }
+  export type MutatorAttributeTypes = { [key: string]: Function | Record<string, unknown> };
 
   /**
-   * Decorator for making getters in a {@link Mutable} class enumerable. This ensures that the getters are included in mutators and are subsequently displayed in the editor.
+   * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using graphical interfaces created at runtime.
    * 
-   * **Usage**: Apply this decorator to both the getter method and the class to make it effective.
+   * Mutables provide a {@link Mutator} built by collecting all their {@link mutate decorated properties}.
    * 
-   * **Example**:
-   * ```typescript
-   * @ƒ.enumerate // apply the decorator to the class.
-   * export class SomeScript extends ƒ.ComponentScript {
-   *   #size: number = 1;
-   * 
-   *   @ƒ.enumerate // apply the decorator to the getter
-   *   public get size(): number {
-   *     return this.#size;
-   *   }
-   * 
-   *   // define a setter to allow writing, or omit it to leave the property read-only
-   *   public set size(_size: number) {
-   *     this.#size = _size;
-   *   }
-   * }
-   * ```
-   */
-  export function enumerate(_value: unknown, _context: ClassDecoratorContext<new (...args: General[]) => Mutable>): void;
-  export function enumerate(_value: unknown, _context: ClassGetterDecoratorContext<Mutable> | ClassAccessorDecoratorContext<Mutable>): void;
-  export function enumerate(_value: unknown, _context: ClassDecoratorContext | ClassGetterDecoratorContext | ClassAccessorDecoratorContext): void {
-    // _context.addInitializer(function (this: unknown) { // this is run per instance... ideally we would want to run this once per class
-    //   const prototype: unknown = Object.getPrototypeOf(this);
-    //   const descriptor: PropertyDescriptor = Object.getOwnPropertyDescriptor(prototype, _context.name);
-    //   if (descriptor && descriptor.enumerable == false)
-    //     Object.defineProperty(prototype, _context.name, { enumerable: true });
-    // });
-
-    let metadata: Metadata = _context.metadata;
-    if (_context.kind == "getter" || _context.kind == "accessor") {
-      if (typeof _context.name != "string")
-        return;
-
-      if (!Object.hasOwn(metadata, "enumerateKeys"))
-        metadata.enumerateKeys = [];
-
-      metadata.enumerateKeys.push(_context.name);
-      return;
-    }
-
-    if (_context.kind == "class") {
-      if (metadata.enumerateKeys) {
-        const descriptor: PropertyDescriptor = { enumerable: true };
-        for (const key of metadata.enumerateKeys)
-          Object.defineProperty((<Function>_value).prototype, key, descriptor);
-      }
-      return;
-    }
-  }
-
-  /**
-   * Base class for all types that are mutable using {@link Mutator}-objects, thus providing and using interfaces created at runtime.
-   * 
-   * Mutables provide a {@link Mutator} built by collecting all their applicable enumerable properties. By default, this includes only primitive types and nested mutable objects.
-   * Using the {@link type}-decorator can also include non-mutable objects, which will be displayed via their {@link toString} method in the editor.
-   * 
-   * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual getMutator method.
+   * Subclasses can either reduce the standard {@link Mutator} built by this base class by deleting properties or implement an individual {@link Mutable.getMutator} method.
    * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
-   * Otherwise, they will be ignored unless handled by an override of the mutate method in the subclass, and will throw errors in an automatically generated user interface for the object.
+   * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
    */
-  export abstract class Mutable extends EventTargetUnified {
-    /**
-     * Decorator allows to attach {@link Mutable} functionality to existing classes. 
-     */
-    // public static decorate(_constructor: Function): void {
-    //   Object.defineProperty(_constructor.prototype, "useRenderData", {
-    //     value: function getMutator(this: MutableForUserInterface): Mutator {
-    //       return getMutatorOfArbitrary(this);
-    //     }
-    //   });
-    // }
+  export abstract class Mutable extends EventTargetUnified implements IMutable {
 
-    public static getMutatorFromPath(_mutator: Mutator, _path: string[]): Mutator {
-      let key: string = _path[0];
+    /**
+     * Get the value from the given mutation path.
+     */
+    public static getValue<T = unknown>(_root: Record<string, General>, _path: string[]): T {
+      let object: General = _root;
+      for (let i: number = 0; i < _path.length; i++)
+        object = Reflect.get(object, _path[i]);
+
+      return object;
+    }
+
+    /**
+     * Set the value at the given mutation path.
+     */
+    public static setValue(_root: Record<string, General>, _path: string[], _value: unknown): void {
+      let object: Record<string, General> = _root;
+      for (let i: number = 0; i < _path.length - 1; i++)
+        object = object[_path[i]];
+
+      object[_path[_path.length - 1]] = _value;
+    }
+
+    /**
+     * Collect applicable properties of the given object and copies of their values in a {@link Mutator}-object.
+     */
+    public static getMutator(_object: object): Mutator {
+      if (isMutable(_object))
+        return _object.getMutator();
+      else
+        return Mutable.getMutatorBase(_object);
+    }
+
+    /**
+     * Updates the property values of the given object according to the state of the given mutator.
+     */
+    public static mutate(_object: object, _mutator: Mutator): void | Promise<void> {
+      if (isMutable(_object))
+        return _object.mutate(_mutator);
+      else
+        return <Promise<void>><unknown>Mutable.mutateBase(_object, _mutator);
+    }
+
+    /**
+     * Copy the properties of the given instance into a {@link Mutator} object. See {@link getKeys} for information on which properties are copied.
+     * 
+     * @param _mutable The instance to copy the decorated properties from.
+     * @param _mutator - (optional) the receiving mutator.
+     * @returns `_mutator` or a new mutator if none is provided.
+     */
+    public static getMutatorBase(_mutable: object, _mutator: Mutator = {}): Mutator {
+      for (const key of Mutable.getKeys(_mutable)) {
+        if (!Reflect.has(_mutable, key))
+          continue;
+
+        const value: unknown = _mutable[key];
+        if (isMutable(value))
+          _mutator[key] = value.getMutator(_mutator[key]);
+        else if (Array.isArray(value))
+          _mutator[key] = Mutable.getMutatorBase(value);
+        else
+          _mutator[key] = value;
+      }
+
+      return _mutator;
+    }
+
+    /**
+     * Update the properties of the given instance according to the state of the given {@link Mutator}. See {@link getKeys} for information on which properties are updated.
+     * @param _mutable The instance to update.
+     * @param _mutator The mutator to update from.
+     * @returns `_instance`.
+     */
+    public static async mutateBase<T extends object>(_mutable: T, _mutator: Mutator): Promise<T> {
+      for (const key of Mutable.getKeys(_mutable)) {
+        if (!Reflect.has(_mutable, key) || !Reflect.has(_mutator, key))
+          continue;
+
+        const mutant: unknown = Reflect.get(_mutable, key);
+        const value: unknown = _mutator[key];
+
+        if (value != null && isMutable(mutant))
+          await mutant.mutate(value);
+        else if (Array.isArray(mutant))
+          await Mutable.mutateBase(mutant, value);
+        else
+          Reflect.set(_mutable, key, value);
+      }
+
+      return _mutable;
+    }
+
+    /**
+     * Collect applicable attributes of the given instance and copies of their values in a mutator.
+     */
+    public static getMutatorOfArbitrary(_object: object): Mutator {
       let mutator: Mutator = {};
-      if (_mutator[key] == undefined) // if the path deviates from mutator structure, return the mutator
-        return _mutator;
-      mutator[key] = _mutator[key];
-      if (_path.length > 1)
-        mutator[key] = Mutable.getMutatorFromPath(mutator[key], _path.slice(1, _path.length));
+      let attributes: (string | number | symbol)[] = Reflect.ownKeys(Reflect.getPrototypeOf(_object));
+      for (let attribute of attributes) {
+        let value: Object = Reflect.get(_object, attribute);
+        if (value instanceof Function)
+          continue;
+
+        mutator[attribute.toString()] = value;
+      }
+
       return mutator;
+    }
+
+    // TODO: This function assumes that keyof mutator == keyof mutable. Sub classes of mutable might override getMutator() and mutate() in a way so that the mutator contains keys that are not keys of the mutable...
+    /**
+     * Updates the values of the given {@link Mutator} according to the current state of the given instance.
+     * @param _mutable The instance to update from.
+     * @param _mutator The mutator to update.
+     * @returns `_mutator`.
+     */
+    public static updateMutator(_mutable: object, _mutator: Mutator): Mutator {
+      for (const key in _mutator) {
+        const value: Object = Reflect.get(_mutable, key);
+        if (isMutable(value) || Array.isArray(value))
+          Mutable.updateMutator(value, _mutator[key]);
+        else
+          _mutator[key] = value;
+      }
+
+      return _mutator;
+    }
+
+    /**
+     * Returns an associative array with the same properties as the given mutator, but with the corresponding types as constructor functions.
+     * Does not recurse into objects!
+     */
+    public static getMutatorTypes(_object: object, _mutator: Mutator): MutatorAttributeTypes {
+      const out: MutatorAttributeTypes = {};
+
+      for (const key in _mutator) {
+        let type: Function | Record<string, unknown>;
+        let value: unknown = _mutator[key];
+        if (value != undefined)
+          if (typeof value == "object")
+            type = Reflect.get(_object, key).constructor;
+          else if (typeof value == "function")
+            type = value;
+          else
+            type = value.constructor;
+
+        out[key] = type;
+      }
+
+      return out;
+    }
+
+    /**
+     * Returns an iterable of keys for the given source:
+     * 
+     * - Returns the decorated keys ({@link mutate @mutate}) of the given instance, if available. 
+     * - Returns {@link Array.keys()} for arrays.
+     * - Returns {@link Object.getOwnPropertyNames} for plain objects.
+     * - Returns an empty iterable otherwise.
+     */
+    public static getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
+      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
+      if (mutatorKeys)
+        return <Iterable<K>>mutatorKeys;
+
+      if (Array.isArray(_from))
+        return <Iterable<K>>_from.keys();
+
+      if (_from != null && Object.getPrototypeOf(_from) === Object.prototype)
+        return <Iterable<K>>Object.getOwnPropertyNames(_from);
+
+      return <Iterable<K>>emptyKeys;
+    }
+
+    /**
+     * Clones the given mutator at the given path. See {@link Mutator.clone} for restrictions.
+     */
+    public static cloneMutatorFromPath(_mutator: Mutator, _path: string[], _index: number = 0): Mutator {
+      const key: string = _path[_index];
+      if (!(key in _mutator)) // if the path deviates from mutator, return the mutator
+        return _mutator;
+
+      const clone: Mutator = Mutable.createMutator(_mutator);
+      if (!clone) // if the mutator is not a plain object or array, return it
+        return _mutator;
+
+      if (_index < _path.length - 1)
+        clone[key] = Mutable.cloneMutatorFromPath(_mutator[key], _path, _index + 1); // recursively clone the next part of the path
+      else
+        clone[key] = _mutator[key];
+
+      return clone;
+    }
+
+    /**
+     * Clones the given mutator. Only works for plain objects and arrays, i.e. created through the {@link Object} or {@link Array} constructors.
+     * @param _mutator The mutator to clone. Must be a plain object or array.
+     * @returns A clone of `_mutator` or null if it is not a plain object or array.
+     */
+    public static cloneMutator(_mutator: Mutator): Mutator | null {
+      const out: Mutator | null = Mutable.createMutator(_mutator);
+      if (out)
+        for (const key in _mutator)
+          out[key] = Mutable.cloneMutator(_mutator[key]) ?? _mutator[key];
+
+      return out;
+    };
+
+    /**
+     * Creates and returns an empty mutator for the given value.
+     * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
+     */
+    private static createMutator(_mutator: Mutator): Mutator | null {
+      const prototype: object = _mutator != null ? Object.getPrototypeOf(_mutator) : null;
+      if (prototype === Object.prototype)
+        return {};
+
+      if (prototype === Array.prototype)
+        return [];
+
+      return null;
     }
 
     /**
@@ -198,127 +286,27 @@ namespace FudgeCore {
      * Collect applicable attributes of the instance and copies of their values in a Mutator-object.
      * By default, a mutator cannot be extended, since extensions are not available in the object the mutator belongs to.
      * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
+     * Uses {@link Mutator.fromDecorations}.
      */
     public getMutator(_extendable: boolean = false): Mutator {
-      let mutator: Mutator = {};
-
-      // collect primitive and mutable attributes
-      for (let attribute in this) {
-        let value: Object = this[attribute];
-        if (value instanceof Function)
-          continue;
-        if (value instanceof Object && !(value instanceof Mutable) && !(value instanceof MutableArray) && !(value.hasOwnProperty("idResource")) && this.getMetaAttributeTypes()[attribute] == undefined)
-          continue;
-        mutator[attribute] = value;
-      }
+      const mutator: Mutator = Mutable.getMutatorBase(this);
 
       if (!_extendable)
         // mutator can be reduced but not extended!
         Object.preventExtensions(mutator);
-      // delete unwanted attributes
-      this.reduceMutator(mutator);
-
-      // replace references to mutable objects with references to mutators
-      for (let attribute in mutator) {
-        let value: Object = mutator[attribute];
-        if (value instanceof Mutable)
-          mutator[attribute] = value.getMutator();
-        if (value instanceof MutableArray)
-          mutator[attribute] = value.map((_value) => _value.getMutator());
-      }
 
       return mutator;
     }
 
     /**
-     * Collect the attributes of the instance and their values applicable for animation.
-     * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-     */
-    public getMutatorForAnimation(_extendable: boolean = false): MutatorForAnimation {
-      return <MutatorForAnimation>this.getMutator(_extendable);
-    }
-
-    /**
-     * Collect the attributes of the instance and their values applicable for the user interface.
-     * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-     */
-    public getMutatorForUserInterface(_extendable: boolean = false): MutatorForUserInterface {
-      return <MutatorForUserInterface>this.getMutator(_extendable);  // TODO: both of these (this and getMutatorForAnimation) don't really work as they don't recursively call getMutatorForUserInterface on sub-mutable objects, maybe instead implement a reduceMutatorForUserInterface???
-    }
-
-    /**
-     * Collect the attributes of the instance and their values applicable for indiviualization by the component.
-     * Basic functionality is identical to {@link getMutator}, returned mutator should then be reduced by the subclassed instance
-     */
-    // public getMutatorForComponent(): MutatorForComponent {
-    //     return <MutatorForComponent>this.getMutator();
-    // }
-    /**
-     * Returns an associative array with the same attributes as the given mutator, but with the corresponding types as string-values.
-     * Does not recurse into objects! This will return the decorated {@link Metadata meta-type} instead of the runtime-type of the object, if available.
-     */
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = {};
-      let metaTypes: MetaAttributeTypes = this.getMetaAttributeTypes();
-      for (let attribute in _mutator) {
-        let metaType: Function | Object = metaTypes[attribute]; // constructor or enum
-        let type: string | Object;
-        if (typeof metaType == "function")
-          type = metaType.name;
-        else if (typeof metaType == "object")
-          type = metaType;
-
-        let value: number | boolean | string | object | Function = _mutator[attribute];
-
-        if (value != undefined && type == undefined)
-          if (typeof value == "object")
-            type = (<General>this)[attribute].constructor.name;
-          else if (typeof value == "function")
-            type = value.name;
-          else
-            type = value.constructor.name;
-
-        types[attribute] = type;
-      }
-      return types;
-    }
-
-    /**
-     * Retrieves the specified {@link Metadata.attributeTypes | attribute types} from the {@link Metadata | metadata} of this instance's class.
-     */
-    public getMetaAttributeTypes(): MetaAttributeTypes {
-      return this.getMetadata().attributeTypes ??= {};
-    }
-
-    /** 
-     * Retrieves the {@link Metadata | metadata} of this instance's class.
-     */
-    public getMetadata(): Metadata {
-      return this.constructor[Symbol.metadata] ??= {};
-    }
-
-    /**
-     * Updates the values of the given mutator according to the current state of the instance
-     * @param _mutator 
-     */
-    public updateMutator(_mutator: Mutator): void {
-      for (let attribute in _mutator) {
-        let value: Object = Reflect.get(this, attribute);
-        if (value instanceof Mutable)
-          value.updateMutator(_mutator[attribute]);
-        else
-          _mutator[attribute] = value;
-      }
-    }
-
-    /**
      * Updates the attribute values of the instance according to the state of the mutator.
-     * The mutation may be restricted to a subset of the mutator and the event dispatching suppressed.
-     * Uses mutateBase, but can be overwritten in subclasses
+     * The the event dispatching may be suppressed.
+     * Uses {@link Mutator.mutateDecorations}.
      */
-    public mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await this.mutateBase(_mutator, _selection);
+    public mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await Mutable.mutateBase(this, _mutator);
+
       if (_dispatchMutate)
         this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
     }
@@ -331,60 +319,9 @@ namespace FudgeCore {
         const valueArray: Float32Array = _mutator[key];
         if (valueArray.length == 1)
           (<General>this)[key] = valueArray[0];
-        else 
+        else
           (<General>this)[key].setArray(valueArray);
       }
     }
-
-    /**
-     * Synchronous implementation of {@link mutate}.
-     * Override {@link mutate} with a sync implementation and call this method from it to mutate synchronously.
-     */
-    protected mutateSync(_mutator: Mutator, _dispatchMutate: boolean = true): void {
-      let mutator: Mutator = _mutator;
-
-      for (let attribute in mutator) {
-        let mutant: Object = Reflect.get(this, attribute);
-        if (mutant instanceof MutableArray || mutant instanceof Mutable)
-          mutant.mutate(mutator[attribute], null, false);
-        else
-          Reflect.set(this, attribute, mutator[attribute]);
-      }
-
-      if (_dispatchMutate)
-        this.dispatchEvent(new CustomEvent(EVENT.MUTATE, { bubbles: true, detail: { mutator: _mutator } }));
-    };
-
-    /**
-     * Base method for mutation, always available to subclasses. Do not overwrite in subclasses!
-     */
-    protected async mutateBase(_mutator: Mutator, _selection?: string[]): Promise<void> {
-      let mutator: Mutator = _mutator;
-
-      if (_selection) { // TODO: this doesn't work as it does not recurse into objects
-        mutator = {};
-        for (let attribute of _selection) // reduce the mutator to the selection
-          if (typeof (_mutator[attribute]) !== "undefined")
-            mutator[attribute] = _mutator[attribute];
-      }
-
-      for (let attribute in mutator) {
-        if (!Reflect.has(this, attribute))
-          continue;
-        let mutant: Object = Reflect.get(this, attribute);
-        let value: Mutator = <Mutator>mutator[attribute];
-        if (mutant instanceof MutableArray || mutant instanceof Mutable)
-          await mutant.mutate(value, null, false);
-        else
-          Reflect.set(this, attribute, value);
-      }
-    }
-
-    /**
-     * Reduces the attributes of the general mutator according to desired options for mutation. To be implemented in subclasses
-     * @param _mutator 
-     */
-    protected abstract reduceMutator(_mutator: Mutator): void;
-
   }
 }

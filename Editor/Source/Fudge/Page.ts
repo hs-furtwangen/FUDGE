@@ -179,7 +179,8 @@ namespace Fudge {
     private static hndEvent = async (_event: EditorEvent): Promise<void> => {
       switch (_event.type) {
         case ƒui.EVENT.SAVE_HISTORY:
-          await History.save(HISTORY.MUTATE, _event.detail["mutable"], _event.detail["mutator"]);
+          const detail: ƒ.General = (<CustomEvent>_event).detail;
+          await History.save(detail.history, detail.mutable, detail.mutator);
           break;
         case EVENT_EDITOR.CLOSE:
           let view: View = _event.detail.view;

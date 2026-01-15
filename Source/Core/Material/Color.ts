@@ -13,9 +13,13 @@ namespace FudgeCore {
       return crc2;
     })();
 
+    @edit(Number)
     public r: number;
+    @edit(Number)
     public g: number;
+    @edit(Number)
     public b: number;
+    @edit(Number)
     public a: number;
 
     public constructor(_r: number = 1, _g: number = 1, _b: number = 1, _a: number = 1) {
@@ -421,15 +425,13 @@ namespace FudgeCore {
       return `rgba(${Math.round(this.r * 255)}, ${Math.round(this.g * 255)}, ${Math.round(this.b * 255)}, ${this.a})`;
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = this.getMutator(true);
-      // serialization.toJSON = () => { return `{ "r": ${this.r}, "g": ${this.g}, "b": ${this.b}, "a": ${this.a}}`; };
-      serialization.toJSON = () => { return `[${this.r}, ${this.g}, ${this.b}, ${this.a}]`; };
+      serialization.toJSON = () => `[${this.r}, ${this.g}, ${this.b}, ${this.a}]`;
       return serialization;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+    public deserialize(_serialization: Serialization): Color {
       if (typeof (_serialization) == "string") {
         [this.r, this.g, this.b, this.a] = JSON.parse(<string><unknown>_serialization);
       } else
@@ -447,9 +449,5 @@ namespace FudgeCore {
       if (_mutator.a != undefined)
         this.a = _mutator.a;
     }
-
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-    //#endregion
-    //#endregion
   }
 }

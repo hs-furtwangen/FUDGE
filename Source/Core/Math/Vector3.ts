@@ -21,8 +21,11 @@ namespace FudgeCore {
      */
     public static readonly keys: readonly ["x", "y", "z"] = ["x", "y", "z"];
 
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
+    @edit(Number)
     public z: number;
 
     public constructor(_x: number = 0, _y: number = 0, _z: number = 0) {
@@ -667,13 +670,12 @@ namespace FudgeCore {
 
     //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      // serialization.toJSON = () => { return `{ "r": ${this.r}, "g": ${this.g}, "b": ${this.b}, "a": ${this.a}}`; };
-      serialization.toJSON = () => { return `[${this.x}, ${this.y}, ${this.z}]`; };
+      let serialization: Serialization = this.getMutator(true);
+      serialization.toJSON = () => `[${this.x}, ${this.y}, ${this.z}]`;
       return serialization;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Vector3> {
+    public deserialize(_serialization: Serialization): Vector3 {
       if (typeof (_serialization) == "string") {
         [this.x, this.y, this.z] = JSON.parse(<string><unknown>_serialization);
       } else
@@ -690,13 +692,6 @@ namespace FudgeCore {
         this.z = _mutator.z;
     }
 
-    public getMutator(): Mutator {
-      let mutator: Mutator = { x: this.x, y: this.y, z: this.z };
-      return mutator;
-    }
-
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-    //#endregion
     //#endregion
   }
 }

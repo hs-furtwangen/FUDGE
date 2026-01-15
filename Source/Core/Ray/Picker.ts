@@ -17,7 +17,7 @@ namespace FudgeCore {
       let cmpCameraPick: ComponentCamera = Recycler.reuse(ComponentCamera);
       cmpCameraPick.mtxWorld.translation = _ray.origin;
       cmpCameraPick.mtxWorld.lookAt(Vector3.SUM(_ray.origin, _ray.direction));
-      cmpCameraPick.projectCentral(1, 0.001, FIELD_OF_VIEW.DIAGONAL, _min, _max);
+      cmpCameraPick.projectCentral(1, 0.001, FIELD_OF_VIEW.DIAGONAL, Math.max(_min, 0.001), _max);
 
       let picks: Pick[];
       if (_from[0] instanceof Node)

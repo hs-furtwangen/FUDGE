@@ -96,7 +96,6 @@ namespace FudgeCore {
       this.functionOut.calculate();
     }
 
-    //#region transfer
     public serialize(): Serialization {
       let serialization: Serialization = {};
       serialization.time = this.#time;
@@ -120,10 +119,5 @@ namespace FudgeCore {
     public getMutator(): Mutator {
       return this.serialize();
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      //
-    }
-    //#endregion
   }
 }

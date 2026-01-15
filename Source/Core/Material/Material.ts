@@ -2,41 +2,43 @@ namespace FudgeCore {
 
   /**
    * Baseclass for materials. Combines a {@link Shader} with a compatible {@link Coat}
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+   * @author Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
-  @enumerate
+  @orderFlat
   export class Material extends Mutable implements SerializableResource {
-    /** The name to call the Material by. */
-    public name: string;
-    public idResource: string = undefined;
-
     public timestampUpdate: number = 0;
 
-    private shaderType: typeof Shader; // The shader program used by this BaseMaterial
+    @order(0)
+    @edit(String)
+    public name: string;
+
+    @order(1)
+    @edit(String)
+    public idResource: string;
+
+    @serializeFunction(Shader)
+    private shader: typeof Shader; // The shader program used by this BaseMaterial
     #coat: Coat;
 
-    public constructor(_name: string, _shader?: typeof Shader, _coat?: Coat) {
+    public constructor(_name: string = Material.name, _shader?: typeof Shader, _coat?: Coat) {
       super();
       this.name = _name;
-      this.shaderType = _shader;
+      this.shader = _shader;
       if (_shader) {
         if (_coat)
           this.coat = _coat;
         else
           this.coat = this.createCoatMatchingShader();
       }
-      Project.register(this);
-    }
 
-    public get isSerializableResource(): true {
-      return true;
+      Project.register(this);
     }
 
     /**
      * Returns the currently referenced {@link Coat} instance
      */
-    @type(Coat)
-    @enumerate
+    @order(2)
+    @edit(Coat)
     public get coat(): Coat {
       return this.#coat;
     }
@@ -44,30 +46,33 @@ namespace FudgeCore {
      * Makes this material reference the given {@link Coat} if it is compatible with the referenced {@link Shader}
      */
     public set coat(_coat: Coat) {
-      if (this.shaderType)
-        if (_coat.constructor != this.shaderType.getCoat())
-          if (_coat instanceof this.shaderType.getCoat())
+      if (this.shader)
+        if (_coat.constructor != this.shader.getCoat())
+          if (_coat instanceof this.shader.getCoat())
             Debug.fudge("Coat is extension of Coat required by shader");
           else
             throw (new Error("Shader and coat don't match"));
       this.#coat = _coat;
     }
 
+    public get isResource(): true {
+      return true;
+    }
+
     /**
      * Creates a new {@link Coat} instance that is valid for the {@link Shader} referenced by this material
      */
     public createCoatMatchingShader(): Coat {
-      let coat: Coat = new (this.shaderType.getCoat())();
+      let coat: Coat = new (this.shader.getCoat())();
       return coat;
     }
 
     /**
      * Changes the materials reference to the given {@link Shader}, creates and references a new {@link Coat} instance  
      * and mutates the new coat to preserve matching properties.
-     * @param _shaderType 
      */
-    public setShader(_shaderType: typeof Shader): void {
-      this.shaderType = _shaderType;
+    public setShader(_shader: typeof Shader): void {
+      this.shader = _shader;
       let coat: Coat = this.createCoatMatchingShader();
       coat.mutate(this.#coat?.getMutator());
       this.coat = coat;
@@ -77,33 +82,26 @@ namespace FudgeCore {
      * Returns the {@link Shader} referenced by this material
      */
     public getShader(): typeof Shader {
-      return this.shaderType;
+      return this.shader;
     }
 
-    //#region Transfer
-    // TODO: this type of serialization was implemented for implicit Material create. Check if obsolete when only one material class exists and/or materials are stored separately
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        name: this.name,
-        idResource: this.idResource,
-        shader: this.shaderType.name,
-        coat: Serializer.serialize(this.#coat),
-      };
-      return serialization;
-    }
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.name = _serialization.name;
-      Project.register(this, _serialization.idResource);
-      this.shaderType = (<General>FudgeCore)[_serialization.shader];
-      let coat: Coat = <Coat>await Serializer.deserialize(_serialization.coat);
-      this.coat = coat;
-      return this;
+      return serializeDecorations(this);
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.timestampUpdate;
-      // delete _mutator.idResource;
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      // TODO: backwards compatibility, remove in future versions; use @edit(Coat)...
+      const coat: Serialization = _serialization.coat;
+      if (coat && !("@type" in coat)) {
+        this.#coat = await Serializer.deserialize(coat);
+        delete _serialization.coat;
+        const promise: Promise<Serializable> = deserializeDecorations(this, _serialization);
+        _serialization.coat = coat;
+
+        return promise;
+      }
+      
+      return deserializeDecorations(this, _serialization);
     }
-    //#endregion
   }
 }

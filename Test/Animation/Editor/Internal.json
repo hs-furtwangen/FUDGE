@@ -53,7 +53,7 @@
                         "slopeOut": 0.03168513262793446
                       }
                     ],
-                    "keyType": "Number",
+                    "classType": "Number",
                     "animationSequence": true
                   }
                 }
@@ -83,7 +83,7 @@
                             "slopeOut": 0.07374833733551069
                           }
                         ],
-                        "keyType": "Number",
+                        "classType": "Number",
                         "animationSequence": true
                       }
                     }
@@ -191,15 +191,13 @@
               "ComponentAnimation": [
                 {
                   "ƒ.ComponentAnimation": {
-                    "Component": {
-                      "active": true
-                    },
-                    "idAnimation": "Animation|2022-07-26T11:23:41.662Z|33257",
+                    "active": true,
+                    "scale": 1,
+                    "animateInEditor": false,
+                    "animation": "Animation|2022-07-26T11:23:41.662Z|33257",
                     "playmode": "loop",
                     "quantization": "continous",
-                    "scale": 1,
-                    "scaleWithGameTime": true,
-                    "animateInEditor": false
+                    "scaleWithGameTime": true
                   }
                 }
               ]

@@ -4,10 +4,12 @@ namespace FudgeCore {
    * {@link Material}s reference {@link Coat} and {@link Shader}.
    */
   export class Coat extends Mutable implements Serializable { // TODO: refactor into composition based structure
-    // public name: string = "Coat";
+
     /**
      * Clipping threshold for alpha values, every pixel with alpha < alphaClip will be discarded.
      */
+    @order(0)
+    @edit(Number)
     public alphaClip: number = 0.01;
 
     /** @internal reroute to {@link RenderManagerCoat.resetRenderData} */
@@ -18,39 +20,19 @@ namespace FudgeCore {
     @RenderManagerCoat.decorate
     public static updateRenderbuffer(): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderManagerCoat.updateRenderData} */
-    @RenderManagerCoat.decorate
-    protected static updateRenderData(_coat: Coat): void { /* injected */ };
-
-    /** @internal reroute to {@link RenderManagerCoat.useRenderData} */
-    @RenderManagerCoat.decorate
-    protected static useRenderData(_coat: Coat): void { /* injected */ };
-
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-    public updateRenderData(): void {
-      Coat.updateRenderData(this);
-    };
+    @RenderManagerCoat.decorate
+    public updateRenderData(): void { /* injected */ };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-    public useRenderData(): void {
-      Coat.useRenderData(this);
-    };
+    @RenderManagerCoat.decorate
+    public useRenderData(): void { /* injected */ };
 
-    //#region Transfer
     public serialize(): Serialization {
-      return {
-        alphaClip: this.alphaClip
-      };
+      return serializeDecorations(this);
     }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      if (_serialization.alphaClip !== undefined)
-        this.alphaClip = _serialization.alphaClip;
-      return this;
+      return deserializeDecorations(this, _serialization);
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.renderData;
-    }
-    //#endregion
   }
 }

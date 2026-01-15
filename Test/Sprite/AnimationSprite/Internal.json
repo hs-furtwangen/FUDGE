@@ -185,7 +185,7 @@
               "Component": {
                 "active": true
               },
-              "idAnimation": "AnimationSprite|2023-01-20T13:15:02.775Z|75740",
+              "animation": "AnimationSprite|2023-01-20T13:15:02.775Z|75740",
               "playmode": "loop",
               "quantization": "discrete",
               "scale": 1,
@@ -334,7 +334,7 @@
                     "Component": {
                       "active": true
                     },
-                    "idAnimation": "Animation|2023-01-08T11:24:34.193Z|38529",
+                    "animation": "Animation|2023-01-08T11:24:34.193Z|38529",
                     "playmode": "loop",
                     "quantization": "continous",
                     "scale": 1,

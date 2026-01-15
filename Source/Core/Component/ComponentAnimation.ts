@@ -1,23 +1,30 @@
-// / <reference path="../Time/Loop.ts"/>
-// / <reference path="../Animation/Animation.ts"/>
-
 namespace FudgeCore {
 
   /**
    * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
    * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022-2025
    */
-  @enumerate
+  @orderFlat
   export class ComponentAnimation extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
 
-    public playmode: ANIMATION_PLAYMODE;
-    public quantization: ANIMATION_QUANTIZATION;
-    public scaleWithGameTime: boolean = true;
-    public animateInEditor: boolean = false;
+    @order(1)
+    @edit(Animation)
+    public animation: Animation;
 
-    #animation: Animation;
-    #mutator: Mutator | undefined;
+    @order(2)
+    @edit(ANIMATION_PLAYMODE)
+    public playmode: ANIMATION_PLAYMODE;
+
+    @order(3)
+    @edit(ANIMATION_QUANTIZATION)
+    public quantization: ANIMATION_QUANTIZATION;
+
+    @order(5)
+    @edit(Boolean)
+    public scaleWithGameTime: boolean = true;
+
+    #animateInEditor: boolean = false;
 
     #scale: number = 1;
     #timeLocal: Time;
@@ -28,11 +35,11 @@ namespace FudgeCore {
       this.playmode = _playmode;
       this.quantization = _quantization;
 
-      this.#animation = _animation;
+      this.animation = _animation;
       this.#timeLocal = new Time();
 
       //TODO: update animation total time when loading a different animation?
-      this.#animation?.calculateTotalTime();
+      this.animation?.calculateTotalTime();
 
       this.addEventListener(EVENT.COMPONENT_REMOVE, () => this.activate(false));
       this.addEventListener(EVENT.COMPONENT_ADD, () => {
@@ -41,23 +48,15 @@ namespace FudgeCore {
       });
     }
 
-    @enumerate @type(Animation)
-    public get animation(): Animation {
-      return this.#animation;
-    }
-
-    public set animation(_animation: Animation) {
-      this.#animation = _animation;
-      this.#mutator = undefined;
+    @order(4)
+    @edit(Number)
+    public get scale(): number {
+      return this.#scale;
     }
 
     public set scale(_scale: number) {
       this.#scale = _scale;
       this.updateScale();
-    }
-
-    public get scale(): number {
-      return this.#scale;
     }
 
     /** 
@@ -70,6 +69,19 @@ namespace FudgeCore {
 
     public set time(_time: number) {
       this.jumpTo(_time);
+    }
+
+    @order(6)
+    @edit(Boolean)
+    public get animateInEditor(): boolean {
+      return this.#animateInEditor;
+    }
+
+    public set animateInEditor(_on: boolean) {
+      this.#animateInEditor = _on;
+
+      this.updateAnimation(0);
+      this.activateListeners(this.active);
     }
 
     public activate(_on: boolean): void {
@@ -106,55 +118,27 @@ namespace FudgeCore {
      * @returns the Mutator for Animation. 
      */
     public updateAnimation(_time: number): Mutator {
+      if (!this.animation)
+        return null;
+
       this.#previous = undefined;
       return this.updateAnimationLoop(null, _time);
     }
 
-    //#region transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = {};
-      serialization[super.constructor.name] = super.serialize();
-      serialization.idAnimation = this.animation.idResource;
-      serialization.playmode = this.playmode;
-      serialization.quantization = this.quantization;
-      serialization.scale = this.scale;
-      serialization.scaleWithGameTime = this.scaleWithGameTime;
-      serialization.animateInEditor = this.animateInEditor;
-
-      return serialization;
-    }
-
+    // TODO: backwards compatibility, remove in future versions
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization[super.constructor.name]);
-      this.animation = <Animation>await Project.getResource(_serialization.idAnimation);
-      this.playmode = _serialization.playmode;
-      this.quantization = _serialization.quantization;
-      this.scale = _serialization.scale;
-      this.scaleWithGameTime = _serialization.scaleWithGameTime;
-      this.animateInEditor = _serialization.animateInEditor;
+      await super.deserialize(_serialization);
+
+      if (_serialization.idAnimation != undefined)
+        this.animation = <Animation>await Project.getResource(_serialization.idAnimation);
 
       return this;
     }
 
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-      if (typeof (_mutator.animateInEditor) !== "undefined") {
-        this.updateAnimation(0);
-        this.activateListeners(this.active);
-      }
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.playmode)
-        types.playmode = ANIMATION_PLAYMODE;
-      if (types.quantization)
-        types.quantization = ANIMATION_QUANTIZATION;
-      return types;
-    }
-    //#endregion
-
     private activateListeners(_on: boolean): void {
+      if (!this.node)
+        return;
+
       if (_on && (Project.mode != MODE.EDITOR || Project.mode == MODE.EDITOR && this.animateInEditor)) {
         Time.game.addEventListener(EVENT.TIME_SCALED, this.updateScale);
         this.node.addEventListener(EVENT.RENDER_PREPARE, this.updateAnimationLoop);
@@ -189,12 +173,12 @@ namespace FudgeCore {
         this.#previous = time;
         time = time % this.animation.totalTime;
 
-        this.#mutator = this.animation.getState(time, direction, this.quantization, this.#mutator);
-        
-        if (this.node) 
-          this.node.applyAnimation(this.#mutator);
-        
-        return this.#mutator;
+        const mutator: Mutator = this.animation.getState(time, direction, this.quantization);
+
+        if (this.node)
+          this.node.applyAnimation(mutator);
+
+        return mutator;
       }
       return null;
     };

@@ -4,9 +4,11 @@ namespace Fudge {
 
   ƒ.Serializer.registerNamespace(Fudge);
 
-  export class Project extends ƒ.Mutable { // TODO: replace with serilizable
+  export class Project extends ƒ.Mutable implements ƒ.Serializable {
     // public title: string = "NewProject";
     public base: URL;
+
+    @ƒ.edit(String)
     public name: string;
 
     public fileIndex: string = "index.html";
@@ -16,7 +18,8 @@ namespace Fudge {
     public fileSettings: string = "settings.json";
     public fileStyles: string = "styles.css";
 
-    private graphAutoView: string = "";
+    @ƒ.edit(ƒ.Graph)
+    private graphAutoView: ƒ.Graph;
     // private includeAutoViewScript: boolean = true;
 
     #resourceFolder: ResourceFolder;
@@ -102,7 +105,7 @@ namespace Fudge {
       let settings: HTMLMetaElement = head.querySelector("meta[type=settings]");
       let projectSettings: string = settings?.getAttribute("project");
       projectSettings = projectSettings?.replace(/'/g, "\"");
-      await project.mutate(JSON.parse(projectSettings || "{}"));
+      await project.deserialize(ƒ.Serializer.parse(projectSettings || "{}"));
 
       let config: LayoutConfig;
       try {
@@ -151,7 +154,7 @@ namespace Fudge {
 
       let settings: HTMLElement = document.createElement("meta");
       settings.setAttribute("type", "settings");
-      settings.setAttribute("autoview", this.graphAutoView);
+      settings.setAttribute("autoview", this.graphAutoView?.idResource ?? "");
       settings.setAttribute("project", this.settingsStringify());
       this.#document.head.querySelector("meta[type=settings]").replaceWith(settings);
 
@@ -167,30 +170,12 @@ namespace Fudge {
       return this.stringifyHTML(this.#document);
     }
 
-    public getMutatorAttributeTypes(_mutator: ƒ.Mutator): ƒ.MutatorAttributeTypes {
-      let types: ƒ.MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.graphAutoView)
-        types.graphAutoView = this.getGraphs();
-      return types;
+    public serialize(): ƒ.Serialization {
+      return ƒ.serializeDecorations(this);
     }
 
-    protected reduceMutator(_mutator: ƒ.Mutator): void {
-      delete _mutator.base;
-      delete _mutator.fileIndex;
-      delete _mutator.fileInternal;
-      delete _mutator.fileInternalFolder;
-      delete _mutator.fileScript;
-      delete _mutator.fileSettings;
-      delete _mutator.fileStyles;
-    }
-
-    private getGraphs(): Object {
-      let graphs: ƒ.SerializableResource[] = ƒ.Project.getResourcesByType(ƒ.Graph);
-      let result: Object = {};
-      for (let graph of graphs) {
-        result[graph.name] = graph.idResource;
-      }
-      return result;
+    public async deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable> {
+      return ƒ.deserializeDecorations(this, _serialization);
     }
 
     private createProjectHTML(_title: string): string {
@@ -202,7 +187,7 @@ namespace Fudge {
 
       html.head.appendChild(html.createComment("Editor settings of this project"));
       html.head.appendChild(createTag("meta", {
-        type: "settings", autoview: this.graphAutoView, project: this.settingsStringify()
+        type: "settings", autoview: this.graphAutoView?.idResource ?? "", project: this.settingsStringify()
       }));
       html.head.appendChild(html.createComment("CRLF"));
 
@@ -252,8 +237,8 @@ namespace Fudge {
     }
 
     private settingsStringify(): string {
-      let mutator: ƒ.Mutator = project.getMutator(true);
-      let settings: string = JSON.stringify(mutator);
+      let serialization: ƒ.Serialization = project.serialize();
+      let settings: string = ƒ.Serializer.stringify(serialization);
       settings = settings.replace(/"/g, "'");
       return settings;
     }

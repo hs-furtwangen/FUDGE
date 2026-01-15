@@ -14,9 +14,13 @@ namespace FudgeCore {
     * @authors Matthias Roming, HFU, 2023 | Marko Fehrenbach, HFU, 2020 | Jonas Plotzky, HFU, 2023
     */
   export class Quaternion extends Mutable implements Serializable, Recycable, ArrayConvertible {
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
+    @edit(Number)
     public z: number;
+    @edit(Number)
     public w: number;
 
     readonly #eulerAngles: Vector3 = Vector3.ZERO(); // euler angle representation of this quaternion in degrees.
@@ -612,12 +616,12 @@ namespace FudgeCore {
 
     // currently quaternions are never serialized, so this is not needed. But maybe it will be in the future.
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      serialization.toJSON = () => { return `[${this.x}, ${this.y}, ${this.z}, ${this.w}]`; };
+      let serialization: Serialization = this.getMutator(true);
+      serialization.toJSON = () => `[${this.x}, ${this.y}, ${this.z}, ${this.w}]`;
       return serialization;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Quaternion> {
+    public deserialize(_serialization: Serialization): Quaternion {
       if (typeof (_serialization) == "string") {
         [this.x, this.y, this.z, this.w] = JSON.parse(<string><unknown>_serialization);
       } else
@@ -636,8 +640,6 @@ namespace FudgeCore {
         this.w = _mutator.w;
       this.resetCache();
     }
-
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
 
     private resetCache(): void {
       this.#eulerAnglesDirty = true;

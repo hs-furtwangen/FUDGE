@@ -114,7 +114,7 @@ namespace Fudge {
           path.push("components");
           path.push(_component.type);
           path.push(_index.toString());
-          let mutator: ƒ.Mutator = _component.getMutatorForAnimation();
+          let mutator: ƒ.Mutator = _component.getMutator();
           if (mutator && Object.keys(mutator).length > 0) {
             let item: Electron.MenuItem;
             item = new remote.MenuItem(
@@ -175,7 +175,8 @@ namespace Fudge {
         .map(_id => {
           let button: HTMLButtonElement = document.createElement("button");
           button.id = _id;
-          button.className = "buttonIcon";
+          button.classList.add("buttonIcon");
+          button.classList.add("buttonPlayback");
           button.onclick = this.hndToolbarClick;
           return button;
         })

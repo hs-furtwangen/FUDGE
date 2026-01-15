@@ -14,6 +14,7 @@ namespace FudgeUserInterface {
       Dialog.dom = document.createElement("dialog");
       document.body.appendChild(Dialog.dom);
       Dialog.dom.innerHTML = "<h1>" + _head + "</h1>";
+      Dialog.dom.setAttribute("closedby", "closerequest");
 
       let content: HTMLDivElement;
       if (_data instanceof ƒ.Mutable)
@@ -50,11 +51,15 @@ namespace FudgeUserInterface {
             } catch (_e) {
               ƒ.Debug.warn(_e);
             }
-          //@ts-ignore
-          Dialog.dom.close();
-          document.body.removeChild(Dialog.dom);
-          _resolve(_event.target == btnOk);
+
+          Dialog.dom.close(JSON.stringify(_event.target == btnOk));
         };
+
+        Dialog.dom.addEventListener("close", () => {
+          document.body.removeChild(Dialog.dom);
+          _resolve(JSON.parse(Dialog.dom.returnValue || "false"));
+        });
+
         btnCancel.addEventListener(EVENT.CLICK, hndButton);
         btnOk.addEventListener(EVENT.CLICK, hndButton);
         btnOk.focus();

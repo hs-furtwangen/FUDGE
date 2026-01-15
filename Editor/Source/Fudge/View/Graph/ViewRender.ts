@@ -82,7 +82,7 @@ namespace Fudge {
       item = new remote.MenuItem({
         label: "Transform", submenu: [
           { label: "None", id: TRANSFORM.NONE, type: "radio", click: _callback, accelerator: "Q" },
-          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: "W" },
+          { label: "Translate", id: TRANSFORM.TRANSLATE, type: "radio", click: _callback, accelerator: "W", checked: true },
           { label: "Rotate", id: TRANSFORM.ROTATE, type: "radio", click: _callback, accelerator: "E" },
           { label: "Scale", id: TRANSFORM.SCALE, type: "radio", click: _callback, accelerator: "R" },
           { type: "separator" },
@@ -325,8 +325,10 @@ namespace Fudge {
             this.viewport.camera = this.cmrOrbit.cmpCamera;
           break;
         case EVENT_EDITOR.MODIFY:
-          if (!this.node.getParent() && !(this.node instanceof ƒ.Graph))
-            this.node = null;
+          if (this.node?.getParent() || this.node instanceof ƒ.Graph) 
+            break;
+
+          this.node = null; // deselect disconnected nodes
           break;
       }
 

@@ -5,7 +5,8 @@ namespace FudgeCore {
    * @authors Matthias Roming, HFU, 2023 | Jonas Plotzky, HFU, 2023
    */
   export class MeshFBX extends mixinSerializableResourceExternal(Mesh) {
-    // public url: RequestInfo;
+
+    @edit(Number)
     public iMesh: number;
     public async load(_url: RequestInfo = this.url, _iMesh: number = this.iMesh): Promise<MeshFBX> {
       this.clear();
@@ -92,17 +93,6 @@ namespace FudgeCore {
         this.createBones(fbxDeformer, skeleton, this.vertices, newVertexIndices);
       }
       return this;
-    }
-
-    public serialize(): Serialization {
-      const serialization: Serialization = super.serialize();
-      serialization.iMesh = this.iMesh;
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.iMesh = _serialization.iMesh;
-      return super.deserialize(_serialization);
     }
 
     private getDataIndex(_layerElement: FBX.LayerElementUV | FBX.LayerElementNormal, _iVertex: number, _iPolygon: number, _iPolygonVertex: number): number {

@@ -33,17 +33,7 @@ namespace Fudge {
       this.domElement.addEventListener(ƒui.EVENT.DROP, this.hndDrop);
       // this.domElement.addEventListener(ƒui.EVENT.MUTATE, this.hndMutate, true);
       this.domElement.addEventListener(ƒui.EVENT.KEY_DOWN, this.hndKey);
-      this.domElement.addEventListener(ƒui.EVENT.INSERT, this.hndInsert);
     }
-
-    private hndInsert = (_event: CustomEvent): void => {
-      ƒ.Debug.log("INSERT at ControllerDetail");
-      ƒ.Debug.log(_event.detail);
-      let mutable: ƒ.Mutable = this.mutable[_event.detail.getAttribute("key")];
-      ƒ.Debug.log(mutable.type);
-      if (mutable instanceof ƒ.MutableArray)
-        mutable.push(new mutable.type());
-    };
 
     private hndKey = (_event: KeyboardEvent): void => {
       _event.stopPropagation();
@@ -64,13 +54,26 @@ namespace Fudge {
       // url on meshgltf
       if (this.filterDragDrop(_event, filter.UrlOnMeshGLTF, checkMimeType(MIME.GLTF))) return;
 
-      let { mutable, key } = this.getTargetMutableAndKey(_event);
-      let metaTypes: ƒ.MetaAttributeTypes = (<ƒ.Mutable>mutable).getMetaAttributeTypes?.() ?? {};
-      let metaType: Object | Function = metaTypes[key];
-      // console.log(key, metaTypes, metaType);
+      const path: string[] = this.getMutatorPath(_event);
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const key: string = path[path.length - 1];
 
+      if (key == null)
+        return;
+
+      let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
+      if (!descriptor) { // drop must be on collection
+        if (key == "length") // can't drop on array length
+          return;
+
+        const parent: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+        const parentKey: string = path[path.length - 2];
+        descriptor = ƒ.Metadata.getPropertyDescriptor(parent, parentKey).valueDescriptor;
+      }
+
+      let type: unknown = descriptor.type; 
       let sources: Object[] = ƒui.Clipboard.dragDrop.get();
-      if (!metaType || (metaType && typeof metaType == "function" && !(sources[0] instanceof metaType)))
+      if (!type || (type && typeof type == "function" && !(sources[0] instanceof type))) // check if 
         return;
 
       _event.dataTransfer.dropEffect = "link";
@@ -83,11 +86,6 @@ namespace Fudge {
           return (sources.length == 1 && sources[0].getMimeType() == _mime);
         };
       }
-    };
-
-    private hndMutate = async (_event: DragEvent): Promise<void> => {
-      // console.log("BEFORE", this);
-      History.save(HISTORY.MUTATE, this.mutable, this.mutable.getMutator());
     };
 
     private hndDrop = async (_event: DragEvent): Promise<void> => {
@@ -108,15 +106,18 @@ namespace Fudge {
       _event.preventDefault();
       _event.stopPropagation();
 
-      let { mutable, key } = this.getTargetMutableAndKey(_event);
+      const path: string[] = this.getMutatorPath(_event);
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const key: string = path[path.length - 1];
 
       if (this.#view != View.getViewSource(_event)) {
         let sources: Object[] = ƒui.Clipboard.dragDrop.get();
-        History.save(HISTORY.LINK, mutable, { [key]: mutable[key] });
-        mutable[key] = sources[0];
+
+        History.save(HISTORY.CHANGE_PROPERTY, this.mutable, <ƒui.PropertyChangeRecord>{ path: path, from: mutable[key], to: sources[0] });
+        Reflect.set(mutable, key, sources[0]);
       }
 
-      this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true });
+      // this.#view.dispatch(EVENT_EDITOR.MODIFY, { bubbles: true }); // TODO: maybe no longer neccessary...
     };
 
 
@@ -160,18 +161,29 @@ namespace Fudge {
       return null;
     }
 
-    private getTargetMutableAndKey(_event: Event): { mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable>; key: string } {
-      let path: ƒ.General[] = _event.composedPath();
-      path = path.slice(0, path.indexOf(this.domElement));
-      path = path.filter(_element => _element instanceof HTMLElement && (_element.getAttribute("type")));
-      path.reverse();
+    private getTargetMutableAndKey(_event: Event): { mutable: object; key: string; parentMutable?: object; parentKey?: string } {
+      const path: string[] = this.getMutatorPath(_event);
+      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
+      const key: string = path[path.length - 1];
 
-      let mutable: ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> = this.mutable;
-      let keys: string[] = path.map(_element => _element.getAttribute("key"));
-      for (let i: number = 0; i < keys.length - 1; i++)
-        mutable = mutable[keys[i]];
+      let parentMutable: object;
+      let parentKey: string;
+      if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
+        parentMutable = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
+        parentKey = path[path.length - 2];
+      }
 
-      return { mutable, key: keys[keys.length - 1] };
+      // let path: ƒ.General[] = _event.composedPath();
+      // path = path.slice(0, path.indexOf(this.domElement));
+      // path = path.filter(_element => _element instanceof HTMLElement && (_element.getAttribute("type")));
+      // path.reverse();
+
+      // let mutable: object = this.mutable;
+      // let keys: string[] = path.map(_element => _element.getAttribute("key"));
+      // for (let i: number = 0; i < keys.length - 1; i++)
+      //   mutable = mutable[keys[i]];
+
+      return { mutable, key, parentMutable, parentKey };
     }
   }
 }

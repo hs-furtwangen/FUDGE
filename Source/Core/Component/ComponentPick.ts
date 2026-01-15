@@ -11,6 +11,8 @@ namespace FudgeCore {
    */
   export class ComponentPick extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentPick);
+
+    @edit(PICK)
     public pick: PICK = PICK.RADIUS;
 
     /**
@@ -34,22 +36,6 @@ namespace FudgeCore {
           break;
         //TODO: PICK.CAMERA
       }
-    }
-
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
-      return this;
-    }
-
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = super.getMutatorAttributeTypes(_mutator);
-      if (types.pick)
-        types.pick = PICK;
-      return types;
     }
 
     public drawGizmosSelected(_cmpCamera: ComponentCamera): void {

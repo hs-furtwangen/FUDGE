@@ -2,6 +2,7 @@ namespace FudgeUserInterface {
   import ƒ = FudgeCore;
 
   export class Details extends HTMLDetailsElement {
+    public summary: HTMLElement;
     public content: HTMLDivElement;
 
     public constructor(_legend: string = "", _type: string) {
@@ -11,9 +12,12 @@ namespace FudgeUserInterface {
       this.setAttribute("label", _legend);
       this.setAttribute("type", _type);
       this.open = true;
-      let lblSummary: HTMLElement = document.createElement("summary");
-      lblSummary.textContent = _legend;
-      this.appendChild(lblSummary);
+
+      this.summary = document.createElement("summary");
+      const span: HTMLSpanElement = document.createElement("span");
+      span.textContent = _legend;
+      this.summary.appendChild(span);
+      this.appendChild(this.summary);
 
       this.content = document.createElement("div");
       this.appendChild(this.content);
@@ -26,27 +30,17 @@ namespace FudgeUserInterface {
       this.addEventListener(EVENT.TOGGLE, this.hndToggle);
     }
 
-
-    public get isExpanded(): boolean {
-      // return this.expander.checked;
-      return this.open;
-    }
-
     public setContent(_content: HTMLDivElement): void {
       this.replaceChild(_content, this.content);
       this.content = _content;
     }
 
     public expand(_expand: boolean): void {
-      // this.expander.checked = _expand;
       this.open = _expand;
-      this.hndToggle(null);
     }
 
     private hndToggle = (_event: Event): void => {
-      if (_event)
-        _event.stopPropagation();
-      this.dispatchEvent(new Event(this.isExpanded ? EVENT.EXPAND : EVENT.COLLAPSE, { bubbles: true }));
+      this.dispatchEvent(new Event(this.open ? EVENT.EXPAND : EVENT.COLLAPSE, { bubbles: true }));
     };
 
     private hndFocus = (_event: Event): void => {
@@ -88,21 +82,17 @@ namespace FudgeUserInterface {
       // let target: HTMLElement = <HTMLElement>_event.target;
 
       switch (_event.code) {
-        case ƒ.KEYBOARD_CODE.INSERT:
-          ƒ.Debug.log("INSERT at Details");
-          this.dispatchEvent(new CustomEvent(EVENT.INSERT, { bubbles: true, detail: this }));
-          break;
         case ƒ.KEYBOARD_CODE.DELETE:
           passEvent = true;
           break;
         case ƒ.KEYBOARD_CODE.ARROW_RIGHT:
-          if (!this.isExpanded) {
-            this.expand(true);
+          if (!this.open) {
+            this.open = true;
             break;
           }
         case ƒ.KEYBOARD_CODE.ARROW_DOWN:
           let next: HTMLElement = this;
-          if (this.isExpanded)
+          if (this.open)
             next = this.querySelector("details");
           else
             do {
@@ -116,8 +106,8 @@ namespace FudgeUserInterface {
             this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_NEXT, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
           break;
         case ƒ.KEYBOARD_CODE.ARROW_LEFT:
-          if (this.isExpanded) {
-            this.expand(false);
+          if (this.open) {
+            this.open = false;
             break;
           }
         case ƒ.KEYBOARD_CODE.ARROW_UP:
@@ -127,7 +117,7 @@ namespace FudgeUserInterface {
           } while (previous && !(previous instanceof Details));
 
           if (previous)
-            if ((<Details>previous).isExpanded)
+            if ((<Details>previous).open)
               this.dispatchEvent(new KeyboardEvent(EVENT.FOCUS_PREVIOUS, { bubbles: true, shiftKey: _event.shiftKey, ctrlKey: _event.ctrlKey }));
             else
               previous.focus();
@@ -140,6 +130,6 @@ namespace FudgeUserInterface {
         _event.stopPropagation();
     };
   }
-  // TODO: use CustomElement.register?
+
   customElements.define("ui-details", Details, { extends: "details" });
 }

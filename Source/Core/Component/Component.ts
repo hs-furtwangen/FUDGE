@@ -3,7 +3,7 @@
 namespace FudgeCore {
   /** 
    * Superclass for all {@link Component}s that can be attached to {@link Node}s.
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019  
+   * @authors Jirka Dell'Oro-Friedl, HFU, 2020 | Jascha Karagöl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    * @link https://github.com/hs-furtwangen/FUDGE/wiki/Component
    */
   export abstract class Component extends Mutable implements Serializable, Gizmo {
@@ -15,7 +15,8 @@ namespace FudgeCore {
     public static readonly subclasses: typeof Component[] = [];
 
     protected singleton: boolean = true;
-    protected active: boolean = true;
+
+    #active: boolean = true;
     #node: Node | null = null;
 
     public constructor() {
@@ -33,6 +34,9 @@ namespace FudgeCore {
 
     protected static registerSubclass(_subclass: typeof Component): number { return Component.subclasses.push(_subclass) - 1; }
 
+    /**
+     * @deprecated use {@link active} instead.
+     */
     public get isActive(): boolean {
       return this.active;
     }
@@ -54,8 +58,21 @@ namespace FudgeCore {
     /**
      * De- / Activate this component. Inactive components will not be processed by the renderer.
      */
+    @order(0)
+    @edit(Boolean) 
+    public get active(): boolean {
+      return this.#active;
+    }
+
+    public set active(_on: boolean) {
+      this.activate(_on);
+    }
+
+    /**
+     * De- / Activate this component. Inactive components will not be processed by the renderer.
+     */
     public activate(_on: boolean): void {
-      this.active = _on;
+      this.#active = _on;
       const event: RecyclableEvent = RecyclableEvent.get(_on ? EVENT.COMPONENT_ACTIVATE : EVENT.COMPONENT_DEACTIVATE);
       this.dispatchEvent(event);
       RecyclableEvent.store(event);
@@ -89,37 +106,12 @@ namespace FudgeCore {
      */
     public drawGizmosSelected?(_cmpCamera?: ComponentCamera): void;
 
-    //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = {
-        active: this.active
-      };
-      return serialization;
+      return serializeDecorations(this);
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.activate(_serialization.active);
-      return this;
+    public deserialize(_serialization: Serialization): Promise<Serializable> {
+      return deserializeDecorations(this, _serialization);
     }
-
-    public mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-      if (_mutator.active != undefined)
-        this.activate(_mutator.active);
-    }
-
-    protected mutateSync(_mutator: Mutator, _dispatchMutate: boolean = true): void {
-      super.mutateSync(_mutator, _dispatchMutate);
-      if (_mutator.active != undefined)
-        this.activate(_mutator.active);
-    }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      delete _mutator.singleton;
-      delete _mutator.mtxWorld;
-    }
-
-    //#endregion
   }
 }

@@ -6,8 +6,16 @@
 }
 
 :root {
-  --color-error: red; /* default error color */
-  --color-warning: yellow; /* default warning color */
+  /* default error color */
+  --color-error: red;
+  /* default warning color */
+  --color-warning: yellow;
+
+  --color-focus-background: color-mix(in srgb, var(--color-focus) 15%, transparent);
+}
+
+[hidden] {
+  display: none !important;
 }
 
 object {
@@ -15,7 +23,8 @@ object {
   height: 100%;
 }
 
-.lm_goldenlayout, body {
+.lm_goldenlayout,
+body {
   background-color: var(--color-background-main);
   color: var(--color-text);
   user-select: none;
@@ -34,15 +43,22 @@ div[panel] .lm_close {
   padding-bottom: 0em;
   overflow: auto;
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-medium) var(--color-background-content);
 }
 
-*[view="ViewRender"], *[view="ViewPreview"] {
+*[view="ViewRender"],
+*[view="ViewPreview"] {
   padding: 0em;
   overflow: hidden;
 }
 
 img {
   border: 1px dashed var(--color-text);
+}
+
+input::placeholder {
+  color: var(--color-medium);
 }
 
 .lm_splitter:hover {
@@ -57,7 +73,9 @@ img {
   background-color: var(--color-background-content);
 }
 
-.lm_tab:hover, .lm_tab .lm_active, .lm_dragProxy .lm_tab {
+.lm_tab:hover,
+.lm_tab .lm_active,
+.lm_dragProxy .lm_tab {
   background-color: var(--color-background-content);
 }
 
@@ -211,10 +229,16 @@ input {
   border: none;
 }
 
-output.placeholder {
-  background-color: var(--color-background-content);
-  color: var(--color-text);
-  font-style: italic;
+/* fix autofill colors, fuck chromium... */
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+input:autofill:active {
+  transition: color calc(infinity * 1s) step-end, background-color calc(infinity * 1s) step-end;
+}
+
+.hide-carret {
+  caret-color: transparent;
 }
 
 *:focus {
@@ -236,16 +260,33 @@ input[type="number"] {
 
 label {
   padding-right: 0.5em;
-  /* text-decoration: wavy; */
-  /* text-shadow: 1px 1px var(--color-background-main) ; */
 }
 
-/* set (details) */
+/* Details */
 
-/* details details {
-  padding-left: 1em;
-} */
-details div {
+details>summary {
+  display: flex;
+  white-space: nowrap;
+  box-sizing: border-box;
+  user-select: text;
+}
+
+details>summary>span {
+  flex: 0 1 content;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+details>summary::before {
+  content: "►";
+}
+
+details[open]>summary::before {
+  content: "▼";
+}
+
+details>div,
+details>fudge-number {
   padding-left: 1em;
 }
 
@@ -265,9 +306,9 @@ dialog {
   border: 1px solid var(--color-bright);
   color: var(--color-text);
   box-shadow: 0px 0px 10px 5px var(--color-background-main);
-  top: 50%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-50%);
+  position: fixed;
+  inset: 0;
+  margin: auto;
   z-index: 1000;
   padding: 2em;
   user-select: none;
@@ -302,50 +343,236 @@ option {
 
 /* Button */
 
-.buttonIcon {
-  border: none;
-  /* border-right: 2px solid var(--color-background-content); */
+button {
+  border: 1px outset var(--color-medium);
   background-color: var(--color-background-main);
-  /* padding: 2px; */
-  min-width: 30px;
-  width: 60px;
-  height: 25px;
+  color: var(--color-text);
   cursor: pointer;
 }
 
-.buttonIcon:focus {
-  outline: none;
+button:active {
+  border: 1px inset var(--color-medium);
 }
 
-/* standard fudge elements */
+.buttonPlayback {
+  min-width: 30px;
+  width: 60px;
+  height: 25px;
+}
 
-fudge-boolean, fudge-color, fudge-stepper, fudge-select {
+.btn-subtle {
+  border: none;
+  background-color: transparent;
+  color: var(--color-medium);
+  min-width: 14px;
+}
+
+.btn-subtle:active {
+  border: none;
+  transform: translateY(1px);
+}
+
+.btn-subtle:hover {
+  color: var(--color-signal);
+}
+
+/* menu */
+
+.menu-toggle {
+  cursor: pointer;
+}
+
+.menu-toggle:focus {
+  outline-offset: -1px;
+}
+
+.menu-list {
+  margin: 0;
+  padding: 0px;
+  inset: auto;
+  border: none;
+
+  box-sizing: border-box;
+  overflow-y: hidden;
+  background: var(--color-background-content);
+  outline: 1px solid var(--color-medium);
+  outline-offset: -1px;
+  width: max-content;
+  height: max-content;
+  position: absolute;
+  left: anchor(right);
+  top: anchor(top);
+  position-try-fallbacks: flip-inline, flip-block, flip-inline flip-block;
+  position-visibility: anchors-visible;
+}
+
+.menu-list:popover-open {
+  display: grid;
+}
+
+.menu-item {
   display: block;
+  border: none;
+  outline: none;
+  background: none;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 2px;
+  padding-right: 5px;
+  text-align: left;
+  overflow: hidden;
 }
 
-fudge-textinput, fudge-output {
-  display: flex;
+.menu-item:active {
+  border: none;
 }
 
-fudge-digit {
-  font-family: monospace;
+.menu-item:hover,
+.menu-item:focus,
+.menu-item:has(+.menu-list:hover),
+.menu-item:has(+.menu-list:focus-within) {
+  background: var(--color-background-main);
+}
+
+.menu-list>fudge-comboselect button {
+  display: none;
+}
+
+/* .property-menu:hover, */
+/* .property-menu:focus-within, */
+.property:has(>summary>.menu-container:hover),
+.property:has(>summary>.menu-container:focus-within),
+.property:has(>.menu-container:hover),
+.property:has(>.menu-container:focus-within) {
+  background-color: var(--color-focus-background)
+}
+
+.property>summary>.property-menu,
+.property>.property-menu {
+  order: 1;
+  margin-left: auto;
+  width: 2ch;
+  /* position: absolute; */
+  /* position-anchor: --property; */
+  /* right: anchor(--details right, anchor(right)); */
+  /* top: anchor(top); */
 }
 
 /* custom elements */
 
-custom-vector2 {
-  text-align: right;
-  display: grid;
-  grid-template-columns: max-content 8em 8em;
+.fudge-element>label {
+  box-sizing: border-box;
+  flex: 0 1 content;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-content: center;
+  user-select: text;
+  padding: 0;
+  margin-right: 1.5ch;
 }
 
+.fudge-element>.content {
+  flex: 1 0 content;
+}
+
+.fudge-element>.content>*:not(fudge-stepper>.content>input) {
+  background: none;
+}
+
+fudge-initializer,
+fudge-boolean,
+fudge-number,
+fudge-stepper,
+fudge-textinput,
+fudge-select,
+fudge-comboselect,
+fudge-color,
+fudge-output,
+custom-vector2,
 custom-vector3 {
-  text-align: right;
-  display: grid;
-  grid-template-columns: max-content 8em 8em 8em;
+  display: flex;
 }
 
+fudge-stepper>.content>span,
+fudge-digit {
+  font-family: monospace;
+  box-sizing: border-box;
+}
+
+fudge-number>.content input[type="text"] {
+  font-family: monospace;
+  text-align: left;
+}
+
+fudge-initializer>.content>button,
+fudge-initializer>.content>.menu-container>.menu-toggle {
+  --icon-actions: "<undefined>";
+  --icon-width: fit-content;
+}
+
+fudge-initializer>.content>.menu-container>.menu-list {
+  left: anchor(left);
+}
+
+fudge-initializer>.content,
+fudge-boolean>.content,
+fudge-color>.content,
+fudge-stepper>.content,
+fudge-comboselect>.content {
+  display: inline-flex;
+}
+
+fudge-number input,
+fudge-textinput input,
+fudge-comboselect input,
+fudge-select select {
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* custom vector */
+
+custom-vector2>.content,
+custom-vector3>.content {
+  display: grid;
+  column-gap: 1ch;
+  grid-template-columns: max-content min-content min-content min-content;
+}
+
+custom-vector2 fudge-stepper>label,
+custom-vector3 fudge-stepper>label {
+  min-width: unset !important;
+  margin-right: 1ch !important;
+}
+
+/* custom matrix */
+
+custom-matrix3x3,
 custom-matrix4x4 {
+  /* display: grid; */
+  /* grid-template-columns: minmax(0, 100%) min-content; */
+  display: flex;
+  /* position: relative; */
+}
+
+custom-matrix4x4>label {
+  align-content: unset !important;
+  /* position: absolute; */
+  /* left: 0; */
+  /* top: 0; */
+  /* overflow: visible !important; */
+  /* flex: 0 1 auto !important; */
+  /* min-width: 0 !important; */
+}
+
+custom-matrix3x3>.content,
+custom-matrix4x4>.content {
+  margin-left: -10ch;
+  /* order: 2; */
+  /* grid-column: 1 / -1; */
+}
+
+custom-matrix4x4>.content {
   text-align: center;
   display: grid;
   column-gap: 1em;
@@ -353,14 +580,15 @@ custom-matrix4x4 {
   grid-template-rows: min-content min-content min-content min-content;
 }
 
-custom-matrix3x3 {
+custom-matrix3x3>.content {
   text-align: center;
-  display: grid;
+  display: inline-grid;
   column-gap: 1em;
   grid-template-columns: min-content min-content min-content;
   grid-template-rows: min-content min-content min-content min-content
 }
 
-custom-matrix4x4 span.rowVector, custom-matrix3x3 span.rowVector {
-  text-align: right
+custom-matrix4x4>.content>div,
+custom-matrix3x3>.content>div {
+  display: contents;
 }

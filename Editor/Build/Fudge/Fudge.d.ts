@@ -7,6 +7,7 @@ declare namespace Fudge {
     export class ContextMenu {
         static appendCopyPaste(_menu: Electron.Menu): void;
         static getSubclassMenu<T extends Subclass<T>>(_id: CONTEXTMENU, _class: T, _callback: ContextMenuCallback): Electron.Menu;
+        static getSubclassIndex(_item: Electron.MenuItem): number;
     }
     export {};
 }
@@ -176,19 +177,20 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    type historySource = ƒ.Mutable | ƒ.MutableArray<ƒ.Mutable> | ƒ.Node | ƒ.Project;
-    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource;
+    import ƒui = FudgeUserInterface;
+    type historySource = ƒ.IMutable | ƒ.Node | typeof ƒ.Project;
+    type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | ƒui.PropertyChangeRecord;
     enum HISTORY {
         MUTATE = 0,
         ADD = 1,
         REMOVE = 2,
-        LINK = 3
+        CHANGE_PROPERTY = 3
     }
     /**
      * Static class to record the history of manipulations of various entities. Enables undo and redo.
      * A manipulation is recorded as a step with the action taken, the source, which is the entity affected,
      * and the target, which is the entity being removed or added or a {@link Mutator} describing the manipulation.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2024
+     * @author Jirka Dell'Oro-Friedl, HFU, 2024 | Jonas Plotzky, HFU, 2025
      */
     class History {
         #private;
@@ -213,10 +215,17 @@ declare namespace Fudge {
          */
         static swap(): void;
         /**
-         * Process mutation of {@link ƒ.Mutable}s {@link ƒ.MutableArray}s by using a stored mutator.
-         * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo
+         * Process changes to {@link ƒ.Mutable}s, either by mutation or direct property changes.
+         *
+         * **Mutation:**
+         * Process mutation of {@link ƒ.Mutable}s by using a stored {@link ƒ.Mutator}.
+         * Each time, a mutation gets processed, the previous state is stored in the step in order to undo/redo.
+         *
+         * **Property Change:**
+         * Process direct property changes on {@link ƒ.Mutable}s by using a stored {@link ƒui.PropertyChangeRecord}.
+         * Each time, a property change gets processed, the property at the given path is set to either a copy (via {@link ƒui.Controller.copyValue}) of the `from` or `to` value depending on undo or redo.
          */
-        private static processMutation;
+        private static processMutable;
         /**
          * Process deletion and addition of {@link ƒ.SerializableResource}s in the {@link ƒ.Project}
          */
@@ -265,7 +274,7 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    class Project extends ƒ.Mutable {
+    class Project extends ƒ.Mutable implements ƒ.Serializable {
         #private;
         base: URL;
         name: string;
@@ -286,9 +295,8 @@ declare namespace Fudge {
         getSettingsJSON(): string;
         getProjectCSS(): string;
         getProjectHTML(_title: string): string;
-        getMutatorAttributeTypes(_mutator: ƒ.Mutator): ƒ.MutatorAttributeTypes;
-        protected reduceMutator(_mutator: ƒ.Mutator): void;
-        private getGraphs;
+        serialize(): ƒ.Serialization;
+        deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable>;
         private createProjectHTML;
         private settingsStringify;
         private stringifyHTML;
@@ -404,10 +412,8 @@ declare namespace Fudge {
     class ControllerDetail extends ƒui.Controller {
         #private;
         constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View);
-        private hndInsert;
         private hndKey;
         private hndDragOver;
-        private hndMutate;
         private hndDrop;
         private filterDragDrop;
         private getAncestorWithType;
@@ -921,6 +927,9 @@ declare namespace Fudge {
      */
     class ViewProperties extends View {
         private resource;
+        private details;
+        private controller;
+        private mapMutableToController;
         constructor(_container: ComponentContainer, _state: ViewState);
         private fillContent;
         private hndEvent;

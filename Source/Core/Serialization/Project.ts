@@ -7,12 +7,23 @@ namespace FudgeCore {
     PENDING, READY, ERROR
   }
 
-  /** A serializable resource implementing an id and a name so it can be managed by the {@link Project} */
+  /** 
+   * A serializable implementing an id and a name so it can be managed by the {@link Project}.
+   */
   export interface SerializableResource extends Serializable {
-    readonly isSerializableResource: true; 
     name: string;
     idResource: string;
     readonly type: string;
+
+    /** 
+     * Discriminant getter used to identify resources at runtime.
+     * Implemented as a getter so the type can be discerned from a class prototype.
+     */
+    get isResource(): true;
+  }
+
+  export function isSerializableResource(_object: Object): _object is SerializableResource {
+    return isSerializable(_object) && (<SerializableResource>_object).isResource;
   }
 
   /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
@@ -106,7 +117,7 @@ namespace FudgeCore {
     /**
      * Returns an array of all resources of the requested type.
      */
-    public static getResourcesByType<T>(_type: new (_args: General) => T): SerializableResource[] {
+    public static getResourcesByType<T>(_type: abstract new (..._args: General[]) => T): SerializableResource[] {
       let found: SerializableResource[] = [];
       for (let resourceId in Project.resources) {
         let resource: SerializableResource = Project.resources[resourceId];
@@ -152,19 +163,27 @@ namespace FudgeCore {
     }
 
     /**
-     * Retrieves the resource stored with the given id
+     * Returns whether there is a resource or a resource serialization registered for the given id.
      */
-    public static async getResource(_idResource: string): Promise<SerializableResource> {
-      let resource: SerializableResource = Project.resources[_idResource];
-      if (!resource) {
-        let serialization: Serialization = Project.serialization[_idResource];
-        if (!serialization) {
-          Debug.error("Resource not found", _idResource);
-          return null;
-        }
-        resource = await Project.deserializeResource(serialization);
+    public static hasResource(_idResource: string): boolean {
+      return Project.resources[_idResource] != undefined || Project.serialization[_idResource] != undefined;
+    }
+
+    /**
+     * Retrieves the resource stored with the given id.
+     */
+    public static getResource<T extends SerializableResource>(_idResource: string): Promise<T> | T {
+      const resource: T | Promise<T> = <T>Project.resources[_idResource];
+      if (resource)
+        return resource;
+
+      const serialization: Serialization = Project.serialization[_idResource];
+      if (!serialization) {
+        Debug.error("Resource not found", _idResource);
+        return null;
       }
-      return resource;
+
+      return <Promise<T>>Project.deserializeResource(serialization);
     }
 
     public static async cloneResource(_resource: SerializableResource): Promise<SerializableResource> {
@@ -349,8 +368,13 @@ namespace FudgeCore {
       return Project.resources;
     }
 
-    private static async deserializeResource(_serialization: Serialization): Promise<SerializableResource> {
-      return <Promise<SerializableResource>>Serializer.deserialize(_serialization);
+    private static deserializeResource(_serialization: Serialization): Promise<SerializableResource> | SerializableResource {
+      return Serializer.deserialize(_serialization, Project.reregister);
+    }
+
+    private static reregister(_resource: SerializableResource, _serialization: Serialization): void {
+      if (_serialization.idResource != null)
+        Project.register(_resource, _serialization.idResource); // (Re-)register before deserializing, enabling cyclic resource references
     }
   }
 }

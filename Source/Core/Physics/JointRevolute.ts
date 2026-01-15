@@ -1,22 +1,23 @@
 namespace FudgeCore {
   /**
-     * A physical connection between two bodies with a defined axe of rotation. Also known as HINGE joint.
-     * Two RigidBodies need to be defined to use it. A motor can be defined to rotate the connected along the defined axis.
-     * 
-     * ```text        
-     *                  rotation axis, 1st Degree of freedom
-     *                    ↑
-     *               ┌───┐│┌────┐     
-     *               │   │││    │  
-     *               │   │││    │ 
-     *               │   │││    │ 
-     *               └───┘│└────┘
-     *                    │   
-     *      bodyAnchor         bodyTied
-     *   (e.g. Doorhinge)       (e.g. Door)
-     * ```
-     * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021
-     */
+   * A physical connection between two bodies with a defined axe of rotation. Also known as HINGE joint.
+   * Two RigidBodies need to be defined to use it. A motor can be defined to rotate the connected along the defined axis.
+   * 
+   * ```text        
+   *                  rotation axis, 1st Degree of freedom
+   *                    ↑
+   *               ┌───┐│┌────┐     
+   *               │   │││    │  
+   *               │   │││    │ 
+   *               │   │││    │ 
+   *               └───┘│└────┘
+   *                    │   
+   *      bodyAnchor         bodyTied
+   *   (e.g. Doorhinge)       (e.g. Door)
+   * ```
+   * @author Marko Fehrenbach, HFU, 2020 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
+   */
+  @orderFlat
   export class JointRevolute extends JointAxial {
     public static readonly iSubclass: number = Joint.registerSubclass(JointRevolute);
 
@@ -29,72 +30,51 @@ namespace FudgeCore {
     public constructor(_bodyAnchor: ComponentRigidbody = null, _bodyTied: ComponentRigidbody = null, _axis: Vector3 = new Vector3(0, 1, 0), _localAnchor: Vector3 = new Vector3(0, 0, 0)) {
       super(_bodyAnchor, _bodyTied, _axis, _localAnchor);
 
-      this.maxMotor = 360;
       this.minMotor = 0;
+      this.maxMotor = 360;
     }
 
     /**
-      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
+     * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
      */
-    public set maxMotor(_value: number) {
-      super.maxMotor = _value;
-      _value *= Calc.deg2rad;
-      if (this.joint)
-        this.joint.getLimitMotor().upperLimit = _value;
+    public override get minMotor(): number {
+      return super.minMotor;
     }
-    /**
-      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis Angle measured in Degree.
-     */
-    public set minMotor(_value: number) {
+    
+    public override set minMotor(_value: number) {
       super.minMotor = _value;
       if (this.joint)
         this.joint.getLimitMotor().lowerLimit = _value * Calc.deg2rad;
     }
 
     /**
-      * The maximum motor force in Newton. force <= 0 equals disabled. 
+     * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. Axis-Angle measured in Degree.
      */
+    public override get maxMotor(): number {
+      return super.maxMotor;
+    }
+
+    public override set maxMotor(_value: number) {
+      super.maxMotor = _value;
+      _value *= Calc.deg2rad;
+      if (this.joint)
+        this.joint.getLimitMotor().upperLimit = _value;
+    }
+
+    /**
+     * The maximum motor force in newton meters. force <= 0 equals disabled. 
+     */
+    @order(9.5)
+    @edit(Number)
     public get motorTorque(): number {
       return this.#motorTorque;
     }
+
     public set motorTorque(_value: number) {
       this.#motorTorque = _value;
       if (this.joint != null) this.joint.getLimitMotor().motorTorque = _value;
     }
 
-    /**
-      * If the two connected RigidBodies collide with eath other. (Default = false)
-     */
-
-    //#endregion
-
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        motorTorque: this.motorTorque,
-        [super.constructor.name]: super.serialize()
-      };
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.motorTorque = _serialization.motorTorque;
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      mutator.motorTorque = this.motorTorque;
-      return mutator;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.motorTorque) !== "undefined")
-        this.motorTorque = _mutator.motorTorque;
-      delete _mutator.motorTorque;
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-    }
     //#endregion
 
     protected constructJoint(): void {

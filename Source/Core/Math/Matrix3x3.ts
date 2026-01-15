@@ -156,6 +156,7 @@ namespace FudgeCore {
      * **Caution!** Use immediately and readonly, since the vector is going to be reused internally. Create a clone to keep longer and manipulate. 
      * - set: effect the matrix ignoring its rotation and scaling
      */
+    @edit(Vector2)
     public get translation(): Vector2 {
       if (this.#translationDirty) {
         this.#translationDirty = false;
@@ -171,6 +172,7 @@ namespace FudgeCore {
      * - get: a copy of the calculated rotation {@link Vector2}   
      * - set: effect the matrix
      */
+    @edit(Number)
     public get rotation(): number {
       if (this.#rotationDirty) {
         let scaling: Vector2 = this.scaling;
@@ -207,6 +209,7 @@ namespace FudgeCore {
      * **Caution!** Do not manipulate result, instead create a clone!    
      * - set: effect the matrix
      */
+    @edit(Vector2)
     public get scaling(): Vector2 {
       if (this.#scalingDirty) {
         this.#scaling.set(
@@ -365,9 +368,9 @@ namespace FudgeCore {
         this.#translationDirty = false;
       }
 
-      if (_rotation || _scaling) {
+      if (_rotation != null || _scaling) {
         const rotation: number = _rotation ?? this.rotation;
-        if (_rotation != undefined)
+        if (_rotation != null)
           this.#rotation = rotation;
 
         const scaling: Vector2 = this.scaling;
@@ -466,11 +469,12 @@ namespace FudgeCore {
       };
       return serialization;
     }
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+
+    public deserialize(_serialization: Serialization): Matrix3x3 {
       let mutator: Mutator = {
-        translation: await this.translation.deserialize(_serialization.translation),
+        translation: this.translation.deserialize(_serialization.translation),
         rotation: _serialization.rotation,
-        scaling: await this.scaling.deserialize(_serialization.scaling)
+        scaling: this.scaling.deserialize(_serialization.scaling)
       };
       this.mutate(mutator);
       return this;
@@ -496,22 +500,13 @@ namespace FudgeCore {
       this.compose(_mutator.translation, _mutator.rotation, _mutator.scaling);
     }
 
-    public getMutatorAttributeTypes(_mutator: Mutator): MutatorAttributeTypes {
-      let types: MutatorAttributeTypes = {};
-      if (_mutator.translation) types.translation = "Vector2";
-      if (_mutator.rotation != undefined) types.rotation = "number";
-      if (_mutator.scaling) types.scaling = "Vector2";
-      return types;
-    }
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-
     private resetCache(): void {
       this.#translationDirty = true;
       this.#rotationDirty = true;
       this.#scalingDirty = true;
       this.mutator = null;
     }
-    //#endregion
+
     //#endregion
   }
 }

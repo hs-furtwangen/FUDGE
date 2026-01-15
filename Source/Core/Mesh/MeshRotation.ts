@@ -15,49 +15,47 @@ namespace FudgeCore {
    */
   export class MeshRotation extends Mesh {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshRotation);
-    protected static verticesDefault: Vector2[] = [ // line is the minimal shape
-      new Vector2(0.5, 0.5),
-      new Vector2(0.5, -0.5)
-    ];
-    protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
+
+    @edit(Array, Vector2)
+    protected shape: Vector2[];
+
+    @edit(Number)
     protected longitudes: number;
 
-    public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.verticesDefault, _longitudes: number = 3) {
+    public constructor(_name: string = "MeshRotation", _shape: Vector2[] = MeshRotation.getShapeDefault(), _longitudes: number = 3) {
       super(_name);
       this.rotate(_shape, _longitudes);
       // console.log("Mutator", this.getMutator());
+    }
+
+    protected static getShapeDefault(): Vector2[] {
+      return [ // line is the minimal shape
+        new Vector2(0.5, 0.5),
+        new Vector2(0.5, -0.5)
+      ];
     }
 
     protected get minVertices(): number {
       return 2;
     }
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.shape = Serializer.serializeArray(Vector2, this.shape);
-      serialization.longitudes = this.longitudes;
-      return serialization;
-    }
-
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      let shape: Vector2[] = <Vector2[]>await Serializer.deserializeArray(_serialization.shape);
-      this.longitudes = _serialization.longitudes;
-      this.rotate(shape, this.longitudes);
+      if (_serialization.shape)
+        this.rotate(this.shape, this.longitudes);
+
       return this;
     }
 
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await super.mutate(_mutator, _dispatchMutate);
       this.rotate(this.shape, this.longitudes);
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }
-    //#endregion
 
     protected rotate(_shape: Vector2[], _longitudes: number): void {
       this.clear();
-      this.shape = <MutableArray<Vector2>>MutableArray.from(_shape.map(_vertex => _vertex.clone));
+      this.shape = _shape;
       this.longitudes = Math.round(_longitudes);
       let angle: number = 360 / this.longitudes;
       let mtxRotate: Matrix4x4 = Matrix4x4.ROTATION_Y(angle);

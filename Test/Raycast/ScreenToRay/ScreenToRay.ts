@@ -26,7 +26,7 @@ namespace ScreenToRay {
     let root: ƒ.Node = new ƒ.Node("Root");
     let cosys: ƒAid.Node = new ƒAid.NodeCoordinateSystem("CoSys", ƒ.Matrix4x4.SCALING(ƒ.Vector3.ONE(100)));
     cosys.getChildrenByName("ArrowBlue")[0].mtxLocal.rotateZ(45, true);
-    cosys.getChildrenByName("ArrowBlue")[0].getChildrenByName("ArrowBlueShaft")[0].getComponent(ƒ.ComponentMaterial).clrPrimary.a = 0.5; // = ƒ.Color.CSS("white", 0.9);
+    cosys.getChildrenByName("ArrowBlue")[0].getChildrenByName("ArrowBlueShaft")[0].getComponent(ƒ.ComponentMaterial).color.a = 0.5; // = ƒ.Color.CSS("white", 0.9);
 
 
     let object: ƒAid.Node = new ƒAid.Node(
@@ -226,7 +226,7 @@ namespace ScreenToRay {
 
   function logMutatorInfo(_title: string, _mutable: ƒ.Mutable): void {
     let mutator: ƒ.Mutator = _mutable.getMutator();
-    let types: ƒ.MutatorAttributeTypes = _mutable.getMutatorAttributeTypes(mutator);
+    let types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
     console.group(_title);
     console.log("Types: ", types);
     console.log("Mutator: ", mutator);
@@ -333,6 +333,6 @@ namespace ScreenToRay {
     let relativeRect: DOMRect = new DOMRect(canvasRect.left - parentRect.left, canvasRect.top - parentRect.top, canvasRect.width, canvasRect.height);
     uiClient.set(ƒ.Rectangle.GET(relativeRect.left, relativeRect.top, relativeRect.width, relativeRect.height));
 
-    uiCamera.set({ aspect: cmpCamera.getAspect(), fieldOfView: cmpCamera.getFieldOfView(), near: cmpCamera.getNear(), far: cmpCamera.getFar() });
+    uiCamera.set({ aspect: cmpCamera.aspectRatio, fieldOfView: cmpCamera.fieldOfView, near: cmpCamera.near, far: cmpCamera.far });
   }
 }

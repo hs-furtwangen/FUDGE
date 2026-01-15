@@ -7,19 +7,5 @@ namespace FudgeCore {
    */
   export class ComponentGraphFilter extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentGraphFilter);
-
-    public constructor() {
-      super();
-      this.singleton = true;
-    }
-
-    public serialize(): Serialization {
-      return this.getMutator();
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
-      return this;
-    }
   }
 }

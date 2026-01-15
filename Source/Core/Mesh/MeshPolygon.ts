@@ -12,17 +12,24 @@ namespace FudgeCore {
    */
   export class MeshPolygon extends Mesh {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshPolygon);
-    protected static shapeDefault: Vector2[] = [ // trigon is the minimal shape
-      new Vector2(-1, -1),
-      new Vector2(1, -1),
-      new Vector2(0, 1)
-    ];
-    protected shape: MutableArray<Vector2> = new MutableArray<Vector2>(Vector2);
+
+    @edit(Boolean)
     protected fitTexture: boolean;
 
-    public constructor(_name: string = "MeshPolygon", _shape: Vector2[] = MeshPolygon.shapeDefault, _fitTexture: boolean = true) {
+    @edit(Array, Vector2)
+    protected shape: Vector2[];
+
+    public constructor(_name: string = "MeshPolygon", _shape: Vector2[] = MeshPolygon.getShapeDefault(), _fitTexture: boolean = true) {
       super(_name);
       this.create(_shape, _fitTexture);
+    }
+
+    protected static getShapeDefault(): Vector2[] {
+      return [ // trigon is the minimal shape
+        new Vector2(-1, -1),
+        new Vector2(1, -1),
+        new Vector2(0, 1)
+      ];
     }
 
     protected get minVertices(): number {
@@ -33,13 +40,13 @@ namespace FudgeCore {
      * Create this mesh from the given vertices.
      */
     public create(_shape: Vector2[] = [], _fitTexture: boolean = true): void {
-      this.shape = <MutableArray<Vector2>>MutableArray.from(_shape.map(_vertex => _vertex.clone));
+      this.shape = _shape;
       this.clear();
       this.fitTexture = _fitTexture;
 
       if (_shape.length < this.minVertices) {
         Debug.warn(`At least ${this.minVertices} vertices needed to construct MeshPolygon, default trigon used`);
-        this.create(MeshPolygon.shapeDefault, true);
+        this.create(MeshPolygon.getShapeDefault(), true);
         return;
       }
 
@@ -72,29 +79,18 @@ namespace FudgeCore {
         this.faces.push(new Face(this.vertices, i - 1, i, 0));
     }
 
-    //#region Transfer
-    public serialize(): Serialization {
-      let serialization: Serialization = super.serialize();
-      serialization.shape = Serializer.serializeArray(Vector2, this.shape);
-      serialization.fitTexture = this.fitTexture;
-      return serialization;
-    }
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      let vectors: Vector2[] = <Vector2[]>await Serializer.deserializeArray(_serialization.shape);
-      this.create(vectors, _serialization.fitTexture);
+      if (_serialization.shape)
+        this.create(this.shape, _serialization.fitTexture);
+
       return this;
     }
 
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      await super.mutate(_mutator, _selection, _dispatchMutate);
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await super.mutate(_mutator, _dispatchMutate);
       this.create(this.shape, this.fitTexture);
       this.dispatchEvent(new Event(EVENT.MUTATE));
     }
-
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-    }
-    //#endregion
   }
 }

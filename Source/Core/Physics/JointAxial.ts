@@ -1,16 +1,17 @@
 namespace FudgeCore {
   /**
-     * Base class for joints operating with exactly one axis
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+   * Base class for joints operating with exactly one axis
+   * @author Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2025
    */
+  @orderFlat
   export abstract class JointAxial extends Joint {
     protected springDamper: OIMO.SpringDamper;
-    
+
     //Internal Variables
-    #maxMotor: number = 10;
     #minMotor: number = -10;
+    #maxMotor: number = 10;
     #motorSpeed: number = 0;
-    #axis: OIMO.Vec3;
+    #axis: Vector3;
     #springFrequency: number = 0;
     #springDamping: number = 0;
 
@@ -28,134 +29,104 @@ namespace FudgeCore {
      * The axis connecting the the two {@link Node}s e.g. Vector3(0,1,0) to have a upward connection.
      *  When changed after initialization the joint needs to be reconnected.
      */
+    @order(6)
+    @edit(Vector3)
     public get axis(): Vector3 {
-      return new Vector3(this.#axis.x, this.#axis.y, this.#axis.z);
+      return this.#axis;
     }
+
     public set axis(_value: Vector3) {
-      this.#axis = new OIMO.Vec3(_value.x, _value.y, _value.z);
+      this.#axis = _value;
       this.disconnect();
       this.dirtyStatus();
     }
 
     /**
-      * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
+     * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
      */
+    @order(7)
+    @edit(Number)
+    public get minMotor(): number {
+      return this.#minMotor;
+    }
+
+    public set minMotor(_value: number) {
+      this.#minMotor = _value;
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().lowerLimit = _value;
+    }
+
+    /**
+     * The Upper Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit. 
+     */
+    @order(8)
+    @edit(Number)
     public get maxMotor(): number {
       return this.#maxMotor;
     }
 
     public set maxMotor(_value: number) {
       this.#maxMotor = _value;
-      try {
-        (<OIMO.PrismaticJoint><unknown>this.joint).getLimitMotor().upperLimit = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().upperLimit = _value;
     }
 
     /**
-      * The Lower Limit of movement along the axis of this joint. The limiter is disable if lowerLimit > upperLimit.
+     * The target speed of the motor in m/s.
      */
-    public get minMotor(): number {
-      return this.#minMotor;
-    }
-    public set minMotor(_value: number) {
-      this.#minMotor = _value;
-      try {
-        (<OIMO.PrismaticJoint><unknown>this.joint).getLimitMotor().lowerLimit = _value;
-      } catch (_e: unknown) { /* */ }
-    }
-
-    /**
-     * The damping of the spring. 1 equals completly damped.
-     */
-    public get springDamping(): number {
-      return this.#springDamping;
-    }
-    public set springDamping(_value: number) {
-      this.#springDamping = _value;
-      try {
-        (<OIMO.PrismaticJoint><unknown>this.joint).getSpringDamper().dampingRatio = _value;
-      } catch (_e: unknown) { /* */ }
-    }
-
-    /**
-      * The target speed of the motor in m/s.
-     */
+    @order(9)
+    @edit(Number)
     public get motorSpeed(): number {
       return this.#motorSpeed;
     }
 
     public set motorSpeed(_value: number) {
       this.#motorSpeed = _value;
-      try {
-        (<OIMO.PrismaticJoint>this.joint).getLimitMotor().motorSpeed = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getLimitMotor)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getLimitMotor().motorSpeed = _value;
+    }
+
+    /**
+     * The damping of the spring. 1 equals completly damped.
+     */
+    @order(10)
+    @edit(Number)
+    public get springDamping(): number {
+      return this.#springDamping;
+    }
+
+    public set springDamping(_value: number) {
+      this.#springDamping = _value;
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getSpringDamper().dampingRatio = _value;
     }
 
     /**
      * The frequency of the spring in Hz. At 0 the spring is rigid, equals no spring. The smaller the value the less restrictive is the spring.
-    */
+     */
+    @order(11)
+    @edit(Number)
     public get springFrequency(): number {
       return this.#springFrequency;
     }
+
     public set springFrequency(_value: number) {
       this.#springFrequency = _value;
-      try {
-        (<OIMO.PrismaticJoint>this.joint).getSpringDamper().frequency = _value;
-      } catch (_e: unknown) { /* */ }
+      if ((<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint)?.getSpringDamper)
+        (<OIMO.PrismaticJoint | OIMO.RevoluteJoint>this.joint).getSpringDamper().frequency = _value;
     }
     //#endregion
 
-    //#region Saving/Loading
-    public serialize(): Serialization {
-      let serialization: Serialization = this.#getMutator();
-      serialization.axis = this.axis.serialize();
-      serialization[super.constructor.name] = super.serialize();
-      return serialization;
+    public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
+      await super.mutate(_mutator, _dispatchMutate);
+      if (_mutator.axis)
+        this.axis = this.axis;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.axis = await new Vector3().deserialize(_serialization.axis);
-      this.#mutate(_serialization);
-      super.deserialize(_serialization[super.constructor.name]);
-      return this;
-    }
-
-    public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
-      if (typeof (_mutator.axis) !== "undefined")
-        this.axis = new Vector3(...<number[]>(Object.values(_mutator.axis)));
-      delete _mutator.axis;
-      this.#mutate(_mutator);
-      this.deleteFromMutator(_mutator, this.#getMutator());
-      await super.mutate(_mutator, _selection, _dispatchMutate);
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = super.getMutator();
-      mutator.axis = this.axis.getMutator();
-      Object.assign(mutator, this.#getMutator());
-      return mutator;
-    }
-
-    //#endregion
-    
     protected constructJoint(): void {
       this.springDamper = new OIMO.SpringDamper().setSpring(this.#springFrequency, this.#springDamping);
-      super.constructJoint(this.#axis);
+      const worldAxis: OIMO.Vec3 = new OIMO.Vec3(this.#axis.x, this.#axis.y, this.#axis.z);
+      super.constructJoint(worldAxis);
     }
-
-    #getMutator = (): Mutator => {
-      let mutator: Mutator = {
-        springDamping: this.#springDamping,
-        springFrequency: this.#springFrequency,
-        maxMotor: this.#maxMotor,
-        minMotor: this.#minMotor,
-        motorSpeed: this.#motorSpeed
-      };
-      return mutator;
-    };
-
-    #mutate = (_mutator: Mutator): void => {
-      this.mutateBase(_mutator, ["springDamping", "springFrequency", "maxMotor", "minMotor", "motorSpeed"]);
-    };
   }
 }

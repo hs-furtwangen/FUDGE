@@ -7,6 +7,7 @@ namespace FudgeCore {
   export class ComponentWalker extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentWalker);
     /** The speed the walker should move with. Corresponds to units/s. */
+    @edit(Number)
     public speed: number = 1;
     /** If true, move the node this component is attached to through forces instead of directly through the transform. Requires a [[ComponentRigidbody]] if true. */
     // public moveThroughPhysics: boolean = false;
@@ -26,23 +27,6 @@ namespace FudgeCore {
         return;
       this.addEventListener(EVENT.COMPONENT_ADD, this.#handleAttach.bind(this));
       this.addEventListener(EVENT.COMPONENT_REMOVE, this.#handleDetach.bind(this));
-    }
-
-    public serialize(): Serialization {
-      let serialization: Serialization = {
-        [super.constructor.name]: super.serialize(),
-        speed: this.speed
-        // moveThroughPhysics: this.moveThroughPhysics,
-      };
-
-      return serialization;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.speed = _serialization.speed;
-      // this.moveThroughPhysics = _serialization.moveThroughPhysics;
-      await super.deserialize(_serialization[super.constructor.name]);
-      return this;
     }
 
     /**

@@ -18,17 +18,22 @@ namespace FudgeUserInterface {
    */
   export abstract class CustomElement extends HTMLElement {
     public static tag: string;
-    private static mapObjectToCustomElement: Map<string, typeof CustomElement> = new Map();
-    private static idCounter: number = 0;
-    protected initialized: boolean = false;
+    private static mapTypeToCustomElement: Map<Function, typeof CustomElement> = new Map();
 
-    public constructor(_attributes?: CustomElementAttributes) {
+    private static idCounter: number = 0;
+
+    public content: HTMLSpanElement;
+
+    #initialized: boolean = false;
+
+    public constructor(_attributes: CustomElementAttributes, ..._args: unknown[]) {
       super();
       if (_attributes)
         for (let name in _attributes) {
           if (_attributes[name] != undefined)
             this.setAttribute(name, _attributes[name]);
         }
+      this.classList.add("fudge-element");
     }
 
     /**
@@ -37,6 +42,8 @@ namespace FudgeUserInterface {
     protected static get nextId(): string {
       return "ƒ" + CustomElement.idCounter++;
     }
+
+
 
     /**
      * Register map the given element type to the given tag and the given type of data
@@ -48,22 +55,20 @@ namespace FudgeUserInterface {
       customElements.define(_tag, _typeCustomElement);
 
       if (_typeObject)
-        CustomElement.map(_typeObject.name, _typeCustomElement);
+        CustomElement.map(_typeObject, _typeCustomElement);
     }
 
     /**
      * Retrieve the element representing the given data type (if registered)
      */
-    public static get(_type: string): typeof CustomElement {
-      let element: string | typeof CustomElement | CustomElementConstructor = CustomElement.mapObjectToCustomElement.get(_type);
-      if (typeof (element) == "string")
-        element = customElements.get(element);
-      return <typeof CustomElement>element;
+    public static get(_type: Function): typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement) {
+      let element: string | typeof CustomElement | CustomElementConstructor = CustomElement.mapTypeToCustomElement.get(_type);
+      return <typeof CustomElement & (new (..._args: ConstructorParameters<typeof CustomElement>) => CustomElement)>element;
     }
 
-    private static map(_type: string, _typeCustomElement: typeof CustomElement): void {
+    private static map(_type: Function, _typeCustomElement: typeof CustomElement): void {
       ƒ.Debug.fudge("Map", _type, _typeCustomElement.name);
-      CustomElement.mapObjectToCustomElement.set(_type, _typeCustomElement);
+      CustomElement.mapTypeToCustomElement.set(_type, _typeCustomElement);
     }
 
     /**
@@ -73,6 +78,14 @@ namespace FudgeUserInterface {
       return this.getAttribute("key");
     }
 
+    public get initialized(): boolean {
+      return this.#initialized;
+    }
+
+    protected set initialized(_value: boolean) {
+      this.#initialized = _value;
+    }
+
     /**
      * Add a label-element as child to this element
      */
@@ -80,9 +93,11 @@ namespace FudgeUserInterface {
       let text: string = this.getAttribute("label");
       if (!text)
         return null;
+
       let label: HTMLLabelElement = document.createElement("label");
       label.textContent = text;
       this.appendChild(label);
+
       return label;
     }
 
@@ -92,6 +107,16 @@ namespace FudgeUserInterface {
         label.textContent = _label;
     }
 
+    /**
+     * Add a span-element as child to this element
+     */
+    public appendContent(): HTMLSpanElement {
+      this.content = document.createElement("span");
+      this.content.classList.add("content");
+      this.appendChild(this.content);
+
+      return this.content;
+    }
 
     /**
      * Set the value of this element using a format compatible with [[FudgeCore.Mutator]]
@@ -111,7 +136,7 @@ namespace FudgeUserInterface {
         clone.setAttribute(attribute.name, attribute.value);
       return clone;
     }
-    
+
     /**
      * Get the value of this element in a format compatible with [[FudgeCore.Mutator]]
      */

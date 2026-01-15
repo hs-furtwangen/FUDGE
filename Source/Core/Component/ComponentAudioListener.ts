@@ -2,10 +2,12 @@ namespace FudgeCore {
   /**
    * Serves to set the spatial location and orientation of AudioListeners relative to the
    * world transform of the {@link Node} it is attached to.
-   * @authors Jirka Dell'Oro-Friedl, HFU, 2019
+   * @authors Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   export class ComponentAudioListener extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAudioListener);
+
+    @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
     /**

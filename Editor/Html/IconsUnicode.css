@@ -1,0 +1,253 @@
+/* append the U+FE0E Variation Selector-15 to try rendering emojis as text glyphs */
+:root {
+  /* default positioning */
+  --icon-spacing: 0.25em;
+  --icon-width: 2ch;
+
+  /* Status */
+  --icon-info: "ℹ︎";
+  --icon-success: "✔︎";
+  --icon-error: "✖︎";
+  --icon-warning: "⚠︎";
+  --icon-not-allowed: "🚫︎";
+
+  /* File */
+  --icon-browse: "📂︎";
+  --icon-folder: "📁︎";
+  --icon-file: "📄︎";
+  --icon-attach: "📎︎";
+  --icon-link: "🔗︎";
+
+  /* Actions */
+  --icon-add: "➕︎";
+  --icon-remove: "➖︎";
+  --icon-edit: "✎︎";
+  --icon-duplicate: "⧉︎";
+  --icon-refresh: "⟳︎";
+  --icon-revert: "⟲";
+  --icon-settings: "☰";
+  --icon-lock: "🔒︎";
+  --icon-unlock: "🔓︎";
+
+  --icon-actions: "⋮";
+  --icon-create: "➕︎";
+  --icon-assign: "↪";
+  --icon-clear: "✖";
+  --icon-delete: "➖︎";
+  --icon-search: "🔍︎"; 
+
+  /* Navigation */
+  --icon-forward: "➜";
+
+  /* Media */
+  --icon-play: "▶︎";
+  --icon-pause: "⏸︎";
+  --icon-stop: "⏹";
+  --icon-previous: "⏮";
+  --icon-next: "⏭";
+
+  /* Types */
+  --icon-array: "[ ]";
+  --icon-object: "{ }";
+}
+
+.icon::before,
+.icon::after {
+  display: inline-block;
+  width: var(--icon-width);
+  text-align: center;
+  vertical-align: baseline;
+  margin: 0;
+  padding: 0;
+}
+
+.icon.before::before {
+  margin-right: var(--icon-spacing);
+}
+
+.icon.after::after {
+  margin-left: var(--icon-spacing);
+}
+
+.icon.after:empty::after,
+.icon.before:empty::before {
+  margin: 0;
+}
+
+/* Status */
+.icon.info.before::before,
+.icon.info.after::after {
+  content: var(--icon-info);
+}
+
+.icon.success.before::before,
+.icon.success.after::after {
+  content: var(--icon-success);
+}
+
+.icon.error.before::before,
+.icon.error.after::after {
+  content: var(--icon-error);
+}
+
+.icon.warning.before::before,
+.icon.warning.after::after {
+  content: var(--icon-warning);
+}
+
+.icon.not-allowed.before::before,
+.icon.not-allowed.after::after {
+  content: var(--icon-not-allowed);
+}
+
+/* File */
+.icon.browse.before::before,
+.icon.browse.after::after {
+  content: var(--icon-browse);
+}
+
+.icon.folder.before::before,
+.icon.folder.after::after {
+  content: var(--icon-folder);
+}
+
+.icon.file.before::before,
+.icon.file.after::after {
+  content: var(--icon-file);
+}
+
+.icon.attach.before::before,
+.icon.attach.after::after {
+  content: var(--icon-attach);
+}
+
+.icon.link.before::before,
+.icon.link.after::after {
+  content: var(--icon-link);
+}
+
+/* Actions */
+.icon.add.before::before,
+.icon.add.after::after {
+  content: var(--icon-add);
+}
+
+.icon.remove.before::before,
+.icon.remove.after::after {
+  content: var(--icon-remove);
+}
+
+.icon.edit.before::before,
+.icon.edit.after::after {
+  content: var(--icon-edit);
+}
+
+.icon.duplicate.before::before,
+.icon.duplicate.after::after {
+  content: var(--icon-duplicate);
+}
+
+.icon.refresh.before::before,
+.icon.refresh.after::after {
+  content: var(--icon-refresh);
+}
+
+.icon.revert.before::before,
+.icon.revert.after::after {
+  content: var(--icon-revert);
+}
+
+.icon.settings.before::before,
+.icon.settings.after::after {
+  content: var(--icon-settings);
+}
+
+.icon.lock.before::before,
+.icon.lock.after::after {
+  content: var(--icon-lock);
+}
+
+.icon.unlock.before::before,
+.icon.unlock.after::after {
+  content: var(--icon-unlock);
+}
+
+.icon.actions.before::before,
+.icon.actions.after::after {
+  content: var(--icon-actions);
+}
+
+.icon.create.before::before,
+.icon.create.after::after {
+  content: var(--icon-create);
+}
+
+.icon.assign.before::before,
+.icon.assign.after::after {
+  content: var(--icon-assign);
+}
+
+.icon.clear.before::before,
+.icon.clear.after::after {
+  content: var(--icon-clear);
+}
+
+.icon.delete.before::before,
+.icon.delete.after::after {
+  content: var(--icon-delete);
+}
+
+.icon.search.before::before,
+.icon.search.after::after {
+  content: var(--icon-search);
+}
+
+/* Navigation */
+.icon.forward.before::before,
+.icon.forward.after::after {
+  content: var(--icon-forward);
+}
+
+.icon.backward.before::before,
+.icon.backward.after::after {
+  content: var(--icon-forward);
+  transform: scaleX(-1);
+}
+
+/* Media */
+.icon.play.before::before,
+.icon.play.after::after {
+  content: var(--icon-play);
+}
+
+.icon.pause.before::before,
+.icon.pause.after::after {
+  content: var(--icon-pause);
+}
+
+.icon.stop.before::before,
+.icon.stop.after::after {
+  content: var(--icon-stop);
+}
+
+.icon.previous.before::before,
+.icon.previous.after::after {
+  content: var(--icon-previous);
+}
+
+.icon.next.before::before,
+.icon.next.after::after {
+  content: var(--icon-next);
+}
+
+/* fudge-comboselect>label::after {
+  mask-image: none;
+  background: none;
+  content: var(--icon-array);
+} */
+
+details[type*=Array]>summary::after {
+  mask-image: none;
+  background: none;
+  content: var(--icon-array);
+}

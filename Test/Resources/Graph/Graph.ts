@@ -71,7 +71,7 @@ namespace Graph {
       let time: number = ƒ.Time.game.get() % 1000 / 1000;
       // await root.getChild(0).getComponent(ƒ.ComponentMaterial).mutate({ clrPrimary: { r: time } });
       await root.getChild(0).getComponent(ƒ.ComponentMesh).mutate({ mtxPivot: { rotation: { y: time * 100 } } });
-      root.getChild(0).getComponent(ƒ.ComponentMaterial).clrPrimary.r = time;
+      root.getChild(0).getComponent(ƒ.ComponentMaterial).color.r = time;
       // root.getChild(0).getComponent(ƒ.ComponentMesh).mtxPivot.rotateZ(10);
       viewport.draw();
     }

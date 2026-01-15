@@ -13,12 +13,12 @@ namespace FudgeCore {
       this.addEventListener(EVENT.MUTATE, this.hndMutate);
     }
 
-    public get isSerializableResource(): true {
-      return true;
-    }
-
     public get type(): string {
       return this.constructor.name;
+    }
+
+    public get isResource(): true {
+      return true;
     }
 
     public serialize(): Serialization {
@@ -30,7 +30,6 @@ namespace FudgeCore {
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      Project.register(this, _serialization.idResource);
       await Project.resyncGraphInstances(this);
       this.broadcastEvent(new Event(EVENT.GRAPH_DESERIALIZED));
       Debug.log("Deserialized", this.name);

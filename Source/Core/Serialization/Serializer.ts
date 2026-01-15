@@ -5,9 +5,14 @@ namespace FudgeCore {
   /**
    * Holds information needed to recreate an object identical to the one it originated from. 
    * A serialization is used to create copies of existing objects at runtime or to store objects as strings or recreate them.
+   * 
+   * The optional `@type` property specifies the fully qualified {@link Serializer.getFunctionPath type path} used by {@link Serializer.deserializeFlat} to restore the correct constructor.
    */
   export interface Serialization {
     [type: string]: General;
+
+    /** The fully qualified type path used to reconstruct the serialized object. The type constructor can be restored from the path using {@link Serializer.getFunction} */
+    ["@type"]?: string;
   }
 
   /**
@@ -23,11 +28,17 @@ namespace FudgeCore {
     /**
      * Recreates this instance of {@link Serializable} with the information from the given {@link Serialization}.
      */
-    deserialize(_serialization: Serialization): Promise<Serializable>;
+    deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
+  }
+
+  export function isSerializable(_object: Object): _object is Serializable {
+    return (_object && Reflect.has(_object, "serialize") && Reflect.has(_object, "deserialize"));
   }
 
   interface NamespaceRegister {
-    [name: string]: Object;
+    [name: string]: {
+      [name: string]: General;
+    };
   }
 
   /**
@@ -61,7 +72,7 @@ namespace FudgeCore {
     private static namespaces: NamespaceRegister = { "ƒ": FudgeCore };
 
     /**
-     * Registers a namespace to the {@link Serializer}, to enable automatic instantiation of classes defined within
+     * Registers a namespace to the {@link Serializer}, to enable automatic instantiation of classes defined within.
      */
     public static registerNamespace(_namespace: Object): string {
       for (let name in Serializer.namespaces)
@@ -85,35 +96,52 @@ namespace FudgeCore {
       return name;
     }
 
-
     /**
-     * Returns a javascript object representing the serializable FUDGE-object given,
-     * including attached components, children, superclass-objects all information needed for reconstruction
-     * @param _object An object to serialize, implementing the {@link Serializable} interface
+     * Serializes a FUDGE-object into a nested {@link Serialization} format:
+     *
+     * ```
+     * { "<typePath>": { ...object data... } }
+     * ```
+     *
+     * This format includes all information required for full reconstruction,
+     * including components, children, and inherited data.
      */
     public static serialize(_object: Serializable): Serialization {
-      // TODO: save the namespace with the constructors name
-      let path: string = this.getFullPath(_object);
-      if (!path)
-        throw new Error(`Namespace of serializable object of type ${_object.constructor.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
-
+      const path: string = this.getFunctionPath(_object);
       return { [path]: _object.serialize() };
     }
 
     /**
-     * Returns a FUDGE-object reconstructed from the information in the {@link Serialization} given,
-     * including attached components, children, superclass-objects
+     * Serializes a FUDGE-object into a flat {@link Serialization} format:
+     *
+     * ```
+     * { "@type": "<typePath>", ...object data... }
+     * ```
+     *
+     * The object can later be reconstructed using {@link Serializer.deserializeFlat}.
      */
-    public static async deserialize(_serialization: Serialization): Promise<Serializable> {
-      let reconstruct: Serializable;
+    public static serializeFlat(_object: Serializable): Serialization {
+      return { "@type": this.getFunctionPath(_object), ..._object.serialize() };
+    }
+
+    /**
+     * Reconstructs an object serialized using {@link Serializer.serialize}.
+     * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+     * @returns Either the reconstructed object directly, or a `Promise` if the object's `deserialize` method performs asynchronous work.
+     */
+    public static deserialize<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> | T {
+      let reconstruct: T;
       let path: string;
       try {
         // loop constructed solely to access type-property. Only one expected!
         for (path in _serialization) {
+          const serialization: Serialization = _serialization[path];
           reconstruct = Serializer.reconstruct(path);
-          reconstruct = await reconstruct.deserialize(_serialization[path]);
 
-          return reconstruct;
+          if (_onConstruct)
+            _onConstruct(reconstruct, serialization);
+
+          return <T>reconstruct.deserialize(serialization);
         }
       } catch (_error) {
         let message: string = `Deserialization of ${path}, ${reconstruct ? Reflect.get(reconstruct, "idResource") : ""} failed: ` + _error;
@@ -123,35 +151,98 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns an Array of javascript object representing the serializable FUDGE-objects given in the array,
-     * including attached components, children, superclass-objects all information needed for reconstruction
+     * Reconstructs an object serialized using {@link Serializer.serializeFlat}.
+     * @param _onConstruct (optional) A callback executed immediately after the object instance is created, but *before* its {@link Serializable.deserialize} method is invoked.
+     * @returns Either the reconstructed object directly, or a `Promise` if the object's `deserialize` method performs asynchronous work.
      */
-    public static serializeArray<T extends Serializable>(_type: new () => T, _objects: Serializable[]): Serialization {
-      let serializations: Serialization[] = [];
-      let path: string = this.getFullPath(new _type());
-      if (!path)
-        throw new Error(`Namespace of serializable object of type ${_type.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
+    public static deserializeFlat<T extends Serializable = Serializable>(_serialization: Serialization, _onConstruct?: (_reconstruct: T, _serialization: Serialization) => void): Promise<T> | T {
+      let reconstruct: T;
+      try {
+        reconstruct = Serializer.reconstruct(_serialization["@type"]);
 
-      for (let object of _objects)
-        serializations.push(object.serialize());
+        if (_onConstruct)
+          _onConstruct(reconstruct, _serialization);
 
-      let serialization: Serialization = {};
-      serialization[path] = serializations;
-      return serialization;
+        return <T>reconstruct.deserialize(_serialization);
+      } catch (_error) {
+        let message: string = `Deserialization of ${_serialization["@type"]}, ${reconstruct ? Reflect.get(reconstruct, "idResource") : ""} failed: ` + _error;
+        throw new Error(message);
+      }
     }
 
     /**
-     * Returns an Array of FUDGE-objects reconstructed from the information in the array of {@link Serialization}s given,
-     * including attached components, children, superclass-objects
+     * Serializes an array of {@link Serializable} objects.
+     * 
+     * If a constructor type is provided, objects whose constructor matches exactly
+     * are serialized **without type information** (`@type` field is omitted).
+     * 
+     * Objects of a different type include type information (`@type`)
+     * to enable polymorphic reconstruction.
      */
-    public static async deserializeArray<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]> {
+    public static serializeArray<T extends Serializable = Serializable>(_serializables: T[], _type?: abstract new () => T): Serialization[] {
+      const serializations: Serialization[] = new Array(_serializables.length);
+      for (let i: number = 0; i < _serializables.length; i++) {
+        const value: Serializable = _serializables[i];
+        if (!value)
+          continue;
+
+        if (value.constructor == _type)
+          serializations[i] = value.serialize(); // compact serialization if non polymorphic
+        else
+          serializations[i] = Serializer.serializeFlat(value);
+      }
+
+      return serializations;
+    }
+
+    /**
+     * Deserializes an array of {@link Serializable} objects from an array of {@link Serialization}s.
+     *
+     * If a constructor type is provided, it is used to reconstruct objects
+     * whose serializations **do not contain type information** (`@type` field is missing).
+     * 
+     * Serializations that include type information (`@type`) are deserialized via {@link Serializer.deserializeFlat},
+     * enabling polymorphic reconstruction of mixed or derived types within the same array.
+     */
+    public static async deserializeArray<T extends Serializable = Serializable>(_serializations: Serialization[], _type?: new () => T): Promise<T[]> {
+      // legacy support for old serializations. TODO: remove in future versions 
+      if (!Array.isArray(_serializations))
+        return this.deserializeArrayLegacy<T>(_serializations);
+
+      const serializables: (Promise<Serializable> | Serializable)[] = new Array(_serializations.length);
+      for (let i: number = 0; i < _serializations.length; i++) {
+        const value: Serialization = _serializations[i];
+        if (!value)
+          continue;
+
+        let serializable: Promise<Serializable> | Serializable;
+        if (typeof value == "object" && "@type" in value) {
+          serializable = Serializer.deserializeFlat(value);
+        } else {
+          if (!_type)
+            throw new Error(`${Serializer.deserializeArray.name}: missing "_type" argument. Serialization at index "${i}" contains no "@type" information`);
+
+          serializable = new _type();
+          serializable = (<Serializable>serializable).deserialize(value);
+        }
+
+        serializables[i] = serializable;
+      }
+
+      return <Promise<T[]>>Promise.all(serializables);
+    }
+
+    /**
+     * @deprecated Use {@link Serializer.deserializeArray} instead.
+     */
+    public static async deserializeArrayLegacy<T extends Serializable = Serializable>(_serialization: Serialization): Promise<T[]> {
       let serializables: Serializable[] = [];
       let construct: new () => Serializable;
       let serializations: Serialization[] = [];
       try {
         // loop constructed solely to access type-property. Only one expected!
         for (let path in _serialization) {
-          construct = Serializer.getConstructor(path);
+          construct = Serializer.getFunction(path);
           serializations = _serialization[path];
           break;
         }
@@ -168,18 +259,69 @@ namespace FudgeCore {
       return <T[]>serializables;
     }
 
+    /**
+     * Returns an array of resource IDs representing the given resources.
+     */
+    public static serializeResources(_resources: SerializableResource[]): string[] {
+      const serializations: string[] = new Array(_resources.length);
+      for (let i: number = 0; i < _resources.length; i++)
+        serializations[i] = _resources[i]?.idResource;
+
+      return serializations;
+    }
+
+    /**
+     * Returns an array of resources retrieved with the given resource IDs.
+     */
+    public static async deserializeResources<T extends SerializableResource = SerializableResource>(_resourceIds: string[]): Promise<T[]> {
+      const resources: SerializableResource[] = new Array(_resourceIds.length);
+      for (let i: number = 0; i < _resourceIds.length; i++)
+        resources[i] = Project.resources[_resourceIds[i]] ?? await Project.getResource(_resourceIds[i]);
+
+      return <T[]>resources;
+    }
+
+    /**
+     * Returns an array of paths to the given functions (constructors), if found in the {@link Serializer.registerNamespace registered namespaces}.
+     */
+    public static serializeFunctions(_functions: Function[]): string[] {
+      const paths: string[] = new Array(_functions.length);
+      for (let i: number = 0; i < _functions.length; i++)
+        paths[i] = Serializer.getFunctionPath(_functions[i]);
+      return paths;
+    }
+
+    /**
+     * Returns an array of functions (constructors) from the given paths to functions, if found in the {@link Serializer.registerNamespace registered namespaces}.
+     */
+    public static deserializeFunctions<T extends Function = Function>(_paths: string[]): T[] {
+      const constructors: Function[] = new Array(_paths.length);
+      for (let i: number = 0; i < _paths.length; i++)
+        constructors[i] = Serializer.getFunction(_paths[i]);
+      return <T[]>constructors;
+    }
+
     //TODO: implement prettifier to make JSON-Stringification of serializations more readable, e.g. placing x, y and z in one line
     /**
      * Prettify a JSON-String, to make it more readable.
      * not implemented yet
      */
-    public static prettify(_json: string): string { return _json; }
+    public static prettify(_json: string): string {
+      const compactTypes = [Serializer.getFunctionPath(Vector2), Serializer.getFunctionPath(Vector3)];
+      for (const type of compactTypes) {
+        const pattern: RegExp = new RegExp(`{[^{}]*"@type"\\s*:\\s*"${type}"[^{}]*}`, "g");
+        _json = _json.replace(pattern, (_m) => _m.replace(/\s+/g, ' '));
+      }
+
+      return _json;
+    }
 
     /**
      * Returns a formatted, human readable JSON-String, representing the given {@link Serialization} that may have been created by {@link Serializer}.serialize
      * @param _serialization
      */
     public static stringify(_serialization: Serialization): string {
+      console.log("stringify");
       // adjustments to serialization can be made here before stringification, if desired
       let json: string = JSON.stringify(_serialization, null, 2);
       let pretty: string = Serializer.prettify(json);
@@ -198,37 +340,40 @@ namespace FudgeCore {
      * Creates an object of the class defined with the full path including the namespaceName(s) and the className seperated by dots(.) 
      * @param _path 
      */
-    public static reconstruct(_path: string): Serializable {
-      let constructor: new () => Serializable = Serializer.getConstructor(_path);
-      let reconstruction: Serializable = new constructor();
+    public static reconstruct<T extends Serializable = Serializable>(_path: string): T {
+      let constructor: new () => Serializable = Serializer.getFunction(_path);
+      let reconstruction: T = <T>new constructor();
       return reconstruction;
     }
 
-    // public static getConstructor<T extends Serializable>(_type: string, _namespace: Object = FudgeCore): new () => T {
     /**
-     * Returns the constructor from the given path to a class
+     * Returns the function (constructor) from the given path to a function, if found in the {@link registerNamespace registered namespaces}.
      */
-    public static getConstructor<T extends Serializable>(_path: string): new () => T {
-      let typeName: string = _path.substring(_path.lastIndexOf(".") + 1);
-      let namespace: Object = Serializer.getNamespace(_path);
+    public static getFunction<T extends Function>(_path: string): T {
+      const typeName: string = _path.substring(_path.lastIndexOf(".") + 1);
+      const namespace: Object = Serializer.getNamespace(_path);
       if (!namespace)
         throw new Error(`Constructor of serializable object of type ${_path} not found. Maybe the namespace hasn't been registered?`);
       return (<General>namespace)[typeName];
     }
 
     /**
-     * Returns the full path to the class of the object, if found in the registered namespaces
-     * @param _object 
+     * Returns the full path to a function (constructor), if found in the {@link registerNamespace registered namespaces}.
+     * e.g. "FudgeCore.ComponentScript" or "MyNameSpace.MyScript"
      */
-    private static getFullPath(_object: Serializable): string {
-      let typeName: string = _object.constructor.name;
-      // Debug.log("Searching namespace of: " + typeName);
-      for (let namespaceName in Serializer.namespaces) {
-        let found: General = (<General>Serializer.namespaces)[namespaceName][typeName];
-        if (found && _object instanceof found)
+    public static getFunctionPath(_to: Serializable | Function): string {
+      if (!((typeof _to == "function")))
+        _to = _to.constructor;
+
+      const typeName: string = _to.name;
+      const namespaces: NamespaceRegister = Serializer.namespaces;
+      for (let namespaceName in namespaces) {
+        let found: Function = namespaces[namespaceName][typeName];
+        if (found && _to == found)
           return namespaceName + "." + typeName;
       }
-      return null;
+
+      throw new Error(`Namespace of serializable object of type ${_to.name} not found. Maybe the namespace hasn't been registered or the class not exported?`);
     }
 
     /**
@@ -278,7 +423,6 @@ namespace FudgeCore {
       }
 
       public async deserialize(_serialization: Serialization): Promise<Serializable> {
-        Project.register(this, _serialization.idResource);
         this.url = _serialization.url;
         this.name = _serialization.name;
         return this.load();
@@ -294,14 +438,12 @@ namespace FudgeCore {
        */
       function mixinMutableSerializableResourceExternal<TBase extends (abstract new (...args: General[]) => SerializableResourceExternal & Mutable)>(_base: TBase) { // eslint-disable-line
         abstract class MutableSerializableResourceExternal extends _base {
-          public async mutate(_mutator: Mutator, _selection: string[] = null): Promise<void> {
-            await super.mutate(_mutator, _selection);
+          public async mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void> {
+            await super.mutate(_mutator, _dispatchMutate);
+            if (_mutator.url != undefined)
+              this.url = _mutator.url;
             if (_mutator.url != undefined || _mutator.name != undefined)
               await this.load();
-          }
-
-          protected reduceMutator(_mutator: Mutator): void {
-            delete _mutator.status;
           }
         }
 

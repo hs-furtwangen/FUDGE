@@ -1,3 +1,5 @@
+/// <reference path="../../../Distribution/OimoPhysics.d.ts" preserve="true" />
+
 namespace FudgeCore {
   /**
     * Manages the OIMO physics engine for FUDGE. Multiple instances may be created, one is active at a time.
@@ -198,24 +200,6 @@ namespace FudgeCore {
       return Physics.ƒactive.bodyList;
     }
 
-    /** Giving a ComponentRigidbody a specific identification number so it can be referenced in the loading process. And removed rb's can receive a new id. */
-    public static distributeBodyID(): number {
-      let freeId: number = 0;
-      let free: boolean = false;
-      Physics.ƒactive.bodyList.forEach((_value: ComponentRigidbody): void => {
-        if (_value.id != freeId) {
-          free = true;
-        } else {
-          free = false;
-        }
-        if (!free) {
-          freeId++;
-        }
-      }
-      );
-      return freeId;
-    }
-
     /** 
      * Connect all joints that are not connected yet. Used internally no user interaction needed. This functionality is called and needed to make sure joints connect/disconnect
      * if any of the two paired ComponentRigidbodies change.
@@ -224,8 +208,8 @@ namespace FudgeCore {
       let jointsToConnect: Joint[] = Physics.ƒactive.jointList;
       Physics.ƒactive.jointList = [];
       jointsToConnect.forEach((_joint: Joint): void => {
-        if (_joint.isConnected() == false)
-          if (_joint.isActive)
+        if (_joint.isConnected == false)
+          if (_joint.active)
             _joint.connect();
           else
             Physics.ƒactive.jointList.push(_joint);

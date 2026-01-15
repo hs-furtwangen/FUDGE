@@ -81,7 +81,7 @@ namespace Fudge {
 
     protected contextMenuCallback(_item: Electron.MenuItem, _window: Electron.BrowserWindow, _event: Electron.Event): void {
       ƒ.Debug.fudge(`MenuSelect: Item-id=${CONTEXTMENU[_item.id]}`);
-      let iSubclass: number = _item["iSubclass"];
+      let iSubclass: number = ContextMenu.getSubclassIndex(_item);
       let component: typeof ƒ.Component;
 
       if (this.protectGraphInstance())
@@ -274,7 +274,7 @@ namespace Fudge {
           break;
         case ƒui.EVENT.DELETE:
         case EVENT_EDITOR.DELETE:
-          let component: ƒ.Component = <ƒ.Component>_event.detail.mutable;
+          let component: ƒ.Component = <ƒ.Component>_event.detail?.mutable;
           if (this.protectGraphInstance() || !component)
             return;
           History.save(HISTORY.REMOVE, this.node, component);
@@ -306,7 +306,7 @@ namespace Fudge {
           break;
         case ƒui.EVENT.MUTATE:
           let controller: ControllerDetail = Reflect.get(_event.target, "controller");
-          let mutable: ƒ.Component = <ƒ.Component>controller.getMutable();
+          let mutable: ƒ.Component = <ƒ.Component>controller?.getMutable();
           if (mutable instanceof ƒ.ComponentRigidbody) {
             // mutable.initialize(); 
             mutable.isInitialized = false;

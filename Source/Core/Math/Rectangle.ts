@@ -21,8 +21,12 @@ namespace FudgeCore {
    * Defines a rectangle with position and size and add comfortable methods to it
    * @author Jirka Dell'Oro-Friedl, HFU, 2019
    */
-  export class Rectangle extends Mutable implements Recycable {
+  export class Rectangle extends Mutable implements Recycable, Serializable {
+
+    @edit(Vector2)
     public position: Vector2 = Recycler.get(Vector2);
+
+    @edit(Vector2)
     public size: Vector2 = Recycler.get(Vector2);
 
     public constructor(_x: number = 0, _y: number = 0, _width: number = 1, _height: number = 1, _origin: ORIGIN2D = ORIGIN2D.TOPLEFT) {
@@ -245,6 +249,12 @@ namespace FudgeCore {
       return `ƒ.Rectangle(position:${this.position.toString()}, size:${this.size.toString()}, left:${this.left.toPrecision(5)}, top:${this.top.toPrecision(5)}, right:${this.right.toPrecision(5)}, bottom:${this.bottom.toPrecision(5)})`;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/* */ }
+    public serialize(): Serialization {
+      return serializeDecorations(this);
+    }
+
+    public deserialize(_serialization: Serialization): Promise<Serializable> {
+      return deserializeDecorations(this, _serialization);
+    }
   }
 }

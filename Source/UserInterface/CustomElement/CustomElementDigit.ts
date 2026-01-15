@@ -8,10 +8,6 @@ namespace FudgeUserInterface {
     private static customElement: void = CustomElement.register("fudge-digit", CustomElementDigit);
     protected initialized: boolean = false;
 
-    public constructor() {
-      super();
-    }
-
     public set value(_value: number) {
       _value = Math.trunc(_value);
       if (_value > 9 || _value < 0)

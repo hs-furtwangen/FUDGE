@@ -13,14 +13,5 @@ namespace FudgeCore {
       super();
       this.singleton = false;
     }
-
-    public serialize(): Serialization {
-      return this.getMutator(true);
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      this.mutate(_serialization);
-      return this;
-    }
   }
 }

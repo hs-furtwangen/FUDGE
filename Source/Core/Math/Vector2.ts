@@ -8,7 +8,9 @@ namespace FudgeCore {
    * @authors Lukas Scheuerle, Jirka Dell'Oro-Friedl, HFU, 2019 | Jonas Plotzky, HFU, 2025
    */
   export class Vector2 extends Mutable implements Serializable, Recycable, ArrayConvertible {
+    @edit(Number)
     public x: number;
+    @edit(Number)
     public y: number;
 
     public constructor(_x: number = 0, _y: number = 0) {
@@ -378,25 +380,17 @@ namespace FudgeCore {
 
     //#region Transfer
     public serialize(): Serialization {
-      let serialization: Serialization = this.getMutator();
-      // serialization.toJSON = () => { return `{ "r": ${this.r}, "g": ${this.g}, "b": ${this.b}, "a": ${this.a}}`; };
-      serialization.toJSON = () => { return `[${this.x}, ${this.y}]`; };
+      let serialization: Serialization = this.getMutator(true);
+      serialization.toJSON = () => `[${this.x}, ${this.y}]`;
       return serialization;
     }
 
-    public async deserialize(_serialization: Serialization): Promise<Vector2> {
+    public deserialize(_serialization: Serialization): Vector2 {
       if (typeof (_serialization) == "string") {
         [this.x, this.y] = JSON.parse(<string><unknown>_serialization);
       } else
         this.mutate(_serialization);
       return this;
-    }
-
-    public getMutator(): Mutator {
-      let mutator: Mutator = {
-        x: this.x, y: this.y
-      };
-      return mutator;
     }
 
     public override mutate(_mutator: Mutator): void {
@@ -406,8 +400,6 @@ namespace FudgeCore {
         this.y = _mutator.y;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {/** */ }
-    //#endregion
     //#endregion
   }
 }

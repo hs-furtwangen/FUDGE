@@ -25,3 +25,7 @@ fudge-stepper,
 fudge-select {
   display: block;
 }
+
+.menu-container {
+  display: none;
+}

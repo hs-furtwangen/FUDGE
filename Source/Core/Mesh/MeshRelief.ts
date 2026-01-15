@@ -4,7 +4,6 @@ namespace FudgeCore {
    * Generates a planar Grid and applies a Heightmap-Function to it.
    * @authors Jirka Dell'Oro-Friedl, HFU, 2021 | Moritz Beaugrand, HFU, 2020
    */
-  @enumerate
   export class MeshRelief extends MeshTerrain {
     public static readonly iSubclass: number = Mesh.registerSubclass(MeshRelief);
 
@@ -40,11 +39,11 @@ namespace FudgeCore {
      * The texture to be used as the heightmap.
      * **Caution!** Setting this causes the mesh to be recreated which can be an expensive operation.
      */
-    @enumerate
-    @type(TextureImage)
+    @edit(TextureImage)
     public get texture(): TextureImage {
       return this.#texture;
     }
+
     public set texture(_texture: TextureImage) {
       this.#texture = _texture;
       if (!_texture)
@@ -53,32 +52,34 @@ namespace FudgeCore {
       super.create(resolution, resolution, MeshRelief.createHeightMapFunction(_texture));
     }
 
-    //#region Transfer
     public serialize(): Serialization {
       let serialization: Serialization = super.serialize();
       delete serialization.seed;
       delete serialization.scale;
       delete serialization.resolution;
-
-      if (this.#texture)
-        serialization.idTexture = this.texture.idResource;
-
       return serialization;
     }
+
+    // TODO: Backward compatibility, remove in future version
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
-      if (_serialization.idTexture) 
+
+      if (_serialization.idTexture)
         this.texture = <TextureImage>await Project.getResource(_serialization.idTexture);
-      
+
       return this;
     }
 
-    protected reduceMutator(_mutator: Mutator): void {
-      super.reduceMutator(_mutator);
-      delete _mutator.seed;
-      delete _mutator.scale;
-      delete _mutator.resolution;
+    public async mutate(_mutator: Mutator): Promise<void> {
+      return <Promise<void>><unknown>Mutable.mutateBase(this, _mutator);
     }
-    //#endregion
+
+    public getMutator(_extendable?: boolean): Mutator {
+      let mutator: Mutator = super.getMutator(_extendable);
+      delete mutator.seed;
+      delete mutator.scale;
+      delete mutator.resolution;
+      return mutator;
+    }
   }
 }

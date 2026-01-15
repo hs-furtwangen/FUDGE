@@ -29,16 +29,14 @@ namespace FudgeCore {
 
     public gizmosEnabled: boolean = false;
     public gizmosSelected: Node[];
-    public gizmosFilter: { [_gizmo: string]: boolean } = Object.fromEntries(Component.subclasses // TODO: maybe make this lazy
-      .filter((_class: typeof Component) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
-      .map((_class: typeof Component) => [_class.name, true])
-    );
 
     public componentsPick: RecycableArray<ComponentPick> = new RecycableArray();
 
     #branch: Node = null; // The to render with all its descendants.
     #crc2: CanvasRenderingContext2D = null;
     #canvas: HTMLCanvasElement = null;
+
+    #gizmosFilter: { [_gizmo: string]: boolean };
 
     readonly #rectCanvas: Rectangle = Rectangle.GET(0, 0, 0, 0);
     readonly #rectClient: Rectangle = Rectangle.GET(0, 0, 0, 0);
@@ -93,6 +91,18 @@ namespace FudgeCore {
      */
     public get rectClient(): Rectangle {
       return this.#rectClient;
+    }
+
+    public get gizmosFilter(): { [_gizmo: string]: boolean } {
+      if (!this.#gizmosFilter)
+        this.#gizmosFilter = Object.fromEntries(Component.subclasses
+          .filter((_class: typeof Component) => (_class.prototype).drawGizmos || (_class.prototype).drawGizmosSelected)
+          .map((_class: typeof Component) => [_class.name, true])
+        );
+
+      this.#gizmosFilter[ComponentMesh.name] = false;
+
+      return this.#gizmosFilter;
     }
 
     /**
