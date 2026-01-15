@@ -111,6 +111,12 @@ namespace FudgeCore {
     }
 
     public deserialize(_serialization: Serialization): Promise<Serializable> {
+
+      // TODO: backwards compatibility, remove in future versions
+      if (_serialization.Component?.active !== undefined) {
+        this.active = _serialization.Component.active;
+      }
+
       return deserializeDecorations(this, _serialization);
     }
   }

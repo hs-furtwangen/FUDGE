@@ -298,6 +298,9 @@ namespace FudgeCore {
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
 
+      if (_serialization.pivot != undefined)
+        this.mtxPivot.deserialize(_serialization.pivot);
+
       if (_serialization.backgroundColor != undefined)
         this.clrBackground.deserialize(_serialization.backgroundColor);
 
