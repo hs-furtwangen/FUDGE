@@ -13,31 +13,27 @@
               "ComponentLight": [
                 {
                   "ƒ.ComponentLight": {
+                    "active": true,
                     "lightType": "LightAmbient",
-                    "pivot": {
+                    "color": "[0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1]",
+                    "intensity": 1,
+                    "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
-                    },
-                    "color": "[0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1]",
-                    "intensity": 1,
-                    "Component": {
-                      "active": true
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
+                    "active": true,
                     "lightType": "LightDirectional",
-                    "pivot": {
+                    "color": "[0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1]",
+                    "intensity": 1,
+                    "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
-                    },
-                    "color": "[0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1]",
-                    "intensity": 1,
-                    "Component": {
-                      "active": true
                     }
                   }
                 }

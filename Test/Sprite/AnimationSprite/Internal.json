@@ -1,48 +1,43 @@
 {
   "MeshSprite|2023-01-08T11:22:54.261Z|98107": {
     "ƒ.MeshSprite": {
-      "idResource": "MeshSprite|2023-01-08T11:22:54.261Z|98107",
       "name": "Quad",
-      "type": "MeshSprite"
+      "idResource": "MeshSprite|2023-01-08T11:22:54.261Z|98107"
     }
   },
   "Material|2023-01-08T11:23:45.480Z|92509": {
     "ƒ.Material": {
+      "coat": {
+        "@type": "ƒ.CoatTextured",
+        "alphaClip": 0.01,
+        "color": "[0.7333333333333333, 0.6666666666666666, 0.6666666666666666, 0.91]",
+        "texture": "TextureImage|2023-01-16T14:41:22.268Z|03995"
+      },
       "name": "Mario",
       "idResource": "Material|2023-01-08T11:23:45.480Z|92509",
-      "shader": "ShaderLitTextured",
-      "coat": {
-        "ƒ.CoatTextured": {
-          "alphaClip": 0.01,
-          "color": "[0.7333333333333333, 0.6666666666666666, 0.6666666666666666, 0.91]",
-          "idTexture": "TextureImage|2023-01-16T14:41:22.268Z|03995"
-        }
-      }
+      "shader": "ƒ.ShaderLitTextured"
     }
   },
   "TextureImage|2023-01-16T14:41:22.268Z|03995": {
     "ƒ.TextureImage": {
-      "url": "Image\\Mario_Spritesheet.png",
-      "type": "TextureImage",
-      "Texture": {
-        "idResource": "TextureImage|2023-01-16T14:41:22.268Z|03995",
-        "name": "Mario",
-        "mipmap": "CRISP",
-        "wrap": "CLAMP"
-      }
+      "mipmap": 0,
+      "wrap": 1,
+      "name": "Mario",
+      "idResource": "TextureImage|2023-01-16T14:41:22.268Z|03995",
+      "url": "Image\\Mario_Spritesheet.png"
     }
   },
   "Animation|2023-01-08T11:24:34.193Z|38529": {
     "ƒ.Animation": {
-      "idResource": "Animation|2023-01-08T11:24:34.193Z|38529",
+      "fps": 30,
       "name": "Interpol",
+      "idResource": "Animation|2023-01-08T11:24:34.193Z|38529",
       "labels": {
         "Walk": 228.69954655700658
       },
       "events": {
         "StepX": 666.6666559441381
       },
-      "framesPerSecond": 30,
       "animationStructure": {
         "components": {
           "ComponentMesh": {
@@ -64,7 +59,7 @@
                         "slopeOut": 0
                       }
                     ],
-                    "keyType": "Number",
+                    "classType": "Number",
                     "animationSequence": true
                   }
                 }
@@ -90,7 +85,7 @@
                         "slopeOut": 0
                       }
                     ],
-                    "keyType": "Number",
+                    "classType": "Number",
                     "animationSequence": true
                   }
                 }
@@ -103,42 +98,37 @@
   },
   "AnimationSprite|2023-01-20T13:15:02.775Z|75740": {
     "ƒ.AnimationSprite": {
+      "fps": 4,
+      "name": "Sprite",
       "idResource": "AnimationSprite|2023-01-20T13:15:02.775Z|75740",
-      "idTexture": "TextureImage|2023-01-16T14:41:22.268Z|03995",
+      "texture": "TextureImage|2023-01-16T14:41:22.268Z|03995",
       "frames": 10,
       "wrapAfter": 6,
       "start": "[0, 0]",
       "size": "[16, 24]",
       "next": "[16, 0]",
       "wrap": "[0, 24]",
-      "Animation": {
-        "idResource": "AnimationSprite|2023-01-20T13:15:02.775Z|75740",
-        "name": "Sprite",
-        "labels": {},
-        "events": {},
-        "framesPerSecond": 4,
-        "animationStructure": {}
-      }
+      "labels": {},
+      "events": {},
+      "animationStructure": {}
     }
   },
   "MeshCube|2023-01-25T18:52:17.765Z|10476": {
     "ƒ.MeshCube": {
-      "idResource": "MeshCube|2023-01-25T18:52:17.765Z|10476",
       "name": "Cube",
-      "type": "MeshCube"
+      "idResource": "MeshCube|2023-01-25T18:52:17.765Z|10476"
     }
   },
   "Material|2023-01-25T18:52:25.854Z|15054": {
     "ƒ.Material": {
+      "coat": {
+        "@type": "ƒ.CoatColored",
+        "alphaClip": 0.01,
+        "color": "[1, 1, 1, 0.6]"
+      },
       "name": "Grey",
       "idResource": "Material|2023-01-25T18:52:25.854Z|15054",
-      "shader": "ShaderLit",
-      "coat": {
-        "ƒ.CoatColored": {
-          "alphaClip": 0.01,
-          "color": "[1, 1, 1, 0.6]"
-        }
-      }
+      "shader": "ƒ.ShaderLit"
     }
   },
   "Graph|2023-01-08T11:23:10.539Z|92636": {
@@ -149,61 +139,52 @@
         "ComponentMesh": [
           {
             "ƒ.ComponentMesh": {
-              "idMesh": "MeshSprite|2023-01-08T11:22:54.261Z|98107",
-              "pivot": {
+              "active": true,
+              "mtxPivot": {
                 "translation": "[0, 0.75, 0]",
                 "rotation": "[0, 0, 0]",
                 "scaling": "[1, 1.5, 1]"
               },
-              "Component": {
-                "active": true
-              }
+              "mesh": "MeshSprite|2023-01-08T11:22:54.261Z|98107"
             }
           }
         ],
         "ComponentMaterial": [
           {
             "ƒ.ComponentMaterial": {
-              "sortForAlpha": false,
-              "clrPrimary": "[1, 1, 1, 1]",
-              "clrSecondary": "[1, 1, 1, 1]",
-              "pivot": {
+              "active": true,
+              "material": "Material|2023-01-08T11:23:45.480Z|92509",
+              "color": "[1, 1, 1, 1]",
+              "mtxPivot": {
                 "translation": "[0.3333333432674408, 0.5]",
                 "rotation": 0,
                 "scaling": "[0.1666666716337204, 0.5]"
               },
-              "Component": {
-                "active": true
-              },
-              "idMaterial": "Material|2023-01-08T11:23:45.480Z|92509"
+              "sortForAlpha": false
             }
           }
         ],
         "ComponentAnimation": [
           {
             "ƒ.ComponentAnimation": {
-              "Component": {
-                "active": true
-              },
+              "active": true,
+              "scale": 1,
+              "animateInEditor": false,
               "animation": "AnimationSprite|2023-01-20T13:15:02.775Z|75740",
               "playmode": "loop",
               "quantization": "discrete",
-              "scale": 1,
-              "scaleWithGameTime": true,
-              "animateInEditor": false
+              "scaleWithGameTime": true
             }
           }
         ],
         "ComponentTransform": [
           {
             "ƒ.ComponentTransform": {
-              "local": {
+              "active": true,
+              "mtxLocal": {
                 "translation": "[0, 0, 0]",
                 "rotation": "[0, 0, 0]",
                 "scaling": "[1, 1, 1]"
-              },
-              "Component": {
-                "active": true
               }
             }
           }
@@ -211,41 +192,36 @@
         "ComponentRigidbody": [
           {
             "ƒ.ComponentRigidbody": {
-              "initialization": "TO_MESH",
-              "friction": 0.2,
-              "restitution": 0.2,
+              "active": true,
+              "typeBody": 0,
+              "typeCollider": 0,
+              "collisionGroup": 1,
               "mass": 1,
               "dampTranslation": 0.1,
               "dampRotation": 0.1,
+              "effectRotation": "[1, 1, 1]",
               "effectGravity": -1,
-              "typeBody": "DYNAMIC",
-              "typeCollider": "CUBE",
+              "friction": 0.2,
+              "restitution": 0.2,
               "isTrigger": false,
-              "id": 0,
-              "pivot": {
+              "mtxPivot": {
                 "translation": "[0, 0.75, 0]",
                 "rotation": "[0, 0, 0]",
                 "scaling": "[1, 1.5, 1]"
               },
-              "Component": {
-                "active": true
-              }
+              "collisionMask": 31,
+              "initialization": 0
             }
           }
         ],
         "JointWelding": [
           {
             "ƒ.JointWelding": {
-              "Joint": {
-                "nameChildToConnect": "Cube",
-                "internalCollision": false,
-                "breakForce": 100,
-                "breakTorque": 100,
-                "anchor": "[0, 0, 0]",
-                "Component": {
-                  "active": true
-                }
-              }
+              "active": true,
+              "anchor": "[0, 0, 0]",
+              "breakTorque": 0,
+              "breakForce": 0,
+              "internalCollision": false
             }
           }
         ]
@@ -259,46 +235,39 @@
               "ComponentMesh": [
                 {
                   "ƒ.ComponentMesh": {
-                    "idMesh": "MeshCube|2023-01-25T18:52:17.765Z|10476",
-                    "pivot": {
+                    "active": true,
+                    "mtxPivot": {
                       "translation": "[0.0762845054268837, -0.5, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "Component": {
-                      "active": true
-                    }
+                    "mesh": "MeshCube|2023-01-25T18:52:17.765Z|10476"
                   }
                 }
               ],
               "ComponentMaterial": [
                 {
                   "ƒ.ComponentMaterial": {
-                    "sortForAlpha": false,
-                    "clrPrimary": "[1, 1, 1, 1]",
-                    "clrSecondary": "[1, 1, 1, 1]",
-                    "pivot": {
+                    "active": true,
+                    "material": "Material|2023-01-25T18:52:25.854Z|15054",
+                    "color": "[1, 1, 1, 1]",
+                    "mtxPivot": {
                       "translation": "[0.6730769276618958, 0.6730769276618958]",
                       "rotation": 0,
                       "scaling": "[1, 1]"
                     },
-                    "Component": {
-                      "active": true
-                    },
-                    "idMaterial": "Material|2023-01-25T18:52:25.854Z|15054"
+                    "sortForAlpha": false
                   }
                 }
               ],
               "ComponentTransform": [
                 {
                   "ƒ.ComponentTransform": {
-                    "local": {
+                    "active": true,
+                    "mtxLocal": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 4.577070236206055, 0]",
                       "scaling": "[1, 1, 1]"
-                    },
-                    "Component": {
-                      "active": true
                     }
                   }
                 }
@@ -306,40 +275,38 @@
               "ComponentRigidbody": [
                 {
                   "ƒ.ComponentRigidbody": {
-                    "initialization": "TO_MESH",
-                    "friction": 0.2,
-                    "restitution": 0.2,
+                    "active": false,
+                    "typeBody": 0,
+                    "typeCollider": 0,
+                    "collisionGroup": 1,
                     "mass": 1,
                     "dampTranslation": 0.1,
                     "dampRotation": 0.1,
+                    "effectRotation": "[1, 1, 1]",
                     "effectGravity": 1,
-                    "typeBody": "DYNAMIC",
-                    "typeCollider": "CUBE",
+                    "friction": 0.2,
+                    "restitution": 0.2,
                     "isTrigger": false,
-                    "id": 1,
-                    "pivot": {
+                    "mtxPivot": {
                       "translation": "[0, -0.5, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "Component": {
-                      "active": false
-                    }
+                    "collisionMask": 31,
+                    "initialization": 0
                   }
                 }
               ],
               "ComponentAnimation": [
                 {
                   "ƒ.ComponentAnimation": {
-                    "Component": {
-                      "active": true
-                    },
+                    "active": true,
+                    "scale": 1,
+                    "animateInEditor": false,
                     "animation": "Animation|2023-01-08T11:24:34.193Z|38529",
                     "playmode": "loop",
                     "quantization": "continous",
-                    "scale": 1,
-                    "scaleWithGameTime": false,
-                    "animateInEditor": false
+                    "scaleWithGameTime": false
                   }
                 }
               ]
@@ -354,14 +321,11 @@
   },
   "TextureImage|2023-01-16T14:08:04.970Z|41098": {
     "ƒ.TextureImage": {
-      "url": "Image\\TextureFUDGE.png",
-      "type": "TextureImage",
-      "Texture": {
-        "idResource": "TextureImage|2023-01-16T14:08:04.970Z|41098",
-        "name": "FUDGE",
-        "mipmap": "CRISP",
-        "wrap": "CLAMP"
-      }
+      "mipmap": 0,
+      "wrap": 1,
+      "name": "FUDGE",
+      "idResource": "TextureImage|2023-01-16T14:08:04.970Z|41098",
+      "url": "Image\\TextureFUDGE.png"
     }
   }
 }
