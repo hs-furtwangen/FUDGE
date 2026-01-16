@@ -1,18 +1,31 @@
 
 
 namespace FudgeCore {
+
+  // TODO: think about a better way to opt-out of serialization than a global weakset or maybe default value objects should be handled differently?
+  const serializeSkip: WeakSet<object> = new WeakSet();
+
   /**
-   * Decorator to mark properties of a class for nested serialization. Primitives and enums will be serialized as is. {@link Serializable}s will be serialized nested (via {@link Serializable.serialize}/{@link Serializable.deserialize}).
+   * Skip the given instance during {@link FudgeCore.serializeDecorations decoration based serialization}.
+   * This is useful for default value objects or singletons that should not be serialized/deserialized as properties.
+   */
+  export function serializeSkipInstance<T extends object>(_instance: T): T {
+    serializeSkip.add(_instance);
+    return _instance;
+  }
+
+  /**
+   * Decorator to mark properties of a class for decorations based serialization:
    * 
-   * - To serialize a function type (typeof `_type`), use the {@link serializeFunction} decorator.
-   * - To serialize {@link Node} or {@link SerializableResource} references, use the {@link serializeReference} decorator.
-   * - To serialize with type information for polymorphic reconstruction, use the {@link serializeReconstruct} decorator.
+   * - Primitives and enums will be serialized as is. 
+   * - {@link Serializable}s will be serialized nested (via {@link Serializable.serialize}/{@link Serializable.deserialize}).
+   * - {@link SerializableResource}s will be serialized as references to their resource ID in the {@link Project}, if registered, otherwise nested (as {@link Serializable}).
+   * - {@link Node}s will be serialized as paths relative to the {@link Component} they are a property of.
+   * 
+   * To serialize a function type (typeof `_type`), use the {@link serializeFunction} decorator.
    * 
    * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance. 
    * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
-   * 
-   * **⚠️ Warning:** Do not use with {@link SerializableResource} unless you manually deregister them from the project. 
-   * Otherwise, they will automatically register themselves when deserialized, potentially causing ID conflicts.
    * 
    * **Example:**
    * ```typescript
@@ -43,8 +56,6 @@ namespace FudgeCore {
    * import f = FudgeCore;
    *
    * export class MyScript extends f.ComponentScript {
-   *   @f.serializeReference(f.Material) // serialize a reference to a material in the project
-   *   public material: f.Material;
    *
    *   @f.serialize(f.Material) // serialize nested
    *   public nestedMaterial: f.Material;
@@ -53,7 +64,7 @@ namespace FudgeCore {
    *     super();
    *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
    *     
-   *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
+   *     // ⚠️ important: deregister the resource, to serialize it nested.
    *     f.Project.deregister(this.nestedMaterial);
    * 
    *     // remove properties that are not needed
@@ -188,13 +199,17 @@ namespace FudgeCore {
           if (Project.hasResource(idResource)) {
             _serialization[key] = idResource;
             break;
-          }
+          } 
         // if resource is not registered serialize nested
         case "serializable":
+          if (serializeSkip.has(<object>value)) // opt-out for default value objects
+            break;
+
           if (value.constructor == descriptors[key].type) // compact serialization if non polymorphic
             _serialization[key] = (<Serializable>value).serialize();
-          else
+          else {
             _serialization[key] = Serializer.serializeFlat(<Serializable>value);
+          }
           break;
         case "node":
           _serialization[key] = Node.PATH_FROM_TO(<Component>_instance, <Node>value);

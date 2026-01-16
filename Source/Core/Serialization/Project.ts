@@ -13,7 +13,7 @@ namespace FudgeCore {
   export interface SerializableResource extends Serializable {
     name: string;
     idResource: string;
-    readonly type: string;
+    readonly type: string; // TODO: check if this can be removed, seems to be unused?
 
     /** 
      * Discriminant getter used to identify resources at runtime.

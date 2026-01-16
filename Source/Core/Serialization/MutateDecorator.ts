@@ -11,15 +11,16 @@ namespace FudgeCore {
 
   //#region @mutate
   /**
-   * Decorator to mark properties of a class for nested mutation.
+   * Decorator to mark properties of a class for decorator based mutation.
    * 
    * This allows the intended type of the property to be known by the editor (at runtime), making it:
    * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
    * - Display the appropriate input element, even if the property has not been set (is `undefined`).
-   *
-   * - To mutate using a function type (typeof `_type`), use the {@link mutateFunction} decorator.
-   * - To mutate using a {@link Node} or {@link SerializableResource} reference, use the {@link mutateReference} decorator.
-   * - To establish a property order (in the editor), use the {@link order} decorator.
+   * - Enable appropriate property actions (e.g. assign existing/create new instances) based on the type.
+   * 
+   * To mutate using a function type (typeof `_type`), use the {@link mutateFunction} decorator.
+   * 
+   * To establish a property order (in the editor), use the {@link order} decorator.
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
@@ -136,7 +137,7 @@ namespace FudgeCore {
    * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor. 
    * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
    * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
-   * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link mutate} decorators to take effect.
+   * Needs to be used in conjunction with the {@link edit} or {@link mutate} decorators to take effect.
    *
    * @author Jonas Plotzky, HFU, 2025
    */
@@ -181,9 +182,9 @@ namespace FudgeCore {
   //#region @create
   /**
    * Decorator to provide a list of options for creating new instances of a property.
-   * Similar to @select, but for creating new objects instead of selecting existing ones.
+   * Similar to {@link assign}, but for creating new objects instead of assigning existing ones.
    *
-   * @param _getOptions A function returning a map of display names to constructors or factory functions.
+   * @param _getOptions A function returning a map of option names to constructors or factory functions to create new values.
    */
   export function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void {
     return function (_value: unknown, _context: ClassPropertyDecoratorContext): void {
@@ -203,10 +204,10 @@ namespace FudgeCore {
 
   //#region @assign
   /**
-   * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
+   * Decorator to provide a list of assignment options for a property of a {@link Mutable}. Displays a combo select element in the editor.
    * The provided function will be executed to retrieve the select options.
    * 
-   * The combo select displays properties via their `name` property or {@link toString}.
+   * The combo select displays properties via their `name` property (if available) or via their `toString()` representation otherwise.
    * 
    * **Example**:
    * ```typescript
@@ -233,7 +234,7 @@ namespace FudgeCore {
    * export class MyScript extends f.ComponentScript {
    *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
    * 
-   *   @f.select(getOptions) // display a combo select with the options returned by getOptions
+   *   @f.assign(getOptions) // display a combo select with the options returned by getOptions
    *   @f.mutate(MyClass) // no default select options for MyClass
    *   public myOption: MyClass;
    * }

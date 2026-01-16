@@ -4,6 +4,16 @@ namespace FudgeCore {
     public static normal: TextureBase64 = new TextureDefault("TextureNormalDefault", TextureDefault.getNormal(), MIPMAP.MEDIUM);
     public static toon: TextureBase64 = new TextureDefault("TextureToonDefault", TextureDefault.getToon(), MIPMAP.SMOOTH, WRAP.CLAMP);
 
+    static {
+      delete this.color.idResource;
+      delete this.normal.idResource;
+      delete this.toon.idResource;
+
+      serializeSkipInstance(this.color);
+      serializeSkipInstance(this.normal);
+      serializeSkipInstance(this.toon);
+    }
+
     // TODO: maybe make these lazy
     public static iconLight: TextureBase64 = new TextureDefault("IconDefaultLight", TextureDefault.getIconLight(), MIPMAP.BLURRY, WRAP.CLAMP, 256, 256);
     public static iconCamera: TextureBase64 = new TextureDefault("IconDefaultCamera", TextureDefault.getIconCamera(), MIPMAP.BLURRY, WRAP.CLAMP, 256, 256);

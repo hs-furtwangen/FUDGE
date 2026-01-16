@@ -743,15 +743,16 @@ declare namespace FudgeCore {
      */
     type WrapperToPrimitve<T> = T extends String ? string : T extends Number ? number : T extends Boolean ? boolean : never;
     /**
-     * Decorator to mark properties of a class for nested mutation.
+     * Decorator to mark properties of a class for decorator based mutation.
      *
      * This allows the intended type of the property to be known by the editor (at runtime), making it:
      * - A valid drop target (e.g., for objects like {@link Node}, {@link Texture}, {@link Mesh}).
      * - Display the appropriate input element, even if the property has not been set (is `undefined`).
+     * - Enable appropriate property actions (e.g. assign existing/create new instances) based on the type.
      *
-     * - To mutate using a function type (typeof `_type`), use the {@link mutateFunction} decorator.
-     * - To mutate using a {@link Node} or {@link SerializableResource} reference, use the {@link mutateReference} decorator.
-     * - To establish a property order (in the editor), use the {@link order} decorator.
+     * To mutate using a function type (typeof `_type`), use the {@link mutateFunction} decorator.
+     *
+     * To establish a property order (in the editor), use the {@link order} decorator.
      *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
@@ -778,7 +779,7 @@ declare namespace FudgeCore {
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
      * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
-     * Needs to be used in conjunction with the {@link edit}, {@link mutate} or {@link mutate} decorators to take effect.
+     * Needs to be used in conjunction with the {@link edit} or {@link mutate} decorators to take effect.
      *
      * @author Jonas Plotzky, HFU, 2025
      */
@@ -791,16 +792,16 @@ declare namespace FudgeCore {
     function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
     /**
      * Decorator to provide a list of options for creating new instances of a property.
-     * Similar to @select, but for creating new objects instead of selecting existing ones.
+     * Similar to {@link assign}, but for creating new objects instead of assigning existing ones.
      *
-     * @param _getOptions A function returning a map of display names to constructors or factory functions.
+     * @param _getOptions A function returning a map of option names to constructors or factory functions to create new values.
      */
     function create<T, V>(_getOptions: PropertyCreateOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
     /**
-     * Decorator to provide a list of select options for a property of a {@link Mutable}. Displays a combo select element in the editor.
+     * Decorator to provide a list of assignment options for a property of a {@link Mutable}. Displays a combo select element in the editor.
      * The provided function will be executed to retrieve the select options.
      *
-     * The combo select displays properties via their `name` property or {@link toString}.
+     * The combo select displays properties via their `name` property (if available) or via their `toString()` representation otherwise.
      *
      * **Example**:
      * ```typescript
@@ -827,7 +828,7 @@ declare namespace FudgeCore {
      * export class MyScript extends f.ComponentScript {
      *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
      *
-     *   @f.select(getOptions) // display a combo select with the options returned by getOptions
+     *   @f.assign(getOptions) // display a combo select with the options returned by getOptions
      *   @f.mutate(MyClass) // no default select options for MyClass
      *   public myOption: MyClass;
      * }
@@ -840,17 +841,22 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Decorator to mark properties of a class for nested serialization. Primitives and enums will be serialized as is. {@link Serializable}s will be serialized nested (via {@link Serializable.serialize}/{@link Serializable.deserialize}).
+     * Skip the given instance during {@link FudgeCore.serializeDecorations decoration based serialization}.
+     * This is useful for default value objects or singletons that should not be serialized/deserialized as properties.
+     */
+    function serializeSkipInstance<T extends object>(_instance: T): T;
+    /**
+     * Decorator to mark properties of a class for decorations based serialization:
      *
-     * - To serialize a function type (typeof `_type`), use the {@link serializeFunction} decorator.
-     * - To serialize {@link Node} or {@link SerializableResource} references, use the {@link serializeReference} decorator.
-     * - To serialize with type information for polymorphic reconstruction, use the {@link serializeReconstruct} decorator.
+     * - Primitives and enums will be serialized as is.
+     * - {@link Serializable}s will be serialized nested (via {@link Serializable.serialize}/{@link Serializable.deserialize}).
+     * - {@link SerializableResource}s will be serialized as references to their resource ID in the {@link Project}, if registered, otherwise nested (as {@link Serializable}).
+     * - {@link Node}s will be serialized as paths relative to the {@link Component} they are a property of.
+     *
+     * To serialize a function type (typeof `_type`), use the {@link serializeFunction} decorator.
      *
      * Decorated properties are serialized by calling {@link serializeDecorations} / {@link deserializeDecorations} on an instance.
      * For builtin classes like {@link Component}, this is done automatically when the {@link Serializable.serialize} / {@link Serializable.deserialize} method is called.
-     *
-     * **⚠️ Warning:** Do not use with {@link SerializableResource} unless you manually deregister them from the project.
-     * Otherwise, they will automatically register themselves when deserialized, potentially causing ID conflicts.
      *
      * **Example:**
      * ```typescript
@@ -881,8 +887,6 @@ declare namespace FudgeCore {
      * import f = FudgeCore;
      *
      * export class MyScript extends f.ComponentScript {
-     *   @f.serializeReference(f.Material) // serialize a reference to a material in the project
-     *   public material: f.Material;
      *
      *   @f.serialize(f.Material) // serialize nested
      *   public nestedMaterial: f.Material;
@@ -891,7 +895,7 @@ declare namespace FudgeCore {
      *     super();
      *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
      *
-     *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
+     *     // ⚠️ important: deregister the resource, to serialize it nested.
      *     f.Project.deregister(this.nestedMaterial);
      *
      *     // remove properties that are not needed
@@ -949,11 +953,8 @@ declare namespace FudgeCore {
         order?: number;
     }
     /**
-     * Decorator to mark properties of a class for nested mutation and serialization.
+     * Decorator to mark properties of a class for decoration based mutation and serialization.
      * See {@link mutate} and {@link serialize} decorators for more information.
-     *
-     * **⚠️ Warning:** Do not use with {@link SerializableResource} unless you manually deregister them from the project.
-     * Otherwise, they will automatically register themselves when deserialized, potentially causing ID conflicts.
      *
      * **Example:**
      * ```typescript
@@ -981,34 +982,6 @@ declare namespace FudgeCore {
      *   }
      * }
      * ```
-     *
-     * **Example Nested Resource:**
-     * ```typescript
-     * import f = FudgeCore;
-     *
-     * export class MyScript extends f.ComponentScript {
-     *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
-     *
-     *   @f.editReference(f.Material) // edit and serialize a reference to a material in the project
-     *   public material: f.Material;
-     *
-     *   @f.edit(f.Material) // edit and serialize nested
-     *   public nestedMaterial: f.Material;
-     *
-     *   public constructor() {
-     *     super();
-     *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
-     *
-     *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
-     *     f.Project.deregister(this.nestedMaterial);
-     *
-     *     // remove properties that are not needed
-     *     delete this.nestedMaterial.idResource;
-     *     delete this.nestedMaterial.name;
-     *   }
-     * }
-     * ```
-     *
      * @author Jonas Plotzky, HFU, 2025
      */
     function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;

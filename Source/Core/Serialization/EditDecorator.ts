@@ -5,11 +5,8 @@ namespace FudgeCore {
   }
 
   /**
-   * Decorator to mark properties of a class for nested mutation and serialization.
+   * Decorator to mark properties of a class for decoration based mutation and serialization.
    * See {@link mutate} and {@link serialize} decorators for more information.
-   * 
-   * **⚠️ Warning:** Do not use with {@link SerializableResource} unless you manually deregister them from the project. 
-   * Otherwise, they will automatically register themselves when deserialized, potentially causing ID conflicts.
    * 
    * **Example:**
    * ```typescript
@@ -37,38 +34,8 @@ namespace FudgeCore {
    *   }
    * }
    * ```
-   * 
-   * **Example Nested Resource:**
-   * ```typescript
-   * import f = FudgeCore;
-   *
-   * export class MyScript extends f.ComponentScript {
-   *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
-   *
-   *   @f.editReference(f.Material) // edit and serialize a reference to a material in the project
-   *   public material: f.Material;
-   *
-   *   @f.edit(f.Material) // edit and serialize nested
-   *   public nestedMaterial: f.Material;
-   *
-   *   public constructor() {
-   *     super();
-   *     this.nestedMaterial = new f.Material("NestedMaterial", f.ShaderPhong);
-   *     
-   *     // ⚠️ important: deregister nested resource, otherwise it will double duty as resource!
-   *     f.Project.deregister(this.nestedMaterial);
-   * 
-   *     // remove properties that are not needed
-   *     delete this.nestedMaterial.idResource;
-   *     delete this.nestedMaterial.name;
-   *   }
-   * }
-   * ```
-   * 
    * @author Jonas Plotzky, HFU, 2025
    */
-
-
   // primitive type
   export function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
   // primitive type array
@@ -121,34 +88,6 @@ namespace FudgeCore {
   export function editFunction(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return editFactory(_typePrimary, _typeSecondary, true);
   }
-
-  // /**
-  //  * Decorator to mark properties of a class for reference-based mutation and serialization.
-  //  * See {@link mutateReference} and {@link serializeReference} decorators for more information.
-  //  * 
-  //  * **Example:**
-  //  * ```typescript
-  //  * import f = FudgeCore;
-  //  *
-  //  * export class MyScript extends f.ComponentScript {
-  //  *   public static readonly iSubclass: number = f.Component.registerSubclass(MyScript);
-  //  *
-  //  *   @f.editReference(f.Material) // edit and serialize a reference to a material in the project
-  //  *   public resource: f.Material;
-  //  *
-  //  *   @f.editReference(f.Node) // edit and serialize a reference to a node in the hierarchy
-  //  *   public reference: f.Node;
-  //  * }
-  //  * ```
-  //  * 
-  //  * @author Jonas Plotzky, HFU, 2025
-  //  */
-  // export function editReference<T, C extends abstract new (...args: General[]) => T>(_type: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T>) => void;
-  // export function editReference<T, C extends abstract new (...args: General[]) => T>(_collectionType: typeof Array, _valueType: C): (_value: unknown, _context: ClassPropertyDecoratorContext<T extends Node ? Node extends T ? Component : object : object, T[]>) => void;
-
-  // export function editReference(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
-  //   return editFactory(_typePrimary, _typeSecondary, false, true);
-  // }
 
   function editFactory(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return (_value, _context) => {
