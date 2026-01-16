@@ -204,4 +204,12 @@ namespace FudgeCore {
     };
     //#endregion
   }
+
+
+  /**
+   * @deprecated Use ComponentAnimation instead of ComponentAnimator. Exists only for backwards compatibility. Will be removed in future versions.
+   */
+  export class ComponentAnimator extends ComponentAnimation { // TODO: Remove in future versions
+
+  }
 }

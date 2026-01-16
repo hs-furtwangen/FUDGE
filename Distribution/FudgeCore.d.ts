@@ -4880,6 +4880,11 @@ declare namespace FudgeCore {
          */
         private updateScale;
     }
+    /**
+     * @deprecated Use ComponentAnimation instead of ComponentAnimator. Exists only for backwards compatibility. Will be removed in future versions.
+     */
+    class ComponentAnimator extends ComponentAnimation {
+    }
 }
 declare namespace FudgeCore {
     /**
