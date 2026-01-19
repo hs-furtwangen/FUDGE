@@ -1,6 +1,6 @@
 namespace FudgeCore {
   export abstract class ShaderFlatSkin extends Shader {
-    public static readonly iSubclass: number = Shader.registerSubclass(ShaderFlatSkin);
+    // public static readonly iSubclass: number = Shader.registerSubclass(ShaderFlatSkin);
 
     public static define: string[] = [
       "FLAT",
