@@ -52,7 +52,10 @@ namespace FudgeCore {
       crc3.disable(WebGL2RenderingContext.BLEND);
       for (let selected of _nodes)
         for (const node of selected) {
-          if (node.getComponent(ComponentMesh)?.isActive && node.getComponent(ComponentMaterial)?.isActive)
+          const cmpMesh: ComponentMesh = node.getComponent(ComponentMesh);
+          const cmpMaterial: ComponentMaterial = node.getComponent(ComponentMaterial);
+          const cmpParticleSystem: ComponentParticleSystem = node.getComponent(ComponentParticleSystem);
+          if (cmpMesh?.active && cmpMesh.mesh && cmpMaterial?.active && cmpMaterial.material && (!cmpParticleSystem || cmpParticleSystem.active && cmpParticleSystem.particleSystem))
             RenderWebGL.drawNode(node, _cmpCamera);
         }
       crc3.enable(WebGL2RenderingContext.BLEND);

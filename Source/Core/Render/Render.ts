@@ -109,7 +109,7 @@ namespace FudgeCore {
       }
 
       const cmpTransform: ComponentTransform = _branch.getComponent(ComponentTransform);
-      if (cmpTransform?.isActive) {
+      if (cmpTransform?.active) {
         const mtxLocal: Matrix4x4 = cmpTransform.mtxLocal;
         if ((_recalculate ||= mtxLocal.modified)) {
           Matrix4x4.PRODUCT(mtxWorldParent, mtxLocal, mtxWorldBranch);
@@ -119,14 +119,14 @@ namespace FudgeCore {
         mtxWorldBranch.copy(mtxWorldParent); // overwrite readonly mtxWorld of the current node
 
       const cmpRigidbody: ComponentRigidbody = _branch.getComponent(ComponentRigidbody);
-      if (cmpRigidbody?.isActive) { //TODO: support de-/activation throughout
+      if (cmpRigidbody?.active) { //TODO: support de-/activation throughout
         Render.nodesPhysics.push(_branch); // add this node to physics list
         if (!_options?.ignorePhysics)
           this.transformByPhysics(_branch, cmpRigidbody);
       }
 
       const cmpPick: ComponentPick = _branch.getComponent(ComponentPick);
-      if (cmpPick?.isActive) {
+      if (cmpPick?.active) {
         Render.componentsPick.push(cmpPick); // add this component to pick list
       }
 
@@ -135,7 +135,9 @@ namespace FudgeCore {
 
       const cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
       const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
-      if (cmpMesh?.isActive && cmpMaterial?.isActive) {
+
+      if (cmpMesh?.active && cmpMesh.mesh && cmpMaterial?.active && cmpMaterial.material) {
+
         if (cmpMesh.mtxPivot.modified || _recalculate) {
           Matrix4x4.PRODUCT(mtxWorldBranch, cmpMesh.mtxPivot, cmpMesh.mtxWorld);
           cmpMesh.mtxPivot.modified = false;
@@ -146,10 +148,12 @@ namespace FudgeCore {
         _branch.updateRenderData(cmpMesh, cmpMaterial, cmpFaceCamera, cmpParticleSystem);
 
         _branch.radius = cmpMesh.radius;
-        if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
-          Render.nodesAlpha.push(_branch); // add this node to render list
-        else
-          Render.nodesSimple.push(_branch); // add this node to render list
+
+        if (!cmpParticleSystem || (cmpParticleSystem.active && cmpParticleSystem.particleSystem))
+          if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
+            Render.nodesAlpha.push(_branch); // add this node to render list
+          else
+            Render.nodesSimple.push(_branch); // add this node to render list
 
         const material: Material = cmpMaterial.material;
         if (material?.timestampUpdate < Render.timestampUpdate) {
@@ -159,14 +163,14 @@ namespace FudgeCore {
       }
 
       const cmpCamera: ComponentCamera = _branch.getComponent(ComponentCamera) ?? _branch.getComponent(ComponentVRDevice); // checking for both of these is rather slow, maybe only update used cameras after all?
-      if (cmpCamera && cmpCamera.isActive && (cmpCamera.mtxPivot.modified || _recalculate)) {
+      if (cmpCamera && cmpCamera.active && (cmpCamera.mtxPivot.modified || _recalculate)) {
         Matrix4x4.PRODUCT(mtxWorldBranch, cmpCamera.mtxPivot, cmpCamera.mtxWorld);
         cmpCamera.mtxPivot.modified = false;
       }
 
       const cmpSkeletons: readonly ComponentSkeleton[] = _branch.getComponents(ComponentSkeleton);
       for (let cmpSkeleton of cmpSkeletons)
-        if (cmpSkeleton?.isActive)
+        if (cmpSkeleton?.active)
           Render.componentsSkeleton.push(cmpSkeleton);
 
       for (let child of _branch.getChildren()) {

@@ -473,7 +473,7 @@ namespace FudgeCore {
       const cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
       const cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
       const cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
-      if (cmpParticleSystem?.isActive) {
+      if (cmpParticleSystem?.active) {
         RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
         return;
       }
@@ -486,7 +486,7 @@ namespace FudgeCore {
       material.coat.useRenderData();
 
       const cmpSkeleton: ComponentSkeleton = cmpMesh.skeleton;
-      if (cmpSkeleton?.isActive)
+      if (cmpSkeleton?.active)
         cmpSkeleton.useRenderBuffer();
 
       let mtxWorldOverride: Matrix4x4;
@@ -563,7 +563,7 @@ namespace FudgeCore {
       // TODO: think about disabling blending for all opaque objects, this might improve performance 
       // as otherwise the 3 color attachments (color, position and normals) all need to be blended
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
-      crc3.drawBuffers(cmpAmbientOcclusion?.isActive ? RenderWebGL.attachmentsColorPositionNormal : RenderWebGL.attachmentsColor);
+      crc3.drawBuffers(cmpAmbientOcclusion?.active ? RenderWebGL.attachmentsColorPositionNormal : RenderWebGL.attachmentsColor);
 
       crc3.disable(WebGL2RenderingContext.BLEND);
       for (let node of _nodesOpaque)
@@ -571,7 +571,7 @@ namespace FudgeCore {
       crc3.enable(WebGL2RenderingContext.BLEND);
 
       // ambient occlusion pass
-      if (cmpAmbientOcclusion?.isActive)
+      if (cmpAmbientOcclusion?.active)
         RenderWebGLComponentAmbientOcclusion.draw(_cmpCamera, cmpAmbientOcclusion);
 
       // transparent pass TODO: think about disabling depth write for all transparent objects -> this might make depth mask option in component particle system obsolete
@@ -584,10 +584,10 @@ namespace FudgeCore {
       // crc3.depthMask(true);
 
       // bloom pass
-      if (cmpBloom?.isActive)
+      if (cmpBloom?.active)
         RenderWebGLComponentBloom.draw(cmpBloom);
 
-      if (cmpOutline?.isActive && cmpOutline.selection)
+      if (cmpOutline?.active && cmpOutline.selection)
         RenderWebGLComponentOutline.draw(cmpOutline.selection, _cmpCamera, cmpOutline);
 
       // copy framebuffer to canvas
