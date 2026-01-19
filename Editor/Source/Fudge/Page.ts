@@ -192,7 +192,7 @@ namespace Fudge {
 
         case ƒui.EVENT.CREATE:
           const type: Function = (<CustomEvent>_event).detail?.type;
-          if (ƒ.isSerializableResource(type.prototype)) {
+          if (type && ƒ.isSerializableResource(type.prototype)) {
             const event: EditorEvent = new EditorEvent(EVENT_EDITOR.CREATE, { detail: { sender: Page } });
             Page.broadcast(event);
           }
