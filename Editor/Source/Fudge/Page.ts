@@ -131,8 +131,9 @@ namespace Fudge {
       document.addEventListener(EVENT_EDITOR.UPDATE, Page.hndEvent);
       document.addEventListener(EVENT_EDITOR.CLOSE, Page.hndEvent);
       document.addEventListener(EVENT_EDITOR.CREATE, Page.hndEvent);
-      document.addEventListener(ƒui.EVENT.SAVE_HISTORY, Page.hndEvent);
       document.addEventListener(EVENT_EDITOR.DELETE, Page.hndEvent);
+      document.addEventListener(ƒui.EVENT.SAVE_HISTORY, Page.hndEvent);
+      document.addEventListener(ƒui.EVENT.CREATE, Page.hndEvent);
       // document.addEventListener(EVENT_EDITOR.TRANSFORM, Page.hndEvent);
       document.addEventListener("keyup", Page.hndKey);
     }
@@ -182,14 +183,27 @@ namespace Fudge {
           const detail: ƒ.General = (<CustomEvent>_event).detail;
           await History.save(detail.history, detail.mutable, detail.mutator);
           break;
+          
         case EVENT_EDITOR.CLOSE:
           let view: View = _event.detail.view;
           if (view instanceof Panel)
             Page.panels.splice(Page.panels.indexOf(view), 1);
           break;
+
+        case ƒui.EVENT.CREATE:
+          const type: Function = (<CustomEvent>_event).detail?.type;
+          if (ƒ.isSerializableResource(type.prototype)) {
+            const event: EditorEvent = new EditorEvent(EVENT_EDITOR.CREATE, { detail: { sender: Page } });
+            Page.broadcast(event);
+          }
+          break;
+
         case EVENT_EDITOR.DELETE:
-          if (_event.detail.sender != History)
+          if (_event.detail.sender != Fudge.History)
             return;
+          Page.broadcast(_event);
+          break;
+
         default:
           Page.broadcast(_event);
           break;

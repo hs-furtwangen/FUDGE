@@ -25,6 +25,7 @@ declare namespace FudgeUserInterface {
         path: string[];
         from: T;
         to: T;
+        register?: boolean;
     }
     /**
      * Connects a mutable object to a DOM-Element and synchronizes that mutable with the mutator stored within.

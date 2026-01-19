@@ -9,6 +9,7 @@ namespace FudgeUserInterface {
     path: string[];
     from: T;
     to: T;
+    register?: boolean; // TODO: this is kind of hacky, find a better way to handle resource registration on create
   }
 
   /**
@@ -207,9 +208,10 @@ namespace FudgeUserInterface {
         } catch {
           value = _type();
         }
+
         // if (ƒ.isSerializableResource(value)) {
         //   ƒ.Project.deregister(value);
-        //   delete value.idResource;
+        //   value.idResource = "";
         // }
       }
 
@@ -349,7 +351,7 @@ namespace FudgeUserInterface {
       const mutable: object = ƒ.Mutable.getValue(this.mutable, path.slice(0, -1));
       const key: string = path[path.length - 1];
 
-      let type: Function | Record<string, unknown> = (<CustomEvent>_event).detail?.type;
+      let type: Function = (<CustomEvent>_event).detail?.type;
       let descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(mutable, key);
       if (!descriptor) {
         const parent: object = ƒ.Mutable.getValue(this.mutable, path.slice(0, -2));
@@ -363,7 +365,9 @@ namespace FudgeUserInterface {
       const current: unknown = Reflect.get(mutable, key);
       const incoming: unknown = Controller.createValue(type ?? descriptor.type);
 
-      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: path, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming) } } }));
+      const register: boolean = ƒ.isSerializableResource(incoming) && ƒ.Project.hasResource((<ƒ.SerializableResource>incoming).idResource); // resource registration is a constructor side effect so check if was registered...
+
+      this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: path, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming), register: register } } }));
 
       Reflect.set(mutable, key, incoming);
     };

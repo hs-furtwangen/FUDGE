@@ -139,7 +139,7 @@ namespace Fudge {
      */
     private static async processMutable(_do: DO, _step: historyStep, _source: ƒ.IMutable, _target: ƒ.Mutator | ƒui.PropertyChangeRecord): Promise<void> {
       let current: ƒ.Mutator;
-      
+
       switch (_step[0]) {
         case HISTORY.MUTATE:
           if (!ƒ.isMutable(_source))
@@ -152,9 +152,13 @@ namespace Fudge {
         case HISTORY.CHANGE_PROPERTY:
           const record: ƒui.PropertyChangeRecord = <ƒui.PropertyChangeRecord>_target;
           const value: unknown = _do == DO.UN ? record.from : record.to;
-          const copiedValue: unknown = await ƒui.Controller.copyValue(value);
 
-          ƒ.Mutable.setValue(_source, record.path, copiedValue);
+          if (ƒ.isSerializableResource(record.to) && record.register) // TODO: this is a bit of a hack, to handle resource registration on create. Maybe multi step undo/redo would be better
+            History.processProject(_do, HISTORY.ADD, ƒ.Project, <ƒ.SerializableResource>record.to);
+
+          const valueCopy: unknown = await ƒui.Controller.copyValue(value);
+          
+          ƒ.Mutable.setValue(_source, record.path, valueCopy);
           break;
       }
 
@@ -163,7 +167,6 @@ namespace Fudge {
         await _source.mutate({}); // just to dispatch mutation event again
       }
     }
-
 
     /**
      * Process deletion and addition of {@link ƒ.SerializableResource}s in the {@link ƒ.Project}
