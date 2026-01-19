@@ -150,7 +150,6 @@ namespace FudgeCore {
       this.url = _url;
       this.image = new Image();
 
-
       // const response: Response = await window.fetch(this.url);
       // const blob: Blob = await response.blob();
       // let objectURL: string = URL.createObjectURL(blob);
@@ -196,9 +195,13 @@ namespace FudgeCore {
   export class TextureBase64 extends Texture {
     public image: HTMLImageElement = new Image();
 
+    @serialize(String)
+    private base64: string;
+
     public constructor(_name: string, _base64: string, _mipmap: MIPMAP = MIPMAP.CRISP, _wrap: WRAP = WRAP.REPEAT, _width?: number, _height?: number) {
       super(_name);
-      this.image.src = _base64;
+      this.base64 = _base64;
+      this.image.src = this.base64;
       this.mipmap = _mipmap;
       this.wrap = _wrap;
       if (_width)
@@ -209,6 +212,12 @@ namespace FudgeCore {
 
     public get texImageSource(): ImageSource {
       return this.image;
+    }
+
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await super.deserialize(_serialization);
+      this.image.src = this.base64;
+      return this;
     }
   }
   /**

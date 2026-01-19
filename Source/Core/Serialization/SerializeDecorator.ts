@@ -1,19 +1,6 @@
 
 
 namespace FudgeCore {
-
-  // TODO: think about a better way to opt-out of serialization than a global weakset or maybe default value objects should be handled differently?
-  const serializeSkip: WeakSet<object> = new WeakSet();
-
-  /**
-   * Skip the given instance during {@link FudgeCore.serializeDecorations decoration based serialization}.
-   * This is useful for default value objects or singletons that should not be serialized/deserialized as properties.
-   */
-  export function serializeSkipInstance<T extends object>(_instance: T): T {
-    serializeSkip.add(_instance);
-    return _instance;
-  }
-
   /**
    * Decorator to mark properties of a class for decorations based serialization:
    * 
@@ -202,9 +189,6 @@ namespace FudgeCore {
           } 
         // if resource is not registered serialize nested
         case "serializable":
-          if (serializeSkip.has(<object>value)) // opt-out for default value objects
-            break;
-
           if (value.constructor == descriptors[key].type) // compact serialization if non polymorphic
             _serialization[key] = (<Serializable>value).serialize();
           else {

@@ -841,11 +841,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Skip the given instance during {@link FudgeCore.serializeDecorations decoration based serialization}.
-     * This is useful for default value objects or singletons that should not be serialized/deserialized as properties.
-     */
-    function serializeSkipInstance<T extends object>(_instance: T): T;
-    /**
      * Decorator to mark properties of a class for decorations based serialization:
      *
      * - Primitives and enums will be serialized as is.
@@ -3845,8 +3840,10 @@ declare namespace FudgeCore {
      */
     export class TextureBase64 extends Texture {
         image: HTMLImageElement;
+        private base64;
         constructor(_name: string, _base64: string, _mipmap?: MIPMAP, _wrap?: WRAP, _width?: number, _height?: number);
         get texImageSource(): ImageSource;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
     /**
      * Texture created from a canvas
@@ -6643,6 +6640,7 @@ declare namespace FudgeCore {
     class CoatTextured extends CoatColored {
         texture: Texture;
         constructor(_color?: Color, _texture?: Texture);
+        useRenderData(): void;
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
@@ -6667,6 +6665,7 @@ declare namespace FudgeCore {
     class CoatRemissiveTexturedNormals extends CoatRemissiveTextured {
         normalMap: Texture;
         constructor(_color?: Color, _texture?: Texture, _normalMap?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        useRenderData(): void;
         deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
@@ -10093,7 +10092,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderFlatSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10107,7 +10105,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderFlatTexturedSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10135,7 +10132,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderGouraudSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10149,7 +10145,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderGouraudTexturedSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10162,7 +10157,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderLitSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
     }
 }
@@ -10175,7 +10169,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderLitTexturedSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10203,7 +10196,6 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderPhongSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10224,14 +10216,12 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     abstract class ShaderPhongTexturedNormalsSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
 }
 declare namespace FudgeCore {
     abstract class ShaderPhongTexturedSkin extends Shader {
-        static readonly iSubclass: number;
         static define: string[];
         static getCoat(): typeof Coat;
     }
@@ -10273,19 +10263,31 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * A texture used as an initial value whenever a texture is required. Manged as singletons through static properties.
+     */
     class TextureDefault extends TextureBase64 {
-        static color: TextureBase64;
-        static normal: TextureBase64;
-        static toon: TextureBase64;
-        static iconLight: TextureBase64;
-        static iconCamera: TextureBase64;
-        static iconAudio: TextureBase64;
+        static color: TextureDefault;
+        static normal: TextureDefault;
+        static toon: TextureDefault;
+        static iconLight: TextureDefault;
+        static iconCamera: TextureDefault;
+        static iconAudio: TextureDefault;
+        private constructor();
         private static getColor;
         private static getNormal;
         private static getToon;
         private static getIconLight;
         private static getIconCamera;
         private static getIconAudio;
+        /**
+         * Serializes the default texture instance by using its static property name (e.g. `TextureDefault.color` => `{ id: "color" }`) as identifier.
+         */
+        serialize(): Serialization;
+        /**
+         * Returns the singleton instance of the serialized default texture.
+         */
+        deserialize(_serialization: Serialization): Promise<TextureDefault>;
     }
 }
 declare namespace FudgeCore {
