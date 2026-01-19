@@ -194,6 +194,9 @@ namespace FudgeCore {
       const metadata: Metadata = _context.metadata;
       const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
       const descriptor: MetaPropertyDescriptor = descriptors[key];
+      if (!descriptor)
+        throw new Error(`@create requires an existing meta property descriptor for property for '${key}'. Add @mutate/@edit before @create.`);
+
       if (descriptor.type == Array)
         descriptor.valueDescriptor.getCreateOptions = _getOptions;
       else
@@ -252,6 +255,9 @@ namespace FudgeCore {
       const metadata: Metadata = _context.metadata;
       const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
       const descriptor: MetaPropertyDescriptor = descriptors[key];
+      if (!descriptor)
+        throw new Error(`@assign requires an existing meta property descriptor for property '${key}'. Add @mutate/@edit before @assign.`);
+
       if (descriptor.type == Array)
         descriptor.valueDescriptor.getAssignOptions = _getOptions;
       else
@@ -291,4 +297,26 @@ namespace FudgeCore {
     return options;
   }
   //#endregion
+
+  //#region @clearable
+  /**
+   * Decorator to mark a property as clearable, allowing it to be set to `undefined` via the editor.
+   * 
+   * @author Jonas Plotzky, HFU, 2026
+   */
+  export function clearable(_value: unknown, _context: ClassPropertyDecoratorContext): void {
+    const key: PropertyKey = _context.name;
+    if (typeof key === "symbol")
+      return;
+
+    const metadata: Metadata = _context.metadata;
+    const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+    const descriptor: MetaPropertyDescriptor = descriptors[key];
+    if (!descriptor)
+      throw new Error(`@clearable requires an existing meta property descriptor for property '${key}'. Add @mutate/@edit before @clearable.`);
+
+    descriptor.clearable = true;
+  }
+  //#endregion
+
 }

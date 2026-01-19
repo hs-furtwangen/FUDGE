@@ -13,6 +13,9 @@ namespace FudgeCore {
     /** The kind of the property. */
     kind: "primitive" | "collection" | "object" | "enum" | "function";
 
+    /** Whether the property can be set to `undefined` via the editor */
+    clearable?: boolean;
+
     /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
     keyDescriptor?: MetaPropertyDescriptor;
 

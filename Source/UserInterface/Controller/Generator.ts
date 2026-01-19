@@ -109,19 +109,17 @@ namespace FudgeUserInterface {
       if (element) {
         element.classList.add("property");
 
-        const prototype: object = type.prototype;
-        const creatable: boolean = 
-          _descriptor.kind != "function" &&
-          // mutant?.constructor !== type &&
-          (_descriptor.kind != "object" || (_descriptor.kind == "object" && prototype && (ƒ.isMutable(prototype) || ƒ.isSerializableResource(prototype))));
-        const clearable: boolean = !(element instanceof CustomElementInitializer);
-        const deletable: boolean = !!_parentMutable; 
+        const creatable: boolean = (element instanceof CustomElementInitializer) && _descriptor.kind != "function";
+        const clearable: boolean = !(element instanceof CustomElementInitializer) && _descriptor.clearable;
+        const deletable: boolean = !!_parentMutable;
 
         const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, creatable, clearable, deletable);
-        if (element instanceof Details || element instanceof DetailsArray)
-          element.summary.appendChild(menu);
-        else 
-          queueMicrotask(() => element.append(menu)); // append after possible connectedCallback
+        if (menu.items.length > 0) {
+          if (element instanceof Details || element instanceof DetailsArray)
+            element.summary.appendChild(menu);
+          else
+            queueMicrotask(() => element.append(menu)); // append after possible connectedCallback
+        }
       }
 
       return element;

@@ -671,6 +671,8 @@ declare namespace FudgeCore {
         type: Function | Record<string, unknown>;
         /** The kind of the property. */
         kind: "primitive" | "collection" | "object" | "enum" | "function";
+        /** Whether the property can be set to `undefined` via the editor */
+        clearable?: boolean;
         /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
         keyDescriptor?: MetaPropertyDescriptor;
         /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
@@ -838,6 +840,12 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2025
      */
     function assign<T, V>(_getOptions: PropertyAssignOptionsGetter<T, V>): (_value: unknown, _context: ClassPropertyDecoratorContext<T, V>) => void;
+    /**
+     * Decorator to mark a property as clearable, allowing it to be set to `undefined` via the editor.
+     *
+     * @author Jonas Plotzky, HFU, 2026
+     */
+    function clearable(_value: unknown, _context: ClassPropertyDecoratorContext): void;
 }
 declare namespace FudgeCore {
     /**
