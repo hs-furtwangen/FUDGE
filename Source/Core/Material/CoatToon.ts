@@ -26,6 +26,9 @@ namespace FudgeCore {
       @edit(Texture)
       public texToon: Texture;
 
+      @RenderManagerCoatToon.decorate
+      public useRenderData(): void { /* injected */ };
+
       // TODO: backwards compatibility, remove in future version
       public async deserialize(_serialization: Serialization): Promise<Serializable> {
         await super.deserialize(_serialization);

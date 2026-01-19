@@ -37,15 +37,36 @@ namespace FudgeCore {
 
     protected static useRenderData(this: Coat): void {
       RenderManagerCoat.useRenderbuffer(this);
+    }
+  }
 
-      if (this instanceof CoatTextured)
-        this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+  /**
+   * @internal
+   */
+  export class RenderManagerCoatTextured extends RenderManagerCoat {
+    protected static override useRenderData(this: CoatTextured): void {
+      super.useRenderData();
+      this.texture.useRenderData(TEXTURE_LOCATION.COLOR.UNIT);
+    }
+  }
 
-      if (this instanceof CoatRemissiveTexturedNormals)
-        this.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+  /**
+   * @internal
+   */
+  export class RenderManagerCoatRemissiveTexturedNormals extends RenderManagerCoat {
+    protected static override useRenderData(this: CoatRemissiveTexturedNormals): void {
+      super.useRenderData();
+      this.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
+    }
+  }
 
-      if (this instanceof CoatToon)
-        this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+  /**
+   * @internal
+   */
+  export class RenderManagerCoatToon extends RenderManagerCoat {
+    protected static override useRenderData(this: CoatToon): void {
+      super.useRenderData();
+      this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
     }
   }
 }
