@@ -18,6 +18,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentParticleSystem);
 
     @order(1)
+    @clearable
     @edit(ParticleSystem)
     public particleSystem: ParticleSystem;
 

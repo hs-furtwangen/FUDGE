@@ -9,6 +9,7 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentAnimation);
 
     @order(1)
+    @clearable
     @edit(Animation)
     public animation: Animation;
 
@@ -155,25 +156,25 @@ namespace FudgeCore {
      * May also be called from updateAnimation().
      */
     private updateAnimationLoop = (_e: Event, _time?: number): Mutator => {
-
-      if (this.animation.totalTime == 0)
+      const animation: Animation = this.animation;
+      if (!animation ||animation.totalTime == 0)
         return null;
 
       let time: number = _time || _time === 0 ? _time : this.#timeLocal.get();
       if (this.quantization == ANIMATION_QUANTIZATION.FRAMES) {
-        time = this.#previous + (1000 / this.animation.fps);
+        time = this.#previous + (1000 / animation.fps);
       }
 
-      let direction: number = this.animation.calculateDirection(time, this.playmode);
-      time = this.animation.getModalTime(time, this.playmode, this.#timeLocal.getOffset());
+      let direction: number = animation.calculateDirection(time, this.playmode);
+      time = animation.getModalTime(time, this.playmode, this.#timeLocal.getOffset());
 
-      this.executeEvents(this.animation.getEventsToFire(this.#previous, time, this.quantization, direction));
+      this.executeEvents(animation.getEventsToFire(this.#previous, time, this.quantization, direction));
 
       if (this.#previous != time) {
         this.#previous = time;
-        time = time % this.animation.totalTime;
+        time = time % animation.totalTime;
 
-        const mutator: Mutator = this.animation.getState(time, direction, this.quantization);
+        const mutator: Mutator = animation.getState(time, direction, this.quantization);
 
         if (this.node)
           this.node.applyAnimation(mutator);

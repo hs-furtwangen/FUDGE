@@ -3434,7 +3434,7 @@ declare namespace FudgeCore {
         constructor();
         protected static registerSubclass(_subclass: typeof Component): number;
         /**
-         * @deprecated use {@link active} instead.
+         * Is true, when the component is active and will be processed.
          */
         get isActive(): boolean;
         /**

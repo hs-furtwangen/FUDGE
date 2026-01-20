@@ -6,6 +6,7 @@ namespace FudgeCore {
   export class ComponentMaterial extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentMaterial);
 
+    @clearable
     @edit(Material)
     public material: Material;
 

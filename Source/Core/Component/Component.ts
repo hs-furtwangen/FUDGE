@@ -35,10 +35,10 @@ namespace FudgeCore {
     protected static registerSubclass(_subclass: typeof Component): number { return Component.subclasses.push(_subclass) - 1; }
 
     /**
-     * @deprecated use {@link active} instead.
+     * Is true, when the component is active and will be processed.
      */
     public get isActive(): boolean {
-      return this.active;
+      return this.#active;
     }
 
     /**
