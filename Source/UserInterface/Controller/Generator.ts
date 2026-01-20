@@ -101,16 +101,11 @@ namespace FudgeUserInterface {
       if (!element)
         element = new CustomElementOutput({ key: _key, label: _key, type: typeName, value: value?.toString() });
 
-      if (!element) { // undefined values without a type can't be displayed
-        console.warn("No interface created for", _mutable.constructor.name, _key);
-        return null;
-      }
-
       if (element) {
         element.classList.add("property");
 
-        const creatable: boolean = (element instanceof CustomElementInitializer) && _descriptor.kind != "function";
-        const clearable: boolean = !(element instanceof CustomElementInitializer) && _descriptor.clearable;
+        const creatable: boolean = mutant == null && _descriptor.kind != "function";
+        const clearable: boolean = mutant != null && _descriptor.clearable;
         const deletable: boolean = !!_parentMutable;
 
         const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, creatable, clearable, deletable);
