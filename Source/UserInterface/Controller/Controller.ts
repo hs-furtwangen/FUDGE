@@ -23,11 +23,11 @@ namespace FudgeUserInterface {
     public domElement: HTMLElement;
     public openStates: Map<string, boolean> = new Map();
     protected timeUpdate: number = 190;
-    protected mutable: ƒ.IMutable;
+    protected mutable: ƒ.Mutable;
 
     private idInterval: number;
 
-    public constructor(_mutable: ƒ.IMutable, _domElement: HTMLElement) {
+    public constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement) {
       this.domElement = _domElement;
       this.setMutable(_mutable);
       // TODO: examine, if this should register to one common interval, instead of each installing its own.
@@ -81,7 +81,7 @@ namespace FudgeUserInterface {
           mutator[key] = element.getMutatorValue();
         else {
           const mutant: unknown = Reflect.get(_mutable, key);
-          if (ƒ.isMutable(mutant) || Array.isArray(mutant))
+          if (mutant instanceof ƒ.Mutable || Array.isArray(mutant))
             mutator[key] = this.getMutator(mutant, element, mutator[key]);
         }
       }
@@ -110,7 +110,7 @@ namespace FudgeUserInterface {
         if (element instanceof CustomElement)
           element.setMutatorValue(value);
         else {
-          if (ƒ.isMutable(mutant) || Array.isArray(mutant))
+          if (mutant instanceof ƒ.Mutable || Array.isArray(mutant))
             this.updateUserInterface(mutant, element, mutator[key], _mutable, key);
         }
       }
@@ -294,11 +294,11 @@ namespace FudgeUserInterface {
       Controller.updateUserInterface(this.mutable, this.domElement);
     }
 
-    public getMutable(): ƒ.IMutable {
+    public getMutable(): ƒ.Mutable {
       return this.mutable;
     }
 
-    public setMutable(_mutable: ƒ.IMutable): void {
+    public setMutable(_mutable: ƒ.Mutable): void {
       this.mutable = _mutable;
     }
 

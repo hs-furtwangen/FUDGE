@@ -9,8 +9,8 @@ namespace FudgeUserInterface {
     /**
      * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
      */
-    public static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator): Details {
-      if (!ƒ.isMutable(_mutable))
+    public static createDetailsFromMutable(_mutable: ƒ.Mutable, _name?: string, _mutator?: ƒ.Mutator): Details {
+      if (!(_mutable instanceof ƒ.Mutable))
         return null;
 
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
@@ -24,7 +24,7 @@ namespace FudgeUserInterface {
     }
 
 
-    public static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray {
+    public static createDetailsFromArray(_mutable: Array<unknown>, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray {
       if (!Array.isArray(_mutable))
         return null;
 
@@ -78,18 +78,17 @@ namespace FudgeUserInterface {
       const value: unknown = Reflect.get(_mutator, _key);
       const type: Function | Record<string, unknown> = _descriptor?.type ?? _type;
       const typeName: string = typeof type == "function" ? type.name : "Enum";
-      const isArray: boolean = Array.isArray(mutant);
 
       let element: HTMLElement;
 
-      if (isArray)
-        element = Generator.createDetailsFromArray(<object>mutant, _key, <ƒ.Mutator>value, _parentMutable ?? _mutable, _parentKey ?? _key);
+      if (Array.isArray(mutant))
+        element = Generator.createDetailsFromArray(mutant, _key, <ƒ.Mutator>value, _parentMutable ?? _mutable, _parentKey ?? _key);
 
       if (!element)
         element = Generator.createMutatorElement(_key, type, value);
 
       if (!element)
-        element = Generator.createDetailsFromMutable(<object>mutant, _key, <ƒ.Mutator>value);
+        element = Generator.createDetailsFromMutable(<ƒ.Mutable>mutant, _key, <ƒ.Mutator>value);
 
       if (!element && _descriptor.getAssignOptions && !_descriptor.getCreateOptions) {
         element = new CustomElementComboSelect({ key: _key, label: _key, type: typeName, action: "assign", placeholder: `${typeName}...` }, value, _descriptor.getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));

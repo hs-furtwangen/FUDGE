@@ -36,9 +36,9 @@ declare namespace FudgeUserInterface {
         domElement: HTMLElement;
         openStates: Map<string, boolean>;
         protected timeUpdate: number;
-        protected mutable: ƒ.IMutable;
+        protected mutable: ƒ.Mutable;
         private idInterval;
-        constructor(_mutable: ƒ.IMutable, _domElement: HTMLElement);
+        constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement);
         /**
          * Recursive method taking an existing mutator as a template
          * and updating its values with those found in the given UI-domElement.
@@ -101,8 +101,8 @@ declare namespace FudgeUserInterface {
         get isRefreshing(): boolean;
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
-        getMutable(): ƒ.IMutable;
-        setMutable(_mutable: ƒ.IMutable): void;
+        getMutable(): ƒ.Mutable;
+        setMutable(_mutable: ƒ.Mutable): void;
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
@@ -125,8 +125,8 @@ declare namespace FudgeUserInterface {
         /**
          * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */
-        static createDetailsFromMutable(_mutable: object, _name?: string, _mutator?: ƒ.Mutator): Details;
-        static createDetailsFromArray(_mutable: object, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray;
+        static createDetailsFromMutable(_mutable: ƒ.Mutable, _name?: string, _mutator?: ƒ.Mutator): Details;
+        static createDetailsFromArray(_mutable: Array<unknown>, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray;
         /**
          * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
          */

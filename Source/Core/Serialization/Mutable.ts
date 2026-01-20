@@ -17,25 +17,6 @@ namespace FudgeCore {
 
   const emptyKeys: readonly string[] = Object.freeze([] as string[]);
 
-  export interface IMutable {
-    type: string;
-
-    /**
-     * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
-     * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
-     */
-    getMutator(_extendable?: boolean): Mutator;
-
-    /**
-     * Updates the attribute values of the instance according to the state of the given mutator.
-     */
-    mutate(_mutator: Mutator): void | Promise<void>;
-  }
-
-  export function isMutable(_object: Object): _object is IMutable {
-    return typeof _object === "object" && _object != null && Reflect.has(_object, "getMutator") && Reflect.has(_object, "mutate");
-  }
-
   /**
    * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
    */
@@ -50,7 +31,7 @@ namespace FudgeCore {
    * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
    * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
    */
-  export abstract class Mutable extends EventTargetUnified implements IMutable {
+  export abstract class Mutable extends EventTargetUnified {
 
     /**
      * Get the value from the given mutation path.
@@ -78,7 +59,7 @@ namespace FudgeCore {
      * Collect applicable properties of the given object and copies of their values in a {@link Mutator}-object.
      */
     public static getMutator(_object: object): Mutator {
-      if (isMutable(_object))
+      if (_object instanceof Mutable)
         return _object.getMutator();
       else
         return Mutable.getMutatorBase(_object);
@@ -88,7 +69,7 @@ namespace FudgeCore {
      * Updates the property values of the given object according to the state of the given mutator.
      */
     public static mutate(_object: object, _mutator: Mutator): void | Promise<void> {
-      if (isMutable(_object))
+      if (_object instanceof Mutable)
         return _object.mutate(_mutator);
       else
         return <Promise<void>><unknown>Mutable.mutateBase(_object, _mutator);
@@ -107,7 +88,7 @@ namespace FudgeCore {
           continue;
 
         const value: unknown = _mutable[key];
-        if (isMutable(value))
+        if (value instanceof Mutable)
           _mutator[key] = value.getMutator(_mutator[key]);
         else if (Array.isArray(value))
           _mutator[key] = Mutable.getMutatorBase(value);
@@ -132,7 +113,7 @@ namespace FudgeCore {
         const mutant: unknown = Reflect.get(_mutable, key);
         const value: unknown = _mutator[key];
 
-        if (value != null && isMutable(mutant))
+        if (value != null && mutant instanceof Mutable)
           await mutant.mutate(value);
         else if (Array.isArray(mutant))
           await Mutable.mutateBase(mutant, value);
@@ -170,7 +151,7 @@ namespace FudgeCore {
     public static updateMutator(_mutable: object, _mutator: Mutator): Mutator {
       for (const key in _mutator) {
         const value: Object = Reflect.get(_mutable, key);
-        if (isMutable(value) || Array.isArray(value))
+        if (value instanceof Mutable || Array.isArray(value))
           Mutable.updateMutator(value, _mutator[key]);
         else
           _mutator[key] = value;

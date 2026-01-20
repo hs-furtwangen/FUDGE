@@ -1037,19 +1037,6 @@ declare namespace FudgeCore {
     interface AnimationMutator {
         [attribute: string]: Float32Array;
     }
-    interface IMutable {
-        type: string;
-        /**
-         * Collect applicable attributes of the instance and copies of their values in a {@link Mutator}-object.
-         * A mutator may be reduced by the descendants of {@link Mutable} to contain only the properties needed.
-         */
-        getMutator(_extendable?: boolean): Mutator;
-        /**
-         * Updates the attribute values of the instance according to the state of the given mutator.
-         */
-        mutate(_mutator: Mutator): void | Promise<void>;
-    }
-    function isMutable(_object: Object): _object is IMutable;
     /**
      * Map from each property of a mutator to its specified type, either a constructor or a map of possible options (for enums).
      */
@@ -1065,7 +1052,7 @@ declare namespace FudgeCore {
      * The provided properties of the {@link Mutator} must match public properties or getters/setters of the object.
      * Otherwise, they will be ignored unless handled by an override of the {@link Mutable.mutate} method in the subclass, and will throw errors in an automatically generated user interface for the object.
      */
-    abstract class Mutable extends EventTargetUnified implements IMutable {
+    abstract class Mutable extends EventTargetUnified {
         /**
          * Get the value from the given mutation path.
          */
@@ -1159,20 +1146,6 @@ declare namespace FudgeCore {
          * Updates the property values of the instance according to the state of the animation mutator. Override to implement custom animation behavior.
          */
         animate(_mutator: AnimationMutator): void;
-    }
-}
-declare namespace FudgeCore {
-    /**
-     * A base class for resources. Extends {@link Mutable}, implements {@link SerializableResource}.
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    abstract class Resource extends Mutable implements SerializableResource {
-        name: string;
-        idResource: string;
-        constructor(_name?: string, _register?: boolean);
-        get isResource(): true;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
     }
 }
 declare namespace FudgeCore {

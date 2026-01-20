@@ -160,30 +160,5 @@ namespace Fudge {
 
       return null;
     }
-
-    private getTargetMutableAndKey(_event: Event): { mutable: object; key: string; parentMutable?: object; parentKey?: string } {
-      const path: string[] = this.getMutatorPath(_event);
-      const mutable: object = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 1));
-      const key: string = path[path.length - 1];
-
-      let parentMutable: object;
-      let parentKey: string;
-      if (!ƒ.isMutable(mutable)) { // must be a collection type, adjust to parent mutable
-        parentMutable = ƒ.Mutable.getValue(this.mutable, path.toSpliced(path.length - 2));
-        parentKey = path[path.length - 2];
-      }
-
-      // let path: ƒ.General[] = _event.composedPath();
-      // path = path.slice(0, path.indexOf(this.domElement));
-      // path = path.filter(_element => _element instanceof HTMLElement && (_element.getAttribute("type")));
-      // path.reverse();
-
-      // let mutable: object = this.mutable;
-      // let keys: string[] = path.map(_element => _element.getAttribute("key"));
-      // for (let i: number = 0; i < keys.length - 1; i++)
-      //   mutable = mutable[keys[i]];
-
-      return { mutable, key, parentMutable, parentKey };
-    }
   }
 }

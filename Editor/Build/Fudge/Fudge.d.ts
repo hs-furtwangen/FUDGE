@@ -178,7 +178,7 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
-    type historySource = ƒ.IMutable | ƒ.Node | typeof ƒ.Project;
+    type historySource = ƒ.Mutable | ƒ.Node | typeof ƒ.Project;
     type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | ƒui.PropertyChangeRecord;
     enum HISTORY {
         MUTATE = 0,
@@ -417,7 +417,6 @@ declare namespace Fudge {
         private hndDrop;
         private filterDragDrop;
         private getAncestorWithType;
-        private getTargetMutableAndKey;
     }
 }
 declare namespace Fudge {
