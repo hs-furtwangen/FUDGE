@@ -16,11 +16,16 @@ namespace Picking {
   );
 
   class Data extends ƒ.Mutable {
-    public red: number = 100;
-    public green: number = 100;
-    public blue: number = 100;
-    public yellow: number = 100;
-    public cursor: number = 100;
+    @ƒ.mutate(Number)
+    public red: number = 1;
+    @ƒ.mutate(Number)
+    public green: number = 1;
+    @ƒ.mutate(Number)
+    public blue: number = 1;
+    @ƒ.mutate(Number)
+    public yellow: number = 1;
+    @ƒ.mutate(Number)
+    public cursor: number = 1;
     protected reduceMutator(_mutator: ƒ.Mutator): void {/* */ }
   }
   let data: Data = new Data();
@@ -30,7 +35,9 @@ namespace Picking {
     ƒ.Debug.fudge("Start Picking");
 
     let domHud: HTMLDivElement = document.querySelector("div#ui");
-    uiController = new ƒUi.Controller(data, domHud);
+    const details: HTMLDetailsElement = ƒUi.Generator.createDetailsFromMutable(data);
+    uiController = new ƒUi.Controller(data, details);
+    domHud.appendChild(details);
 
     await FudgeCore.Project.loadResourcesFromHTML();
     let canvas: HTMLCanvasElement = document.querySelector("canvas");
@@ -42,7 +49,8 @@ namespace Picking {
 
     // setup the viewport
     cmpCamera = new ƒ.ComponentCamera();
-    Reflect.set(cmpCamera, "far", 7.3);
+    cmpCamera.near = 1;
+    cmpCamera.far = 7.3;
 
     cmpCamera.mtxPivot.translateX(0.3);
     cmpCamera.mtxPivot.translateZ(2.1);

@@ -11,6 +11,7 @@
   <script type="text/javascript" src="../../../Distribution/FudgeUserInterface.js">  </script>
   <script type="text/javascript" src="Picking.js">  </script>
   <link rel="stylesheet" href="../../TestInstructions.css" />
+  <link rel="stylesheet" href="../../UI.css" />
   <link type="resources" src="QuadStack.json" />
   <style>
     html,
@@ -31,13 +32,8 @@
       position: fixed;
       top: 10px;
       right: 10px;
-      background-color: ivory;
     }
 
-    span {
-      display: inline-block;
-      width: 40px;
-    }
   </style>
 </head>
 
@@ -70,12 +66,8 @@
   <!--Canvas for FUDGE to render to-->
   <canvas class="fullscreen"></canvas>
 
-  <div id="ui">
-    <span>Red</span> <input type="number" key="red" value="0" /><br />
-    <span>Green</span> <input type="number" key="green" value="0" /><br />
-    <span>Blue</span> <input type="number" key="blue" value="0" /><br />
-    <span>Yellow</span> <input type="number" key="yellow" value="0" /><br />
-    <span>Cursor</span> <input type="number" key="Cursor" value="0" /><br />
+  <div id="ui" class="ui-canvas">
+
 
   </div>
 </body>
