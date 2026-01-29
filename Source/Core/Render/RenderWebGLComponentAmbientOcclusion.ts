@@ -47,8 +47,11 @@ namespace FudgeCore {
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationConstant"], _cmpAmbientOcclusion.attenuationConstant);
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationLinear"], _cmpAmbientOcclusion.attenuationLinear);
       crc3.uniform1f(ShaderAmbientOcclusion.uniforms["u_fAttenuationQuadratic"], _cmpAmbientOcclusion.attenuationQuadratic);
-      crc3.uniform2f(ShaderAmbientOcclusion.uniforms["u_vctResolution"], RenderWebGL.getCanvasRectangle().width, RenderWebGL.getCanvasRectangle().height);
       crc3.uniform3fv(ShaderAmbientOcclusion.uniforms["u_vctCamera"], _cmpCamera.mtxWorld.translation.toArray(RenderWebGLComponentAmbientOcclusion.#dataCamera));
+
+      const rectViewport: Rectangle = RenderWebGL.getViewportRectangle();
+      crc3.uniform2f(ShaderAmbientOcclusion.uniforms["u_vctFramebufferSize"], crc3.drawingBufferWidth, crc3.drawingBufferHeight);
+      crc3.uniform4f(ShaderAmbientOcclusion.uniforms["u_vctViewport"], rectViewport.x, rectViewport.y, rectViewport.width, rectViewport.height);
 
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentAmbientOcclusion.fboOut);
       RenderWebGL.setBlendMode(BLEND.SUBTRACTIVE);

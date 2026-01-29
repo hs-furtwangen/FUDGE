@@ -191,7 +191,7 @@ namespace ScreenToRay {
     let result: ƒ.Vector2;
     result = viewport.frameClientToCanvas.getPoint(posMouse, rect);
     setUiPoint("Canvas", result);
-    rect = viewport.rectCanvas;
+    rect = viewport.getCanvasRectangle();
     result = viewport.frameCanvasToDestination.getPoint(result, rect);
     setUiPoint("Destination", result);
     result = viewport.frameDestinationToSource.getPoint(result, viewport.rectSource);
@@ -310,7 +310,7 @@ namespace ScreenToRay {
         case "ClientToCanvas": {
           let uiMap: { ui: UI.FieldSet, framing: ƒ.FramingScaled } = <{ ui: UI.FramingScaled, framing: ƒ.FramingScaled }>uiMaps[name];
           uiMap.ui.set(uiMap.framing);
-          uiMap.ui.set({ Result: viewport.rectCanvas });
+          uiMap.ui.set({ Result: viewport.getCanvasRectangle() });
           break;
         }
         case "CanvasToDestination": {

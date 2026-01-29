@@ -18,8 +18,9 @@ namespace FudgeCore {
      * Maps a point in the given frame according to this framing
      * @param _pointInFrame The point in the frame given
      * @param _rectFrame The frame the point is relative to
+     * @param _out Optional vector to store the result in.
      */
-    public abstract getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle): Vector2;
+    public abstract getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out?: Vector2): Vector2;
 
     /**
      * Maps a point in a given rectangle back to a calculated frame of origin
@@ -93,12 +94,11 @@ namespace FudgeCore {
       this.normHeight = _normHeight;
     }
 
-    public getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle): Vector2 {
-      let result: Vector2 = new Vector2(
+    public getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(
         this.normWidth * (_pointInFrame.x - _rectFrame.x),
         this.normHeight * (_pointInFrame.y - _rectFrame.y)
       );
-      return result;
     }
 
     public getPointInverse(_point: Vector2, _rect: Rectangle): Vector2 {
@@ -122,12 +122,11 @@ namespace FudgeCore {
     public margin: Border = { left: 0, top: 0, right: 0, bottom: 0 };
     public padding: Border = { left: 0, top: 0, right: 0, bottom: 0 };
 
-    public getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle): Vector2 {
-      let result: Vector2 = new Vector2(
+    public getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+      return _out.set(
         _pointInFrame.x - this.padding.left - this.margin.left * _rectFrame.width,
         _pointInFrame.y - this.padding.top - this.margin.top * _rectFrame.height
       );
-      return result;
     }
     public getPointInverse(_point: Vector2, _rect: Rectangle): Vector2 {
       let result: Vector2 = new Vector2(
@@ -152,5 +151,38 @@ namespace FudgeCore {
     public getMutator(): Mutator {
       return { margin: this.margin, padding: this.padding };
     }
+  }
+
+  /**
+   * Extends {@link FramingScaled}, but resulting rectangle dimensions and point coordinates are truncated to integer values.
+   */
+  export class FramingScaledInteger extends mixinFramingInteger(FramingScaled) { }
+
+  /**
+   * Extends {@link FramingComplex}, but resulting rectangle dimensions and point coordinates are truncated to integer values.
+   */
+  export class FramingComplexInteger extends mixinFramingInteger(FramingComplex) { }
+  
+  /**
+   * Mixin that adds integer truncation to framing class.
+   */
+  // eslint-disable-next-line 
+  function mixinFramingInteger<T extends new (..._args: General[]) => Framing>(_base: T) {
+    return class extends _base {
+      public getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out: Vector2 = Recycler.reuse(Vector2)): Vector2 {
+        // @ts-expect-error: Compiler limitation with abstract methods in mixins
+        return super.getPoint(_pointInFrame, _rectFrame, _out).trunc();
+      }
+
+      public getPointInverse(_point: Vector2, _rect: Rectangle): Vector2 {
+        // @ts-expect-error: Compiler limitation with abstract methods in mixins
+        return super.getPointInverse(_point, _rect).trunc();
+      }
+
+      public getRect(_rectFrame: Rectangle, _rectOut: Rectangle = Recycler.reuse(Rectangle)): Rectangle {
+        // @ts-expect-error: Compiler limitation with abstract methods in mixins
+        return super.getRect(_rectFrame, _rectOut).trunc();
+      }
+    };
   }
 }

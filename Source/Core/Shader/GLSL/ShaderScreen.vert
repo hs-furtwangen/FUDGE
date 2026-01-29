@@ -3,7 +3,7 @@ precision mediump float;
 precision highp int;
 /**
  * Creates a fullscreen triangle which cotains the screen quad and sets the texture coordinates accordingly.
- * @authors Roland Heer, HFU, 2023 | Jirka Dell'Oro-Friedl, HFU, 2023 | Jonas Plotzky, HFU, 2023
+ * @authors Roland Heer, HFU, 2023 | Jirka Dell'Oro-Friedl, HFU, 2023 | Jonas Plotzky, HFU, 2023-2026
  *
  *  2  3 .
  *       .  .
@@ -21,6 +21,8 @@ precision highp int;
  */
 
 // uniform vec2 u_vctResolution;
+uniform vec2 u_vctFramebufferSize; // the size of the bound framebuffer
+uniform vec4 u_vctViewport; // the portion of the buffer to render to (x, y, width, height)
 
 out vec2 v_vctTexture;
 
@@ -35,6 +37,8 @@ void main() {
   float y = float((gl_VertexID / 2) * 4); // 0, 0, 4
   gl_Position = vec4(x - 1.0, y - 1.0, 0.0, 1.0); // (-1, -1), (3, -1), (-1, 3)
   v_vctTexture = vec2(x / 2.0, y / 2.0);  // (0, 0), (2, 0), (0, 2) -> interpolation will yield (0, 0), (1, 0), (0, 1) as the positions are double the size of the screen
+  v_vctTexture = (v_vctTexture * u_vctViewport.zw + u_vctViewport.xy) / u_vctFramebufferSize; // adjust texture coordinates to viewport within the buffer
+  // TODO: using a sub-region of the framebuffer we need to clamp uvs to the edges of the viewport when sampling neighboring pixels in the fragment shaders, if this causes artifacts we need to manually clamp to the viewport bounds.
 
   // #ifdef SAMPLE
 

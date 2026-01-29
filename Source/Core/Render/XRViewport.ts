@@ -65,8 +65,7 @@ namespace FudgeCore {
       await session.updateRenderState({ baseLayer: baseLayer });
       Render.setFramebufferTarget(baseLayer.framebuffer);
       Render.setCanvasSize(baseLayer.framebufferWidth, baseLayer.framebufferHeight);
-      Render.setRenderRectangle(Rectangle.GET(0, 0, baseLayer.framebufferWidth, baseLayer.framebufferHeight));
-      Render.adjustAttachments();
+      Render.setViewportRectangle(Rectangle.GET(0, 0, baseLayer.framebufferWidth, baseLayer.framebufferHeight));
       this.adjustingFrames = false; // web xr handles this now
       this.vrDevice = <ComponentVRDevice>this.camera;
       this.initializeReferenceSpace();
@@ -115,7 +114,7 @@ namespace FudgeCore {
       for (let view of pose.views) {
         let viewport: globalThis.XRViewport = glLayer.getViewport(view);
         Render.setViewport(viewport.x, viewport.y, viewport.width, viewport.height);
-        Render.setScissorTest(true, viewport.x, viewport.y, viewport.width, viewport.height);
+        // Render.setScissorTest(true, viewport.x, viewport.y, viewport.width, viewport.height);
 
         if (this.useVRController)
           this.setControllerConfigs(_xrFrame);
@@ -131,7 +130,7 @@ namespace FudgeCore {
 
       // reset for other render operations e.g. picking
       Render.setScissorTest(false);
-      Render.setRenderRectangle(Render.getRenderRectangle());
+      Render.setViewportRectangle(Render.getViewportRectangle());
     }
 
     /**

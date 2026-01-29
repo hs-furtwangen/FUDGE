@@ -1326,6 +1326,10 @@ declare namespace FudgeCore {
          */
         negate(): Vector2;
         /**
+         * Truncates the components of this vector to integer values.
+         */
+        trunc(): Vector2;
+        /**
          * Normalizes this to the given length, 1 by default
          * @returns A reference to this vector.
          */
@@ -2946,6 +2950,10 @@ declare namespace FudgeCore {
          */
         getIntersection(_rect: Rectangle, _out?: Rectangle): Rectangle;
         /**
+         * Truncates the position and size of this rectangle to integer values.
+         */
+        trunc(): Rectangle;
+        /**
          * Creates a string representation of this rectangle.
          */
         toString(): string;
@@ -3043,11 +3051,10 @@ declare namespace FudgeCore {
         static texPosition: WebGLTexture;
         static texNormal: WebGLTexture;
         static texDepthStencil: WebGLTexture;
+        private static canvas;
         private static crc3;
-        /** The area of the offscreen-canvas in CSS pixels. */
-        private static rectCanvas;
         /** The area on the offscreen-canvas to render to. */
-        private static rectRender;
+        private static rectViewport;
         private static fboScene;
         private static fboOut;
         private static readonly attachmentsColorPositionNormal;
@@ -3066,7 +3073,6 @@ declare namespace FudgeCore {
          * Return a reference to the offscreen-canvas.
          *
          * - Do not read or modify the canvas dimensions directly.
-         * - Use {@link getCanvasRectangle} to retrieve the size of the offscreen-canvas.
          * - Use {@link setCanvasSize} to set the size of the offscreen-canvas.
          */
         static getCanvas(): HTMLCanvasElement;
@@ -3074,12 +3080,6 @@ declare namespace FudgeCore {
          * Return a reference to the rendering context
          */
         static getRenderingContext(): WebGL2RenderingContext;
-        /**
-         * Returns a reference to the rectangle describing the size of the offscreen-canvas. x,y are 0 at all times.
-         *
-         * Do not modify the rectangle directly, use {@link setCanvasSize} instead.
-         */
-        static getCanvasRectangle(): Rectangle;
         /**
          * Set the size of the offscreen-canvas.
          *
@@ -3089,15 +3089,18 @@ declare namespace FudgeCore {
         /**
          * Retrieve the area on the offscreen-canvas the camera image gets rendered to.
          *
-         * Do not modify the rectangle directly, use {@link setRenderRectangle} instead.
+         * Do not modify the rectangle directly, use {@link setViewportRectangle} instead.
          */
-        static getRenderRectangle(): Rectangle;
+        static getViewportRectangle(): Rectangle;
         /**
          * Set the area on the offscreen-canvas to render the camera image to.
+         *
+         * ⚠️ NOTE: In WebGL the y-axis in viewport coordinates points upwards and the origin is at the bottom left.
+         * However, in many 2D contexts (like HTML canvas), the y-axis points downwards with the origin at the top left.
          */
-        static setRenderRectangle(_rect: Rectangle): void;
+        static setViewportRectangle(_rect: Rectangle): void;
         /**
-         * Clear the offscreen renderbuffer with the given {@link Color}
+         * Clear the bound framebuffer with the given {@link Color}.
          */
         static clear(_color?: Color, _colors?: boolean, _depth?: boolean, _stencil?: boolean): void;
         /**
@@ -6729,7 +6732,7 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    interface Border {
+    export interface Border {
         left: number;
         top: number;
         right: number;
@@ -6741,13 +6744,14 @@ declare namespace FudgeCore {
      * @authors Jirka Dell'Oro-Friedl, HFU, 2019
      * @link https://github.com/hs-furtwangen/FUDGE/wiki/Framing
      */
-    abstract class Framing extends Mutable {
+    export abstract class Framing extends Mutable {
         /**
          * Maps a point in the given frame according to this framing
          * @param _pointInFrame The point in the frame given
          * @param _rectFrame The frame the point is relative to
+         * @param _out Optional vector to store the result in.
          */
-        abstract getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle): Vector2;
+        abstract getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out?: Vector2): Vector2;
         /**
          * Maps a point in a given rectangle back to a calculated frame of origin
          * @param _point The point in the rectangle
@@ -6765,7 +6769,7 @@ declare namespace FudgeCore {
      * The resulting rectangle has a fixed width and height and display should scale to fit the frame
      * Points are scaled in the same ratio
      */
-    class FramingFixed extends Framing {
+    export class FramingFixed extends Framing {
         width: number;
         height: number;
         constructor(_width?: number, _height?: number);
@@ -6781,14 +6785,14 @@ declare namespace FudgeCore {
      * Width and height of the resulting rectangle are fractions of those of the frame, scaled by normed values normWidth and normHeight.
      * Display should scale to fit the frame and points are scaled in the same ratio
      */
-    class FramingScaled extends Framing {
+    export class FramingScaled extends Framing {
         normWidth: number;
         normHeight: number;
         /**
          * Sets this framing to the given normed width and height
          */
         setScale(_normWidth: number, _normHeight: number): void;
-        getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle): Vector2;
+        getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out?: Vector2): Vector2;
         getPointInverse(_point: Vector2, _rect: Rectangle): Vector2;
         getRect(_rectFrame: Rectangle, _rectOut?: Rectangle): Rectangle;
     }
@@ -6796,14 +6800,53 @@ declare namespace FudgeCore {
      * The resulting rectangle fits into a margin given as fractions of the size of the frame given by normAnchor
      * plus an absolute padding given by pixelBorder. Display should fit into this.
      */
-    class FramingComplex extends Framing {
+    export class FramingComplex extends Framing {
         margin: Border;
         padding: Border;
-        getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle): Vector2;
+        getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out?: Vector2): Vector2;
         getPointInverse(_point: Vector2, _rect: Rectangle): Vector2;
         getRect(_rectFrame: Rectangle, _rectOut?: Rectangle): Rectangle;
         getMutator(): Mutator;
     }
+    const FramingScaledInteger_base: {
+        new (..._args: General[]): {
+            getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out?: Vector2): Vector2;
+            getPointInverse(_point: Vector2, _rect: Rectangle): Vector2;
+            getRect(_rectFrame: Rectangle, _rectOut?: Rectangle): Rectangle;
+            get type(): string;
+            getMutator(_extendable?: boolean): Mutator;
+            mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>;
+            animate(_mutator: AnimationMutator): void;
+            addEventListener(_type: string, _handler: EventListenerUnified, _options?: boolean | AddEventListenerOptions): void;
+            removeEventListener(_type: string, _handler: EventListenerUnified, _options?: boolean | AddEventListenerOptions): void;
+            dispatchEvent(_event: EventUnified): boolean;
+        };
+    } & typeof FramingScaled;
+    /**
+     * Extends {@link FramingScaled}, but resulting rectangle dimensions and point coordinates are truncated to integer values.
+     */
+    export class FramingScaledInteger extends FramingScaledInteger_base {
+    }
+    const FramingComplexInteger_base: {
+        new (..._args: General[]): {
+            getPoint(_pointInFrame: Vector2, _rectFrame: Rectangle, _out?: Vector2): Vector2;
+            getPointInverse(_point: Vector2, _rect: Rectangle): Vector2;
+            getRect(_rectFrame: Rectangle, _rectOut?: Rectangle): Rectangle;
+            get type(): string;
+            getMutator(_extendable?: boolean): Mutator;
+            mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>;
+            animate(_mutator: AnimationMutator): void;
+            addEventListener(_type: string, _handler: EventListenerUnified, _options?: boolean | AddEventListenerOptions): void;
+            removeEventListener(_type: string, _handler: EventListenerUnified, _options?: boolean | AddEventListenerOptions): void;
+            dispatchEvent(_event: EventUnified): boolean;
+        };
+    } & typeof FramingComplex;
+    /**
+     * Extends {@link FramingComplex}, but resulting rectangle dimensions and point coordinates are truncated to integer values.
+     */
+    export class FramingComplexInteger extends FramingComplexInteger_base {
+    }
+    export {};
 }
 declare namespace FudgeCore {
     /**
@@ -8741,10 +8784,10 @@ declare namespace FudgeCore {
         camera: ComponentCamera;
         rectSource: Rectangle;
         rectDestination: Rectangle;
-        frameClientToCanvas: FramingScaled;
-        frameCanvasToDestination: FramingComplex;
-        frameDestinationToSource: FramingScaled;
-        frameSourceToRender: FramingScaled;
+        frameClientToCanvas: FramingScaledInteger;
+        frameCanvasToDestination: FramingComplexInteger;
+        frameDestinationToSource: FramingScaledInteger;
+        frameSourceToRender: FramingScaledInteger;
         adjustingFrames: boolean;
         adjustingCamera: boolean;
         physicsDebugMode: PHYSICS_DEBUGMODE;
@@ -8764,14 +8807,7 @@ declare namespace FudgeCore {
          */
         get context(): CanvasRenderingContext2D;
         /**
-         * The rectangle of the canvas area in CSS pixels. Use this to access the canvas width and height,
-         * but without incuring browser internal garbage collection.
-         *
-         * Adjusted internally by {@link adjustFrames}, do not modify.
-         */
-        get rectCanvas(): Rectangle;
-        /**
-         * The rectangle of the canvas area as displayed (considering css). Use this to access canvas clientWidth and clientHeight,
+         * The rectangle of the canvas area as displayed (considering css) in logical pixels. Use this to access canvas clientWidth and clientHeight,
          * but without incuring browser internal garbage collection.
          *
          * Adjusted automatically on canvas resize, do not modify.
@@ -8790,11 +8826,12 @@ declare namespace FudgeCore {
         disconnect(): void;
         /**
          * Retrieve the size of the destination canvas as a rectangle, x and y are always 0.
-         * @deprecated Use {@link rectCanvas} instead.
          */
         getCanvasRectangle(): Rectangle;
         /**
          * Retrieve the client rectangle the canvas is displayed and fit in, x and y are always 0.
+         *
+         * As of Chrome Version 144.0.7559.97 reading clientWidth/Height frequently incurs major and cpp garbage collection.
          * @deprecated Use {@link rectClient} instead.
          */
         getClientRectangle(): Rectangle;

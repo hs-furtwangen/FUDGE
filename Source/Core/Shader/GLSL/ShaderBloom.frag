@@ -12,7 +12,7 @@ uniform int u_iMode; // 0: extract, 1: downsample, 2: upsample, 3: apply
 uniform float u_fThreshold;
 uniform float u_fIntensity;
 uniform float u_fHighlightDesaturation;
-uniform vec2 u_vctTexel;
+uniform vec2 u_vctHalfTexel;
 
 uniform sampler2D u_texSource;
 
@@ -67,23 +67,23 @@ vec3 extract(vec2 _vctTexture) {
 
 vec4 downsample(vec2 _vctTexture) {
   vec4 sum = texture(u_texSource, _vctTexture) * 4.0;
-  sum += texture(u_texSource, _vctTexture - u_vctTexel.xy);
-  sum += texture(u_texSource, _vctTexture + u_vctTexel.xy);
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x, -u_vctTexel.y));
-  sum += texture(u_texSource, _vctTexture - vec2(u_vctTexel.x, -u_vctTexel.y));
+  sum += texture(u_texSource, _vctTexture - u_vctHalfTexel.xy);
+  sum += texture(u_texSource, _vctTexture + u_vctHalfTexel.xy);
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x, -u_vctHalfTexel.y));
+  sum += texture(u_texSource, _vctTexture - vec2(u_vctHalfTexel.x, -u_vctHalfTexel.y));
 
   return sum / 8.0;
 }
 
 vec4 upsample(vec2 _vctTexture) {
-  vec4 sum = texture(u_texSource, _vctTexture + vec2(-u_vctTexel.x * 2.0, 0.0));
-  sum += texture(u_texSource, _vctTexture + vec2(-u_vctTexel.x, u_vctTexel.y)) * 2.0;
-  sum += texture(u_texSource, _vctTexture + vec2(0.0, u_vctTexel.y * 2.0));
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x, u_vctTexel.y)) * 2.0;
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x * 2.0, 0.0));
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x, -u_vctTexel.y)) * 2.0;
-  sum += texture(u_texSource, _vctTexture + vec2(0.0, -u_vctTexel.y * 2.0));
-  sum += texture(u_texSource, _vctTexture + vec2(-u_vctTexel.x, -u_vctTexel.y)) * 2.0;
+  vec4 sum = texture(u_texSource, _vctTexture + vec2(-u_vctHalfTexel.x * 2.0, 0.0));
+  sum += texture(u_texSource, _vctTexture + vec2(-u_vctHalfTexel.x, u_vctHalfTexel.y)) * 2.0;
+  sum += texture(u_texSource, _vctTexture + vec2(0.0, u_vctHalfTexel.y * 2.0));
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x, u_vctHalfTexel.y)) * 2.0;
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x * 2.0, 0.0));
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x, -u_vctHalfTexel.y)) * 2.0;
+  sum += texture(u_texSource, _vctTexture + vec2(0.0, -u_vctHalfTexel.y * 2.0));
+  sum += texture(u_texSource, _vctTexture + vec2(-u_vctHalfTexel.x, -u_vctHalfTexel.y)) * 2.0;
   return sum / 12.0;
 }
 

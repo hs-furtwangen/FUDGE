@@ -92,8 +92,8 @@ namespace FudgeCore {
 
       // reset
       RenderWebGL.resetFramebuffer();
-      const canvasRectangle: Rectangle = RenderWebGL.getCanvasRectangle();
-      crc3.viewport(0, 0, canvasRectangle.width, canvasRectangle.height);
+      const renderRectangle: Rectangle = RenderWebGL.getViewportRectangle();
+      crc3.viewport(0, 0, renderRectangle.width, renderRectangle.height);
 
       return picked;
     }

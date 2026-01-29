@@ -18,7 +18,7 @@ uniform float u_fBias;
 uniform float u_fAttenuationConstant;
 uniform float u_fAttenuationLinear;
 uniform float u_fAttenuationQuadratic;
-uniform vec2 u_vctResolution;
+uniform vec4 u_vctViewport;
 uniform vec3 u_vctCamera;
 // uniform mat4 u_mtxViewProjectionInverse;
 
@@ -74,14 +74,15 @@ void main() {
   vec2 vctRandom = normalize(texture(u_texNoise, v_vctTexture).xy * 2.0 - 1.0);
   float fDepth = (length(vctPosition - u_vctCamera) - u_fNear) / (u_fFar - u_fNear); // linear euclidean depth in range [0,1], when changing to view space, don't subtract camera position
   float fKernelRadius = u_fSampleRadius * (1.0 - fDepth);
+  vec2 vctResolution = u_vctViewport.zw;
 
   float fOcclusion = 0.0;
   for (int i = 0; i < 4; ++i) {
     vec2 vctK1 = reflect(kernel[i], vctRandom);
     vec2 vctK2 = vec2(vctK1.x * sin45 - vctK1.y * sin45, vctK1.x * sin45 + vctK1.y * sin45);
 
-    vctK1 /= u_vctResolution;
-    vctK2 /= u_vctResolution;
+    vctK1 /= vctResolution;
+    vctK2 /= vctResolution;
 
     vctK1 *= fKernelRadius;
     vctK2 *= fKernelRadius;

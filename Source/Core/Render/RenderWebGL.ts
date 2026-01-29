@@ -100,18 +100,17 @@ namespace FudgeCore {
    * Methods and attributes of this class should not be called directly, only through {@link Render}
    */
   export abstract class RenderWebGL extends EventTargetStatic {
-    // TODO: render attachments can't be static as different viewport might have different resolutions each viewport needs its own attachments
+    // TODO: All render textures are fixed size and rect viewport is used to select the area to render to, maybe it would be benficial for every fudge viewport instance to own its own set of render textures?
     public static texColor: WebGLTexture; // stores the color of each pixel rendered
     public static texPosition: WebGLTexture; // stores the position of each pixel in world space
     public static texNormal: WebGLTexture; // stores the normal of each pixel in world space
     public static texDepthStencil: WebGLTexture; // stores the depth of each pixel
 
+    private static canvas: HTMLCanvasElement;
     private static crc3: WebGL2RenderingContext = RenderWebGL.initialize();
 
-    /** The area of the offscreen-canvas in CSS pixels. */
-    private static rectCanvas: Rectangle;
     /** The area on the offscreen-canvas to render to. */
-    private static rectRender: Rectangle;
+    private static rectViewport: Rectangle;
 
     private static fboScene: WebGLFramebuffer; // used for forward rendering passes, e.g. opaque and transparent objects
     private static fboOut: WebGLFramebuffer; // used to render the final image to, usually "null" to render to the canvas default framebuffer. Used by XR to render to the XRWebGLLayer framebuffer.
@@ -135,23 +134,29 @@ namespace FudgeCore {
       };
       Debug.fudge("Initialize RenderWebGL", contextAttributes);
       // let canvas: OffscreenCanvas = new OffscreenCanvas(1, 1); // TODO: inspect using a real OffscreenCanvas
-      let canvas: HTMLCanvasElement = document.createElement("canvas");
+      RenderWebGL.canvas = document.createElement("canvas");
+
       let crc3: WebGL2RenderingContext;
       crc3 = RenderWebGL.assert<WebGL2RenderingContext>(
-        canvas.getContext("webgl2", contextAttributes),
+        RenderWebGL.canvas.getContext("webgl2", contextAttributes),
         "WebGL-context couldn't be created"
       );
       RenderWebGL.crc3 = crc3;
+
       // Enable backface- and zBuffer-culling.
       crc3.enable(WebGL2RenderingContext.CULL_FACE);
       crc3.enable(WebGL2RenderingContext.DEPTH_TEST);
       crc3.enable(WebGL2RenderingContext.BLEND);
       RenderWebGL.setBlendMode(BLEND.TRANSPARENT);
-      RenderWebGL.rectCanvas = Rectangle.GET(0, 0, RenderWebGL.crc3.canvas.width, RenderWebGL.crc3.canvas.height);
-      RenderWebGL.rectRender = RenderWebGL.getCanvasRectangle().clone;
 
       RenderWebGL.initializeAttachments();
-      RenderWebGL.adjustAttachments();
+
+      // Set initial size to full screen resolution
+      const pixelRatio: number = window.devicePixelRatio ?? 1;
+      const width: number = Math.floor(screen.width * pixelRatio);
+      const height: number = Math.floor(screen.height * pixelRatio);
+      RenderWebGL.rectViewport = Rectangle.GET(0, 0, width, height);
+      RenderWebGL.setCanvasSize(width, height);
 
       RenderWebGLComponentCamera.initialize(RenderWebGL);
       RenderWebGLComponentFog.initialize(RenderWebGL);
@@ -178,11 +183,10 @@ namespace FudgeCore {
      * Return a reference to the offscreen-canvas.
      * 
      * - Do not read or modify the canvas dimensions directly.
-     * - Use {@link getCanvasRectangle} to retrieve the size of the offscreen-canvas.
      * - Use {@link setCanvasSize} to set the size of the offscreen-canvas.
      */
     public static getCanvas(): HTMLCanvasElement {
-      return <HTMLCanvasElement>RenderWebGL.crc3.canvas; // TODO: enable OffscreenCanvas
+      return <HTMLCanvasElement>RenderWebGL.canvas; // TODO: enable OffscreenCanvas
     }
 
     /**
@@ -193,60 +197,43 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a reference to the rectangle describing the size of the offscreen-canvas. x,y are 0 at all times.
-     * 
-     * Do not modify the rectangle directly, use {@link setCanvasSize} instead.
-     */
-    public static getCanvasRectangle(): Rectangle {
-      return RenderWebGL.rectCanvas;
-    }
-
-    /**
      * Set the size of the offscreen-canvas.
      * 
      * ⚠️ CAUTION: If size changes invokes {@link adjustAttachments} which is an expensive operation.
      */
     public static setCanvasSize(_width: number, _height: number): void {
-      let sizeChanged: boolean = false;
+      const canvas: HTMLCanvasElement = RenderWebGL.getCanvas();
+      const sizeChanged: boolean = (canvas.width !== _width || canvas.height !== _height);
+      if (!sizeChanged)
+        return;
 
-      if (RenderWebGL.rectCanvas.width != _width) {
-        RenderWebGL.rectCanvas.width = _width;
-        RenderWebGL.crc3.canvas.width = _width;
-        sizeChanged = true;
-      }
-
-      if (RenderWebGL.rectCanvas.height != _height) {
-        RenderWebGL.rectCanvas.height = _height;
-        RenderWebGL.crc3.canvas.height = _height;
-        sizeChanged = true;
-      }
-
-      if (sizeChanged)
-        RenderWebGL.adjustAttachments();
+      canvas.width = _width;
+      canvas.height = _height;
+      RenderWebGL.adjustAttachments();
     }
 
     /**
      * Retrieve the area on the offscreen-canvas the camera image gets rendered to.
      * 
-     * Do not modify the rectangle directly, use {@link setRenderRectangle} instead.
+     * Do not modify the rectangle directly, use {@link setViewportRectangle} instead.
      */
-    public static getRenderRectangle(): Rectangle {
-      return RenderWebGL.rectRender;
+    public static getViewportRectangle(): Rectangle {
+      return RenderWebGL.rectViewport;
     }
 
     /**
      * Set the area on the offscreen-canvas to render the camera image to.
+     * 
+     * ⚠️ NOTE: In WebGL the y-axis in viewport coordinates points upwards and the origin is at the bottom left. 
+     * However, in many 2D contexts (like HTML canvas), the y-axis points downwards with the origin at the top left.
      */
-    public static setRenderRectangle(_rect: Rectangle): void {
-      if (RenderWebGL.rectRender.equals(_rect))
-        return;
-
-      RenderWebGL.rectRender.copy(_rect);
+    public static setViewportRectangle(_rect: Rectangle): void {
+      RenderWebGL.rectViewport.copy(_rect);
       RenderWebGL.crc3.viewport(_rect.x, _rect.y, _rect.width, _rect.height);
     }
 
     /**
-     * Clear the offscreen renderbuffer with the given {@link Color}
+     * Clear the bound framebuffer with the given {@link Color}.
      */
     public static clear(_color?: Color, _colors: boolean = true, _depth: boolean = true, _stencil: boolean = true): void {
       RenderWebGL.crc3.clearColor(_color?.r ?? 0, _color?.g ?? 0, _color?.b ?? 0, _color?.a ?? 1);
@@ -273,6 +260,7 @@ namespace FudgeCore {
      */
     public static resetFramebuffer(): void {
       RenderWebGL.crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
+      RenderWebGL.crc3.drawBuffers(RenderWebGL.attachmentsColorPositionNormal);
     }
 
     /**
@@ -314,6 +302,7 @@ namespace FudgeCore {
      * Set WebGLs viewport.
      */
     public static setViewport(_x: number, _y: number, _width: number, _height: number): void {
+      RenderWebGL.rectViewport.set(_x, _y, _width, _height);
       RenderWebGL.crc3.viewport(_x, _y, _width, _height);
     }
 
@@ -358,7 +347,7 @@ namespace FudgeCore {
       const data: Float32Array = new Float32Array(4);
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.readBuffer(WebGL2RenderingContext.COLOR_ATTACHMENT1);
-      crc3.readPixels(_render.x, RenderWebGL.rectRender.height - _render.y, 1, 1, crc3.RGBA, crc3.FLOAT, data);
+      crc3.readPixels(_render.x, RenderWebGL.rectViewport.height - _render.y, 1, 1, crc3.RGBA, crc3.FLOAT, data);
       crc3.readBuffer(WebGL2RenderingContext.COLOR_ATTACHMENT0);
       let position: Vector3 = Recycler.get(Vector3);
       position.set(data[0], data[1], data[2]);
@@ -402,29 +391,29 @@ namespace FudgeCore {
      */
     public static adjustAttachments(): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const canvasWidth: number = RenderWebGL.rectCanvas.width || 1;
-      const canvasHeight: number = RenderWebGL.rectCanvas.height || 1;
+      const width: number = RenderWebGL.getCanvas().width || 1;
+      const height: number = RenderWebGL.getCanvas().height || 1;
 
       crc3.activeTexture(crc3.TEXTURE0);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texPosition);
       // In view space 16F would be precise enough... but we want to use world space for calculations
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32F, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA32F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texNormal);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA16F, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.FLOAT, null);
 
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texDepthStencil);
-      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, canvasWidth, canvasHeight, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
+      crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.DEPTH24_STENCIL8, width, height, 0, WebGL2RenderingContext.DEPTH_STENCIL, WebGL2RenderingContext.UNSIGNED_INT_24_8, null);
 
       crc3.bindTexture(crc3.TEXTURE_2D, null);
 
-      RenderWebGLComponentAmbientOcclusion.resize(RenderWebGL, canvasWidth, canvasHeight);
-      RenderWebGLComponentBloom.resize(RenderWebGL, canvasWidth, canvasHeight);
-      RenderWebGLComponentOutline.resize(RenderWebGL, canvasWidth, canvasHeight);
+      RenderWebGLComponentAmbientOcclusion.resize(RenderWebGL, width, height);
+      RenderWebGLComponentBloom.resize(RenderWebGL, width, height);
+      RenderWebGLComponentOutline.resize(RenderWebGL, width, height);
     }
 
     public static createTexture(_filter: number, _wrap: number): WebGLTexture {
@@ -593,7 +582,12 @@ namespace FudgeCore {
       // copy framebuffer to canvas
       crc3.bindFramebuffer(WebGL2RenderingContext.READ_FRAMEBUFFER, RenderWebGL.fboScene);
       crc3.bindFramebuffer(WebGL2RenderingContext.DRAW_FRAMEBUFFER, RenderWebGL.fboOut);
-      crc3.blitFramebuffer(0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, 0, 0, RenderWebGL.rectCanvas.width, RenderWebGL.rectCanvas.height, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
+      const rectViewport: Rectangle = RenderWebGL.rectViewport;
+      const x0: number = rectViewport.x;;
+      const y0: number = rectViewport.y;
+      const x1: number = rectViewport.x + rectViewport.width;
+      const y1: number = rectViewport.y + rectViewport.height;
+      crc3.blitFramebuffer(x0, y0, x1, y1, x0, y0, x1, y1, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
     }
 
     private static drawParticles(_node: Node, _cmpParticleSystem: ComponentParticleSystem, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial): void {

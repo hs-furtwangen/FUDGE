@@ -31,7 +31,7 @@ namespace FudgeCore {
 
     public constructor(_x: number = 0, _y: number = 0, _width: number = 1, _height: number = 1, _origin: ORIGIN2D = ORIGIN2D.TOPLEFT) {
       super();
-      this.setPositionAndSize(_x, _y, _width, _height, _origin);
+      this.set(_x, _y, _width, _height, _origin);
     }
 
     /**
@@ -39,7 +39,7 @@ namespace FudgeCore {
      * @param _out Optional rectangle to store the result in.
      */
     public static GET(_x: number = 0, _y: number = 0, _width: number = 1, _height: number = 1, _origin: ORIGIN2D = ORIGIN2D.TOPLEFT, _out: Rectangle = Recycler.reuse(Rectangle)): Rectangle {
-      return _out.setPositionAndSize(_x, _y, _width, _height, _origin);
+      return _out.set(_x, _y, _width, _height, _origin);
     }
 
     public get x(): number {
@@ -133,7 +133,7 @@ namespace FudgeCore {
     }
 
     public recycle(): void {
-      this.setPositionAndSize();
+      this.set();
     }
 
     /**
@@ -151,7 +151,7 @@ namespace FudgeCore {
      * @returns A reference to this rectangle.
      */
     public copy(_rect: Rectangle): Rectangle {
-      return this.setPositionAndSize(_rect.x, _rect.y, _rect.width, _rect.height);
+      return this.set(_rect.x, _rect.y, _rect.width, _rect.height);
     }
 
     /**
@@ -240,6 +240,15 @@ namespace FudgeCore {
       _out.height = Math.min(this.bottom, _rect.bottom) - _out.y;
 
       return _out;
+    }
+
+    /**
+     * Truncates the position and size of this rectangle to integer values.
+     */
+    public trunc(): Rectangle {
+      this.position.trunc();
+      this.size.trunc();
+      return this;
     }
 
     /**

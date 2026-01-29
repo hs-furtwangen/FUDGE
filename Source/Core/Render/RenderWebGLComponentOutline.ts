@@ -69,8 +69,10 @@ namespace FudgeCore {
       crc3.uniform4fv(ShaderOutline.uniforms["u_vctColor"], _cmpOutline.color.toArray(RenderWebGLComponentOutline.#dataColor));
       crc3.uniform4fv(ShaderOutline.uniforms["u_vctColorOccluded"], _cmpOutline.colorOccluded.toArray(RenderWebGLComponentOutline.#dataColorOccluded));
 
-      const rectCanvas: Rectangle = RenderWebGL.getCanvasRectangle();
-      crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / Math.round(rectCanvas.width), 1 / Math.round(rectCanvas.height)); // half texel size
+      const rectViewport: Rectangle = RenderWebGL.getViewportRectangle();
+      crc3.uniform2f(ShaderOutline.uniforms["u_vctFramebufferSize"], crc3.drawingBufferWidth, crc3.drawingBufferHeight);
+      crc3.uniform4f(ShaderOutline.uniforms["u_vctViewport"], rectViewport.x, rectViewport.y, rectViewport.width, rectViewport.height);
+      crc3.uniform2f(ShaderOutline.uniforms["u_vctTexel"], 1 / crc3.drawingBufferWidth, 1 / crc3.drawingBufferHeight); // texel size
 
       crc3.drawArrays(WebGL2RenderingContext.TRIANGLES, 0, 3);
     }

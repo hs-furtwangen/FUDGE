@@ -289,6 +289,15 @@ namespace FudgeCore {
     }
 
     /**
+     * Truncates the components of this vector to integer values.
+     */
+    public trunc(): Vector2 {
+      this.x = Math.trunc(this.x);
+      this.y = Math.trunc(this.y);
+      return this;
+    }
+
+    /**
      * Normalizes this to the given length, 1 by default
      * @returns A reference to this vector.
      */

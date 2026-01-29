@@ -186,7 +186,7 @@ namespace FudgeCore {
       this.#projection = PROJECTION.CENTRAL;
       this.#near = _near;
       this.#far = _far;
-      Matrix4x4.PROJECTION_CENTRAL(_aspect, this.#fieldOfView, _near, _far, this.#direction, this.#mtxProjection);
+      Matrix4x4.PROJECTION_CENTRAL(_aspect, _fieldOfView, _near, _far, _direction, this.#mtxProjection);
     }
 
     /**
@@ -197,9 +197,9 @@ namespace FudgeCore {
      * @param _top The positionvalue of the projectionspace's top border.      
      */
     public projectOrthographic(_left?: number, _right?: number, _bottom?: number, _top?: number): void {
-      const rectCanvas: Rectangle = Render.getCanvasRectangle();
-      const width: number = rectCanvas.width;
-      const height: number = rectCanvas.height;
+      const rectViewport: Rectangle = Render.getViewportRectangle();
+      const width: number = rectViewport.width;
+      const height: number = rectViewport.height;
       _left = -width / 2;
       _right = width / 2;
       _bottom = height / 2;
@@ -265,7 +265,7 @@ namespace FudgeCore {
     public getWorldToPixelScale(_posWorld: Vector3): number {
       let distance: number = this.mtxWorld.translation.getDistance(_posWorld);
       let scale: number;
-      let rect: Rectangle = Render.getRenderRectangle();
+      let rect: Rectangle = Render.getViewportRectangle();
       switch (this.#direction) {
         case FIELD_OF_VIEW.VERTICAL:
           scale = 1 / rect.height * window.devicePixelRatio;

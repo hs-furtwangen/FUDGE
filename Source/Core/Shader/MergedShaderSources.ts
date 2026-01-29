@@ -20,7 +20,7 @@ uniform float u_fBias;
 uniform float u_fAttenuationConstant;
 uniform float u_fAttenuationLinear;
 uniform float u_fAttenuationQuadratic;
-uniform vec2 u_vctResolution;
+uniform vec4 u_vctViewport;
 uniform vec3 u_vctCamera;
 // uniform mat4 u_mtxViewProjectionInverse;
 
@@ -76,14 +76,15 @@ void main() {
   vec2 vctRandom = normalize(texture(u_texNoise, v_vctTexture).xy * 2.0 - 1.0);
   float fDepth = (length(vctPosition - u_vctCamera) - u_fNear) / (u_fFar - u_fNear); // linear euclidean depth in range [0,1], when changing to view space, don't subtract camera position
   float fKernelRadius = u_fSampleRadius * (1.0 - fDepth);
+  vec2 vctResolution = u_vctViewport.zw;
 
   float fOcclusion = 0.0;
   for (int i = 0; i < 4; ++i) {
     vec2 vctK1 = reflect(kernel[i], vctRandom);
     vec2 vctK2 = vec2(vctK1.x * sin45 - vctK1.y * sin45, vctK1.x * sin45 + vctK1.y * sin45);
 
-    vctK1 /= u_vctResolution;
-    vctK2 /= u_vctResolution;
+    vctK1 /= vctResolution;
+    vctK2 /= vctResolution;
 
     vctK1 *= fKernelRadius;
     vctK2 *= fKernelRadius;
@@ -116,7 +117,7 @@ uniform int u_iMode; // 0: extract, 1: downsample, 2: upsample, 3: apply
 uniform float u_fThreshold;
 uniform float u_fIntensity;
 uniform float u_fHighlightDesaturation;
-uniform vec2 u_vctTexel;
+uniform vec2 u_vctHalfTexel;
 
 uniform sampler2D u_texSource;
 
@@ -171,23 +172,23 @@ vec3 extract(vec2 _vctTexture) {
 
 vec4 downsample(vec2 _vctTexture) {
   vec4 sum = texture(u_texSource, _vctTexture) * 4.0;
-  sum += texture(u_texSource, _vctTexture - u_vctTexel.xy);
-  sum += texture(u_texSource, _vctTexture + u_vctTexel.xy);
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x, -u_vctTexel.y));
-  sum += texture(u_texSource, _vctTexture - vec2(u_vctTexel.x, -u_vctTexel.y));
+  sum += texture(u_texSource, _vctTexture - u_vctHalfTexel.xy);
+  sum += texture(u_texSource, _vctTexture + u_vctHalfTexel.xy);
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x, -u_vctHalfTexel.y));
+  sum += texture(u_texSource, _vctTexture - vec2(u_vctHalfTexel.x, -u_vctHalfTexel.y));
 
   return sum / 8.0;
 }
 
 vec4 upsample(vec2 _vctTexture) {
-  vec4 sum = texture(u_texSource, _vctTexture + vec2(-u_vctTexel.x * 2.0, 0.0));
-  sum += texture(u_texSource, _vctTexture + vec2(-u_vctTexel.x, u_vctTexel.y)) * 2.0;
-  sum += texture(u_texSource, _vctTexture + vec2(0.0, u_vctTexel.y * 2.0));
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x, u_vctTexel.y)) * 2.0;
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x * 2.0, 0.0));
-  sum += texture(u_texSource, _vctTexture + vec2(u_vctTexel.x, -u_vctTexel.y)) * 2.0;
-  sum += texture(u_texSource, _vctTexture + vec2(0.0, -u_vctTexel.y * 2.0));
-  sum += texture(u_texSource, _vctTexture + vec2(-u_vctTexel.x, -u_vctTexel.y)) * 2.0;
+  vec4 sum = texture(u_texSource, _vctTexture + vec2(-u_vctHalfTexel.x * 2.0, 0.0));
+  sum += texture(u_texSource, _vctTexture + vec2(-u_vctHalfTexel.x, u_vctHalfTexel.y)) * 2.0;
+  sum += texture(u_texSource, _vctTexture + vec2(0.0, u_vctHalfTexel.y * 2.0));
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x, u_vctHalfTexel.y)) * 2.0;
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x * 2.0, 0.0));
+  sum += texture(u_texSource, _vctTexture + vec2(u_vctHalfTexel.x, -u_vctHalfTexel.y)) * 2.0;
+  sum += texture(u_texSource, _vctTexture + vec2(0.0, -u_vctHalfTexel.y * 2.0));
+  sum += texture(u_texSource, _vctTexture + vec2(-u_vctHalfTexel.x, -u_vctHalfTexel.y)) * 2.0;
   return sum / 12.0;
 }
 
@@ -640,7 +641,7 @@ precision mediump float;
 precision highp int;
 /**
  * Creates a fullscreen triangle which cotains the screen quad and sets the texture coordinates accordingly.
- * @authors Roland Heer, HFU, 2023 | Jirka Dell'Oro-Friedl, HFU, 2023 | Jonas Plotzky, HFU, 2023
+ * @authors Roland Heer, HFU, 2023 | Jirka Dell'Oro-Friedl, HFU, 2023 | Jonas Plotzky, HFU, 2023-2026
  *
  *  2  3 .
  *       .  .
@@ -658,6 +659,8 @@ precision highp int;
  */
 
 // uniform vec2 u_vctResolution;
+uniform vec2 u_vctFramebufferSize; // the size of the bound framebuffer
+uniform vec4 u_vctViewport; // the portion of the buffer to render to (x, y, width, height)
 
 out vec2 v_vctTexture;
 
@@ -672,6 +675,8 @@ void main() {
   float y = float((gl_VertexID / 2) * 4); // 0, 0, 4
   gl_Position = vec4(x - 1.0, y - 1.0, 0.0, 1.0); // (-1, -1), (3, -1), (-1, 3)
   v_vctTexture = vec2(x / 2.0, y / 2.0);  // (0, 0), (2, 0), (0, 2) -> interpolation will yield (0, 0), (1, 0), (0, 1) as the positions are double the size of the screen
+  v_vctTexture = (v_vctTexture * u_vctViewport.zw + u_vctViewport.xy) / u_vctFramebufferSize; // adjust texture coordinates to viewport within the buffer
+  // TODO: using a sub-region of the framebuffer we need to clamp uvs to the edges of the viewport when sampling neighboring pixels in the fragment shaders, if this causes artifacts we need to manually clamp to the viewport bounds.
 
   // #ifdef SAMPLE
 
