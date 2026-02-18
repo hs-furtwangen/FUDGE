@@ -220,9 +220,9 @@ namespace FudgeCore {
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       if (typeof (_mutator.axisFirst) !== "undefined")
-        this.axisFirst = new Vector3(...<number[]>(Object.values(_mutator.axisFirst)));
+        this.axisFirst = Vector3.MUTANT(_mutator.axisFirst);
       if (typeof (_mutator.axisSecond) !== "undefined")
-        this.axisSecond = new Vector3(...<number[]>(Object.values(_mutator.axisSecond)));
+        this.axisSecond = Vector3.MUTANT(_mutator.axisSecond);
       delete _mutator.axisFirst;
       delete _mutator.axisSecond;
       this.#mutate(_mutator);

@@ -5,7 +5,7 @@ namespace FudgeCore {
    */
   export abstract class JointAxial extends Joint {
     protected springDamper: OIMO.SpringDamper;
-    
+
     //Internal Variables
     #maxMotor: number = 10;
     #minMotor: number = -10;
@@ -122,7 +122,7 @@ namespace FudgeCore {
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       if (typeof (_mutator.axis) !== "undefined")
-        this.axis = new Vector3(...<number[]>(Object.values(_mutator.axis)));
+        this.axis = Vector3.MUTANT(_mutator.axis);
       delete _mutator.axis;
       this.#mutate(_mutator);
       this.deleteFromMutator(_mutator, this.#getMutator());
@@ -137,7 +137,7 @@ namespace FudgeCore {
     }
 
     //#endregion
-    
+
     protected constructJoint(): void {
       this.springDamper = new OIMO.SpringDamper().setSpring(this.#springFrequency, this.#springDamping);
       super.constructJoint(this.#axis);

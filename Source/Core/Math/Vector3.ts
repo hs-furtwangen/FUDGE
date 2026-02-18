@@ -68,6 +68,13 @@ namespace FudgeCore {
     }
 
     /**
+     * Creates and returns a vector created from the x,y and z properties of the given mutator (which may be any object)
+     */
+    public static MUTANT(_mutator: Mutator): Vector3 {
+      return Recycler.reuse(Vector3).set(_mutator.x , _mutator.y, _mutator.z);
+    }
+
+    /**
      * Creates and returns a vector through transformation of the given vector by the given matrix or rotation quaternion.
      * @param _out Optional vector to store the result in.
      */

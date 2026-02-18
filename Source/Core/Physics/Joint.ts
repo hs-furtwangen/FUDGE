@@ -228,7 +228,7 @@ namespace FudgeCore {
 
     public async mutate(_mutator: Mutator, _selection: string[] = null, _dispatchMutate: boolean = true): Promise<void> {
       if (typeof (_mutator.anchor) !== "undefined")
-        this.anchor = new Vector3(...<number[]>(Object.values(_mutator.anchor)));
+        this.anchor = Vector3.MUTANT(_mutator.anchor);
       delete _mutator.anchor;
       if (typeof (_mutator.nameChildToConnect) !== "undefined")
         this.connectChild(_mutator.nameChildToConnect);
