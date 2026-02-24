@@ -8,6 +8,9 @@ namespace FudgeCore {
       super(_color, _diffuse, _specular, _intensity, _metallic);
       this.texToon = _texToon;
     }
+
+    @RenderManagerCoatToon.decorate
+    public useRenderData(): void { /* injected */ };
   }
 
   /**
@@ -18,6 +21,9 @@ namespace FudgeCore {
       super(_color, _texture, _diffuse, _specular, _intensity, _metallic);
       this.texToon = _texToon;
     }
+
+    @RenderManagerCoatToonTextured.decorate
+    public useRenderData(): void { /* injected */ };
   }
 
   function mixinCoatToon<TBase extends new (...args: General[]) => Serializable & Mutable>(_base: TBase): (abstract new (...args: General[]) => { texToon: Texture }) & TBase {
@@ -25,9 +31,6 @@ namespace FudgeCore {
 
       @edit(Texture)
       public texToon: Texture;
-
-      @RenderManagerCoatToon.decorate
-      public useRenderData(): void { /* injected */ };
 
       // TODO: backwards compatibility, remove in future version
       public async deserialize(_serialization: Serialization): Promise<Serializable> {

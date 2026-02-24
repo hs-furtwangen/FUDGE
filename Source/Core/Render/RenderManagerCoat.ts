@@ -53,7 +53,7 @@ namespace FudgeCore {
   /**
    * @internal
    */
-  export class RenderManagerCoatRemissiveTexturedNormals extends RenderManagerCoat {
+  export class RenderManagerCoatRemissiveTexturedNormals extends RenderManagerCoatTextured {
     protected static override useRenderData(this: CoatRemissiveTexturedNormals): void {
       super.useRenderData();
       this.normalMap.useRenderData(TEXTURE_LOCATION.NORMAL.UNIT);
@@ -65,6 +65,17 @@ namespace FudgeCore {
    */
   export class RenderManagerCoatToon extends RenderManagerCoat {
     protected static override useRenderData(this: CoatToon): void {
+      super.useRenderData();
+      this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
+    }
+  }
+
+  /**
+   * @internal
+   * needed for correct injected super call to RenderManagerCoatTextured...
+   */
+  export class RenderManagerCoatToonTextured extends RenderManagerCoatTextured {
+    protected static override useRenderData(this: CoatToonTextured): void {
       super.useRenderData();
       this.texToon.useRenderData(TEXTURE_LOCATION.TOON.UNIT);
     }

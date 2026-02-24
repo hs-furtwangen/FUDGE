@@ -3672,8 +3672,8 @@ declare namespace FudgeCore {
          */
         get internalCollision(): boolean;
         set internalCollision(_value: boolean);
-        protected get connectedChild(): Node;
-        protected set connectedChild(_node: Node);
+        protected get connectedNode(): Node;
+        protected set connectedNode(_node: Node);
         /**
          * Connect a child node with the given name to the joint.
          */
@@ -6662,6 +6662,7 @@ declare namespace FudgeCore {
      */
     export class CoatToon extends CoatToon_base {
         constructor(_color?: Color, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        useRenderData(): void;
     }
     const CoatToonTextured_base: (abstract new (...args: General[]) => {
         texToon: Texture;
@@ -6671,6 +6672,7 @@ declare namespace FudgeCore {
      */
     export class CoatToonTextured extends CoatToonTextured_base {
         constructor(_color?: Color, _texture?: Texture, _texToon?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
+        useRenderData(): void;
     }
     export {};
 }
