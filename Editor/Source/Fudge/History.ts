@@ -153,7 +153,7 @@ namespace Fudge {
           const record: ƒui.PropertyChangeRecord = <ƒui.PropertyChangeRecord>_target;
           const value: unknown = _do == DO.UN ? record.from : record.to;
 
-          if (ƒ.isSerializableResource(record.to) && record.register) // TODO: this is a bit of a hack, to handle resource registration on create. Maybe multi step undo/redo would be better
+          if (ƒ.isSerializableResource(record.to) && record.register)
             History.processProject(_do, HISTORY.ADD, ƒ.Project, <ƒ.SerializableResource>record.to);
 
           const valueCopy: unknown = await ƒui.Controller.copyValue(value);

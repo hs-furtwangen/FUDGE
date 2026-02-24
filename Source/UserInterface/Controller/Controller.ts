@@ -9,7 +9,7 @@ namespace FudgeUserInterface {
     path: string[];
     from: T;
     to: T;
-    register?: boolean; // TODO: this is kind of hacky, find a better way to handle resource registration on create
+    register?: boolean;
   }
 
   /**

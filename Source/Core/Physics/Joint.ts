@@ -1,9 +1,11 @@
 namespace FudgeCore {
   function getConnectOptions(this: Joint): Record<string, Node> {
     const options: Record<string, Node> = {};
-    for (const child of this.node.getChildren())
+    for (const child of this.node.getAncestor())
       if (child.getComponent(ComponentRigidbody))
         options[child.name] = child;
+
+    delete options[this.node.name]; // don't connect to self
 
     return options;
   }
@@ -39,7 +41,7 @@ namespace FudgeCore {
     // TODO: property exists solely for backwards compatibility, remove in future versions
     #nameChildToConnect: string = "";
 
-    #connectedChild: Node;
+    #connectedNode: Node;
 
     protected abstract joint: OIMO.Joint;
     protected abstract config: OIMO.JointConfig;
@@ -147,23 +149,23 @@ namespace FudgeCore {
     }
 
     @order(2)
-    @assign(getConnectOptions)
+    @assign(getConnectOptions) // TODO: remove
     @edit(Node)
-    protected get connectedChild(): Node {
-      return this.#connectedChild;
+    protected get connectedNode(): Node {
+      return this.#connectedNode;
     }
 
-    protected set connectedChild(_node: Node) {
+    protected set connectedNode(_node: Node) {
       if (_node == null) {
         this.#bodyAnchor = null;
         this.#bodyTied = null;
         this.disconnect();
         this.dirtyStatus();
-        this.#connectedChild = _node;
+        this.#connectedNode = _node;
       }
 
       if (this.connectNode(_node)) {
-        this.#connectedChild = _node;
+        this.#connectedNode = _node;
         return;
       }
     }
@@ -213,11 +215,11 @@ namespace FudgeCore {
         if (!this.#bodyAnchor || !this.#bodyTied) {
 
           // TODO: backwards compatibility, remove in future versions
-          if (this.#nameChildToConnect && !this.#connectedChild)
-            this.#connectedChild = this.node.getChildByName(this.#nameChildToConnect);
+          if (this.#nameChildToConnect && !this.#connectedNode)
+            this.#connectedNode = this.node.getChildByName(this.#nameChildToConnect);
 
-          if (this.#connectedChild)
-            this.connectNode(this.#connectedChild);
+          if (this.#connectedNode)
+            this.connectNode(this.#connectedNode);
 
           return;
         }
