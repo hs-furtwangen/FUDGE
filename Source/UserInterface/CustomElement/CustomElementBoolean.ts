@@ -31,10 +31,6 @@ namespace FudgeUserInterface {
       input.checked = this.getAttribute("value") == "true";
       content.appendChild(input);
 
-      let text: HTMLSpanElement = document.createElement("span");
-      text.textContent = "On";
-      content.appendChild(text);
-
       label.htmlFor = input.id;
     }
 
