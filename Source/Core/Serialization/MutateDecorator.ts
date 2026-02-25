@@ -72,63 +72,13 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      let descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors");
-      if (!descriptors)
-        metadata.propertyDescriptors = descriptors = Object.create(metadata.propertyDescriptors ?? null);
-
-      descriptors[key] = createDescriptor(_typePrimary, _typeSecondary, _function);
+      // add meta property descriptor to metadata
+      const descriptors: MetaPropertyDescriptors = getMetaPropertyDescriptors(metadata);
+      descriptors[key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
 
       const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
       keys.push(key);
     };
-  }
-
-  function createDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
-    const descriptor: MetaPropertyDescriptor = Object.create(null);
-    descriptor.type = _typePrimary;
-
-    switch (_typePrimary) {
-      case Boolean: case Number: case String:
-        descriptor.kind = "primitive";
-        break;
-      case Array: case Set: case Map:
-        descriptor.kind = "collection";
-        break;
-      default:
-        if (_function && !_typeSecondary)
-          descriptor.kind = "function";
-        else if (typeof _typePrimary == "object")
-          descriptor.kind = "enum";
-        else
-          descriptor.kind = "object";
-        break;
-    }
-
-    if (!_function) {
-      let getCreateOptions: PropertyCreateOptionsGetter;
-      if ((<General>_typePrimary).subclasses)
-        getCreateOptions = getSubclassOptions;
-
-      if (getCreateOptions)
-        descriptor.getCreateOptions = getCreateOptions;
-    }
-
-    let getAssignOptions: PropertyAssignOptionsGetter | undefined;
-    if (_function && (<General>_typePrimary).subclasses)
-      getAssignOptions = getSubclassOptions;
-    else if (_typePrimary === Node)
-      getAssignOptions = getNodeOptions;
-    else if (isSerializableResource(_typePrimary.prototype))
-      getAssignOptions = getResourceOptions;
-
-    if (getAssignOptions)
-      descriptor.getAssignOptions = getAssignOptions;
-
-
-    if (_typeSecondary)
-      descriptor.valueDescriptor = createDescriptor(_typeSecondary, undefined, _function);
-
-    return descriptor;
   }
   //#endregion
 
@@ -263,38 +213,6 @@ namespace FudgeCore {
       else
         descriptor.getAssignOptions = _getOptions;
     };
-  }
-
-  function getSubclassOptions(this: object, _key: string): Record<string, () => General> {
-    const descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
-    const subclasses: Iterable<() => General> = (<{ readonly subclasses: Iterable<() => General> }>(descriptor.valueDescriptor?.type ?? descriptor.type)).subclasses;
-    const options: Record<string, () => General> = {};
-    for (const subclass of subclasses)
-      options[subclass.name] = subclass;
-
-    return options;
-  }
-
-  function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
-    let descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
-    if (descriptor.valueDescriptor)
-      descriptor = descriptor.valueDescriptor;
-
-    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>(descriptor.type));
-    const options: Record<string, SerializableResource> = {};
-    for (const resource of resources)
-      options[resource.name] = resource;
-
-    return options;
-  }
-
-  function getNodeOptions(this: Component): Record<string, Node> {
-    const root: Node = this.node.getAncestor();
-    const options: Record<string, Node> = {};
-    for (const node of root)
-      options[node.name] = node;
-
-    return options;
   }
   //#endregion
 

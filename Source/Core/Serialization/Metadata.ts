@@ -111,6 +111,9 @@ namespace FudgeCore {
     return (<Function>_from)[Symbol.metadata] ?? emptyMetadata;
   }
 
+  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+  export type ClassPropertyDecoratorContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+
   /**
    * @internal Return the value of the own property of an object. If the property is inherited, or does not exist, return undefined. See {@link Object.hasOwn} for details.
    */
@@ -121,6 +124,97 @@ namespace FudgeCore {
     return undefined;
   }
 
-  /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-  export type ClassPropertyDecoratorContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+  /**
+   * @internal Return the meta property descriptors of a metadata object.
+   */
+  export function getMetaPropertyDescriptors(_metadata: Metadata): MetaPropertyDescriptors {
+    let descriptors: MetaPropertyDescriptors = getOwnProperty(_metadata, "propertyDescriptors");
+    if (!descriptors)
+      _metadata.propertyDescriptors = descriptors = Object.create(_metadata.propertyDescriptors ?? null);
+
+    return descriptors;
+  }
+
+  /**
+   * @internal Return a new meta property descriptor.
+   */
+  export function createMetaPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
+    const descriptor: MetaPropertyDescriptor = Object.create(null);
+    descriptor.type = _typePrimary;
+
+    switch (_typePrimary) {
+      case Boolean: case Number: case String:
+        descriptor.kind = "primitive";
+        break;
+      case Array: case Set: case Map:
+        descriptor.kind = "collection";
+        break;
+      default:
+        if (_function && !_typeSecondary)
+          descriptor.kind = "function";
+        else if (typeof _typePrimary == "object")
+          descriptor.kind = "enum";
+        else
+          descriptor.kind = "object";
+        break;
+    }
+
+    if (!_function) {
+      let getCreateOptions: PropertyCreateOptionsGetter;
+      if ((<General>_typePrimary).subclasses)
+        getCreateOptions = getSubclassOptions;
+
+      if (getCreateOptions)
+        descriptor.getCreateOptions = getCreateOptions;
+    }
+
+    let getAssignOptions: PropertyAssignOptionsGetter | undefined;
+    if (_function && (<General>_typePrimary).subclasses)
+      getAssignOptions = getSubclassOptions;
+    else if (_typePrimary === Node)
+      getAssignOptions = getNodeOptions;
+    else if (isSerializableResource(_typePrimary.prototype))
+      getAssignOptions = getResourceOptions;
+
+    if (getAssignOptions)
+      descriptor.getAssignOptions = getAssignOptions;
+
+
+    if (_typeSecondary)
+      descriptor.valueDescriptor = createMetaPropertyDescriptor(_typeSecondary, undefined, _function);
+
+    return descriptor;
+  }
+
+  function getSubclassOptions(this: object, _key: string): Record<string, () => General> {
+    const descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
+    const subclasses: Iterable<() => General> = (<{ readonly subclasses: Iterable<() => General> }>(descriptor.valueDescriptor?.type ?? descriptor.type)).subclasses;
+    const options: Record<string, () => General> = {};
+    for (const subclass of subclasses)
+      options[subclass.name] = subclass;
+
+    return options;
+  }
+
+  function getResourceOptions(this: object, _key: string): Record<string, SerializableResource> {
+    let descriptor: MetaPropertyDescriptor = Metadata.getPropertyDescriptor(this, _key);
+    if (descriptor.valueDescriptor)
+      descriptor = descriptor.valueDescriptor;
+
+    const resources: SerializableResource[] = Project.getResourcesByType(<abstract new () => unknown>(descriptor.type));
+    const options: Record<string, SerializableResource> = {};
+    for (const resource of resources)
+      options[resource.name] = resource;
+
+    return options;
+  }
+
+  function getNodeOptions(this: Component): Record<string, Node> {
+    const root: Node = this.node.getAncestor();
+    const options: Record<string, Node> = {};
+    for (const node of root)
+      options[node.name] = node;
+
+    return options;
+  }
 }

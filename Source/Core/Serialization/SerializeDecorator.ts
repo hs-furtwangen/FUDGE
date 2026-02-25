@@ -127,6 +127,10 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
+      // add meta property descriptor to metadata
+      const descriptors: MetaPropertyDescriptors = getMetaPropertyDescriptors(metadata);
+      descriptors[key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
+
       // determine serialization type
       let strategy: Metadata["serializables"][string];
 
