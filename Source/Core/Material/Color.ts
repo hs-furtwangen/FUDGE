@@ -169,7 +169,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static SUM(_clrA: Color, _clrB: Color, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.set(_clrA.r + _clrB.r, _clrA.g + _clrB.g, _clrA.b + _clrB.b, _clrA.a + _clrB.a);
+      return _out.setClamped(_clrA.r + _clrB.r, _clrA.g + _clrB.g, _clrA.b + _clrB.b, _clrA.a + _clrB.a);
     }
 
     /**
@@ -177,7 +177,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static DIFFERENCE(_clrA: Color, _clrB: Color, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.set(Math.max(0, _clrA.r - _clrB.r), Math.max(0, _clrA.g - _clrB.g), Math.max(0, _clrA.b - _clrB.b), Math.max(0, _clrA.a - _clrB.a));
+      return _out.setClamped(_clrA.r - _clrB.r, _clrA.g - _clrB.g, _clrA.b - _clrB.b, _clrA.a - _clrB.a);
     }
 
     /**
@@ -185,7 +185,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static PRODUCT(_clrA: Color, _clrB: Color, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.set(_clrA.r * _clrB.r, _clrA.g * _clrB.g, _clrA.b * _clrB.b, _clrA.a * _clrB.a);
+      return _out.setClamped(_clrA.r * _clrB.r, _clrA.g * _clrB.g, _clrA.b * _clrB.b, _clrA.a * _clrB.a);
     }
 
     /**
@@ -193,7 +193,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static SCALE(_vector: Color, _scaling: number, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.set(_vector.r * _scaling, _vector.g * _scaling, _vector.b * _scaling, _vector.a * _scaling);
+      return _out.setClamped(_vector.r * _scaling, _vector.g * _scaling, _vector.b * _scaling, _vector.a * _scaling);
     }
 
     static #f(_n: number, _hue: number, _saturation: number, _light: number): number {
@@ -265,7 +265,12 @@ namespace FudgeCore {
      * @returns A reference to this color.
      */
     public setClamped(_r: number, _g: number, _b: number, _a: number): Color {
-      return this.set(Calc.clamp(_r, 0, 1), Calc.clamp(_g, 0, 1), Calc.clamp(_b, 0, 1), Calc.clamp(_a, 0, 1));;
+      return this.set(
+        Calc.clamp(_r, 0, 1), 
+        Calc.clamp(_g, 0, 1), 
+        Calc.clamp(_b, 0, 1), 
+        Calc.clamp(_a, 0, 1)
+      );
     }
 
     /**
@@ -324,10 +329,13 @@ namespace FudgeCore {
      * Adds the given color to this.
      */
     public add(_color: Color): Color {
-      this.r += _color.r;
-      this.g += _color.g;
-      this.b += _color.b;
-      this.a += _color.a;
+      this.setClamped(
+        this.r + _color.r,
+        this.g + _color.g,
+        this.b + _color.b,
+        this.a + _color.a
+      );
+      
       return this;
     }
 
@@ -335,10 +343,13 @@ namespace FudgeCore {
      * Adds the given color to this.
      */
     public subtract(_color: Color): Color {
-      this.r = Math.max(0, this.r - _color.r);
-      this.g = Math.max(0, this.g - _color.g);
-      this.b = Math.max(0, this.b - _color.b);
-      this.a = Math.max(0, this.a - _color.a);
+      this.setClamped(
+        this.r - _color.r,
+        this.g - _color.g,
+        this.b - _color.b,
+        this.a - _color.a
+      );
+
       return this;
     }
 
@@ -346,10 +357,13 @@ namespace FudgeCore {
      * Multiplies this with the given color.
      */
     public multiply(_color: Color): Color {
-      this.r *= _color.r;
-      this.g *= _color.g;
-      this.b *= _color.b;
-      this.a *= _color.a;
+      this.setClamped(
+        this.r * _color.r,
+        this.g * _color.g,
+        this.b * _color.b,
+        this.a * _color.a
+      );
+
       return this;
     }
 
@@ -357,10 +371,13 @@ namespace FudgeCore {
      * Scales this color by the given factor.
      */
     public scale(_scaling: number): Color {
-      this.r *= _scaling;
-      this.g *= _scaling;
-      this.b *= _scaling;
-      this.a *= _scaling;
+      this.setClamped(
+        this.r * _scaling,
+        this.g * _scaling,
+        this.b * _scaling,
+        this.a * _scaling
+      );
+
       return this;
     }
 
