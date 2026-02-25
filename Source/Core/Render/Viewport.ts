@@ -408,7 +408,7 @@ namespace FudgeCore {
       // result.y *= (1 - _normed.y) * rectClient.height;
       // result.add(rectClient.position);
       //TODO: check if rectDestination can safely (and more perfomant) be used instead getClientRectangle
-      let pointClient: Vector2 = Render.rectClip.pointToRect(_normed, this.rectDestination);
+      let pointClient: Vector2 = Render.rectClip.pointToRect(_normed, this.rectClient);
       return pointClient;
     }
 
