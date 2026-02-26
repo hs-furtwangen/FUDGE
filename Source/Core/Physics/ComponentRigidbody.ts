@@ -570,26 +570,6 @@ namespace FudgeCore {
 
 
     //#region Saving/Loading - Some properties might be missing, e.g. convexMesh (Float32Array)
-    // TODO: backwards compatibility, remove in future versions
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      if (_serialization.pivot != undefined)
-        this.mtxPivot.deserialize(_serialization.pivot);
-
-      if (typeof _serialization.initialization == "string")
-        this.initialization = <number>(<General>BODY_INIT)[_serialization.initialization];
-
-      if (typeof _serialization.typeBody == "string")
-        this.typeBody = <number>(<General>BODY_TYPE)[_serialization.typeBody];
-
-      if (typeof _serialization.typeCollider == "string")
-        this.typeCollider = <number>(<General>COLLIDER_TYPE)[_serialization.typeCollider];
-
-      // this.create(this.mass, this.#typeBody, this.#typeCollider, this.collisionGroup, null, this.convexMesh);
-      return this;
-    }
-
     /** Change properties by an associative array */
     public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {
       await super.mutate(_mutator, _dispatchMutate);

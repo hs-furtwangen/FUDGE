@@ -26,21 +26,5 @@ namespace FudgeCore {
       this.color = _color;
       this.sortForAlpha = _sortForAlpha;
     }
-
-    // TODO: backwards compatibility, remove in future versions
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      if (_serialization.idMaterial != undefined)
-        this.material = <Material>await Project.getResource(_serialization.idMaterial);
-
-      if (_serialization.clrPrimary != undefined)
-        this.color.deserialize(_serialization.clrPrimary);
-
-      if (_serialization.pivot != undefined)
-        this.mtxPivot.deserialize(_serialization.pivot);
-
-      return this;
-    }
   }
 }

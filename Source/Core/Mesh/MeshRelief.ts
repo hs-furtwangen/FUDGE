@@ -60,16 +60,6 @@ namespace FudgeCore {
       return serialization;
     }
 
-    // TODO: Backward compatibility, remove in future version
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      if (_serialization.idTexture)
-        this.texture = <TextureImage>await Project.getResource(_serialization.idTexture);
-
-      return this;
-    }
-
     public async mutate(_mutator: Mutator): Promise<void> {
       return <Promise<void>><unknown>Mutable.mutateBase(this, _mutator);
     }

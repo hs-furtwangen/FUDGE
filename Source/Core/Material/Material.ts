@@ -90,17 +90,6 @@ namespace FudgeCore {
     }
 
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      // TODO: backwards compatibility, remove in future versions; use @edit(Coat)...
-      const coat: Serialization = _serialization.coat;
-      if (coat && !("@type" in coat)) {
-        this.#coat = await Serializer.deserialize(coat);
-        delete _serialization.coat;
-        const promise: Promise<Serializable> = deserializeDecorations(this, _serialization);
-        _serialization.coat = coat;
-
-        return promise;
-      }
-      
       return deserializeDecorations(this, _serialization);
     }
   }

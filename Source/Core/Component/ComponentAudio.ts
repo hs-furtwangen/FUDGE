@@ -222,10 +222,6 @@ namespace FudgeCore {
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await super.deserialize(_serialization);
 
-      // TODO: backwards compatibility, remove in future versions
-      if (_serialization.idResource != undefined)
-        this.audio = <Audio>await Project.getResource(_serialization.idResource);
-
       this.createSource(this.audio, this.loop);
       this.play(this.playing);
       return this;

@@ -78,16 +78,6 @@ namespace FudgeCore {
     }
     //#endregion
 
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      // TODO: backward compatibility, remove in future versions
-      if (_serialization.local != undefined)
-        this.mtxLocal.deserialize(_serialization.local);
-
-      return this;
-    }
-
     public override mutate(_mutator: Mutator, _dispatchMutate: boolean = true): void {
       // inline sync mutate for animation performance
       if (_mutator.active != undefined)

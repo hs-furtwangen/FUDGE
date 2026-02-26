@@ -16,15 +16,5 @@ namespace FudgeCore {
 
     @RenderManagerCoatRemissiveTexturedNormals.decorate
     public useRenderData(): void { /* injected */ };
-
-    // TODO: backwards compatibility, remove in future version
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      if (_serialization.idNormalMap)
-        this.normalMap = <Texture>await Project.getResource(_serialization.idNormalMap);
-
-      return this;
-    }
   }
 }

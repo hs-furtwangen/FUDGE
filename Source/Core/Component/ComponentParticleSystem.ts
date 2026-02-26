@@ -112,16 +112,6 @@ namespace FudgeCore {
     @RenderInjectorComponentParticleSystem.decorate
     public deleteRenderData(): void {/* injected by RenderInjector*/ }
 
-    // TODO: backwards compatibility, remove in future versions
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      if (_serialization.idParticleSystem) 
-        this.particleSystem = <ParticleSystem>await Project.getResource(_serialization.idParticleSystem);
-
-      return this;
-    }
-
     private hndEvent = (_event: Event): void => {
       switch (_event.type) {
         case EVENT.NODE_DESERIALIZED:

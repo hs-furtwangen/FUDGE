@@ -80,29 +80,6 @@ namespace FudgeCore {
     @RenderWebGLComponentLight.decorate
     public static updateRenderbuffer(_lights: MapLightTypeToLightList): void { /* injected */ };
 
-    // TODO: backwards compatibility, remove in future versions
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      let mtxPivot: Serialization = _serialization.pivot;
-      if (mtxPivot != undefined)
-        this.mtxPivot.deserialize(mtxPivot);
-
-      let light: Serialization = _serialization.light;
-      if (light != undefined) {
-        for (const path in light) {
-          this.lightType = <LIGHT_TYPE>path.substring(path.lastIndexOf(".") + 1);
-          light = light[path];
-          if (light.color != undefined)
-            await this.color.deserialize(light.color);
-          if (light.intensity != undefined)
-            this.intensity = light.intensity;
-        }
-      }
-
-      return this;
-    }
-
     public drawGizmos(): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);

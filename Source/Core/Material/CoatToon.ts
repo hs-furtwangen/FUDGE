@@ -31,14 +31,6 @@ namespace FudgeCore {
 
       @edit(Texture)
       public texToon: Texture;
-
-      // TODO: backwards compatibility, remove in future version
-      public async deserialize(_serialization: Serialization): Promise<Serializable> {
-        await super.deserialize(_serialization);
-        if (_serialization.idTexToon)
-          this.texToon = <Texture>await Project.getResource(_serialization.idTexToon);
-        return this;
-      }
     }
 
     return CoatToon;

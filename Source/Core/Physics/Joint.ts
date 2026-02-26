@@ -38,9 +38,6 @@ namespace FudgeCore {
     #breakForce: number = 0;
     #breakTorque: number = 0;
 
-    // TODO: property exists solely for backwards compatibility, remove in future versions
-    #nameChildToConnect: string = "";
-
     #connectedNode: Node;
 
     protected abstract joint: OIMO.Joint;
@@ -214,10 +211,6 @@ namespace FudgeCore {
       if (this.#connected == false) {
         if (!this.#bodyAnchor || !this.#bodyTied) {
 
-          // TODO: backwards compatibility, remove in future versions
-          if (this.#nameChildToConnect && !this.#connectedNode)
-            this.#connectedNode = this.node.getChildByName(this.#nameChildToConnect);
-
           if (this.#connectedNode)
             this.connectNode(this.#connectedNode);
 
@@ -247,16 +240,6 @@ namespace FudgeCore {
     */
     public getOimoJoint(): OIMO.Joint {
       return this.joint;
-    }
-
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      // TODO: backwards compatibility, remove in future versions
-      if (_serialization.nameChildToConnect != undefined) 
-        this.#nameChildToConnect = _serialization.nameChildToConnect;
-
-      return this;
     }
 
     public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {

@@ -126,16 +126,6 @@ namespace FudgeCore {
       return this.updateAnimationLoop(null, _time);
     }
 
-    // TODO: backwards compatibility, remove in future versions
-    public async deserialize(_serialization: Serialization): Promise<Serializable> {
-      await super.deserialize(_serialization);
-
-      if (_serialization.idAnimation != undefined)
-        this.animation = <Animation>await Project.getResource(_serialization.idAnimation);
-
-      return this;
-    }
-
     private activateListeners(_on: boolean): void {
       if (!this.node)
         return;
@@ -204,13 +194,5 @@ namespace FudgeCore {
       this.#timeLocal.setScale(newScale);
     };
     //#endregion
-  }
-
-
-  /**
-   * @deprecated Use ComponentAnimation instead of ComponentAnimator. Exists only for backwards compatibility. Will be removed in future versions.
-   */
-  export class ComponentAnimator extends ComponentAnimation { // TODO: Remove in future versions
-
   }
 }

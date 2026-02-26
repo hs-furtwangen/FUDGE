@@ -319,10 +319,6 @@ namespace FudgeCore {
     public async deserialize(_serialization: Serialization): Promise<Serializable> {
       await deserializeDecorations(this, _serialization);
 
-      // TODO: backwards compatibility, remove in future version
-      if (_serialization.framesPerSecond != undefined)
-        this.fps = _serialization.framesPerSecond;
-
       this.labels = {};
       for (let name in _serialization.labels)
         this.labels[name] = _serialization.labels[name];
