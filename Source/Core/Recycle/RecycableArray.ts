@@ -7,12 +7,6 @@ namespace FudgeCore {
   export class RecycableArray<T> { // TODO: fix spelling Recycable -> Recyclable
     #length: number = 0;
     #array: Array<T> = new Array<T>();
-    // #type: new () => T;
-
-    // //tslint:disable-next-line:no-any
-    // constructor(_type: new (...args: any[]) => T) {
-    //   this.#type = _type;
-    // }
 
     public get length(): number {
       return this.#length;
@@ -71,12 +65,45 @@ namespace FudgeCore {
     }
 
     /**
-     * Returns a copy of the array sorted according to the given compare function
+     * Sorts the array in place according to the provided compare function. The sorting algorithm is not guaranteed to be stable.
+     * See {@link Array.prototype.sort} for details.
      */
-    public getSorted(_sort: (a: T, b: T) => number): T[] {
-      let sorted: T[] = this.#array.slice(0, this.#length);
-      sorted.sort(_sort);
-      return sorted;
+    public sort(_compareFn: (a: T, b: T) => number): void {
+      if (this.#length < 2)
+        return;
+
+      this.sortRange(_compareFn, 0, this.#length - 1);
+    }
+
+    private sortRange(_compareFn: (a: T, b: T) => number, _left: number, _right: number): void {
+      let i: number = _left;
+      let j: number = _right;
+      const pivot: T = this.#array[(_left + _right) >> 1];
+
+      while (i <= j) {
+        while (_compareFn(this.#array[i], pivot) < 0)
+          i++;
+
+        while (_compareFn(this.#array[j], pivot) > 0)
+          j--;
+
+        if (i <= j) {
+          if (i != j) {
+            const temp: T = this.#array[i];
+            this.#array[i] = this.#array[j];
+            this.#array[j] = temp;
+          }
+
+          i++;
+          j--;
+        }
+      }
+
+      if (_left < j)
+        this.sortRange(_compareFn, _left, j);
+
+      if (i < _right)
+        this.sortRange(_compareFn, i, _right);
     }
   }
 }

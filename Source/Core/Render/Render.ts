@@ -1,6 +1,14 @@
 namespace FudgeCore {
   export type MapLightTypeToLightList = Map<LIGHT_TYPE, RecycableArray<ComponentLight>>;
 
+  const SHADER_ID: unique symbol = Symbol("ShaderId");
+  const Z_CAMERA: unique symbol = Symbol("zCamera");
+
+  type NodeSortCache = Node & {
+    [SHADER_ID]: number;
+    [Z_CAMERA]: number;
+  };
+
   export interface RenderPrepareOptions {
     ignorePhysics?: boolean;
   }
@@ -17,6 +25,10 @@ namespace FudgeCore {
     private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
+
+    private static readonly mapShaderToSortId: WeakMap<ShaderInterface, number> = new WeakMap(); // TODO: maybe find a better way to assign shaders a unique id for sorting
+    private static nextShaderSortId: number = 1;
+
     private static timestampUpdate: number;
 
     // cache events to avoid frequent recycling
@@ -58,6 +70,8 @@ namespace FudgeCore {
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
       ComponentLight.updateRenderbuffer(Render.lights);
+
+      Render.nodesSimple.sort(Render.compareOpaqueNodes);
     }
 
     public static addLights(_cmpLights: readonly ComponentLight[]): void {
@@ -79,15 +93,14 @@ namespace FudgeCore {
      * Draws the scene from the point of view of the given camera
      */
     public static draw(_cmpCamera: ComponentCamera): void {
-      let nodesAlpha: Node[];
-      if (Render.nodesAlpha.length > 0) { // TODO: avoid object and function creation in loop
-        for (let node of Render.nodesAlpha)
-          Reflect.set(node, "zCamera", _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z);
 
-        nodesAlpha = Render.nodesAlpha.getSorted((_a: Node, _b: Node) => Reflect.get(_b, "zCamera") - Reflect.get(_a, "zCamera"));
-      }
+      for (let node of Render.nodesAlpha)
+        (<NodeSortCache>node)[Z_CAMERA] = _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z;
 
-      Render.drawNodes(Render.nodesSimple, nodesAlpha ?? Render.nodesAlpha, _cmpCamera);
+      Render.nodesAlpha.sort(Render.compareAlphaNodes);
+
+
+      Render.drawNodes(Render.nodesSimple, Render.nodesAlpha, _cmpCamera);
     }
 
     private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _parent: Node, _recalculate: boolean): void {
@@ -146,6 +159,13 @@ namespace FudgeCore {
         const cmpFaceCamera: ComponentFaceCamera = _branch.getComponent(ComponentFaceCamera);
         const cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
         _branch.updateRenderData(cmpMesh, cmpMaterial, cmpFaceCamera, cmpParticleSystem);
+
+        const isParticleSystem: boolean = cmpParticleSystem?.active && cmpParticleSystem.particleSystem != null;
+        const shader: ShaderInterface = isParticleSystem
+          ? cmpParticleSystem.particleSystem.getShaderFrom(cmpMaterial.material.getShader())
+          : cmpMaterial.material.getShader();
+
+        (<NodeSortCache>_branch)[SHADER_ID] = Render.getSortIdForShader(shader); // cache shader sort id directly on the node for faster access during sorting, as this is the most expensive sorting step and shader is the most expensive property to access during rendering
 
         _branch.radius = cmpMesh.radius;
 
@@ -216,6 +236,27 @@ namespace FudgeCore {
       _node.mtxLocal.copy(mtxLocal);
       Recycler.store(mtxWorld);
       Recycler.store(mtxLocal);
+    }
+
+    private static compareOpaqueNodes(_a: Node, _b: Node): number {
+      return (<NodeSortCache>_a)[SHADER_ID] - (<NodeSortCache>_b)[SHADER_ID];
+    }
+
+    private static compareAlphaNodes(_a: Node, _b: Node): number {
+      const zDifference: number = (<NodeSortCache>_a)[Z_CAMERA] - (<NodeSortCache>_b)[Z_CAMERA];
+      if (zDifference != 0)
+        return zDifference;
+
+      return (<NodeSortCache>_a)[SHADER_ID] - (<NodeSortCache>_b)[SHADER_ID];
+    }
+
+    private static getSortIdForShader(_shader: ShaderInterface): number {
+      let id: number = Render.mapShaderToSortId.get(_shader);
+      if (!id) {
+        id = Render.nextShaderSortId++;
+        Render.mapShaderToSortId.set(_shader, id);
+      }
+      return id;
     }
   }
 }
