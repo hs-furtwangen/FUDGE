@@ -48,6 +48,11 @@ namespace FudgeCore {
     #near: number = 0.01;
     #far: number = 1000;
 
+    #left: number = -1;
+    #right: number = 1;
+    #bottom: number = -1;
+    #top: number = 1;
+
     #projectionDirty: boolean = true;
 
     readonly #mtxWorldToView: Matrix4x4 = Matrix4x4.IDENTITY();
@@ -180,10 +185,10 @@ namespace FudgeCore {
      * @param _far The maximum distance to render objects at.
      */
     public projectCentral(_aspect: number = this.#aspectRatio, _fieldOfView: number = this.#fieldOfView, _direction: FIELD_OF_VIEW = this.#direction, _near: number = this.#near, _far: number = this.#far): void {
+      this.#projection = PROJECTION.CENTRAL;
       this.#aspectRatio = _aspect;
       this.#fieldOfView = _fieldOfView;
       this.#direction = _direction;
-      this.#projection = PROJECTION.CENTRAL;
       this.#near = _near;
       this.#far = _far;
       Matrix4x4.PROJECTION_CENTRAL(_aspect, _fieldOfView, _near, _far, _direction, this.#mtxProjection);
@@ -196,17 +201,15 @@ namespace FudgeCore {
      * @param _bottom The positionvalue of the projectionspace's bottom border.
      * @param _top The positionvalue of the projectionspace's top border.      
      */
-    public projectOrthographic(_left?: number, _right?: number, _bottom?: number, _top?: number): void {
-      const rectViewport: Rectangle = Render.getViewportRectangle();
-      const width: number = rectViewport.width;
-      const height: number = rectViewport.height;
-      _left = -width / 2;
-      _right = width / 2;
-      _bottom = height / 2;
-      _top = -height / 2;
-
+    public projectOrthographic(_left: number = this.#left, _right: number = this.#right, _bottom: number = this.#bottom, _top: number = this.#top, _near: number = this.#near, _far: number = this.#far): void {
       this.#projection = PROJECTION.ORTHOGRAPHIC;
-      Matrix4x4.PROJECTION_ORTHOGRAPHIC(_left, _right, _bottom, _top, 400, -400, this.#mtxProjection); // TODO: examine magic numbers!
+      this.#left = _left;
+      this.#right = _right;
+      this.#bottom = _bottom;
+      this.#top = _top;
+      this.#near = _near;
+      this.#far = _far;
+      Matrix4x4.PROJECTION_ORTHOGRAPHIC(_left, _right, _bottom, _top, _near, _far, this.#mtxProjection);
     }
 
     /**
@@ -291,7 +294,35 @@ namespace FudgeCore {
     }
 
     public drawGizmosSelected(): void {
-      Gizmos.drawWireFrustum(this.#aspectRatio, this.#fieldOfView, this.#near, this.#far, this.#direction, this.mtxWorld, Color.CSS("lightgrey"));
-    };
+      const color: Color = Color.CSS("lightgrey");
+      switch (this.#projection) {
+        case PROJECTION.CENTRAL:
+          Gizmos.drawWireFrustum(this.#aspectRatio, this.#fieldOfView, this.#near, this.#far, this.#direction, this.mtxWorld, color);
+          break;
+        case PROJECTION.ORTHOGRAPHIC:
+          const width: number = this.#right - this.#left;
+          const height: number = this.#top - this.#bottom;
+          const depth: number = this.#far - this.#near;
+
+          const center: Vector3 = Recycler.reuse(Vector3).set(
+            (this.#left + this.#right) / 2,
+            (this.#bottom + this.#top) / 2,
+            (this.#near + this.#far) / 2
+          );
+          const scaling: Vector3 = Recycler.reuse(Vector3).set(width, height, depth);
+
+          const mtxWorld: Matrix4x4 = this.mtxWorld.clone;
+          mtxWorld.translate(center);
+          mtxWorld.scale(scaling);
+
+          Gizmos.drawWireCube(mtxWorld, color);
+
+          Recycler.store(center);
+          Recycler.store(scaling);
+          Recycler.store(mtxWorld);
+          break;
+      }
+      Recycler.store(color);
+    }
   }
 }

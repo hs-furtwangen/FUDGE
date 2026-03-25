@@ -463,16 +463,16 @@ namespace FudgeCore {
      * @param _far The positionvalue of the projectionspace's far border
      * @param _mtxOut Optional matrix to store the result in.
      */
-    public static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near: number = -400, _far: number = 400, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
+    public static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near: number, _far: number, _mtxOut: Matrix4x4 = Recycler.reuse(Matrix4x4)): Matrix4x4 {
       _mtxOut.set(
         2 / (_right - _left), 0, 0, 0,
-        0, -2 / (_top - _bottom), 0, 0,
-        0, 0, 2 / (_far - _near), 0,
-        (_left + _right) / (_left - _right),
-        (_bottom + _top) / (_bottom - _top),
-        (_near + _far) / (_near - _far),
-        1
+        0, 2 / (_top - _bottom), 0, 0,
+        0, 0, -2 / (_far - _near), 0,
+        -(_right + _left) / (_right - _left), -(_top + _bottom) / (_top - _bottom), -(_far + _near) / (_far - _near), 1
       );
+
+      _mtxOut.rotateY(180);
+
       return _mtxOut;
     }
 
