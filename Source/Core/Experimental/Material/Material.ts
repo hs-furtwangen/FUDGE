@@ -86,11 +86,11 @@ namespace FudgeCore {
       }
 
       /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-      @RenderManagerMaterial.decorate
+      // @RenderManagerMaterial.decorate
       public updateRenderData(..._args: unknown[]): void { return; };
 
       /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-      @RenderManagerMaterial.decorate
+      // @RenderManagerMaterial.decorate
       public useRenderData(..._args: unknown[]): void { return; };
 
       public serialize(): Serialization {

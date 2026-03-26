@@ -5,6 +5,10 @@ namespace FudgeCore {
    * @internal
    */
   export class RenderInjectorShader {
+
+    /** The currently active program, used to prevent redundant calls to `useProgram` on the WebGL context. */ 
+    private static activeProgram: WebGLProgram = null;
+
     /**
      * Injects the functionality of this class into the constructor of the given {@link Shader}-subclass
      */
@@ -20,15 +24,26 @@ namespace FudgeCore {
       });
     }
 
+    /** @internal Replaces the decorated method with the manager’s implementation of the same name. */
+    public static decorateMethod<M extends (this: General, ...args: General) => General>(_method: M, _context: ClassMethodDecoratorContext<General, M>): M {
+      const method: M = Reflect.get(this, _context.name);
+      return method;
+    }
+
     /**
      * Set this program to use as the active program in WebGL
      */
-    public static useProgram(this: typeof Shader): void {
+    public static useProgram(this: { program: WebGLProgram; createProgram: () => void }): void {
       if (!this.program)
         this.createProgram();
 
-      let crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      crc3.useProgram(this.program);
+      const program: WebGLProgram = this.program;
+      if (RenderInjectorShader.activeProgram == program)
+        return;
+      RenderInjectorShader.activeProgram = program;
+
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      crc3.useProgram(program);
     }
 
     /**
@@ -65,11 +80,12 @@ namespace FudgeCore {
         this.uniforms = detectUniforms();
 
         bindUniformBlock(program, UNIFORM_BLOCK.LIGHTS.NAME, UNIFORM_BLOCK.LIGHTS.BINDING);
-        bindUniformBlock(program, UNIFORM_BLOCK.CAMERA.NAME, UNIFORM_BLOCK.CAMERA.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.VIEW.NAME, UNIFORM_BLOCK.VIEW.BINDING);
         bindUniformBlock(program, UNIFORM_BLOCK.MATERIAL.NAME, UNIFORM_BLOCK.MATERIAL.BINDING);
-        bindUniformBlock(program, UNIFORM_BLOCK.NODE.NAME, UNIFORM_BLOCK.NODE.BINDING);
-        bindUniformBlock(program, UNIFORM_BLOCK.SKIN.NAME, UNIFORM_BLOCK.SKIN.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.OBJECT.NAME, UNIFORM_BLOCK.OBJECT.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.SKELETON.NAME, UNIFORM_BLOCK.SKELETON.BINDING);
         bindUniformBlock(program, UNIFORM_BLOCK.FOG.NAME, UNIFORM_BLOCK.FOG.BINDING);
+        bindUniformBlock(program, UNIFORM_BLOCK.SHADOWS.NAME, UNIFORM_BLOCK.SHADOWS.BINDING);
 
         crc3.useProgram(this.program);
         let uniform: WebGLUniformLocation = this.uniforms[TEXTURE_LOCATION.COLOR.UNIFORM];
@@ -87,6 +103,10 @@ namespace FudgeCore {
         uniform = this.uniforms[TEXTURE_LOCATION.PARTICLE.UNIFORM];
         if (uniform)
           crc3.uniform1i(uniform, TEXTURE_LOCATION.PARTICLE.INDEX);
+
+        uniform = this.uniforms[TEXTURE_LOCATION.SHADOW_MAP.UNIFORM];
+        if (uniform)
+          crc3.uniform1i(uniform, TEXTURE_LOCATION.SHADOW_MAP.INDEX);
       } catch (_error) {
         Debug.error(_error);
         debugger;

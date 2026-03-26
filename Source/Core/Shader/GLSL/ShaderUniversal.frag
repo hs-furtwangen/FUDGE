@@ -6,11 +6,15 @@
 precision mediump float;
 precision highp int;
 
-layout(std140) uniform Node {
-  uniform mat4 u_mtxMeshToWorld; // u_mtxModel
-  uniform mat3 u_mtxPivot; // texture pivot matrix
-  uniform vec4 u_vctColorPrimary; // component material color
+layout(std140) uniform Object {
+  // transform data
+  uniform mat4 u_mtxModel;
 
+  // surface instance data
+  uniform mat3 u_mtxPivot; // texture pivot matrix
+  uniform vec4 u_vctObjectColor; // component material color
+
+  // particle system data
   uniform uint u_iBlendMode;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
@@ -20,15 +24,15 @@ layout(std140) uniform Node {
   uniform bool u_bFaceCameraRestrict;
 };
 
-layout(std140) uniform Camera {
-  mat4 u_mtxWorldToCamera; // u_mtxView
+layout(std140) uniform View {
+  mat4 u_mtxView;
   mat4 u_mtxProjection; 
-  mat4 u_mtxWorldToView; // u_mtxViewProjection
+  mat4 u_mtxViewProjection;
   vec3 u_vctCamera;
 };
 
 layout(std140) uniform Material {
-  uniform vec4 u_vctColor;
+  uniform vec4 u_vctMaterialColor;
 
   uniform float u_fDiffuse;
   uniform float u_fSpecular;
@@ -84,11 +88,13 @@ layout(location = 2) out vec4 vctFragNormal;
     vec4 vctColor;
     mat4 mtxShape;
     mat4 mtxShapeInverse;
+    float fShadowLayer; // -1 = no shadow, otherwise index in shadow array
   };
 
-  #define MAX_LIGHTS_DIRECTIONAL 15u
+  #define MAX_LIGHTS_DIRECTIONAL 100u
   #define MAX_LIGHTS_POINT 100u
   #define MAX_LIGHTS_SPOT 100u
+  #define MAX_SHADOW_SLOTS 20u // dir/spot = 1 slot, point = 6 slots
 
   layout(std140) uniform Lights { // TODO: put ambient color in header
     uint u_nLightsDirectional;
@@ -101,13 +107,18 @@ layout(location = 2) out vec4 vctFragNormal;
     Light u_spot[MAX_LIGHTS_SPOT];
   };
 
+  layout(std140) uniform Shadows {
+    mat4 u_shadowViewProjectionMatrices[MAX_SHADOW_SLOTS]; // light space view projection matrices
+    vec4 u_shadowParameters[MAX_SHADOW_SLOTS]; // x bias, y normalBias, z opacity, w pcfRadius
+  };
+
   /**
    * _vctLight: direction from position to light
    * _vctView: direction from position to camera
    * _vctNormal: surface normal at position
    * _vctColor: color of the light
    */
-  void illuminateDirected(vec3 _vctLightDirection, vec3 _vctViewDirection, vec3 _vctNormal, vec3 _vctColor, inout vec3 _vctDiffuse, inout vec3 _vctSpecular) {
+  void illuminateDirected(vec3 _vctLightDirection, vec3 _vctViewDirection, vec3 _vctNormal, vec3 _vctColor, float _attenuation, inout vec3 _vctDiffuse, inout vec3 _vctSpecular) {
     vec3 vctLightDirection = normalize(_vctLightDirection);
 
     float fDiffuse = dot(_vctNormal, vctLightDirection);
@@ -120,7 +131,7 @@ layout(location = 2) out vec4 vctFragNormal;
 
       #endif
 
-      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor;
+      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor * _attenuation;
 
       if(u_fSpecular <= 0.0 || u_fIntensity <= 0.0)
         return;
@@ -138,7 +149,7 @@ layout(location = 2) out vec4 vctFragNormal;
 
       #endif
 
-      _vctSpecular += fSpecular * u_fIntensity * _vctColor;
+      _vctSpecular += fSpecular * u_fIntensity * _vctColor * _attenuation;
     }
   }
 
@@ -156,6 +167,24 @@ layout(location = 2) out vec4 vctFragNormal;
   uniform sampler2D u_texNormal;
   in vec3 v_vctTangent;
   in vec3 v_vctBitangent;
+
+#endif
+
+#if defined(SHADOW)
+
+  uniform mediump sampler2DArrayShadow u_texShadowMap;
+
+  uint getCubeFace(vec3 _dirFromLight) {
+    vec3 a = abs(_dirFromLight);
+
+    if (a.x >= a.y && a.x >= a.z)
+      return _dirFromLight.x > 0.0 ? 0u : 1u; // +X, -X
+
+    if (a.y >= a.z)
+      return _dirFromLight.y > 0.0 ? 2u : 3u; // +Y, -Y
+
+    return _dirFromLight.z > 0.0 ? 4u : 5u;   // +Z, -Z
+  }
 
 #endif
 
@@ -201,45 +230,94 @@ void main() {
   
   #if defined(FLAT) || defined(PHONG)
 
-    vec3 vctDiffuse = u_fDiffuse * u_vctAmbientColor.rgb;
+    vec3 vctDiffuse = vec3(0, 0, 0);
     vec3 vctSpecular = vec3(0, 0, 0);
 
     // directional lights
     for(uint i = 0u; i < u_nLightsDirectional; i++) {
-      vec3 vctLightDirection = vec3(u_directional[i].mtxShape * vec4(0.0, 0.0, -1.0, 1.0));
-      illuminateDirected(vctLightDirection, vctViewDirection, vctNormal, u_directional[i].vctColor.rgb, vctDiffuse, vctSpecular);
+      vec3 vctLightDirection = -u_directional[i].mtxShape[2].xyz; // directional light direction is the inverted forward vector of the light's transform
+
+      float fAttenuation = 1.0;
+
+      #if defined(SHADOW)
+
+        if (u_directional[i].fShadowLayer > -1.0) {
+          uint iShadow = uint(u_directional[i].fShadowLayer);
+          vec4 vctPositionLightSpace = u_shadowViewProjectionMatrices[iShadow] * vec4(v_vctPosition, 1.0);
+          vec4 vctShadowParameters = u_shadowParameters[iShadow];
+
+          vec3 vctShadowCoord = vctPositionLightSpace.xyz;
+          fAttenuation = texture(u_texShadowMap, vec4(vctShadowCoord.xy, float(iShadow), vctShadowCoord.z - vctShadowParameters.x));
+        }
+
+      #endif
+
+      illuminateDirected(vctLightDirection, vctViewDirection, vctNormal, u_directional[i].vctColor.rgb, fAttenuation, vctDiffuse, vctSpecular);
     }
 
     // point lights
     for(uint i = 0u; i < u_nLightsPoint; i++) {
-      vec3 vctLightPosition = vec3(u_point[i].mtxShape * vec4(0.0, 0.0, 0.0, 1.0));
+      vec3 vctLightPosition = u_point[i].mtxShape[3].xyz; // light position is the translation component of the light's transform
       vec3 vctLightDirection = vctLightPosition - vctPosition;
-      float fIntensity = 1.0 - length(mat3(u_point[i].mtxShapeInverse) * vctLightDirection);
-      if(fIntensity < 0.0)
+      float fAttenuation = 1.0 - length(mat3(u_point[i].mtxShapeInverse) * vctLightDirection);
+      if(fAttenuation < 0.0)
         continue;
 
-      illuminateDirected(vctLightDirection, vctViewDirection, vctNormal, u_point[i].vctColor.rgb * fIntensity, vctDiffuse, vctSpecular);
+      #if defined(SHADOW)
+
+        if (u_point[i].fShadowLayer > -1.0) {
+          uint iShadowLayer = uint(u_point[i].fShadowLayer);
+
+          uint iFace = getCubeFace(-vctLightDirection);
+          uint iShadow = iShadowLayer + iFace;
+
+          vec4 vctPositionLightSpace = u_shadowViewProjectionMatrices[iShadow] * vec4(v_vctPosition, 1.0);
+          vec4 vctShadowParameters = u_shadowParameters[iShadowLayer];
+          vec3 vctShadowCoord = vctPositionLightSpace.xyz / vctPositionLightSpace.w;
+
+          fAttenuation *= texture(u_texShadowMap, vec4(vctShadowCoord.xy, float(iShadow), vctShadowCoord.z - vctShadowParameters.x));
+        }
+        
+      #endif
+
+      illuminateDirected(vctLightDirection, vctViewDirection, vctNormal, u_point[i].vctColor.rgb, fAttenuation, vctDiffuse, vctSpecular);
     }
 
     // spot lights
     for(uint i = 0u; i < u_nLightsSpot; i++) {
-      vec3 vctLightPosition = vec3(u_spot[i].mtxShape * vec4(0.0, 0.0, 0.0, 1.0));
+      Light spotLight = u_spot[i];
+      vec3 vctLightPosition = spotLight.mtxShape[3].xyz; // position is the translation component of the light's transform
       vec3 vctLightDirection = vctLightPosition - vctPosition;
-      vec3 vctLightDirectionInverted = mat3(u_spot[i].mtxShapeInverse) * -vctLightDirection;
-      if(vctLightDirectionInverted.z <= 0.0)
+      vec3 vctLightDirectionLocal = mat3(spotLight.mtxShapeInverse) * -vctLightDirection;
+      if(vctLightDirectionLocal.z <= 0.0)
         continue;
 
-      float fIntensity = 1.0 - min(1.0, 2.0 * length(vctLightDirectionInverted.xy) / vctLightDirectionInverted.z);    // Coneshape that is brightest in the center. Possible TODO: "Variable Spotlightsoftness"
-      fIntensity *= 1.0 - pow(vctLightDirectionInverted.z, 2.0);                                                      // Prevents harsh lighting artifacts at boundary of the given spotlight
-      if(fIntensity < 0.0)
+      float fAttenuation = 1.0 - min(1.0, 2.0 * length(vctLightDirectionLocal.xy) / vctLightDirectionLocal.z);    // Coneshape that is brightest in the center. Possible TODO: "Variable Spotlightsoftness"
+      fAttenuation *= 1.0 - pow(vctLightDirectionLocal.z, 2.0);                                                   // Prevents harsh lighting artifacts at boundary of the given spotlight
+      
+      if(fAttenuation < 0.0)
         continue;
 
-      illuminateDirected(vctLightDirection, vctViewDirection, vctNormal, u_spot[i].vctColor.rgb * fIntensity, vctDiffuse, vctSpecular);
+      #if defined(SHADOW)
+
+        if (u_spot[i].fShadowLayer > -1.0) { // check if shadow index is valid
+          uint iShadow = uint(u_spot[i].fShadowLayer);
+          vec4 vctPositionLightSpace = u_shadowViewProjectionMatrices[iShadow] * vec4(v_vctPosition, 1.0);
+          vec4 vctShadowParameters = u_shadowParameters[iShadow];
+          vec3 vctShadowCoord = vctPositionLightSpace.xyz / vctPositionLightSpace.w;
+          fAttenuation *= texture(u_texShadowMap, vec4(vctShadowCoord.xy, float(iShadow), vctShadowCoord.z - vctShadowParameters.x));
+        }
+
+      #endif
+
+      illuminateDirected(vctLightDirection, vctViewDirection, vctNormal, u_spot[i].vctColor.rgb, fAttenuation, vctDiffuse, vctSpecular);
     }
+
+    vctDiffuse = vctDiffuse + u_fDiffuse * u_vctAmbientColor.rgb;
 
   #endif
 
-  vec4 vctColor = u_vctColor * u_vctColorPrimary * v_vctColor;
+  vec4 vctColor = u_vctMaterialColor * u_vctObjectColor * v_vctColor;
 
   #if defined(GOURAUD)
 

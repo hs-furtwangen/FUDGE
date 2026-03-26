@@ -12,20 +12,20 @@ namespace FudgeCore {
     @edit(Number)
     public alphaClip: number = 0.01;
 
-    /** @internal reroute to {@link RenderManagerCoat.resetRenderData} */
-    @RenderManagerCoat.decorate
+    /** @internal reroute to {@link RenderInjectorCoat.resetRenderData} */
+    @RenderInjectorCoat.decorate
     public static resetRenderData(): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderManagerCoat.updateRenderbuffer} */
-    @RenderManagerCoat.decorate
+    /** @internal reroute to {@link RenderInjectorCoat.updateRenderbuffer} */
+    @RenderInjectorCoat.decorate
     public static updateRenderbuffer(): void { /* injected */ };
 
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-    @RenderManagerCoat.decorate
+    @RenderInjectorCoat.decorate
     public updateRenderData(): void { /* injected */ };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-    @RenderManagerCoat.decorate
+    @RenderInjectorCoat.decorate
     public useRenderData(): void { /* injected */ };
 
     public serialize(): Serialization {

@@ -92,12 +92,12 @@ namespace FudgeCore {
       return to;
     }
 
-    /** @internal reroute to {@link RenderManagerNode.resetRenderData} */
-    @RenderManagerNode.decorate
+    /** @internal reroute to {@link RenderInjectorNode.resetRenderData} */
+    @RenderInjectorNode.decorate
     public static resetRenderData(): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderManagerNode.updateRenderbuffer} */
-    @RenderManagerNode.decorate
+    /** @internal reroute to {@link RenderInjectorNode.updateRenderbuffer} */
+    @RenderInjectorNode.decorate
     public static updateRenderbuffer(): void { /* injected */ };
 
     public get isActive(): boolean {
@@ -154,11 +154,11 @@ namespace FudgeCore {
     }
 
     /** Called by the render system during {@link Render.prepare}. Override this to provide the render system with additional render data. */
-    @RenderManagerNode.decorate
+    @RenderInjectorNode.decorate
     public updateRenderData(_cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial, _cmpFaceCamera: ComponentFaceCamera, _cmpParticleSystem: ComponentParticleSystem): void { /* injected */ };
 
     /** Called by the render system during {@link Render.draw}. Override this to provide the render system with additional render data. */
-    @RenderManagerNode.decorate
+    @RenderInjectorNode.decorate
     public useRenderData(_mtxWorldOverride?: Matrix4x4): void { /* injected */ };
 
     /**

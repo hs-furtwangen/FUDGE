@@ -12,7 +12,7 @@ namespace FudgeCore {
       this.texture = _texture;
     }
 
-    @RenderManagerCoatTextured.decorate
+    @RenderInjectorCoatTextured.decorate
     public useRenderData(): void { /* injected */ };
   }
 }

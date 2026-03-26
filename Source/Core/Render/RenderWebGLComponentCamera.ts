@@ -23,26 +23,30 @@ namespace FudgeCore {
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#buffer);
       crc3.bufferData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#data.byteLength, WebGL2RenderingContext.DYNAMIC_DRAW);
-      crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.CAMERA.BINDING, RenderWebGLComponentCamera.#buffer);
+      crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.VIEW.BINDING, RenderWebGLComponentCamera.#buffer);
     }
 
     /**
      * Buffer the camera data to the uniform buffer.
      */
     public static useRenderbuffer(_cmpCamera: ComponentCamera): void {
-      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const data: Float32Array = RenderWebGLComponentCamera.#data;
-
       const mtxView: Matrix4x4 = _cmpCamera.mtxCameraInverse;
       const mtxProjection: Matrix4x4 = _cmpCamera.mtxProjection;
       const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
       const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
 
-      mtxView.toArray(data, 0);
-      mtxProjection.toArray(data, 16);
-      mtxViewProjection.toArray(data, 32);
-      vctPosition.toArray(data, 48);
+      RenderWebGLComponentCamera.updateViewBuffer(mtxView, mtxProjection, mtxViewProjection, vctPosition);
+    }
 
+    public static updateViewBuffer(_mtxView: Matrix4x4, _mtxProjection: Matrix4x4, _mtxViewProjection: Matrix4x4, _vctPosition: Vector3): void {
+      const data: Float32Array = RenderWebGLComponentCamera.#data;
+
+      _mtxView.toArray(data, 0);
+      _mtxProjection.toArray(data, 16);
+      _mtxViewProjection.toArray(data, 32);
+      _vctPosition.toArray(data, 64);
+
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentCamera.#buffer);
       crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, RenderWebGLComponentCamera.#data);
     }

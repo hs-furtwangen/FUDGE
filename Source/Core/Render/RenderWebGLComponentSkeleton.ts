@@ -16,7 +16,7 @@ namespace FudgeCore {
 
       const renderBuffer: WebGLBuffer = this.renderBuffer;
       if (renderBuffer)
-        crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.SKIN.BINDING, renderBuffer);
+        crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.SKELETON.BINDING, renderBuffer);
     }
 
     protected static updateRenderBuffer(this: ComponentSkeleton): void {

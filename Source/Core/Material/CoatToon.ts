@@ -9,7 +9,7 @@ namespace FudgeCore {
       this.texToon = _texToon;
     }
 
-    @RenderManagerCoatToon.decorate
+    @RenderInjectorCoatToon.decorate
     public useRenderData(): void { /* injected */ };
   }
 
@@ -22,7 +22,7 @@ namespace FudgeCore {
       this.texToon = _texToon;
     }
 
-    @RenderManagerCoatToonTextured.decorate
+    @RenderInjectorCoatToonTextured.decorate
     public useRenderData(): void { /* injected */ };
   }
 

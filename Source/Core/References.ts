@@ -5,6 +5,9 @@
 // / <reference path="Time/Time.ts"/>
 /// <reference path="Event/Event.ts"/>
 /// <reference path="Recycle/RecyclableEvent.ts"/>
+/// <reference path="Recycle/RecycableArray.ts"/>
+/// <reference path="Recycle/Recycler.ts"/>
+
 /// <reference path="Serialization/Serializer.ts"/>
 /// <reference path="Serialization/Project.ts"/>
 /// <reference path="Serialization/Metadata.ts"/>
@@ -22,9 +25,11 @@
 /// <reference path="Math/Matrix4x4.ts"/>
 /// <reference path="Material/Color.ts"/>
 /// <reference path="Render/RenderWebGL.ts"/>
+/// <reference path="Render/RenderInjectorNode.ts"/>
+/// <reference path="Render/RenderInjectorCoat.ts"/>
+
 /// <reference path="Graph/Node.ts"/>
 /// <reference path="Component/Component.ts"/>
-/// <reference path="Recycle/RecycableArray.ts"/>
 /// <reference path="Physics/HelpersPhysics.ts"/>
 /// <reference path="Physics/Joint.ts"/>
 /// <reference path="Physics/JointAxial.ts"/>

@@ -4,14 +4,13 @@
 * @authors Jonas Plotzky, HFU, 2023
 */
 precision mediump float;
-precision highp int;
 
-uniform mat4 u_mtxMeshToWorld; // u_mtxModel
+uniform mat4 u_mtxModel;
 
-layout(std140) uniform Camera {
-  mat4 u_mtxWorldToCamera; // u_mtxView
+layout(std140) uniform View {
+  mat4 u_mtxView;
   mat4 u_mtxProjection; 
-  mat4 u_mtxWorldToView; // u_mtxViewProjection
+  mat4 u_mtxViewProjection;
   vec3 u_vctCamera;
 };
 
@@ -25,7 +24,7 @@ layout(location = 0) in vec3 a_vctPosition;
 #endif
 
 void main() {
-  gl_Position = u_mtxWorldToView * u_mtxMeshToWorld * vec4(a_vctPosition, 1.0);
+  gl_Position = u_mtxViewProjection * u_mtxModel * vec4(a_vctPosition, 1.0);
 
   #if defined(TEXTURE)
 

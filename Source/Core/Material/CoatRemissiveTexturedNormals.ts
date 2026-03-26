@@ -14,7 +14,7 @@ namespace FudgeCore {
       this.normalMap = _normalMap;
     }
 
-    @RenderManagerCoatRemissiveTexturedNormals.decorate
+    @RenderInjectorCoatRemissiveTexturedNormals.decorate
     public useRenderData(): void { /* injected */ };
   }
 }

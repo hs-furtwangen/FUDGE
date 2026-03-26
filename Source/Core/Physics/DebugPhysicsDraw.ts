@@ -1,3 +1,6 @@
+///<reference path="../Render/WebGLObjectUniformBuffer.ts"/>
+///<reference path="../Render/WebGLCoatUniformBuffer.ts"/>
+
 namespace FudgeCore {
   /** Internal class for holding data about physics debug vertices.*/
   export class PhysicsDebugVertexBuffer {
@@ -36,11 +39,6 @@ namespace FudgeCore {
         this.offsets.push(this.stride);
         this.stride += _attribs[i].float32Count * Float32Array.BYTES_PER_ELEMENT; // 32bit float Bytes are a constant of 4
       }
-    }
-
-    /** Get the position of the attribute in the shader */
-    public loadAttribIndices(_program: PhysicsDebugShader): void {
-      this.indices = _program.getAttribIndices(this.attribs);
     }
 
     /** Enable a attribute in a shader for this context, */
@@ -92,77 +90,6 @@ namespace FudgeCore {
     }
   }
 
-  /** Internal class for Shaders used only by the physics debugDraw */
-  export class PhysicsDebugShader {
-    public gl: WebGL2RenderingContext;
-    public program: WebGLProgram;
-    public vertexShader: WebGLShader;
-    public fragmentShader: WebGLShader;
-    public uniformLocationMap: Map<string, WebGLUniformLocation>;
-
-    /** Introduce the FUDGE Rendering Context to this class, creating a program and vertex/fragment shader in this context */
-    public constructor(_renderingContext: WebGL2RenderingContext) {
-      this.gl = _renderingContext;
-      this.program = this.gl.createProgram();
-      this.vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-      this.fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-    }
-
-    /** Take glsl shaders as strings and compile them, attaching the compiled shaders to a program thats used by this rendering context. */
-    public compile(_vertexSource: string, _fragmentSource: string): void {
-      this.uniformLocationMap = new Map<string, WebGLUniformLocation>();
-      this.compileShader(this.vertexShader, _vertexSource);
-      this.compileShader(this.fragmentShader, _fragmentSource);
-      this.gl.attachShader(this.program, this.vertexShader);
-      this.gl.attachShader(this.program, this.fragmentShader);
-      this.gl.linkProgram(this.program);
-      if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {  //make sure the linking worked, so the program is valid, and shaders are working
-        Debug.log(this.gl.getProgramInfoLog(this.program));
-      }
-      this.gl.validateProgram(this.program);
-      if (!this.gl.getProgramParameter(this.program, this.gl.VALIDATE_STATUS)) {
-        console.error("ERROR validating program!", this.gl.getProgramInfoLog(this.program));
-        return;
-      }
-    }
-
-    /** Get index of a attribute in a shader in this program */
-    public getAttribIndex(_name: string): number {
-      return this.gl.getAttribLocation(this.program, _name);
-    }
-
-    /** Get the location of a uniform in a shader in this program */
-    public getUniformLocation(_name: string): WebGLUniformLocation {
-      if (this.uniformLocationMap.has(_name)) return this.uniformLocationMap.get(_name);
-      let location: WebGLUniformLocation = this.gl.getUniformLocation(this.program, _name);
-      this.uniformLocationMap.set(_name, location);
-      return location;
-    }
-
-    /** Get all indices for every attribute in the shaders of this program */
-    public getAttribIndices(_attribs: Array<PhysicsDebugVertexAttribute>): Array<number> {
-      let indices: Array<number> = [];
-      _attribs.forEach(_value => {
-        indices.push(this.getAttribIndex(_value.name));
-      });
-      return indices;
-    }
-
-    /** Tell the FUDGE Rendering Context to use this program to draw. */
-    public use(): void {
-      this.gl.useProgram(this.program);
-    }
-
-    /** Compile a shader out of a string and validate it. */
-    public compileShader(_shader: WebGLShader, _source: string): void {
-      this.gl.shaderSource(_shader, _source);
-      this.gl.compileShader(_shader);
-      if (!this.gl.getShaderParameter(_shader, this.gl.COMPILE_STATUS)) {
-        Debug.log(this.gl.getShaderInfoLog(_shader));
-      }
-    }
-  }
-
   /** Internal Class used to draw debugInformations about the physics simulation onto the renderContext. No user interaction needed. 
    * @author Marko Fehrenbach, HFU 2020 //Based on OimoPhysics Haxe DebugDrawDemo 
    */
@@ -170,9 +97,6 @@ namespace FudgeCore {
     public oimoDebugDraw: OIMO.DebugDraw; //the original physics engine debugDraw class receiving calls from the oimoPhysics.World, and providing informations in form of points/lines/triangles what the physics world looks like
     public style: OIMO.DebugDrawStyle; //colors of the debug informations, unchanged in FUDGE integration, basically coloring things like sleeping/active rb's differently, joints white and such. No need to have users change anything.
     public gl: WebGL2RenderingContext;
-
-    public program: WebGLProgram; //program that is used in the FUDGE rendering context containing shaders and use informations for the context to know how to draw
-    public shader: PhysicsDebugShader;
 
     //Buffers for points/lines/triangles. Index Buffer for the amount of drawCalls and Vertex Buffer for the informations
     public pointVBO: PhysicsDebugVertexBuffer;
@@ -196,6 +120,9 @@ namespace FudgeCore {
     public triIboData: Array<number>;
     public numTriData: number;
 
+    #objectUniformBuffer: WebGLObjectUniformBuffer;
+    #coatUniformBuffer: WebGLCoatUniformBuffer;
+
     /** Creating the debug for physics in FUDGE. Tell it to draw only wireframe objects, since FUDGE is handling rendering of the objects besides physics. 
      * Override OimoPhysics Functions with own rendering. Initialize buffers and connect them with the context for later use. */
     public constructor() {
@@ -207,10 +134,26 @@ namespace FudgeCore {
 
       this.gl = RenderWebGL.getRenderingContext();
       this.initializeOverride();
-      this.shader = new PhysicsDebugShader(this.gl);
-      this.shader.compile(this.vertexShaderSource(), this.fragmentShaderSource());
 
       this.initializeBuffers();
+    }
+
+    private get objectUniformBuffer(): WebGLObjectUniformBuffer {
+      if (!this.#objectUniformBuffer) {
+        this.#objectUniformBuffer = new WebGLObjectUniformBuffer(1);
+        this.#objectUniformBuffer.write(0, Matrix4x4.IDENTITY(), undefined, Color.CSS("white"));
+        this.#objectUniformBuffer.update();
+      }
+      return this.#objectUniformBuffer;
+    }
+
+    private get coatUniformBuffer(): WebGLCoatUniformBuffer {
+      if (!this.#coatUniformBuffer) {
+        this.#coatUniformBuffer = new WebGLCoatUniformBuffer(1);
+        this.#coatUniformBuffer.write(0, Color.CSS("white"), 1, 1, 1, 0, 0.01);
+        this.#coatUniformBuffer.update();
+      }
+      return this.#coatUniformBuffer;
     }
 
     /** Receive the current DebugMode from the physics settings and set the OimoPhysics.DebugDraw booleans to show only certain informations.
@@ -218,7 +161,7 @@ namespace FudgeCore {
      * to debug only what they need and is commonly debugged.
      */
     public setDebugMode(_mode: PHYSICS_DEBUGMODE = PHYSICS_DEBUGMODE.NONE): void {
-      // tslint:disable-next-line
+      // eslint-disable-next-line
       let draw = { drawAabbs: false, drawBases: false, drawBvh: false, drawContactBases: false, drawContacts: false, drawJointLimits: false, drawJoints: false, drawPairs: false, drawShapes: false };
 
       switch (_mode) {
@@ -245,23 +188,25 @@ namespace FudgeCore {
      * Needs to create empty buffers to already have them ready to draw later on, linking is only possible with existing buffers. */
     public initializeBuffers(): void {
       let attribs: Array<PhysicsDebugVertexAttribute> = [
-        new PhysicsDebugVertexAttribute(3, "aPosition"),
-        new PhysicsDebugVertexAttribute(3, "aNormal"),
-        new PhysicsDebugVertexAttribute(3, "aColor")
+        new PhysicsDebugVertexAttribute(3, "a_vctPosition"),
+        new PhysicsDebugVertexAttribute(3, "a_vctNormal"),
+        new PhysicsDebugVertexAttribute(3, "a_vctColor")
       ];
+
+      const attribIndices: Array<number> = [SHADER_ATTRIBUTE.POSITION, SHADER_ATTRIBUTE.NORMAL, SHADER_ATTRIBUTE.COLOR];
 
       this.pointVBO = new PhysicsDebugVertexBuffer(this.gl);
       this.pointIBO = new PhysicsDebugIndexBuffer(this.gl);
       this.pointVBO.setAttribs(attribs);
-      this.pointVBO.loadAttribIndices(this.shader);
+      this.pointVBO.indices = attribIndices;
       this.lineVBO = new PhysicsDebugVertexBuffer(this.gl);
       this.lineIBO = new PhysicsDebugIndexBuffer(this.gl);
       this.lineVBO.setAttribs(attribs);
-      this.lineVBO.loadAttribIndices(this.shader);
+      this.lineVBO.indices = attribIndices;
       this.triVBO = new PhysicsDebugVertexBuffer(this.gl);
       this.triIBO = new PhysicsDebugIndexBuffer(this.gl);
       this.triVBO.setAttribs(attribs);
-      this.triVBO.loadAttribIndices(this.shader);
+      this.triVBO.indices = attribIndices;
 
       this.clearBuffers();
     }
@@ -281,8 +226,9 @@ namespace FudgeCore {
 
     /** After OimoPhysics.world filled the debug. Rendering calls. Setting this program to be used by the FUDGE rendering context. And draw each updated buffer and resetting them. */
     public drawBuffers(): void {
-      this.shader.use();
-      this.gl.uniformMatrix4fv(this.shader.getUniformLocation("u_mtxWorldToView"), false, Physics.mainCam.mtxWorldToView.getArray());
+      ShaderLit.useProgram();
+      this.objectUniformBuffer.use(0);
+      this.coatUniformBuffer.use(0);
 
       this.gl.bindVertexArray(null);
       if (this.numPointData > 0) {
@@ -376,42 +322,5 @@ namespace FudgeCore {
         }
       };
     }
-
-    /** The source code (string) of the in physicsDebug used very simple vertexShader.
-     *  Handling the projection (which includes, view/world[is always identity in this case]/projection in FUDGE). Increasing the size of single points drawn.
-     *  And transfer position color to the fragmentShader. */
-    private vertexShaderSource(): string {
-      return `
-			precision mediump float;
-			attribute vec3 aPosition;
-			attribute vec3 aColor;
-			attribute vec3 aNormal;
-			varying vec3 vPosition;
-			varying vec3 vNormal;
-			varying vec3 vColor;
-			uniform mat4 u_mtxWorldToView;
-
-			void main() {
-				vPosition = aPosition;
-				vColor = aColor;
-				vNormal = aNormal;
-				gl_Position = u_mtxWorldToView * vec4(aPosition,1.0);
-				gl_PointSize = 6.0;
-			}`;
-    }
-
-    /** The source code (string) of the in physicsDebug used super simple fragmentShader. Unlit - only colorizing the drawn pixels, normals/position are given to make it expandable */
-    private fragmentShaderSource(): string {
-      return `
-      precision mediump float;
-			varying vec3 vPosition;
-			varying vec3 vNormal;
-			varying vec3 vColor;
-
-			void main() {
-				gl_FragColor = vec4(vColor, 1.0);
-			}`;
-    }
   }
-
 }

@@ -28,10 +28,10 @@ namespace FudgeCore {
         this.uniforms = RenderWebGLShader.detectUniforms(crc3, program);
 
         RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.LIGHTS.NAME, UNIFORM_BLOCK.LIGHTS.BINDING);
-        RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.CAMERA.NAME, UNIFORM_BLOCK.CAMERA.BINDING);
+        RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.VIEW.NAME, UNIFORM_BLOCK.VIEW.BINDING);
         RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.MATERIAL.NAME, UNIFORM_BLOCK.MATERIAL.BINDING);
-        RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.NODE.NAME, UNIFORM_BLOCK.NODE.BINDING);
-        RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.SKIN.NAME, UNIFORM_BLOCK.SKIN.BINDING);
+        RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.OBJECT.NAME, UNIFORM_BLOCK.OBJECT.BINDING);
+        RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.SKELETON.NAME, UNIFORM_BLOCK.SKELETON.BINDING);
         RenderWebGLShader.bindUniformBlock(crc3, program, UNIFORM_BLOCK.FOG.NAME, UNIFORM_BLOCK.FOG.BINDING);
 
         crc3.useProgram(this.program);

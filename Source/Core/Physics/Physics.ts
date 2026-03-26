@@ -117,6 +117,7 @@ namespace FudgeCore {
     public static draw(_cmpCamera: ComponentCamera, _mode?: PHYSICS_DEBUGMODE): void {
       Physics.ƒactive.#debugDraw.setDebugMode(_mode);
       Physics.ƒactive.#mainCam = _cmpCamera;
+      RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
       Physics.ƒactive.oimoWorld.debugDraw(); //Filling the physics world debug informations into the debug rendering handler
       Physics.ƒactive.#debugDraw.drawBuffers();
       Physics.ƒactive.#debugDraw.clearBuffers();  //Updates info about the current projection, resetting the points/lines/triangles that need to be drawn from debug

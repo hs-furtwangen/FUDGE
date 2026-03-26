@@ -6,11 +6,15 @@
 precision mediump float;
 precision highp int;
 
-layout(std140) uniform Node {
-  uniform mat4 u_mtxMeshToWorld; // u_mtxModel
-  uniform mat3 u_mtxPivot; // texture pivot matrix
-  uniform vec4 u_vctColorPrimary; // component material color
+layout(std140) uniform Object {
+  // transform data
+  uniform mat4 u_mtxModel;
 
+  // surface instance data
+  uniform mat3 u_mtxPivot; // texture pivot matrix
+  uniform vec4 u_vctObjectColor; // component material color
+
+  // particle system data
   uniform uint u_iBlendMode;
   uniform float u_fParticleSystemDuration;
   uniform float u_fParticleSystemSize;
@@ -20,15 +24,15 @@ layout(std140) uniform Node {
   uniform bool u_bFaceCameraRestrict;
 };
 
-layout(std140) uniform Camera {
-  mat4 u_mtxWorldToCamera; // u_mtxView
+layout(std140) uniform View {
+  mat4 u_mtxView;
   mat4 u_mtxProjection; 
-  mat4 u_mtxWorldToView; // u_mtxViewProjection
+  mat4 u_mtxViewProjection;
   vec3 u_vctCamera;
 };
 
 layout(std140) uniform Material {
-  uniform vec4 u_vctColor;
+  uniform vec4 u_vctMaterialColor;
 
   uniform float u_fDiffuse;
   uniform float u_fSpecular;
@@ -66,6 +70,7 @@ out vec4 v_vctColor;
     vec4 vctColor;
     mat4 mtxShape;
     mat4 mtxShapeInverse;
+    float fShadowLayer; // -1 = no shadow, otherwise index in shadow array
   };
 
   #define MAX_LIGHTS_DIRECTIONAL 15u
@@ -138,7 +143,7 @@ out vec4 v_vctColor;
   layout(location = 6) in vec4 a_vctWeights;
 
   const uint MAX_BONES = 256u; // CAUTION: this number must be the same as in RenderInjectorSkeletonInstance where the corresponding buffers are created
-  layout(std140) uniform Skin {
+  layout(std140) uniform Skeleton {
     mat4 u_mtxBones[MAX_BONES];
   };
 
@@ -155,13 +160,13 @@ out vec4 v_vctColor;
 
 #endif
 
-mat4 lookAtCamera(mat4 _mtxWorld, bool _bRestrict) {
+mat4 faceCamera(mat4 _mtxWorld, bool _bRestrict) {
   vec3 vctUp = vec3(0.0, 1.0, 0.0);
 
   vec3 vctPosition = _mtxWorld[3].xyz;
 
   // vec3 zAxis = normalize(u_vctCamera - vctPosition); // look at camera position
-  vec3 zAxis = normalize(-vec3(u_mtxWorldToCamera[0].z, u_mtxWorldToCamera[1].z, u_mtxWorldToCamera[2].z)); // look in camera direction
+  vec3 zAxis = normalize(-vec3(u_mtxView[0].z, u_mtxView[1].z, u_mtxView[2].z)); // look in camera direction
 
   vec3 xAxis = normalize(cross(vctUp, zAxis));
   vec3 yAxis = _bRestrict ? vctUp : normalize(cross(zAxis, xAxis));
@@ -182,10 +187,7 @@ mat4 lookAtCamera(mat4 _mtxWorld, bool _bRestrict) {
 void main() {
 
   vec4 vctPosition = vec4(a_vctPosition, 1.0);
-  mat4 mtxMeshToWorld = u_mtxMeshToWorld;
-
-  // if (u_bBillboardActive) 
-  //   mtxMeshToWorld = lookAtCamera(mtxMeshToWorld, u_bBillboardRestrict);
+  mat4 mtxModel = u_mtxModel;
 
   #if defined(PARTICLE)
   
@@ -195,31 +197,31 @@ void main() {
     /*$variables*/
     /*$mtxLocal*/
     /*$mtxWorld*/
-    mtxMeshToWorld = /*$mtxWorld*/ mtxMeshToWorld /*$mtxLocal*/;
+    mtxModel = /*$mtxWorld*/ mtxModel /*$mtxLocal*/;
     if(u_bFaceCameraActive) 
-      mtxMeshToWorld = lookAtCamera(mtxMeshToWorld, u_bFaceCameraRestrict);
+      mtxModel = faceCamera(mtxModel, u_bFaceCameraRestrict);
 
   #endif
 
   #if defined(SKIN)
 
-    mtxMeshToWorld = a_vctWeights.x * u_mtxBones[a_vctBones.x] +
+    mtxModel = a_vctWeights.x * u_mtxBones[a_vctBones.x] +
       a_vctWeights.y * u_mtxBones[a_vctBones.y] +
       a_vctWeights.z * u_mtxBones[a_vctBones.z] +
       a_vctWeights.w * u_mtxBones[a_vctBones.w];
 
   #endif
 
-  mat4 mtxMeshToView = u_mtxWorldToView * mtxMeshToWorld;
+  mat4 mtxModelViewProjection = u_mtxViewProjection * mtxModel;
 
   #if defined(FLAT) || defined(GOURAUD) || defined(PHONG) || defined(MATCAP) // only these work with particle and skinning
 
-    mat4 mtxNormalMeshToWorld = transpose(inverse(mtxMeshToWorld));
+    mat3 mtxNormal = transpose(inverse(mat3(mtxModel)));
 
   #endif
 
-  gl_Position = mtxMeshToView * vctPosition; 
-  vctPosition = mtxMeshToWorld * vctPosition;
+  gl_Position = mtxModelViewProjection * vctPosition; 
+  vctPosition = mtxModel * vctPosition;
 
   v_vctColor = a_vctColor;
   v_vctPosition = vctPosition.xyz;
@@ -238,13 +240,13 @@ void main() {
 
   #if defined(FLAT) || defined(GOURAUD) || defined(PHONG)
 
-    v_vctNormal = mat3(mtxNormalMeshToWorld) * a_vctNormal; // unnormalized as it must be normalized in the fragment shader anyway
+    v_vctNormal = mtxNormal * a_vctNormal; // unnormalized as it must be normalized in the fragment shader anyway
 
   #endif 
 
   #if defined(NORMALMAP)
 
-    v_vctTangent = mat3(mtxNormalMeshToWorld) * a_vctTangent.xyz;
+    v_vctTangent = mtxNormal * a_vctTangent.xyz;
     v_vctBitangent = cross(v_vctNormal, v_vctTangent) * a_vctTangent.w;
 
   #endif
@@ -297,17 +299,17 @@ void main() {
 
   #if defined(MATCAP)
 
-    vec4 vctVertexInCamera = normalize(u_mtxWorldToCamera * vctPosition);
+    vec4 vctVertexInCamera = normalize(u_mtxView * vctPosition);
     vctVertexInCamera.xy *= - 1.0;
     mat4 mtx_RotX = mat4(1, 0, 0, 0, 0, vctVertexInCamera.z, vctVertexInCamera.y, 0, 0, - vctVertexInCamera.y, vctVertexInCamera.z, 0, 0, 0, 0, 1);
     mat4 mtx_RotY = mat4(vctVertexInCamera.z, 0, - vctVertexInCamera.x, 0, 0, 1, 0, 0, vctVertexInCamera.x, 0, vctVertexInCamera.z, 0, 0, 0, 0, 1);
 
-    vec3 vctNormal = mat3(mtxNormalMeshToWorld) * a_vctNormal;
+    vec3 vctNormal = mtxNormal * a_vctNormal;
 
     // adds correction for things being far and to the side, but distortion for things being close
     vctNormal = mat3(mtx_RotX * mtx_RotY) * vctNormal;
 
-    vec3 vctReflection = normalize(mat3(u_mtxWorldToCamera) * normalize(vctNormal));
+    vec3 vctReflection = normalize(mat3(u_mtxView) * normalize(vctNormal));
     vctReflection.y = - vctReflection.y;
 
     v_vctTexture = 0.5 * vctReflection.xy + 0.5;

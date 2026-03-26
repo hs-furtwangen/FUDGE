@@ -1,7 +1,4 @@
-///<reference path="RenderbufferManager.ts"/>
 ///<reference path="../Experimental/Render/RenderManagerMaterial.ts"/>
-///<reference path="RenderManagerCoat.ts"/>
-///<reference path="RenderManagerNode.ts"/>
 ///<reference path="RenderWebGLPicking.ts"/>
 ///<reference path="RenderWebGLComponentLight.ts"/>
 ///<reference path="RenderWebGLComponentFog.ts"/>
@@ -9,7 +6,6 @@
 ///<reference path="RenderWebGLComponentAmbientOcclusion.ts"/>
 ///<reference path="RenderWebGLComponentBloom.ts"/>
 ///<reference path="RenderWebGLComponentOutline.ts"/>
-
 ///<reference path="RenderInjectorShader.ts"/>
 ///<reference path="RenderInjectorMesh.ts"/>
 ///<reference path="RenderInjectorShaderParticleSystem.ts"/>
@@ -45,25 +41,29 @@ namespace FudgeCore {
       NAME: "Lights",
       BINDING: 0
     },
-    CAMERA: {
-      NAME: "Camera",
+    VIEW: {
+      NAME: "View",
       BINDING: 1
     },
     MATERIAL: {
       NAME: "Material",
       BINDING: 2
     },
-    NODE: {
-      NAME: "Node",
+    OBJECT: {
+      NAME: "Object",
       BINDING: 3
     },
-    SKIN: {
-      NAME: "Skin",
+    SKELETON: {
+      NAME: "Skeleton",
       BINDING: 4
     },
     FOG: {
       NAME: "Fog",
       BINDING: 5
+    },
+    SHADOWS: {
+      NAME: "Shadows",
+      BINDING: 6
     }
   } as const;
 
@@ -92,6 +92,11 @@ namespace FudgeCore {
       UNIFORM: "u_texToon",
       UNIT: WebGL2RenderingContext.TEXTURE4,
       INDEX: 4
+    },
+    SHADOW_MAP: {
+      UNIFORM: "u_texShadowMap",
+      UNIT: WebGL2RenderingContext.TEXTURE5,
+      INDEX: 5
     }
   } as const;
 
@@ -161,8 +166,6 @@ namespace FudgeCore {
       RenderWebGLComponentCamera.initialize(RenderWebGL);
       RenderWebGLComponentFog.initialize(RenderWebGL);
       RenderWebGLComponentLight.initialize(RenderWebGL);
-      RenderManagerNode.initialize(RenderWebGL);
-      RenderManagerCoat.initialize(RenderWebGL);
       RenderManagerMaterial.initialize(RenderWebGL);
 
       return crc3;
@@ -396,6 +399,7 @@ namespace FudgeCore {
 
       crc3.activeTexture(crc3.TEXTURE0);
 
+      // TODO: use texStorage2D when available for immutable storage and potentially better performance
       crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D, RenderWebGL.texColor);
       crc3.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, WebGL2RenderingContext.RGBA, width, height, 0, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, null);
 
@@ -438,7 +442,7 @@ namespace FudgeCore {
     public static useNodeUniforms(_shader: ShaderInterface, _mtxWorld: Matrix4x4, _mtxPivot: Matrix3x3, _color: Color, _id?: number): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.crc3;
 
-      let uniform: WebGLUniformLocation = _shader.uniforms["u_mtxMeshToWorld"];
+      let uniform: WebGLUniformLocation = _shader.uniforms["u_mtxModel"];
       if (uniform && _mtxWorld)
         crc3.uniformMatrix4fv(uniform, false, _mtxWorld.getArray());
 
@@ -547,6 +551,9 @@ namespace FudgeCore {
 
       RenderWebGLComponentFog.useRenderbuffer(cmpFog);
       RenderWebGLComponentCamera.useRenderbuffer(_cmpCamera);
+
+      crc3.activeTexture(TEXTURE_LOCATION.SHADOW_MAP.UNIT);
+      crc3.bindTexture(WebGL2RenderingContext.TEXTURE_2D_ARRAY, RenderWebGLComponentLight.texShadowMap);
 
       // opaque pass 
       // TODO: think about disabling blending for all opaque objects, this might improve performance 
