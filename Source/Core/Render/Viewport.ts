@@ -140,7 +140,7 @@ namespace FudgeCore {
     public getClientRectangle(): Rectangle {
       // FUDGE doesn't care about where the client rect is, only about the size matters.
       // return Rectangle.GET(this.canvas.offsetLeft, this.canvas.offsetTop, this.canvas.clientWidth, this.canvas.clientHeight);
-      return Rectangle.GET(0, 0, this.#canvas.clientWidth, this.#canvas.clientHeight); 
+      return Rectangle.GET(0, 0, this.#canvas.clientWidth, this.#canvas.clientHeight);
     }
 
     /**
@@ -270,10 +270,10 @@ namespace FudgeCore {
       // adjust the canvas size according to the given framing applied to client
       const rectCanvas: Rectangle = this.frameClientToCanvas.getRect(this.rectClient);
 
-      if (this.#canvas.width != rectCanvas.width) 
+      if (this.#canvas.width != rectCanvas.width)
         this.#canvas.width = rectCanvas.width; // setting width or height of canvas causes side effects, so only do it if neccessary, see https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/width
 
-      if (this.#canvas.height != rectCanvas.height) 
+      if (this.#canvas.height != rectCanvas.height)
         this.#canvas.height = rectCanvas.height;
 
       // adjust the destination area on the target-canvas to render to by applying the framing to canvas
@@ -301,18 +301,17 @@ namespace FudgeCore {
      */
     public adjustCamera(): void {
       const rectViewport: Rectangle = Render.getViewportRectangle();
-      this.camera.projectCentral(rectViewport.width / rectViewport.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
-
-      // const projection: PROJECTION = this.camera.projection;
-      // switch (projection) {
-      // case PROJECTION.CENTRAL:
       // this.camera.projectCentral(rectViewport.width / rectViewport.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
-      // break;
-      // case PROJECTION.ORTHOGRAPHIC:
-      //   this.camera.projectOrthographic();
-      //   // this.camera.projectOrthographic(-rectViewport.width / 20, rectViewport.width / 20, rectViewport.height / 20, -rectViewport.height / 20);
-      //   break;
-      // }
+
+      const projection: PROJECTION = this.camera.projection;
+      switch (projection) {
+        case PROJECTION.CENTRAL:
+          this.camera.projectCentral(rectViewport.width / rectViewport.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
+          break;
+        case PROJECTION.ORTHOGRAPHIC:
+          this.camera.projectOrthographic();
+          break;
+      }
     }
     // #endregion
 
