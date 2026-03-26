@@ -9,16 +9,20 @@ namespace FudgeCore {
     static #buffer: WebGLBuffer;
     static #data: Float32Array;
 
+    static {
+      this.initialize();
+    }
+
     /**
      * Initialize the fog uniform buffer.
      */
-    public static initialize(_renderWebGL: typeof RenderWebGL): void {
-      const crc3: WebGL2RenderingContext = _renderWebGL.getRenderingContext();
+    public static initialize(): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
       let blockSize: number = (1 + 1 + 1 + 1 + 4) * 4; // bool u_bFogActive, float u_fFogNear, float u_fFogFar, float padding, vec4 u_vctFogColor
       blockSize = Math.ceil(blockSize / 16) * 16; // std140 alignment
 
-      RenderWebGLComponentFog.#buffer = _renderWebGL.assert(crc3.createBuffer());
+      RenderWebGLComponentFog.#buffer = RenderWebGL.assert(crc3.createBuffer());
       RenderWebGLComponentFog.#data = new Float32Array(new ArrayBuffer(blockSize));
 
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentFog.#buffer);

@@ -57,13 +57,11 @@ namespace FudgeCore {
       }
     }
 
-
     protected static useProgram(this: Experimental.Shader): void {
-      const program: WebGLProgram = this.program;
-      if (!program)
+      if (!this.program) 
         this.createProgram();
-
-      RenderWebGL.getRenderingContext().useProgram(program);
+      
+      RenderWebGL.getRenderingContext().useProgram(this.program);
     }
 
 

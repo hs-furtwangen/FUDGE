@@ -1,8 +1,4 @@
-///<reference path="../Experimental/Render/RenderManagerMaterial.ts"/>
 ///<reference path="RenderWebGLPicking.ts"/>
-///<reference path="RenderWebGLComponentLight.ts"/>
-///<reference path="RenderWebGLComponentFog.ts"/>
-///<reference path="RenderWebGLComponentCamera.ts"/>
 ///<reference path="RenderWebGLComponentAmbientOcclusion.ts"/>
 ///<reference path="RenderWebGLComponentBloom.ts"/>
 ///<reference path="RenderWebGLComponentOutline.ts"/>
@@ -162,11 +158,6 @@ namespace FudgeCore {
       const height: number = Math.floor(screen.height * pixelRatio);
       RenderWebGL.rectViewport = Rectangle.GET(0, 0, width, height);
       RenderWebGL.setCanvasSize(width, height);
-
-      RenderWebGLComponentCamera.initialize(RenderWebGL);
-      RenderWebGLComponentFog.initialize(RenderWebGL);
-      RenderWebGLComponentLight.initialize(RenderWebGL);
-      RenderManagerMaterial.initialize(RenderWebGL);
 
       return crc3;
     }

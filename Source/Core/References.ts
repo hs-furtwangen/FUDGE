@@ -24,9 +24,14 @@
 /// <reference path="Math/Matrix3x3.ts"/>
 /// <reference path="Math/Matrix4x4.ts"/>
 /// <reference path="Material/Color.ts"/>
+
 /// <reference path="Render/RenderWebGL.ts"/>
 /// <reference path="Render/RenderInjectorNode.ts"/>
 /// <reference path="Render/RenderInjectorCoat.ts"/>
+/// <reference path="Experimental/Render/RenderInjectorMaterial.ts"/>
+/// <reference path="Render/RenderWebGLComponentLight.ts"/>
+/// <reference path="Render/RenderWebGLComponentCamera.ts"/>
+/// <reference path="Render/RenderWebGLComponentFog.ts"/>
 
 /// <reference path="Graph/Node.ts"/>
 /// <reference path="Component/Component.ts"/>
