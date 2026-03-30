@@ -91,7 +91,7 @@ layout(location = 2) out vec4 vctFragNormal;
     float fShadowLayer; // -1 = no shadow, otherwise index in shadow array
   };
 
-  #define MAX_LIGHTS_DIRECTIONAL 100u
+  #define MAX_LIGHTS_DIRECTIONAL 15u
   #define MAX_LIGHTS_POINT 100u
   #define MAX_LIGHTS_SPOT 100u
   #define MAX_SHADOW_SLOTS 20u // dir/spot = 1 slot, point = 6 slots
@@ -108,7 +108,7 @@ layout(location = 2) out vec4 vctFragNormal;
   };
 
   layout(std140) uniform Shadows {
-    mat4 u_shadowViewProjectionMatrices[MAX_SHADOW_SLOTS]; // light space view projection matrices
+    mat4 u_mtxShadows[MAX_SHADOW_SLOTS]; // light space view projection matrices
     vec4 u_shadowParameters[MAX_SHADOW_SLOTS]; // x bias, y normalBias, z opacity, w pcfRadius
   };
 
@@ -119,9 +119,7 @@ layout(location = 2) out vec4 vctFragNormal;
    * _vctColor: color of the light
    */
   void illuminateDirected(vec3 _vctLightDirection, vec3 _vctViewDirection, vec3 _vctNormal, vec3 _vctColor, float _attenuation, inout vec3 _vctDiffuse, inout vec3 _vctSpecular) {
-    vec3 vctLightDirection = normalize(_vctLightDirection);
-
-    float fDiffuse = dot(_vctNormal, vctLightDirection);
+    float fDiffuse = dot(_vctNormal, _vctLightDirection);
 
     if(fDiffuse > 0.0) {
 
@@ -137,7 +135,7 @@ layout(location = 2) out vec4 vctFragNormal;
         return;
       
       //BLINN-Phong Shading
-      vec3 halfwayDir = normalize(vctLightDirection + _vctViewDirection);
+      vec3 halfwayDir = normalize(_vctLightDirection + _vctViewDirection);
       float factor = fDiffuse;                  // Factor for smoothing out transition from surface facing the lightsource to surface facing away from the lightsource
       factor = 1.0 - (pow(factor - 1.0, 8.0));  // The factor is altered in order to clearly see the specular highlight even at steep angles, while still preventing artifacts
 
@@ -184,6 +182,22 @@ layout(location = 2) out vec4 vctFragNormal;
       return _dirFromLight.y > 0.0 ? 2u : 3u; // +Y, -Y
 
     return _dirFromLight.z > 0.0 ? 4u : 5u;   // +Z, -Z
+  }
+
+  float sampleShadow(mediump sampler2DArrayShadow _sampler, uint _layer, mat4 _mtxShadow, vec4 _shadowParameters, vec3 _position, vec3 _normal, vec3 _lightDirection) {
+
+    // biasing from godot directional shadow
+    // vec3 baseNormalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal)));
+    // vec3 normalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal))) * _shadowParameters.y;
+
+    vec3 bias = _normal * _shadowParameters.y; // calculate normal bias
+    bias -= _lightDirection * dot(_lightDirection, bias); // remove component of normal bias in the direction of the light
+    bias += _lightDirection * _shadowParameters.x; // add constant bias in the direction to the light
+
+    vec4 position = _mtxShadow * vec4(_position + bias, 1.0);
+    vec3 shadowCoord = position.xyz / position.w;
+
+    return texture(_sampler, vec4(shadowCoord.xy, float(_layer), shadowCoord.z));
   }
 
 #endif
@@ -235,7 +249,7 @@ void main() {
 
     // directional lights
     for(uint i = 0u; i < u_nLightsDirectional; i++) {
-      vec3 vctLightDirection = -u_directional[i].mtxShape[2].xyz; // directional light direction is the inverted forward vector of the light's transform
+      vec3 vctLightDirection = normalize(-u_directional[i].mtxShape[2].xyz); // directional light direction is the inverted forward vector of the light's transform
 
       float fAttenuation = 1.0;
 
@@ -243,11 +257,7 @@ void main() {
 
         if (u_directional[i].fShadowLayer > -1.0) {
           uint iShadow = uint(u_directional[i].fShadowLayer);
-          vec4 vctPositionLightSpace = u_shadowViewProjectionMatrices[iShadow] * vec4(v_vctPosition, 1.0);
-          vec4 vctShadowParameters = u_shadowParameters[iShadow];
-
-          vec3 vctShadowCoord = vctPositionLightSpace.xyz;
-          fAttenuation = texture(u_texShadowMap, vec4(vctShadowCoord.xy, float(iShadow), vctShadowCoord.z - vctShadowParameters.x));
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
         }
 
       #endif
@@ -258,24 +268,19 @@ void main() {
     // point lights
     for(uint i = 0u; i < u_nLightsPoint; i++) {
       vec3 vctLightPosition = u_point[i].mtxShape[3].xyz; // light position is the translation component of the light's transform
-      vec3 vctLightDirection = vctLightPosition - vctPosition;
-      float fAttenuation = 1.0 - length(mat3(u_point[i].mtxShapeInverse) * vctLightDirection);
+      vec3 vctLight = vctLightPosition - vctPosition;
+      float fAttenuation = 1.0 - length(mat3(u_point[i].mtxShapeInverse) * vctLight);
       if(fAttenuation < 0.0)
         continue;
+
+      vec3 vctLightDirection = normalize(vctLight);
 
       #if defined(SHADOW)
 
         if (u_point[i].fShadowLayer > -1.0) {
-          uint iShadowLayer = uint(u_point[i].fShadowLayer);
-
-          uint iFace = getCubeFace(-vctLightDirection);
-          uint iShadow = iShadowLayer + iFace;
-
-          vec4 vctPositionLightSpace = u_shadowViewProjectionMatrices[iShadow] * vec4(v_vctPosition, 1.0);
-          vec4 vctShadowParameters = u_shadowParameters[iShadowLayer];
-          vec3 vctShadowCoord = vctPositionLightSpace.xyz / vctPositionLightSpace.w;
-
-          fAttenuation *= texture(u_texShadowMap, vec4(vctShadowCoord.xy, float(iShadow), vctShadowCoord.z - vctShadowParameters.x));
+          uint iShadowBase = uint(u_point[i].fShadowLayer);
+          uint iShadow = iShadowBase + getCubeFace(-vctLight);
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadowBase], v_vctPosition, v_vctNormal, vctLightDirection);
         }
         
       #endif
@@ -287,25 +292,24 @@ void main() {
     for(uint i = 0u; i < u_nLightsSpot; i++) {
       Light spotLight = u_spot[i];
       vec3 vctLightPosition = spotLight.mtxShape[3].xyz; // position is the translation component of the light's transform
-      vec3 vctLightDirection = vctLightPosition - vctPosition;
-      vec3 vctLightDirectionLocal = mat3(spotLight.mtxShapeInverse) * -vctLightDirection;
-      if(vctLightDirectionLocal.z <= 0.0)
+      vec3 vctLight = vctLightPosition - vctPosition;
+      vec3 vctLightLocal = mat3(spotLight.mtxShapeInverse) * -vctLight;
+      if(vctLightLocal.z <= 0.0)
         continue;
 
-      float fAttenuation = 1.0 - min(1.0, 2.0 * length(vctLightDirectionLocal.xy) / vctLightDirectionLocal.z);    // Coneshape that is brightest in the center. Possible TODO: "Variable Spotlightsoftness"
-      fAttenuation *= 1.0 - pow(vctLightDirectionLocal.z, 2.0);                                                   // Prevents harsh lighting artifacts at boundary of the given spotlight
+      float fAttenuation = 1.0 - min(1.0, 2.0 * length(vctLightLocal.xy) / vctLightLocal.z);    // Coneshape that is brightest in the center. Possible TODO: "Variable Spotlightsoftness"
+      fAttenuation *= 1.0 - pow(vctLightLocal.z, 2.0);                                                   // Prevents harsh lighting artifacts at boundary of the given spotlight
       
       if(fAttenuation < 0.0)
         continue;
+
+      vec3 vctLightDirection = normalize(vctLight);
 
       #if defined(SHADOW)
 
         if (u_spot[i].fShadowLayer > -1.0) { // check if shadow index is valid
           uint iShadow = uint(u_spot[i].fShadowLayer);
-          vec4 vctPositionLightSpace = u_shadowViewProjectionMatrices[iShadow] * vec4(v_vctPosition, 1.0);
-          vec4 vctShadowParameters = u_shadowParameters[iShadow];
-          vec3 vctShadowCoord = vctPositionLightSpace.xyz / vctPositionLightSpace.w;
-          fAttenuation *= texture(u_texShadowMap, vec4(vctShadowCoord.xy, float(iShadow), vctShadowCoord.z - vctShadowParameters.x));
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
         }
 
       #endif
