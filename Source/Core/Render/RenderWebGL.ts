@@ -453,19 +453,19 @@ namespace FudgeCore {
     /**
      * Draw a mesh buffer using the given infos and the complete projection matrix
     */
-    public static drawNode(_node: Node, _cmpCamera: ComponentCamera): void {
+    public static drawNode(_node: Node, _cmpCamera: ComponentCamera, _materialOverride?: Material): void {
       const cmpMesh: ComponentMesh = _node.getComponent(ComponentMesh);
-      const cmpMaterial: ComponentMaterial = _node.getComponent(ComponentMaterial);
       const cmpParticleSystem: ComponentParticleSystem = _node.getComponent(ComponentParticleSystem);
+      const mesh: Mesh = cmpMesh.mesh;
+      const material: Material = _materialOverride ?? _node.getComponent(ComponentMaterial).material;
       if (cmpParticleSystem?.active) {
-        RenderWebGL.drawParticles(_node, cmpParticleSystem, cmpMesh, cmpMaterial);
+        RenderWebGL.drawParticles(_node, cmpParticleSystem, mesh, material);
         return;
       }
 
       const cmpText: ComponentText = _node.getComponent(ComponentText);
       const cmpFaceCamera: ComponentFaceCamera = _node.getComponent(ComponentFaceCamera);
 
-      const material: Material = cmpMaterial.material;
       material.getShader().useProgram();
       material.coat.useRenderData();
 
@@ -483,7 +483,7 @@ namespace FudgeCore {
 
       _node.useRenderData(mtxWorldOverride);
 
-      const renderBuffers: RenderBuffers = cmpMesh.mesh.useRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
+      const renderBuffers: RenderBuffers = mesh.useRenderBuffers(); // TODO: find out why this gets slower the more different meshes are drawn???
       RenderWebGL.crc3.drawElements(WebGL2RenderingContext.TRIANGLES, renderBuffers.nIndices, WebGL2RenderingContext.UNSIGNED_SHORT, 0);
     }
 
@@ -588,13 +588,12 @@ namespace FudgeCore {
       crc3.blitFramebuffer(x0, y0, x1, y1, x0, y0, x1, y1, WebGL2RenderingContext.COLOR_BUFFER_BIT | WebGL2RenderingContext.DEPTH_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
     }
 
-    private static drawParticles(_node: Node, _cmpParticleSystem: ComponentParticleSystem, _cmpMesh: ComponentMesh, _cmpMaterial: ComponentMaterial): void {
+    private static drawParticles(_node: Node, _cmpParticleSystem: ComponentParticleSystem, _mesh: Mesh, _material: Material): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
 
-      const renderBuffers: RenderBuffers = _cmpMesh.mesh.useRenderBuffers();
-      const material: Material = _cmpMaterial.material;
-      material.coat.useRenderData();
-      _cmpParticleSystem.particleSystem.getShaderFrom(material.getShader()).useProgram();
+      const renderBuffers: RenderBuffers = _mesh.useRenderBuffers();
+      _material.coat.useRenderData();
+      _cmpParticleSystem.particleSystem.getShaderFrom(_material.getShader()).useProgram();
       _cmpParticleSystem.useRenderData();
       _node.useRenderData();
 

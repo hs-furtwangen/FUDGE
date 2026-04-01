@@ -798,8 +798,10 @@ layout(location = 2) out vec4 vctFragNormal;
   };
 
   layout(std140) uniform Shadows {
+    float u_fShadowTexelSize; // used for biasing
+
     mat4 u_mtxShadows[MAX_SHADOW_SLOTS]; // light space view projection matrices
-    vec4 u_shadowParameters[MAX_SHADOW_SLOTS]; // x bias, y normalBias, z opacity, w pcfRadius
+    vec4 u_shadowParameters[MAX_SHADOW_SLOTS]; // x bias, y normalBias, z blur
   };
 
   /**
@@ -862,19 +864,23 @@ layout(location = 2) out vec4 vctFragNormal;
 
   uniform mediump sampler2DArrayShadow u_texShadowMap;
 
-  uint getCubeFace(vec3 _dirFromLight) {
+  int getCubeFace(vec3 _dirFromLight) {
     vec3 a = abs(_dirFromLight);
 
     if (a.x >= a.y && a.x >= a.z)
-      return _dirFromLight.x > 0.0 ? 0u : 1u; // +X, -X
+      return _dirFromLight.x > 0.0 ? 0 : 1; // +X, -X
 
     if (a.y >= a.z)
-      return _dirFromLight.y > 0.0 ? 2u : 3u; // +Y, -Y
+      return _dirFromLight.y > 0.0 ? 2 : 3; // +Y, -Y
 
-    return _dirFromLight.z > 0.0 ? 4u : 5u;   // +Z, -Z
+    return _dirFromLight.z > 0.0 ? 4 : 5;   // +Z, -Z
   }
 
-  float sampleShadow(mediump sampler2DArrayShadow _sampler, uint _layer, mat4 _mtxShadow, vec4 _shadowParameters, vec3 _position, vec3 _normal, vec3 _lightDirection) {
+  // float offsetLookup(mediump sampler2DArrayShadow _sampler, int _layer, float _texelSize, vec3 _shadowCoord, vec2 offset) {
+  //   return texture(_sampler, vec4(_shadowCoord.xy + offset * _texelSize, float(_layer), _shadowCoord.z));
+  // }
+
+  float sampleShadow(mediump sampler2DArrayShadow _sampler, int _layer, mat4 _mtxShadow, vec4 _shadowParameters, vec3 _position, vec3 _normal, vec3 _lightDirection) {
 
     // biasing from godot directional shadow
     // vec3 baseNormalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal)));
@@ -886,6 +892,22 @@ layout(location = 2) out vec4 vctFragNormal;
 
     vec4 position = _mtxShadow * vec4(_position + bias, 1.0);
     vec3 shadowCoord = position.xyz / position.w;
+    
+
+    // vec2 offset = step(0.25, fract(position.xy * 0.5)); // returns 1.0 if > 0.25, else 0.0
+
+    // // y ^= x in floating point (toggle y if x is set)
+    // if (offset.y > 1.1)
+    //     offset.y = 0.0;
+
+    // float shadowCoeff = (
+    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(-1.5, 0.5)) +
+    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(0.5, 0.5)) +
+    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(-1.5, -1.5)) +
+    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(0.5, -1.5))
+    // ) * 0.25;
+
+    // return shadowCoeff;
 
     return texture(_sampler, vec4(shadowCoord.xy, float(_layer), shadowCoord.z));
   }
@@ -945,8 +967,8 @@ void main() {
 
       #if defined(SHADOW)
 
-        if (u_directional[i].fShadowLayer > -1.0) {
-          uint iShadow = uint(u_directional[i].fShadowLayer);
+        int iShadow = int(u_directional[i].fShadowLayer);
+        if (iShadow > -1) {
           fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
         }
 
@@ -967,9 +989,9 @@ void main() {
 
       #if defined(SHADOW)
 
-        if (u_point[i].fShadowLayer > -1.0) {
-          uint iShadowBase = uint(u_point[i].fShadowLayer);
-          uint iShadow = iShadowBase + getCubeFace(-vctLight);
+        int iShadowBase = int(u_point[i].fShadowLayer);
+        if (iShadowBase > -1) {
+          int iShadow = iShadowBase + getCubeFace(-vctLight);
           fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadowBase], v_vctPosition, v_vctNormal, vctLightDirection);
         }
         
@@ -997,8 +1019,8 @@ void main() {
 
       #if defined(SHADOW)
 
-        if (u_spot[i].fShadowLayer > -1.0) { // check if shadow index is valid
-          uint iShadow = uint(u_spot[i].fShadowLayer);
+        int iShadow = int(u_spot[i].fShadowLayer);
+        if (iShadow > -1) {
           fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
         }
 

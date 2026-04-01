@@ -1,3 +1,5 @@
+/// <reference path="../Render/RenderWebGLComponentLight.ts"/>
+
 namespace FudgeCore {
 
   /**
@@ -68,6 +70,20 @@ namespace FudgeCore {
     @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
+    @edit(Boolean)
+    public shadowEnabled: boolean = false;
+
+    @edit(Number)
+    public shadowBias: number = 0.05;
+
+    @edit(Number)
+    public shadowNormalBias: number = 20;
+
+    @edit(Number)
+    public shadowBlur: number = 1;
+
+    public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
+
     public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
       super();
       this.singleton = false;
@@ -76,9 +92,9 @@ namespace FudgeCore {
       this.intensity = _intensity;
     }
 
-    /** @internal reroute to {@link RenderWebGLComponentLight.updateRenderbuffer} */
+    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
     @RenderWebGLComponentLight.decorate
-    public static updateRenderbuffer(_lights: MapLightTypeToLightList): void { /* injected */ };
+    public static processLighting(_nodes: Iterable<Node>, _lights: MapLightTypeToLightList): void { /* injected */ };
 
     public drawGizmos(): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);

@@ -1,10 +1,10 @@
 namespace FudgeCore {
   export type MapLightTypeToLightList = Map<LIGHT_TYPE, RecycableArray<ComponentLight>>;
 
-  const SHADER_ID: unique symbol = Symbol("ShaderId");
+  const SHADER_ID: unique symbol = Symbol("shaderId");
   const Z_CAMERA: unique symbol = Symbol("zCamera");
 
-  type NodeSortCache = Node & {
+  type NodeSortable = Node & {
     [SHADER_ID]: number;
     [Z_CAMERA]: number;
   };
@@ -21,8 +21,8 @@ namespace FudgeCore {
     public static pickBuffer: Int32Array;   // TODO: research if picking should be optimized using radius picking to filter
     public static readonly nodesPhysics: RecycableArray<Node> = new RecycableArray();
     public static readonly componentsPick: RecycableArray<ComponentPick> = new RecycableArray();
-    public static readonly lights: MapLightTypeToLightList = new Map(); // TODO: could buffer lights directly, no need to collecting them in a map
-    private static readonly nodesSimple: RecycableArray<Node> = new RecycableArray();
+    public static readonly lights: MapLightTypeToLightList = new Map();
+    private static readonly nodesOpaque: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
     private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
 
@@ -47,9 +47,10 @@ namespace FudgeCore {
      * render passes.
      * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
      */
+    // TODO: rename to process?
     public static prepare(_branch: Node, _options: RenderPrepareOptions = Render.#defaultOptions, _recalculate: boolean = false): void {
       Render.timestampUpdate = performance.now();
-      Render.nodesSimple.reset();
+      Render.nodesOpaque.reset();
       Render.nodesAlpha.reset();
       Render.nodesPhysics.reset();
       Render.componentsPick.reset();
@@ -69,24 +70,19 @@ namespace FudgeCore {
         cmpSkeleton.updateRenderBuffer();
       Node.updateRenderbuffer();
       Coat.updateRenderbuffer();
-      ComponentLight.updateRenderbuffer(Render.lights);
 
-      Render.nodesSimple.sort(Render.compareOpaqueNodes);
+      (<RecycableArray<NodeSortable>>Render.nodesOpaque).sort(Render.compareOpaqueNodes);
+      ComponentLight.processLighting(Render.nodesOpaque, Render.lights);
     }
 
-    public static addLights(_cmpLights: readonly ComponentLight[]): void {
-      for (let cmpLight of _cmpLights) {
-        if (!cmpLight.isActive)
-          continue;
-
-        let type: LIGHT_TYPE = cmpLight.lightType;
-        let lightsOfType: RecycableArray<ComponentLight> = Render.lights.get(type);
-        if (!lightsOfType) {
-          lightsOfType = new RecycableArray<ComponentLight>();
-          Render.lights.set(type, lightsOfType);
-        }
-        lightsOfType.push(cmpLight);
+    public static addLight(_cmpLight: ComponentLight): void {
+      let type: LIGHT_TYPE = _cmpLight.lightType;
+      let lightsOfType: RecycableArray<ComponentLight> = Render.lights.get(type);
+      if (!lightsOfType) {
+        lightsOfType = new RecycableArray<ComponentLight>();
+        Render.lights.set(type, lightsOfType);
       }
+      lightsOfType.push(_cmpLight);
     }
 
     /**
@@ -95,12 +91,12 @@ namespace FudgeCore {
     public static draw(_cmpCamera: ComponentCamera): void {
 
       for (let node of Render.nodesAlpha)
-        (<NodeSortCache>node)[Z_CAMERA] = _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z;
+        (<NodeSortable>node)[Z_CAMERA] = _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z;
 
-      Render.nodesAlpha.sort(Render.compareAlphaNodes);
+      (<RecycableArray<NodeSortable>>Render.nodesAlpha).sort(Render.compareAlphaNodes);
 
 
-      Render.drawNodes(Render.nodesSimple, Render.nodesAlpha, _cmpCamera);
+      Render.drawNodes(Render.nodesOpaque, Render.nodesAlpha, _cmpCamera);
     }
 
     private static prepareBranch(_branch: Node, _options: RenderPrepareOptions, _parent: Node, _recalculate: boolean): void {
@@ -144,10 +140,22 @@ namespace FudgeCore {
       }
 
       const cmpLights: readonly ComponentLight[] = _branch.getComponents(ComponentLight);
-      Render.addLights(cmpLights);
+      for (let iLight: number = 0; iLight < cmpLights.length; iLight++) {
+        const cmpLight: ComponentLight = cmpLights[iLight];
+        if (!cmpLight.active)
+          continue;
+
+        if ((cmpLight.mtxPivot.modified || _recalculate)) {
+          Matrix4x4.PRODUCT(mtxWorldBranch, cmpLight.mtxPivot, cmpLight.mtxWorld);
+          cmpLight.mtxPivot.modified = false;
+        }
+
+        Render.addLight(cmpLight);
+      }
 
       const cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
       const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
+
 
       if (cmpMesh?.active && cmpMesh.mesh && cmpMaterial?.active && cmpMaterial.material) {
 
@@ -160,12 +168,13 @@ namespace FudgeCore {
         const cmpParticleSystem: ComponentParticleSystem = _branch.getComponent(ComponentParticleSystem);
         _branch.updateRenderData(cmpMesh, cmpMaterial, cmpFaceCamera, cmpParticleSystem);
 
+        const material: Material = cmpMaterial.material;
         const isParticleSystem: boolean = cmpParticleSystem?.active && cmpParticleSystem.particleSystem != null;
         const shader: ShaderInterface = isParticleSystem
-          ? cmpParticleSystem.particleSystem.getShaderFrom(cmpMaterial.material.getShader())
-          : cmpMaterial.material.getShader();
+          ? cmpParticleSystem.particleSystem.getShaderFrom(material.getShader())
+          : material.getShader();
 
-        (<NodeSortCache>_branch)[SHADER_ID] = Render.getSortIdForShader(shader); // cache shader sort id directly on the node for faster access during sorting, as this is the most expensive sorting step and shader is the most expensive property to access during rendering
+        (<NodeSortable>_branch)[SHADER_ID] = Render.getSortIdForShader(shader); // cache shader sort id directly on the node for faster access during sorting
 
         _branch.radius = cmpMesh.radius;
 
@@ -173,9 +182,8 @@ namespace FudgeCore {
           if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
             Render.nodesAlpha.push(_branch); // add this node to render list
           else
-            Render.nodesSimple.push(_branch); // add this node to render list
+            Render.nodesOpaque.push(_branch); // add this node to render list
 
-        const material: Material = cmpMaterial.material;
         if (material?.timestampUpdate < Render.timestampUpdate) {
           material.timestampUpdate = Render.timestampUpdate;
           material.coat.updateRenderData();
@@ -238,16 +246,17 @@ namespace FudgeCore {
       Recycler.store(mtxLocal);
     }
 
-    private static compareOpaqueNodes(_a: Node, _b: Node): number {
-      return (<NodeSortCache>_a)[SHADER_ID] - (<NodeSortCache>_b)[SHADER_ID];
+    // use direct symbol access, much faster than Reflect.set/get or weakmap lookups during sorting
+    private static compareOpaqueNodes(_a: NodeSortable, _b: NodeSortable): number {
+      return _a[SHADER_ID] - _b[SHADER_ID];
     }
 
-    private static compareAlphaNodes(_a: Node, _b: Node): number {
-      const zDifference: number = (<NodeSortCache>_a)[Z_CAMERA] - (<NodeSortCache>_b)[Z_CAMERA];
+    private static compareAlphaNodes(_a: NodeSortable, _b: NodeSortable): number {
+      const zDifference: number = _b[Z_CAMERA] - _a[Z_CAMERA];
       if (zDifference != 0)
         return zDifference;
 
-      return (<NodeSortCache>_a)[SHADER_ID] - (<NodeSortCache>_b)[SHADER_ID];
+      return _a[SHADER_ID] - _b[SHADER_ID];
     }
 
     private static getSortIdForShader(_shader: ShaderInterface): number {
