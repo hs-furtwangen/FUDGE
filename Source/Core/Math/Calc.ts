@@ -32,6 +32,13 @@ namespace FudgeCore {
       return _round(_value / _increment) * _increment;
     }
 
+    /**
+     * Returns the square root of the sum of squares of its arguments.
+     */
+    public static hypot(_x: number, _y: number): number {
+      return Math.sqrt(_x * _x + _y * _y);
+    }
+
     private static isSmaller<T>(_value1: T, _value2: T): boolean {
       return _value1 < _value2;
     }

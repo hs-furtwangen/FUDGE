@@ -176,6 +176,50 @@ namespace FudgeCore {
       this.#projectionDirty = true;
     }
 
+    @order(9)
+    @edit(Number)
+    public get left(): number {
+      return this.#left;
+    }
+
+    public set left(_value: number) {
+      this.#left = _value;
+      this.#projectionDirty = true;
+    }
+
+    @order(10)
+    @edit(Number)
+    public get right(): number {
+      return this.#right;
+    }
+
+    public set right(_value: number) {
+      this.#right = _value;
+      this.#projectionDirty = true;
+    }
+
+    @order(11)
+    @edit(Number)
+    public get bottom(): number {
+      return this.#bottom;
+    }
+
+    public set bottom(_value: number) {
+      this.#bottom = _value;
+      this.#projectionDirty = true;
+    }
+
+    @order(12)
+    @edit(Number)
+    public get top(): number {
+      return this.#top;
+    }
+
+    public set top(_value: number) {
+      this.#top = _value;
+      this.#projectionDirty = true;
+    }
+
     /**
      * Set the camera to perspective projection. The world origin is in the center of the canvaselement.
      * @param _aspect The aspect ratio between width and height of the projection space.
@@ -196,10 +240,10 @@ namespace FudgeCore {
 
     /**
      * Set the camera to orthographic projection. Default values are derived the canvas client dimensions
-     * @param _left The positionvalue of the projectionspace's left border.    
-     * @param _right The positionvalue of the projectionspace's right border.  
-     * @param _bottom The positionvalue of the projectionspace's bottom border.
-     * @param _top The positionvalue of the projectionspace's top border.      
+     * @param _left The position value of the projectionspace's left border.    
+     * @param _right The position value of the projectionspace's right border.  
+     * @param _bottom The position value of the projectionspace's bottom border.
+     * @param _top The position value of the projectionspace's top border.      
      */
     public projectOrthographic(_left: number = this.#left, _right: number = this.#right, _bottom: number = this.#bottom, _top: number = this.#top, _near: number = this.#near, _far: number = this.#far): void {
       this.#projection = PROJECTION.ORTHOGRAPHIC;
@@ -221,16 +265,20 @@ namespace FudgeCore {
       let tanHorizontal: number = 0;
       let tanVertical: number = 0;
 
-      if (this.#direction == FIELD_OF_VIEW.DIAGONAL) {
-        let aspect: number = Math.sqrt(this.#aspectRatio);
-        tanHorizontal = tanFov * aspect;
-        tanVertical = tanFov / aspect;
-      } else if (this.#direction == FIELD_OF_VIEW.VERTICAL) {
-        tanVertical = tanFov;
-        tanHorizontal = tanVertical * this.#aspectRatio;
-      } else {//FOV_DIRECTION.HORIZONTAL
-        tanHorizontal = tanFov;
-        tanVertical = tanHorizontal / this.#aspectRatio;
+      switch (this.#direction) {
+        case FIELD_OF_VIEW.DIAGONAL:
+          let aspect: number = Math.sqrt(this.#aspectRatio);
+          tanHorizontal = tanFov * aspect;
+          tanVertical = tanFov / aspect;
+          break;
+        case FIELD_OF_VIEW.VERTICAL:
+          tanVertical = tanFov;
+          tanHorizontal = tanVertical * this.#aspectRatio;
+          break;
+        case FIELD_OF_VIEW.HORIZONTAL:
+          tanHorizontal = tanFov;
+          tanVertical = tanHorizontal / this.#aspectRatio;
+          break;
       }
 
       return _out.set(0, 0, tanHorizontal * 2, tanVertical * 2);
@@ -261,27 +309,116 @@ namespace FudgeCore {
 
     /**
      * Returns a scaling factor that, given a position in world space, 
-     * scales an object at that position so that one unit equals one (logical) pixel on the screen 
+     * scales an object at that position so that one unit equals one (physical) pixel on the screen 
      * when seen through this camera.
-     * e.g., after setting the scaling, 1 unit in the world equals one (logical) pixel on the screen.
+     * e.g., after setting the scaling, 1 unit in the world equals one (physical) pixel on the screen.
      */
     public getWorldToPixelScale(_posWorld: Vector3): number {
-      let distance: number = this.mtxWorld.translation.getDistance(_posWorld);
-      let scale: number;
-      let rect: Rectangle = Render.getViewportRectangle();
-      switch (this.#direction) {
-        case FIELD_OF_VIEW.VERTICAL:
-          scale = 1 / rect.height * window.devicePixelRatio;
+      const rectViewport: Rectangle = Render.getViewportRectangle();
+      const width: number = rectViewport.width;
+      const height: number = rectViewport.height;
+
+      switch (this.#projection) {
+        case PROJECTION.ORTHOGRAPHIC:
+          switch (this.#direction) {
+            case FIELD_OF_VIEW.VERTICAL:
+              return (this.#top - this.#bottom) / height;
+            case FIELD_OF_VIEW.HORIZONTAL:
+              return (this.#right - this.#left) / width;
+            case FIELD_OF_VIEW.DIAGONAL:
+              return Calc.hypot(this.#right - this.#left, this.#top - this.#bottom) / Calc.hypot(width, height);
+          }
+        case PROJECTION.CENTRAL:
+          const posCamera: Vector3 = Vector3.TRANSFORMATION(_posWorld, this.mtxCameraInverse, true);
+          const depth: number = Math.abs(posCamera.z);
+          const rectProjection: Rectangle = this.getProjectionRectangle();
+
+          let scale: number; // the world to pixel scale at a distance of 1 to the camera
+
+          switch (this.#direction) {
+            case FIELD_OF_VIEW.VERTICAL:
+              scale = rectProjection.height / height;
+              break;
+            case FIELD_OF_VIEW.HORIZONTAL:
+              scale = rectProjection.width / width;
+              break;
+            case FIELD_OF_VIEW.DIAGONAL:
+              scale = Calc.hypot(rectProjection.width, rectProjection.height) / Calc.hypot(width, height);
+              break;
+          }
+
+          Recycler.store(posCamera);
+          Recycler.store(rectProjection);
+
+          return scale * depth;
+        default:
+          throw new Error(`World to pixel scale not implemented for projection type ${this.#projection}`);
+      }
+    }
+
+    /**
+     * Returns the corners of the cameras frustum in local space. 
+     * The order of the corners is near top left, near top right, near bottom right, near bottom left, far top left, far top right, far bottom right, far bottom left.
+     * 
+     * @param _out Optional array to store the result in.
+     * @param _mtxTransform Optional transformation to apply to each corners.
+     */
+    public getFrustumCorners(_out: Vector3[] = [Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO()], _mtxTransform?: Matrix4x4): Vector3[] {
+      switch (this.#projection) {
+        case PROJECTION.CENTRAL:
+          const f: number = Math.tan(Calc.deg2rad * this.#fieldOfView / 2);
+
+          let scaleX: number = f;
+          let scaleY: number = f;
+
+          switch (this.#direction) {
+            case FIELD_OF_VIEW.HORIZONTAL:
+              scaleY = f / this.#aspectRatio;
+              break;
+            case FIELD_OF_VIEW.VERTICAL:
+              scaleX = f * this.#aspectRatio;
+              break;
+            case FIELD_OF_VIEW.DIAGONAL:
+              const diagonalAspect: number = Math.sqrt(this.#aspectRatio);
+              scaleX = f * diagonalAspect;
+              scaleY = f / diagonalAspect;
+              break;
+          }
+
+          const nearX: number = this.near * scaleX;
+          const nearY: number = this.near * scaleY;
+          const farX: number = this.far * scaleX;
+          const farY: number = this.far * scaleY;
+
+          _out[0].set(-nearX, nearY, this.near);
+          _out[1].set(nearX, nearY, this.near);
+          _out[2].set(nearX, -nearY, this.near);
+          _out[3].set(-nearX, -nearY, this.near);
+
+          _out[4].set(-farX, farY, this.far);
+          _out[5].set(farX, farY, this.far);
+          _out[6].set(farX, -farY, this.far);
+          _out[7].set(-farX, -farY, this.far);
           break;
-        case FIELD_OF_VIEW.HORIZONTAL:
-          scale = 1 / rect.width * window.devicePixelRatio;
+        case PROJECTION.ORTHOGRAPHIC:
+          _out[0].set(this.#left, this.#bottom, this.#near);
+          _out[1].set(this.#right, this.#bottom, this.#near);
+          _out[2].set(this.#right, this.#top, this.#near);
+          _out[3].set(this.#left, this.#top, this.#near);
+          _out[4].set(this.#left, this.#bottom, this.#far);
+          _out[5].set(this.#right, this.#bottom, this.#far);
+          _out[6].set(this.#right, this.#top, this.#far);
+          _out[7].set(this.#left, this.#top, this.#far);
           break;
-        case FIELD_OF_VIEW.DIAGONAL:
-          scale = 1 / Math.sqrt((rect.width * rect.height) * window.devicePixelRatio);
-          break;
+        default:
+          throw new Error(`Frustum corners not implemented for projection type ${this.#projection}`);
       }
 
-      return scale * distance;
+      if (_mtxTransform)
+        for (let corner of _out)
+          corner.transform(_mtxTransform);
+
+      return _out;
     }
 
     public drawGizmos(): void {
