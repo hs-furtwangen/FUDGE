@@ -290,7 +290,8 @@ namespace Fudge {
         ƒ.Render.lights.forEach((_array: ƒ.RecycableArray<ƒ.ComponentLight>) => lightsPresent ||= _array.length > 0);
         this.setTitle(`${lightsPresent ? "RENDER" : "Render"} | ${this.graph.name}`);
         if (!lightsPresent)
-          ƒ.Render.addLights(this.nodeLight.getComponents(ƒ.ComponentLight));
+          for (let cmpLight of this.nodeLight.getComponents(ƒ.ComponentLight))
+            ƒ.Render.addLight(cmpLight);
         this.graph.removeEventListener(ƒ.EVENT.RENDER_PREPARE_END, switchLight);
       };
       this.graph.addEventListener(ƒ.EVENT.RENDER_PREPARE_END, switchLight);
@@ -325,7 +326,7 @@ namespace Fudge {
             this.viewport.camera = this.cmrOrbit.cmpCamera;
           break;
         case EVENT_EDITOR.MODIFY:
-          if (this.node?.getParent() || this.node instanceof ƒ.Graph) 
+          if (this.node?.getParent() || this.node instanceof ƒ.Graph)
             break;
 
           this.node = null; // deselect disconnected nodes
