@@ -37,7 +37,7 @@ namespace FudgeCore {
       let scaling: Vector3 = Recycler.get(Vector3);
 
       if (this.fixedSize) {
-        let scale: number = _cmpCamera.getWorldToPixelScale(_mtxMeshToWorld.translation);
+        let scale: number = _cmpCamera.getWorldToPixelScale(_mtxMeshToWorld.translation) * devicePixelRatio;
         this.mtxWorld.scaling = scaling.set(this.texture.width * scale, this.texture.height * scale, 1);;
       } else {
         let pixelsToUnits: number = 1 / this.texture.height;

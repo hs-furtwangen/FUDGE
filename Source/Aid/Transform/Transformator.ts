@@ -125,7 +125,7 @@ namespace FudgeAid {
       if (this.space == "local" && (this.#mtxWorld.scaling.x == 0 || this.#mtxWorld.scaling.y == 0 || this.#mtxWorld.scaling.z == 0))
         return;
 
-      const world2Pixel: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorld.translation);
+      const world2Pixel: number = this.camera.getWorldToPixelScale(this.#mtxWorld.translation) * devicePixelRatio;
 
       const translateArrowWidth: number = world2Pixel * (_picking ? 10 : 1);
       const translateArrowLength: number = world2Pixel * (_picking ? 90 : 80);
@@ -189,7 +189,7 @@ namespace FudgeAid {
 
           // draw afterimages
           if (this.#isTransforming) {
-            const world2PixelBase: number = _cmpCamera.getWorldToPixelScale(this.#mtxWorldBase.translation);
+            const world2PixelBase: number = this.camera.getWorldToPixelScale(this.#mtxWorldBase.translation);
             for (const selected of this.selected)  //@ts-ignore
               ƒ.Gizmos.drawArrow(this.#mtxWorldBase.translation, this.colors.transparent[selected], axes[selected], normals[selected], world2PixelBase * 80, world2PixelBase * 1, world2PixelBase * 14, ƒ.MeshPyramid, 0);
           }

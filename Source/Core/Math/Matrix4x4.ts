@@ -438,14 +438,19 @@ namespace FudgeCore {
         0, 0, _near * _far * rangeInv * 2, 0
       );
 
-      if (_direction == FIELD_OF_VIEW.DIAGONAL) {
-        _aspect = Math.sqrt(_aspect);
-        _mtxOut.data[0] = f / _aspect;
-        _mtxOut.data[5] = f * _aspect;
-      } else if (_direction == FIELD_OF_VIEW.VERTICAL)
-        _mtxOut.data[0] = f / _aspect;
-      else //FOV_DIRECTION.HORIZONTAL
-        _mtxOut.data[5] = f * _aspect;
+      switch (_direction) {
+        case FIELD_OF_VIEW.DIAGONAL:
+          _aspect = Math.sqrt(_aspect);
+          _mtxOut.data[0] = f / _aspect;
+          _mtxOut.data[5] = f * _aspect;
+          break;
+        case FIELD_OF_VIEW.VERTICAL:
+          _mtxOut.data[0] = f / _aspect;
+          break;
+        case FIELD_OF_VIEW.HORIZONTAL:
+          _mtxOut.data[5] = f * _aspect;
+          break;
+      }
 
       // HACK: matrix should look in positive z-direction, preferably the matrix should be calculated like that right away
       _mtxOut.rotateY(180);
