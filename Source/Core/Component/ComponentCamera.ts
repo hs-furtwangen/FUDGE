@@ -40,14 +40,15 @@ namespace FudgeCore {
     public backgroundEnabled: boolean = true; // Determines whether or not the background of this camera will be rendered. // TODO: seems to be unused, remove?
     // TODO: examine, if background should be an attribute of Camera or Viewport
 
-    //private orthographic: boolean = false; // Determines whether the image will be rendered with perspective or orthographic projection.
     #projection: PROJECTION = PROJECTION.CENTRAL;
+
     #fieldOfView: number = 45; // The camera's sensorangle.
     #aspectRatio: number = 1.0;
     #direction: FIELD_OF_VIEW = FIELD_OF_VIEW.DIAGONAL;
     #near: number = 0.01;
     #far: number = 1000;
 
+    #size: number = 10;
     #left: number = -1;
     #right: number = 1;
     #bottom: number = -1;
@@ -60,8 +61,8 @@ namespace FudgeCore {
     readonly #mtxProjection: Matrix4x4 = Matrix4x4.IDENTITY();
 
     /**
-     * Returns {@link mtxProjection} * {@link mtxCameraInverse}
-     * yielding the worldspace to viewspace matrix
+     * Returns {@link mtxProjection} * {@link mtxCameraInverse} yielding the worldspace to viewspace matrix.
+     * Otherwise known as the viewprojection matrix, which transforms points from worldspace directly to clipspace.
      */
     public get mtxWorldToView(): Matrix4x4 {
       if (this.#mtxProjection.modified || this.mtxCameraInverse.modified) {
@@ -75,6 +76,7 @@ namespace FudgeCore {
 
     /**
      * Returns the inversion of this cameras worldtransformation.
+     * Otherwise known as the view matrix, which transforms points from worldspace to camera space.
      */
     public get mtxCameraInverse(): Matrix4x4 {
       if (this.mtxWorld.modified) {
@@ -220,6 +222,17 @@ namespace FudgeCore {
       this.#projectionDirty = true;
     }
 
+    @order(13)
+    @edit(Number)
+    public get size(): number {
+      return this.#size;
+    }
+
+    public set size(_value: number) {
+      this.#size = _value;
+      this.#projectionDirty = true;
+    }
+
     /**
      * Set the camera to perspective projection. The world origin is in the center of the canvaselement.
      * @param _aspect The aspect ratio between width and height of the projection space.
@@ -239,13 +252,41 @@ namespace FudgeCore {
     }
 
     /**
-     * Set the camera to orthographic projection. Default values are derived the canvas client dimensions
-     * @param _left The position value of the projectionspace's left border.    
-     * @param _right The position value of the projectionspace's right border.  
-     * @param _bottom The position value of the projectionspace's bottom border.
-     * @param _top The position value of the projectionspace's top border.      
+     * Set the camera to orthographic projection.
      */
-    public projectOrthographic(_left: number = this.#left, _right: number = this.#right, _bottom: number = this.#bottom, _top: number = this.#top, _near: number = this.#near, _far: number = this.#far): void {
+    public projectOrthographic(_size: number = this.#size, _aspect: number = this.#aspectRatio, _direction: FIELD_OF_VIEW = this.#direction, _near: number = this.#near, _far: number = this.#far): void {
+      this.#projection = PROJECTION.ORTHOGRAPHIC;
+      this.#size = _size;
+      this.#aspectRatio = _aspect;
+      this.#direction = _direction;
+
+      let width: number = _size;
+      let height: number = _size;
+      switch (_direction) {
+        case FIELD_OF_VIEW.DIAGONAL:
+          _aspect = Math.sqrt(_aspect);
+          width = _size * _aspect;
+          height = _size / _aspect;
+          break;
+        case FIELD_OF_VIEW.VERTICAL:
+          width = _size * _aspect;
+          break;
+        case FIELD_OF_VIEW.HORIZONTAL:
+          height = _size / _aspect;
+          break;
+      }
+
+      this.#left = -width / 2;
+      this.#right = width / 2;
+      this.#bottom = -height / 2;
+      this.#top = height / 2;
+      this.#near = _near;
+      this.#far = _far;
+
+      Matrix4x4.PROJECTION_ORTHOGRAPHIC(this.#left, this.#right, this.#bottom, this.#top, this.#near, this.#far, this.#mtxProjection);
+    }
+
+    public projectOrthographicBounds(_left: number = this.#left, _right: number = this.#right, _bottom: number = this.#bottom, _top: number = this.#top, _near: number = this.#near, _far: number = this.#far): void {
       this.#projection = PROJECTION.ORTHOGRAPHIC;
       this.#left = _left;
       this.#right = _right;
@@ -253,7 +294,8 @@ namespace FudgeCore {
       this.#top = _top;
       this.#near = _near;
       this.#far = _far;
-      Matrix4x4.PROJECTION_ORTHOGRAPHIC(_left, _right, _bottom, _top, _near, _far, this.#mtxProjection);
+
+      Matrix4x4.PROJECTION_ORTHOGRAPHIC(this.#left, this.#right, this.#bottom, this.#top, this.#near, this.#far, this.#mtxProjection);
     }
 
     /**
@@ -316,109 +358,20 @@ namespace FudgeCore {
     public getWorldToPixelScale(_posWorld: Vector3): number {
       const rectViewport: Rectangle = Render.getViewportRectangle();
       const width: number = rectViewport.width;
-      const height: number = rectViewport.height;
 
       switch (this.#projection) {
         case PROJECTION.ORTHOGRAPHIC:
-          switch (this.#direction) {
-            case FIELD_OF_VIEW.VERTICAL:
-              return (this.#top - this.#bottom) / height;
-            case FIELD_OF_VIEW.HORIZONTAL:
-              return (this.#right - this.#left) / width;
-            case FIELD_OF_VIEW.DIAGONAL:
-              return Calc.hypot(this.#right - this.#left, this.#top - this.#bottom) / Calc.hypot(width, height);
-          }
         case PROJECTION.CENTRAL:
           const posCamera: Vector3 = Vector3.TRANSFORMATION(_posWorld, this.mtxCameraInverse, true);
           const depth: number = Math.abs(posCamera.z);
-          const rectProjection: Rectangle = this.getProjectionRectangle();
-
-          let scale: number; // the world to pixel scale at a distance of 1 to the camera
-
-          switch (this.#direction) {
-            case FIELD_OF_VIEW.VERTICAL:
-              scale = rectProjection.height / height;
-              break;
-            case FIELD_OF_VIEW.HORIZONTAL:
-              scale = rectProjection.width / width;
-              break;
-            case FIELD_OF_VIEW.DIAGONAL:
-              scale = Calc.hypot(rectProjection.width, rectProjection.height) / Calc.hypot(width, height);
-              break;
-          }
+          const pixelsPerUnit: number = Matrix4x4.PIXELS_PER_UNIT(this.mtxProjection, width, depth);
 
           Recycler.store(posCamera);
-          Recycler.store(rectProjection);
 
-          return scale * depth;
+          return 1 / pixelsPerUnit;
         default:
           throw new Error(`World to pixel scale not implemented for projection type ${this.#projection}`);
       }
-    }
-
-    /**
-     * Returns the corners of the cameras frustum in local space. 
-     * The order of the corners is near top left, near top right, near bottom right, near bottom left, far top left, far top right, far bottom right, far bottom left.
-     * 
-     * @param _out Optional array to store the result in.
-     * @param _mtxTransform Optional transformation to apply to each corners.
-     */
-    public getFrustumCorners(_out: Vector3[] = [Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO()], _mtxTransform?: Matrix4x4): Vector3[] {
-      switch (this.#projection) {
-        case PROJECTION.CENTRAL:
-          const f: number = Math.tan(Calc.deg2rad * this.#fieldOfView / 2);
-
-          let scaleX: number = f;
-          let scaleY: number = f;
-
-          switch (this.#direction) {
-            case FIELD_OF_VIEW.HORIZONTAL:
-              scaleY = f / this.#aspectRatio;
-              break;
-            case FIELD_OF_VIEW.VERTICAL:
-              scaleX = f * this.#aspectRatio;
-              break;
-            case FIELD_OF_VIEW.DIAGONAL:
-              const diagonalAspect: number = Math.sqrt(this.#aspectRatio);
-              scaleX = f * diagonalAspect;
-              scaleY = f / diagonalAspect;
-              break;
-          }
-
-          const nearX: number = this.near * scaleX;
-          const nearY: number = this.near * scaleY;
-          const farX: number = this.far * scaleX;
-          const farY: number = this.far * scaleY;
-
-          _out[0].set(-nearX, nearY, this.near);
-          _out[1].set(nearX, nearY, this.near);
-          _out[2].set(nearX, -nearY, this.near);
-          _out[3].set(-nearX, -nearY, this.near);
-
-          _out[4].set(-farX, farY, this.far);
-          _out[5].set(farX, farY, this.far);
-          _out[6].set(farX, -farY, this.far);
-          _out[7].set(-farX, -farY, this.far);
-          break;
-        case PROJECTION.ORTHOGRAPHIC:
-          _out[0].set(this.#left, this.#bottom, this.#near);
-          _out[1].set(this.#right, this.#bottom, this.#near);
-          _out[2].set(this.#right, this.#top, this.#near);
-          _out[3].set(this.#left, this.#top, this.#near);
-          _out[4].set(this.#left, this.#bottom, this.#far);
-          _out[5].set(this.#right, this.#bottom, this.#far);
-          _out[6].set(this.#right, this.#top, this.#far);
-          _out[7].set(this.#left, this.#top, this.#far);
-          break;
-        default:
-          throw new Error(`Frustum corners not implemented for projection type ${this.#projection}`);
-      }
-
-      if (_mtxTransform)
-        for (let corner of _out)
-          corner.transform(_mtxTransform);
-
-      return _out;
     }
 
     public drawGizmos(): void {

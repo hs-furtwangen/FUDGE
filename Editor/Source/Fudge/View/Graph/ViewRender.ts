@@ -271,13 +271,9 @@ namespace Fudge {
     private setCameraOrthographic(_on: boolean = false): void {
       this.viewport.camera = this.cmrOrbit.cmpCamera;
       if (_on) {
-        this.cmrOrbit.cmpCamera.projectCentral(2, 1, ƒ.FIELD_OF_VIEW.DIAGONAL, 10, 20000);
-        this.cmrOrbit.maxDistance = 10000;
-        this.cmrOrbit.distance *= 50;
+        this.cmrOrbit.cmpCamera.projectOrthographic(10);
       } else {
-        this.cmrOrbit.cmpCamera.projectCentral(1, 45, ƒ.FIELD_OF_VIEW.DIAGONAL, 0.01, 1000);
-        this.cmrOrbit.maxDistance = 1000;
-        this.cmrOrbit.distance /= 50;
+        this.cmrOrbit.cmpCamera.projectCentral();
       }
       this.contextMenu.getMenuItemById(String(CONTEXTMENU.ORTHGRAPHIC_CAMERA)).checked = _on;
       ƒ.Render.prepare(this.cmrOrbit);

@@ -921,11 +921,13 @@ namespace FudgeCore {
           gltfCamera.perspective.zfar
         );
       else
-        camera.projectOrthographic(
+        camera.projectOrthographicBounds(
           -gltfCamera.orthographic.xmag,
           gltfCamera.orthographic.xmag,
           -gltfCamera.orthographic.ymag,
-          gltfCamera.orthographic.ymag
+          gltfCamera.orthographic.ymag,
+          gltfCamera.orthographic.znear,
+          gltfCamera.orthographic.zfar
         );
 
       return camera;

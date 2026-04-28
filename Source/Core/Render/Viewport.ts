@@ -304,12 +304,13 @@ namespace FudgeCore {
       // this.camera.projectCentral(rectViewport.width / rectViewport.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
 
       const projection: PROJECTION = this.camera.projection;
+      const aspect: number = rectViewport.width / rectViewport.height;
       switch (projection) {
         case PROJECTION.CENTRAL:
-          this.camera.projectCentral(rectViewport.width / rectViewport.height, this.camera.fieldOfView, this.camera.direction, this.camera.near, this.camera.far);
+          this.camera.projectCentral(aspect);
           break;
         case PROJECTION.ORTHOGRAPHIC:
-          this.camera.projectOrthographic();
+          this.camera.projectOrthographic(undefined, aspect);
           break;
       }
     }
