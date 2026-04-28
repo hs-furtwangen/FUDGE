@@ -72,7 +72,9 @@ namespace FudgeCore {
       Coat.updateRenderbuffer();
 
       (<RecycableArray<NodeSortable>>Render.nodesOpaque).sort(Render.compareOpaqueNodes);
-      ComponentLight.processLighting(Render.nodesOpaque, Render.lights);
+      ComponentLight.processLights(Render.lights);
+      ComponentLight.processShadowsSpot(Render.nodesOpaque);
+      ComponentLight.processShadowsPoint(Render.nodesOpaque);
     }
 
     public static addLight(_cmpLight: ComponentLight): void {
@@ -89,13 +91,12 @@ namespace FudgeCore {
      * Draws the scene from the point of view of the given camera
      */
     public static draw(_cmpCamera: ComponentCamera): void {
-
       for (let node of Render.nodesAlpha)
         (<NodeSortable>node)[Z_CAMERA] = _cmpCamera.pointWorldToClip(node.getComponent(ComponentMesh).mtxWorld.translation).z;
 
       (<RecycableArray<NodeSortable>>Render.nodesAlpha).sort(Render.compareAlphaNodes);
 
-
+      ComponentLight.processShadowsDirectional(Render.nodesOpaque, _cmpCamera);
       Render.drawNodes(Render.nodesOpaque, Render.nodesAlpha, _cmpCamera);
     }
 

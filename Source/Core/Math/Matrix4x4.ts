@@ -481,6 +481,63 @@ namespace FudgeCore {
       return _mtxOut;
     }
 
+    /**
+     * Computes and returns the eight corners of the view frustum in local space.
+     * @param _mtxInverseProjection The inverse projection matrix of the camera.
+     * @param _mtxTransform Optional transformation matrix to apply to the corners. Useful to get the corners in world space, for example.
+     * @param _out Optional array to store the resulting corners in.
+     */
+    public static FRUSTUM_CORNERS(_mtxInverseProjection: Matrix4x4, _mtxTransform?: Matrix4x4, _out: Vector3[] = [Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO(), Vector3.ZERO()]): Vector3[] {
+      const m: ArrayLike<number> = _mtxInverseProjection.getArray();
+
+      const zNear: number = -1; // needs to be adjusted in webgpu
+      const zFar: number = 1;
+
+      _out[0].set(-1, 1, zNear);
+      _out[1].set(1, 1, zNear);
+      _out[2].set(1, -1, zNear);
+      _out[3].set(-1, -1, zNear);
+      _out[4].set(-1, 1, zFar);
+      _out[5].set(1, 1, zFar);
+      _out[6].set(1, -1, zFar);
+      _out[7].set(-1, -1, zFar);
+
+      for (let i: number = 0; i < _out.length; i++) {
+        const corner: Vector3 = _out[i];
+        const w: number = m[3] * corner.x + m[7] * corner.y + m[11] * corner.z + m[15];
+
+        corner.transform(_mtxInverseProjection, true).scale(1 / w);
+
+        if (_mtxTransform)
+          corner.transform(_mtxTransform);
+      }
+
+      return _out;
+    }
+
+    // TODO: from godot test this
+    public static Z_NEAR(_mtxProjection: Matrix4x4): number {
+      const m: ArrayLike<number> = _mtxProjection.getArray();
+      return (m[14] + m[15]) / (m[10] + m[11]);
+    }
+
+    // TODO: from godot test this
+    public static Z_FAR(_mtxProjection: Matrix4x4): number {
+      const m: ArrayLike<number> = _mtxProjection.getArray();
+      return (m[15] - m[11]) / (m[14] - m[10]);
+    }
+
+    /**
+     * Returns the number of pixels that correspond to one unit in world space at a given depth.
+     * @param _mtxProjection The projection matrix to calculate the pixels per unit from.
+     * @param _width The width of the viewport in pixels.
+     * @param _depth The depth in viewspace. Defaults to the near clipspace border.
+     */
+    public static PIXELS_PER_UNIT(_mtxProjection: Matrix4x4, _width: number, _depth: number = -Matrix4x4.Z_NEAR(_mtxProjection)): number {
+      const m: ArrayLike<number> = _mtxProjection.getArray();
+      const width: number = 2 * (_depth * m[11] + m[15]) / -m[0];
+      return _width / width;
+    }
     //#endregion
 
     //#region Accessors

@@ -82,6 +82,10 @@ namespace FudgeCore {
     @edit(Number)
     public shadowBlur: number = 1;
 
+    @edit(Number)
+    public shadowMaxDistance: number = 50;
+
+
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
     public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
@@ -94,7 +98,19 @@ namespace FudgeCore {
 
     /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
     @RenderWebGLComponentLight.decorate
-    public static processLighting(_nodes: Iterable<Node>, _lights: MapLightTypeToLightList): void { /* injected */ };
+    public static processLights(_lights: MapLightTypeToLightList): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    @RenderWebGLComponentLight.decorate
+    public static processShadowsDirectional(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void { /* injected */ };
+
+    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    @RenderWebGLComponentLight.decorate
+    public static processShadowsSpot(_nodes: Iterable<Node>): void { /* injected */ };
+    
+    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    @RenderWebGLComponentLight.decorate
+    public static processShadowsPoint(_nodes: Iterable<Node>): void { /* injected */ };
 
     public drawGizmos(): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
