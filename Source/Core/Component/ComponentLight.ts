@@ -74,17 +74,16 @@ namespace FudgeCore {
     public shadowEnabled: boolean = false;
 
     @edit(Number)
-    public shadowBias: number = 0.05;
+    public shadowBias: number = 0.1;
 
     @edit(Number)
-    public shadowNormalBias: number = 20;
+    public shadowNormalBias: number = 2;
 
     @edit(Number)
     public shadowBlur: number = 1;
 
     @edit(Number)
     public shadowMaxDistance: number = 50;
-
 
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 

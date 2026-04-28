@@ -328,6 +328,89 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Wraps a regular Javascript Array and offers very limited functionality geared solely towards avoiding garbage colletion.
+     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
+     */
+    class RecycableArray<T> {
+        #private;
+        get length(): number;
+        /**
+         * Sets the virtual length of the array to zero but keeps the entries beyond.
+         */
+        reset(): void;
+        /**
+         * Recycle this array
+         */
+        recycle(): void;
+        /**
+         * Appends a new entry to the end of the array, and returns the new length of the array.
+         */
+        push(_entry: T): number;
+        /**
+         * Removes the last entry from the array and returns it.
+         */
+        pop(): T;
+        /**
+         * Recycles the object following the last in the array and increases the array length
+         * It must be assured, that none of the objects in the array is still in any use of any kind!
+         */
+        [Symbol.iterator](): IterableIterator<T>;
+        /**
+         * Sorts the array in place according to the provided compare function. The sorting algorithm is not guaranteed to be stable.
+         * See {@link Array.prototype.sort} for details.
+         */
+        sort(_compareFn: (a: T, b: T) => number): void;
+        private sortRange;
+    }
+}
+declare namespace FudgeCore {
+    /**
+     * Interface to be implemented by objects that can be recycled, i.e. to avoid garbage collection by reusing the object instead of replacing it with a new one.
+     */
+    interface Recycable {
+        /**
+         * Recycles the object for the next reuse by setting its properties to their default states.
+         */
+        recycle(): void;
+    }
+    /**
+     * Keeps a depot of objects that have been marked for reuse, sorted by type.
+     * Using {@link Recycler} reduces load on the carbage collector and thus supports smooth performance.
+     * @author Jirka Dell'Oro-Friedl, HFU, 2021
+     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
+     */
+    abstract class Recycler {
+        private static depot;
+        /**
+         * Fetches an object of the requested type from the depot, calls its recycle-method and returns it.
+         * If the depot for that type is empty it returns a new object of the requested type.
+         * @param _t The class identifier of the desired object
+         */
+        static get<T extends Recycable | RecycableArray<T> | Object>(_t: new () => T): T;
+        /**
+         * Fetches an object of the requested type from the depot and returns it. ⚠️**DOES NOT** call its recycle-method.
+         * Faster than {@link Recycler.get}, but should be used with caution.
+         */
+        static reuse<T extends Object>(_t: new () => T): T;
+        /**
+         * Stores the object in the depot for later recycling. Users are responsible for throwing in objects that are about to loose scope and are not referenced by any other
+         * @param _instance
+         */
+        static store(_instance: Object): void;
+        /**
+         * Emptys the depot of a given type, leaving the objects for the garbage collector. May result in a short stall when many objects were in
+         * @param _t
+         */
+        static dump<T>(_t: new () => T): void;
+        /**
+         * Emptys all depots, leaving all objects to the garbage collector. May result in a short stall when many objects were in
+         */
+        static dumpAll(): void;
+    }
+}
+declare namespace FudgeCore {
     type General = any;
     /**
      * Holds information needed to recreate an object identical to the one it originated from.
@@ -2314,7 +2397,23 @@ declare namespace FudgeCore {
          * @param _far The positionvalue of the projectionspace's far border
          * @param _mtxOut Optional matrix to store the result in.
          */
-        static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near?: number, _far?: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        static PROJECTION_ORTHOGRAPHIC(_left: number, _right: number, _bottom: number, _top: number, _near: number, _far: number, _mtxOut?: Matrix4x4): Matrix4x4;
+        /**
+         * Computes and returns the eight corners of the view frustum in local space.
+         * @param _mtxInverseProjection The inverse projection matrix of the camera.
+         * @param _mtxTransform Optional transformation matrix to apply to the corners. Useful to get the corners in world space, for example.
+         * @param _out Optional array to store the resulting corners in.
+         */
+        static FRUSTUM_CORNERS(_mtxInverseProjection: Matrix4x4, _mtxTransform?: Matrix4x4, _out?: Vector3[]): Vector3[];
+        static Z_NEAR(_mtxProjection: Matrix4x4): number;
+        static Z_FAR(_mtxProjection: Matrix4x4): number;
+        /**
+         * Returns the number of pixels that correspond to one unit in world space at a given depth.
+         * @param _mtxProjection The projection matrix to calculate the pixels per unit from.
+         * @param _width The width of the viewport in pixels.
+         * @param _depth The depth in viewspace. Defaults to the near clipspace border.
+         */
+        static PIXELS_PER_UNIT(_mtxProjection: Matrix4x4, _width: number, _depth?: number): number;
         get isArrayConvertible(): true;
         /**
          * - get: return a vector representation of the translation {@link Vector3}.
@@ -2765,20 +2864,6 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
     namespace ParticleData {
         enum FUNCTION {
             ADDITION = "addition",
@@ -2801,51 +2886,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-}
-declare namespace FudgeCore {
-    /**
-     * Interface to be implemented by objects that can be recycled, i.e. to avoid garbage collection by reusing the object instead of replacing it with a new one.
-     */
-    interface Recycable {
-        /**
-         * Recycles the object for the next reuse by setting its properties to their default states.
-         */
-        recycle(): void;
-    }
-    /**
-     * Keeps a depot of objects that have been marked for reuse, sorted by type.
-     * Using {@link Recycler} reduces load on the carbage collector and thus supports smooth performance.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
-     */
-    abstract class Recycler {
-        private static depot;
-        /**
-         * Fetches an object of the requested type from the depot, calls its recycle-method and returns it.
-         * If the depot for that type is empty it returns a new object of the requested type.
-         * @param _t The class identifier of the desired object
-         */
-        static get<T extends Recycable | RecycableArray<T> | Object>(_t: new () => T): T;
-        /**
-         * Fetches an object of the requested type from the depot and returns it. ⚠️**DOES NOT** call its recycle-method.
-         * Faster than {@link Recycler.get}, but should be used with caution.
-         */
-        static reuse<T extends Object>(_t: new () => T): T;
-        /**
-         * Stores the object in the depot for later recycling. Users are responsible for throwing in objects that are about to loose scope and are not referenced by any other
-         * @param _instance
-         */
-        static store(_instance: Object): void;
-        /**
-         * Emptys the depot of a given type, leaving the objects for the garbage collector. May result in a short stall when many objects were in
-         * @param _t
-         */
-        static dump<T>(_t: new () => T): void;
-        /**
-         * Emptys all depots, leaving all objects to the garbage collector. May result in a short stall when many objects were in
-         */
-        static dumpAll(): void;
-    }
 }
 declare namespace FudgeCore {
     /**
@@ -2994,25 +3034,29 @@ declare namespace FudgeCore {
             readonly NAME: "Lights";
             readonly BINDING: 0;
         };
-        readonly CAMERA: {
-            readonly NAME: "Camera";
+        readonly VIEW: {
+            readonly NAME: "View";
             readonly BINDING: 1;
         };
         readonly MATERIAL: {
             readonly NAME: "Material";
             readonly BINDING: 2;
         };
-        readonly NODE: {
-            readonly NAME: "Node";
+        readonly OBJECT: {
+            readonly NAME: "Object";
             readonly BINDING: 3;
         };
-        readonly SKIN: {
-            readonly NAME: "Skin";
+        readonly SKELETON: {
+            readonly NAME: "Skeleton";
             readonly BINDING: 4;
         };
         readonly FOG: {
             readonly NAME: "Fog";
             readonly BINDING: 5;
+        };
+        readonly SHADOWS: {
+            readonly NAME: "Shadows";
+            readonly BINDING: 6;
         };
     };
     const TEXTURE_LOCATION: {
@@ -3040,6 +3084,11 @@ declare namespace FudgeCore {
             readonly UNIFORM: "u_texToon";
             readonly UNIT: 33988;
             readonly INDEX: 4;
+        };
+        readonly SHADOW_MAP: {
+            readonly UNIFORM: "u_texShadowMap";
+            readonly UNIT: 33989;
+            readonly INDEX: 5;
         };
     };
     /**
@@ -3157,7 +3206,7 @@ declare namespace FudgeCore {
         /**
          * Draw a mesh buffer using the given infos and the complete projection matrix
         */
-        static drawNode(_node: Node, _cmpCamera: ComponentCamera): void;
+        static drawNode(_node: Node, _cmpCamera: ComponentCamera, _materialOverride?: Material): void;
         /**
          * Used with a {@link Picker}-camera, this method renders one pixel with picking information
          * for each node in the line of sight and return that as an unsorted {@link Pick}-array
@@ -3177,6 +3226,56 @@ declare namespace FudgeCore {
         private static drawParticles;
         private static faceCamera;
     }
+}
+declare namespace FudgeCore {
+    class WebGLUniformBuffer {
+        readonly blockBinding: number;
+        readonly blockSize: number;
+        readonly byteStride: number;
+        readonly elementStride: number;
+        protected arrayBuffer: ArrayBuffer;
+        protected floatView: Float32Array;
+        protected uintView: Uint32Array;
+        private buffer;
+        private capacity;
+        private assignments;
+        constructor(_blockBinding: number, _blockSize: number, _capacity: number);
+        use(_slot: number): void;
+        update(_length?: number): void;
+        updateSlot(_slot: number, _offset?: number, _length?: number): void;
+        reset(): void;
+        assign(_handle: General): number;
+        get(_handle: General): number;
+        grow(_factor?: number): void;
+    }
+}
+declare namespace FudgeCore {
+    class WebGLObjectUniformBuffer extends WebGLUniformBuffer {
+        constructor(_capacity: number);
+        write(_slot: number, _mtxModel?: Matrix4x4, _mtxPivot?: Matrix3x3, _color?: Color, _blendMode?: number, _particleSystemDuration?: number, _particleSystemSize?: number, _particleSystemTime?: number, _faceCameraActive?: boolean, _faceCameraRestrict?: boolean): void;
+    }
+}
+declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
+    class WebGLCoatUniformBuffer extends WebGLUniformBuffer {
+        constructor(_capacity: number);
+        write(_slot: number, _color?: Color, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number, _alphaClip?: number): void;
+    }
+}
+declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
+    class WebGLMaterialUniformBuffer extends WebGLUniformBuffer {
+        constructor(_capacity: number);
+        write(_slot: number, _properties: Experimental.MaterialProperty[], _alphaClip: number): void;
+    }
+}
+declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
+}
+declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     interface MapClassToComponents {
@@ -3447,42 +3546,6 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    /**
-     * Wraps a regular Javascript Array and offers very limited functionality geared solely towards avoiding garbage colletion.
-     * @author Jirka Dell'Oro-Friedl, HFU, 2021
-     * @link https://github.com/hs-furtwangen/FUDGE/wiki/Recycler
-     */
-    class RecycableArray<T> {
-        #private;
-        get length(): number;
-        /**
-         * Sets the virtual length of the array to zero but keeps the entries beyond.
-         */
-        reset(): void;
-        /**
-         * Recycle this array
-         */
-        recycle(): void;
-        /**
-         * Appends a new entry to the end of the array, and returns the new length of the array.
-         */
-        push(_entry: T): number;
-        /**
-         * Removes the last entry from the array and returns it.
-         */
-        pop(): T;
-        /**
-         * Recycles the object following the last in the array and increases the array length
-         * It must be assured, that none of the objects in the array is still in any use of any kind!
-         */
-        [Symbol.iterator](): IterableIterator<T>;
-        /**
-         * Returns a copy of the array sorted according to the given compare function
-         */
-        getSorted(_sort: (a: T, b: T) => number): T[];
-    }
-}
-declare namespace FudgeCore {
     const enum EVENT_PHYSICS {
         TRIGGER_ENTER = "TriggerEnteredCollision",
         TRIGGER_EXIT = "TriggerLeftCollision",
@@ -3697,7 +3760,6 @@ declare namespace FudgeCore {
          * Only to be used when functionality that is not added within FUDGE is needed.
         */
         getOimoJoint(): OIMO.Joint;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
         /** Tell the FudgePhysics system that this joint needs to be handled in the next frame. */
         protected dirtyStatus(): void;
@@ -3855,7 +3917,6 @@ declare namespace FudgeCore {
         get hasTransparency(): boolean;
         private get canvas();
         useRenderData(_textureUnit?: number): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
     /**
      * Texture created from a FUDGE-Sketch
@@ -4843,7 +4904,6 @@ declare namespace FudgeCore {
          * @returns the Mutator for Animation.
          */
         updateAnimation(_time: number): Mutator;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         private activateListeners;
         /**
          * Updates the Animation.
@@ -4860,11 +4920,6 @@ declare namespace FudgeCore {
          * Updates the scale of the animation if the user changes it or if the global game timer changed its scale.
          */
         private updateScale;
-    }
-    /**
-     * @deprecated Use ComponentAnimation instead of ComponentAnimator. Exists only for backwards compatibility. Will be removed in future versions.
-     */
-    class ComponentAnimator extends ComponentAnimation {
     }
 }
 declare namespace FudgeCore {
@@ -5062,12 +5117,13 @@ declare namespace FudgeCore {
         clrBackground: Color;
         backgroundEnabled: boolean;
         /**
-         * Returns {@link mtxProjection} * {@link mtxCameraInverse}
-         * yielding the worldspace to viewspace matrix
+         * Returns {@link mtxProjection} * {@link mtxCameraInverse} yielding the worldspace to viewspace matrix.
+         * Otherwise known as the viewprojection matrix, which transforms points from worldspace directly to clipspace.
          */
         get mtxWorldToView(): Matrix4x4;
         /**
          * Returns the inversion of this cameras worldtransformation.
+         * Otherwise known as the view matrix, which transforms points from worldspace to camera space.
          */
         get mtxCameraInverse(): Matrix4x4;
         /**
@@ -5092,6 +5148,16 @@ declare namespace FudgeCore {
         /** the maximum distance to render objects at */
         get far(): number;
         set far(_value: number);
+        get left(): number;
+        set left(_value: number);
+        get right(): number;
+        set right(_value: number);
+        get bottom(): number;
+        set bottom(_value: number);
+        get top(): number;
+        set top(_value: number);
+        get size(): number;
+        set size(_value: number);
         /**
          * Set the camera to perspective projection. The world origin is in the center of the canvaselement.
          * @param _aspect The aspect ratio between width and height of the projection space.
@@ -5102,13 +5168,10 @@ declare namespace FudgeCore {
          */
         projectCentral(_aspect?: number, _fieldOfView?: number, _direction?: FIELD_OF_VIEW, _near?: number, _far?: number): void;
         /**
-         * Set the camera to orthographic projection. Default values are derived the canvas client dimensions
-         * @param _left The positionvalue of the projectionspace's left border.
-         * @param _right The positionvalue of the projectionspace's right border.
-         * @param _bottom The positionvalue of the projectionspace's bottom border.
-         * @param _top The positionvalue of the projectionspace's top border.
+         * Set the camera to orthographic projection.
          */
-        projectOrthographic(_left?: number, _right?: number, _bottom?: number, _top?: number): void;
+        projectOrthographic(_size?: number, _aspect?: number, _direction?: FIELD_OF_VIEW, _near?: number, _far?: number): void;
+        projectOrthographicBounds(_left?: number, _right?: number, _bottom?: number, _top?: number, _near?: number, _far?: number): void;
         /**
          * Returns a (recycled) rectangle of the calculated dimension of a projection surface in the hypothetical distance of 1 to the camera.
          * @param _out Optional rectangle to store the result in.
@@ -5126,14 +5189,13 @@ declare namespace FudgeCore {
         pointClipToWorld(_pointInClipSpace: Vector3, _out?: Vector3): Vector3;
         /**
          * Returns a scaling factor that, given a position in world space,
-         * scales an object at that position so that one unit equals one (logical) pixel on the screen
+         * scales an object at that position so that one unit equals one (physical) pixel on the screen
          * when seen through this camera.
-         * e.g., after setting the scaling, 1 unit in the world equals one (logical) pixel on the screen.
+         * e.g., after setting the scaling, 1 unit in the world equals one (physical) pixel on the screen.
          */
         getWorldToPixelScale(_posWorld: Vector3): number;
         drawGizmos(): void;
         drawGizmosSelected(): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -5233,8 +5295,13 @@ declare namespace FudgeCore {
         color: Color;
         intensity: number;
         mtxPivot: Matrix4x4;
+        shadowEnabled: boolean;
+        shadowBias: number;
+        shadowNormalBias: number;
+        shadowBlur: number;
+        shadowMaxDistance: number;
+        readonly mtxWorld: Matrix4x4;
         constructor(_lightType?: LIGHT_TYPE, _color?: Color, _intensity?: number);
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         drawGizmos(): void;
         drawGizmosSelected(): void;
     }
@@ -5252,7 +5319,6 @@ declare namespace FudgeCore {
         /** Support sorting of objects with transparency when rendering, render objects in the back first. When this component is used as a part of a {@link ParticleSystem}, try enabling this when disabling {@link ComponentParticleSystem.depthMask} */
         sortForAlpha: boolean;
         constructor(_material?: Material, _color?: Color, _sortForAlpha?: boolean);
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -5322,7 +5388,6 @@ declare namespace FudgeCore {
         set time(_time: number);
         get timeScale(): number;
         set timeScale(_scale: number);
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         private hndEvent;
         private update;
         private updateTimeScale;
@@ -5405,7 +5470,6 @@ declare namespace FudgeCore {
          * Applies the given transformation relative to the selected base (SELF, PARENT, WORLD) or a particular other node (NODE)
          */
         transform(_mtxTransform: Matrix4x4, _base?: BASE, _node?: Node): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): void;
     }
 }
@@ -6625,7 +6689,6 @@ declare namespace FudgeCore {
         texture: Texture;
         constructor(_color?: Color, _texture?: Texture);
         useRenderData(): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -6650,7 +6713,6 @@ declare namespace FudgeCore {
         normalMap: Texture;
         constructor(_color?: Color, _texture?: Texture, _normalMap?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
         useRenderData(): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -6730,6 +6792,10 @@ declare namespace FudgeCore {
          * Default rounding function is {@link Math.round}, use {@link Math.floor} or {@link Math.ceil} to round down or up.
          */
         static snap(_value: number, _increment: number, _round?: (_value: number) => number): number;
+        /**
+         * Returns the square root of the sum of squares of its arguments.
+         */
+        static hypot(_x: number, _y: number): number;
         private static isSmaller;
     }
 }
@@ -7317,7 +7383,6 @@ declare namespace FudgeCore {
         get texture(): TextureImage;
         set texture(_texture: TextureImage);
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator): Promise<void>;
         getMutator(_extendable?: boolean): Mutator;
     }
@@ -7816,7 +7881,6 @@ declare namespace FudgeCore {
          * returning info about the hit. Provides the same functionality and information a regular raycast does but the ray is only testing against this specific body.
          */
         raycastThisBody(_origin: Vector3, _direction: Vector3, _length: number, _debugDraw?: boolean): RayHitInfo;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         /** Change properties by an associative array */
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
         private hndEvent;
@@ -7869,8 +7933,6 @@ declare namespace FudgeCore {
         setData(_array: Array<number>): void;
         /** Set Shader Attributes informations by getting their position in the shader, setting the offset, stride and size. For later use in the binding process */
         setAttribs(_attribs: Array<PhysicsDebugVertexAttribute>): void;
-        /** Get the position of the attribute in the shader */
-        loadAttribIndices(_program: PhysicsDebugShader): void;
         /** Enable a attribute in a shader for this context, */
         bindAttribs(): void;
     }
@@ -7892,37 +7954,14 @@ declare namespace FudgeCore {
         name: string;
         constructor(_float32Count: number, _name: string);
     }
-    /** Internal class for Shaders used only by the physics debugDraw */
-    class PhysicsDebugShader {
-        gl: WebGL2RenderingContext;
-        program: WebGLProgram;
-        vertexShader: WebGLShader;
-        fragmentShader: WebGLShader;
-        uniformLocationMap: Map<string, WebGLUniformLocation>;
-        /** Introduce the FUDGE Rendering Context to this class, creating a program and vertex/fragment shader in this context */
-        constructor(_renderingContext: WebGL2RenderingContext);
-        /** Take glsl shaders as strings and compile them, attaching the compiled shaders to a program thats used by this rendering context. */
-        compile(_vertexSource: string, _fragmentSource: string): void;
-        /** Get index of a attribute in a shader in this program */
-        getAttribIndex(_name: string): number;
-        /** Get the location of a uniform in a shader in this program */
-        getUniformLocation(_name: string): WebGLUniformLocation;
-        /** Get all indices for every attribute in the shaders of this program */
-        getAttribIndices(_attribs: Array<PhysicsDebugVertexAttribute>): Array<number>;
-        /** Tell the FUDGE Rendering Context to use this program to draw. */
-        use(): void;
-        /** Compile a shader out of a string and validate it. */
-        compileShader(_shader: WebGLShader, _source: string): void;
-    }
     /** Internal Class used to draw debugInformations about the physics simulation onto the renderContext. No user interaction needed.
      * @author Marko Fehrenbach, HFU 2020 //Based on OimoPhysics Haxe DebugDrawDemo
      */
     class PhysicsDebugDraw extends RenderWebGL {
+        #private;
         oimoDebugDraw: OIMO.DebugDraw;
         style: OIMO.DebugDrawStyle;
         gl: WebGL2RenderingContext;
-        program: WebGLProgram;
-        shader: PhysicsDebugShader;
         pointVBO: PhysicsDebugVertexBuffer;
         pointIBO: PhysicsDebugIndexBuffer;
         lineVBO: PhysicsDebugVertexBuffer;
@@ -7941,6 +7980,8 @@ declare namespace FudgeCore {
         /** Creating the debug for physics in FUDGE. Tell it to draw only wireframe objects, since FUDGE is handling rendering of the objects besides physics.
          * Override OimoPhysics Functions with own rendering. Initialize buffers and connect them with the context for later use. */
         constructor();
+        private get objectUniformBuffer();
+        private get coatUniformBuffer();
         /** Receive the current DebugMode from the physics settings and set the OimoPhysics.DebugDraw booleans to show only certain informations.
          * Needed since some debug informations exclude others, and can't be drawn at the same time, by OimoPhysics. And for users it provides more readability
          * to debug only what they need and is commonly debugged.
@@ -7958,12 +7999,6 @@ declare namespace FudgeCore {
         /** Overriding the existing functions from OimoPhysics.DebugDraw without actually inherit from the class, to avoid compiler problems.
          * Overriding them to receive debugInformations in the format the physic engine provides them but handling the rendering in the fudge context. */
         private initializeOverride;
-        /** The source code (string) of the in physicsDebug used very simple vertexShader.
-         *  Handling the projection (which includes, view/world[is always identity in this case]/projection in FUDGE). Increasing the size of single points drawn.
-         *  And transfer position color to the fragmentShader. */
-        private vertexShaderSource;
-        /** The source code (string) of the in physicsDebug used super simple fragmentShader. Unlit - only colorizing the drawn pixels, normals/position are given to make it expandable */
-        private fragmentShaderSource;
     }
 }
 declare namespace FudgeCore {
@@ -8707,9 +8742,11 @@ declare namespace FudgeCore {
         static readonly nodesPhysics: RecycableArray<Node>;
         static readonly componentsPick: RecycableArray<ComponentPick>;
         static readonly lights: MapLightTypeToLightList;
-        private static readonly nodesSimple;
+        private static readonly nodesOpaque;
         private static readonly nodesAlpha;
         private static readonly componentsSkeleton;
+        private static readonly mapShaderToSortId;
+        private static nextShaderSortId;
         private static timestampUpdate;
         /**
          * Recursively iterates over the branch starting with the node given, recalculates all world transforms,
@@ -8718,13 +8755,16 @@ declare namespace FudgeCore {
          * @param _recalculate - set true to force recalculation of all world transforms in the given branch, even if their local transforms haven't changed
          */
         static prepare(_branch: Node, _options?: RenderPrepareOptions, _recalculate?: boolean): void;
-        static addLights(_cmpLights: readonly ComponentLight[]): void;
+        static addLight(_cmpLight: ComponentLight): void;
         /**
          * Draws the scene from the point of view of the given camera
          */
         static draw(_cmpCamera: ComponentCamera): void;
         private static prepareBranch;
         private static transformByPhysics;
+        private static compareOpaqueNodes;
+        private static compareAlphaNodes;
+        private static getSortIdForShader;
     }
 }
 declare namespace FudgeCore {

@@ -6,7 +6,8 @@ namespace FudgeCore {
       "PHONG",
       "TEXTURE",
       "NORMALMAP",
-      "SKIN"
+      "SKIN",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatRemissiveTexturedNormals; }

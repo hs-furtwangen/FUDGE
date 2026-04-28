@@ -29,7 +29,7 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2025
    */
   export abstract class RenderWebGLComponentLight {
-    public static readonly SHADOW_SIZE: number = 512; // TODO: make configurable
+    public static readonly SHADOW_SIZE: number = 2048; // TODO: make configurable
     public static readonly SHADOW_TEXEL_SIZE: number = 1 / RenderWebGLComponentLight.SHADOW_SIZE;
     public static readonly MAX_SHADOW_COUNT: number = 20; // dir/spot = 1 slot, point = 6 slots
     public static fboShadowMap: WebGLFramebuffer;
@@ -56,6 +56,7 @@ namespace FudgeCore {
     static #dataShadowParameters: Float32Array;
 
     static #shadowMaterial: Material;
+    static #shadowMaterialSkin: Material;
 
     static {
       this.initialize();
@@ -165,7 +166,7 @@ namespace FudgeCore {
       RenderWebGLComponentLight.uploadShadowParameters(0, nShadows); // TODO: Maybe only spot and point light parameters need to be updated here, as directional shadow parameters are adjusted in the shadow rendering pass based on the shadow casters bounding volumes
     }
 
-    public static processShadowsDirectional(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void {
+    public static processShadowsDirectional(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void { // TODO: fix for orthographic camera
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentLight.fboShadowMap);
       crc3.viewport(0, 0, RenderWebGLComponentLight.SHADOW_SIZE, RenderWebGLComponentLight.SHADOW_SIZE);
@@ -421,12 +422,16 @@ namespace FudgeCore {
         Project.deregister(this.#shadowMaterial);
       }
 
-      const shadowMaterial: Material = this.#shadowMaterial;
-      shadowMaterial.getShader().useProgram();
-      shadowMaterial.coat.useRenderData();
+      if (!this.#shadowMaterialSkin) {
+        this.#shadowMaterialSkin = new Material("MaterialShadowSkin", ShaderLitSkin, new CoatColored(Color.CSS("white")));
+        Project.deregister(this.#shadowMaterialSkin);
+      }
 
-      for (let node of _nodes)
+      for (let node of _nodes) {
+        const cmpMesh: ComponentMesh = node.getComponent(ComponentMesh);
+        const shadowMaterial: Material = cmpMesh?.skeleton?.active ? this.#shadowMaterialSkin : this.#shadowMaterial;
         RenderWebGL.drawNode(node, null, shadowMaterial);
+      }
     }
 
     private static bindLightBuffer(): void {
