@@ -29,9 +29,12 @@ namespace FudgeCore {
    * @authors Jonas Plotzky, HFU, 2025
    */
   export abstract class RenderWebGLComponentLight {
-    public static readonly SHADOW_SIZE: number = 2048; // TODO: make configurable
+    public static readonly SHADOW_SIZE: number = 512; // TODO: make configurable
     public static readonly SHADOW_TEXEL_SIZE: number = 1 / RenderWebGLComponentLight.SHADOW_SIZE;
     public static readonly MAX_SHADOW_COUNT: number = 20; // dir/spot = 1 slot, point = 6 slots
+    public static readonly SOFT_SHADOW_SAMPLE_COUNT: number = 4; // TODO: make configurable
+    public static readonly MAX_SOFT_SHADOW_SAMPLE_COUNT: number = 32;
+    
     public static fboShadowMap: WebGLFramebuffer;
     public static texShadowMap: WebGLTexture;
 
@@ -40,7 +43,7 @@ namespace FudgeCore {
 
     static #dataLightsHeader: Uint32Array;
     static #dataLightsAmbient: Float32Array;
-    static #dataLigthsDirectional: Float32Array;
+    static #dataLightsDirectional: Float32Array;
     static #dataLightsSpot: Float32Array;
     static #dataLightsPoint: Float32Array;
 
@@ -51,7 +54,8 @@ namespace FudgeCore {
     static #bufferShadows: WebGLBuffer;
     static #dataShadows: Float32Array;
 
-    static #dataShadowHeader: Float32Array;
+    static #dataShadowHeader: DataView;
+    static #dataShadowKernel: Float32Array;
     static #dataShadowMatrices: Float32Array;
     static #dataShadowParameters: Float32Array;
 
@@ -83,8 +87,8 @@ namespace FudgeCore {
 
       RenderWebGLComponentLight.#dataLightsHeader = new Uint32Array(RenderWebGLComponentLight.#dataLights.buffer, 0, HEADER_UINTS);
       RenderWebGLComponentLight.#dataLightsAmbient = new Float32Array(RenderWebGLComponentLight.#dataLights.buffer, RenderWebGLComponentLight.#dataLightsHeader.byteOffset + RenderWebGLComponentLight.#dataLightsHeader.byteLength, COLOR_FLOATS); // ambient light color
-      RenderWebGLComponentLight.#dataLigthsDirectional = new Float32Array(RenderWebGLComponentLight.#dataLights.buffer, RenderWebGLComponentLight.#dataLightsAmbient.byteOffset + RenderWebGLComponentLight.#dataLightsAmbient.byteLength, MAX_LIGHTS_DIRECTIONAL * LIGHT_FLOATS);
-      RenderWebGLComponentLight.#dataLightsPoint = new Float32Array(RenderWebGLComponentLight.#dataLights.buffer, RenderWebGLComponentLight.#dataLigthsDirectional.byteOffset + RenderWebGLComponentLight.#dataLigthsDirectional.byteLength, MAX_LIGHTS_POINT * LIGHT_FLOATS);
+      RenderWebGLComponentLight.#dataLightsDirectional = new Float32Array(RenderWebGLComponentLight.#dataLights.buffer, RenderWebGLComponentLight.#dataLightsAmbient.byteOffset + RenderWebGLComponentLight.#dataLightsAmbient.byteLength, MAX_LIGHTS_DIRECTIONAL * LIGHT_FLOATS);
+      RenderWebGLComponentLight.#dataLightsPoint = new Float32Array(RenderWebGLComponentLight.#dataLights.buffer, RenderWebGLComponentLight.#dataLightsDirectional.byteOffset + RenderWebGLComponentLight.#dataLightsDirectional.byteLength, MAX_LIGHTS_POINT * LIGHT_FLOATS);
       RenderWebGLComponentLight.#dataLightsSpot = new Float32Array(RenderWebGLComponentLight.#dataLights.buffer, RenderWebGLComponentLight.#dataLightsPoint.byteOffset + RenderWebGLComponentLight.#dataLightsPoint.byteLength, MAX_LIGHTS_SPOT * LIGHT_FLOATS);
 
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
@@ -95,12 +99,14 @@ namespace FudgeCore {
       crc3.bindBufferBase(WebGL2RenderingContext.UNIFORM_BUFFER, UNIFORM_BLOCK.LIGHTS.BINDING, RenderWebGLComponentLight.#bufferLights);
 
       const VEC4_FLOATS: number = 4;
-      let blockSizeShadows: number = (4 + RenderWebGLComponentLight.MAX_SHADOW_COUNT * MATRIX_FLOATS + RenderWebGLComponentLight.MAX_SHADOW_COUNT * VEC4_FLOATS) * 4;
+      const SHADOW_HEADER_FLOATS: number = 4; // float shadowTexelSize, float softShadowSampleCount, z+w padding,
+      let blockSizeShadows: number = (SHADOW_HEADER_FLOATS + RenderWebGLComponentLight.MAX_SOFT_SHADOW_SAMPLE_COUNT * VEC4_FLOATS + RenderWebGLComponentLight.MAX_SHADOW_COUNT * MATRIX_FLOATS + RenderWebGLComponentLight.MAX_SHADOW_COUNT * VEC4_FLOATS) * 4;
       blockSizeShadows = Math.ceil(blockSizeShadows / 16) * 16; // std140 alignment
 
       RenderWebGLComponentLight.#dataShadows = new Float32Array(new ArrayBuffer(blockSizeShadows));
-      RenderWebGLComponentLight.#dataShadowHeader = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, 0, 4); // x fTexelSize, y unused, z unused, w unused
-      RenderWebGLComponentLight.#dataShadowMatrices = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowHeader.byteOffset + RenderWebGLComponentLight.#dataShadowHeader.byteLength, RenderWebGLComponentLight.MAX_SHADOW_COUNT * MATRIX_FLOATS);
+      RenderWebGLComponentLight.#dataShadowHeader = new DataView(RenderWebGLComponentLight.#dataShadows.buffer, 0, SHADOW_HEADER_FLOATS * 4); 
+      RenderWebGLComponentLight.#dataShadowKernel = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowHeader.byteOffset + RenderWebGLComponentLight.#dataShadowHeader.byteLength, RenderWebGLComponentLight.MAX_SOFT_SHADOW_SAMPLE_COUNT * VEC4_FLOATS);
+      RenderWebGLComponentLight.#dataShadowMatrices = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowKernel.byteOffset + RenderWebGLComponentLight.#dataShadowKernel.byteLength, RenderWebGLComponentLight.MAX_SHADOW_COUNT * MATRIX_FLOATS);
       RenderWebGLComponentLight.#dataShadowParameters = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowMatrices.byteOffset + RenderWebGLComponentLight.#dataShadowMatrices.byteLength, RenderWebGLComponentLight.MAX_SHADOW_COUNT * VEC4_FLOATS);
 
       RenderWebGLComponentLight.#bufferShadows = RenderWebGL.assert(crc3.createBuffer());
@@ -124,6 +130,10 @@ namespace FudgeCore {
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentLight.fboShadowMap);
       crc3.framebufferTextureLayer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, RenderWebGLComponentLight.texShadowMap, 0, 0);
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
+
+      RenderWebGLComponentLight.#dataShadowHeader.setFloat32(0, RenderWebGLComponentLight.SHADOW_TEXEL_SIZE, true);
+      RenderWebGLComponentLight.#dataShadowHeader.setUint32(4, RenderWebGLComponentLight.SOFT_SHADOW_SAMPLE_COUNT, true);
+      this.getVogelDisk(RenderWebGLComponentLight.#dataShadowKernel, RenderWebGLComponentLight.SOFT_SHADOW_SAMPLE_COUNT);
     }
 
     /** Replaces the decorated method with the injector's implementation of the same name. */
@@ -152,17 +162,18 @@ namespace FudgeCore {
       RenderWebGLComponentLight.#shadowLightsSpot.recycle();
 
       let nShadows: number = 0;
-      nShadows = RenderWebGLComponentLight.prepareLights(cmpLightsDirectional, RenderWebGLComponentLight.#dataLigthsDirectional, RenderWebGLComponentLight.#shadowLightsDirectional, nShadows);
+      nShadows = RenderWebGLComponentLight.prepareLights(cmpLightsDirectional, RenderWebGLComponentLight.#dataLightsDirectional, RenderWebGLComponentLight.#shadowLightsDirectional, nShadows);
       nShadows = RenderWebGLComponentLight.prepareLights(cmpLightsSpot, RenderWebGLComponentLight.#dataLightsSpot, RenderWebGLComponentLight.#shadowLightsSpot, nShadows);
       nShadows = RenderWebGLComponentLight.prepareLights(cmpLightsPoint, RenderWebGLComponentLight.#dataLightsPoint, RenderWebGLComponentLight.#shadowLightsPoint, nShadows);
 
       RenderWebGLComponentLight.bindLightBuffer();
       RenderWebGLComponentLight.uploadLightHeader();
-      RenderWebGLComponentLight.uploadLights(RenderWebGLComponentLight.#dataLigthsDirectional, nDirectional);
+      RenderWebGLComponentLight.uploadLights(RenderWebGLComponentLight.#dataLightsDirectional, nDirectional);
       RenderWebGLComponentLight.uploadLights(RenderWebGLComponentLight.#dataLightsPoint, nPoint);
       RenderWebGLComponentLight.uploadLights(RenderWebGLComponentLight.#dataLightsSpot, nSpot);
 
       RenderWebGLComponentLight.bindShadowBuffer();
+      RenderWebGLComponentLight.uploadShadowHeader();
       RenderWebGLComponentLight.uploadShadowParameters(0, nShadows); // TODO: Maybe only spot and point light parameters need to be updated here, as directional shadow parameters are adjusted in the shadow rendering pass based on the shadow casters bounding volumes
     }
 
@@ -455,6 +466,12 @@ namespace FudgeCore {
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#bufferShadows);
     }
 
+    private static uploadShadowHeader(): void {
+      const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
+      crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, 0, RenderWebGLComponentLight.#dataShadowHeader);
+      crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#dataShadowKernel.byteOffset, RenderWebGLComponentLight.#dataShadowKernel);
+    }
+
     private static uploadShadowMatrices(_offset: number, _length: number): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       const FLOATS_PER_MATRIX: number = 16;
@@ -465,6 +482,18 @@ namespace FudgeCore {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       const FLOATS_PER_VECTOR: number = 4;
       crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#dataShadowParameters.byteOffset + _offset * FLOATS_PER_VECTOR * RenderWebGLComponentLight.#dataShadowParameters.BYTES_PER_ELEMENT, RenderWebGLComponentLight.#dataShadowParameters, _offset * FLOATS_PER_VECTOR, _length * FLOATS_PER_VECTOR);
+    }
+
+    private static getVogelDisk(_kernel: {[index: number]: number}, _sampleCount: number): void {
+      const goldenAngle: number = 2.4;
+
+      for (let i: number = 0; i < _sampleCount; i++) {
+        const r: number = Math.sqrt(i + 0.5) / Math.sqrt(_sampleCount);
+        const theta: number = i * goldenAngle;
+
+        _kernel[i * 4] = Math.cos(theta) * r;
+        _kernel[i * 4 + 1] = Math.sin(theta) * r;
+      }
     }
 
     private static getLayerCount(_lightType: LIGHT_TYPE): number {

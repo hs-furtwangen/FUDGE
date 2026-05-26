@@ -799,6 +799,8 @@ layout(location = 2) out vec4 vctFragNormal;
 
   layout(std140) uniform Shadows {
     float u_fShadowTexelSize; // used for biasing
+    uint u_iSoftShadowSampleCount; // used for pcf sampling
+    vec4 u_fSoftShadowKernel[32];
 
     mat4 u_mtxShadows[MAX_SHADOW_SLOTS]; // light space view projection matrices
     vec4 u_shadowParameters[MAX_SHADOW_SLOTS]; // x bias, y normalBias, z blur
@@ -880,8 +882,12 @@ layout(location = 2) out vec4 vctFragNormal;
   //   return texture(_sampler, vec4(_shadowCoord.xy + offset * _texelSize, float(_layer), _shadowCoord.z));
   // }
 
-  float sampleShadow(mediump sampler2DArrayShadow _sampler, int _layer, mat4 _mtxShadow, vec4 _shadowParameters, vec3 _position, vec3 _normal, vec3 _lightDirection) {
+  float quickHash(vec2 _pos) {
+	  const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
+	  return fract(magic.z * fract(dot(_pos, magic.xy)));
+  }
 
+  float sampleShadow(mediump sampler2DArrayShadow _sampler, int _layer, mat4 _mtxShadow, vec4 _shadowParameters, vec3 _position, vec3 _normal, vec3 _lightDirection) { // TODO: the biasing in this function might only be applicable to directional lights, check point and spot shadows
     // biasing from godot directional shadow
     // vec3 baseNormalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal)));
     // vec3 normalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal))) * _shadowParameters.y;
@@ -892,24 +898,25 @@ layout(location = 2) out vec4 vctFragNormal;
 
     vec4 position = _mtxShadow * vec4(_position + bias, 1.0);
     vec3 shadowCoord = position.xyz / position.w;
-    
 
-    // vec2 offset = step(0.25, fract(position.xy * 0.5)); // returns 1.0 if > 0.25, else 0.0
+    // filtering from godot shadow
 
-    // // y ^= x in floating point (toggle y if x is set)
-    // if (offset.y > 1.1)
-    //     offset.y = 0.0;
+    if (u_iSoftShadowSampleCount == 0u) 
+      return texture(_sampler, vec4(shadowCoord.xy, float(_layer), shadowCoord.z));
 
-    // float shadowCoeff = (
-    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(-1.5, 0.5)) +
-    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(0.5, 0.5)) +
-    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(-1.5, -1.5)) +
-    //   offsetLookup(_sampler, _layer, u_fShadowTexelSize, shadowCoord, offset + vec2(0.5, -1.5))
-    // ) * 0.25;
+    mat2 diskRotation;
+    {
+      float r = quickHash(gl_FragCoord.xy) * 2.0 * 3.14159265; // random rotation based on screen position to reduce banding artifacts
+      float sr = sin(r);
+      float cr = cos(r);
+      diskRotation = mat2(vec2(cr, -sr), vec2(sr, cr));
+    }
 
-    // return shadowCoeff;
+    float avg = 0.0;
+    for (uint i = 0u; i < u_iSoftShadowSampleCount; i++) 
+      avg += texture(_sampler, vec4(shadowCoord.xy + u_fShadowTexelSize * _shadowParameters.z * (diskRotation * u_fSoftShadowKernel[i].xy), float(_layer), shadowCoord.z));
 
-    return texture(_sampler, vec4(shadowCoord.xy, float(_layer), shadowCoord.z));
+    return avg / float(u_iSoftShadowSampleCount);
   }
 
 #endif
