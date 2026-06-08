@@ -51,6 +51,9 @@ namespace FudgeCore {
   // enum type array
   export function edit<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
 
+  // reject untyped array
+  export function edit(_type: typeof Array): never;
+
   export function edit(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext<General, General>) => void {
     return editFactory(_typePrimary, _typeSecondary, false);
   }
@@ -84,6 +87,9 @@ namespace FudgeCore {
    */
   export function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
   export function editFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
+
+  // reject untyped array
+  export function editFunction(_type: typeof Array): never;
 
   export function editFunction(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return editFactory(_typePrimary, _typeSecondary, true);

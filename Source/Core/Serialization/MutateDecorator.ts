@@ -39,6 +39,9 @@ namespace FudgeCore {
   // enum type array
   export function mutate<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
 
+  // reject untyped array
+  export function mutate(_type: typeof Array): never;
+
   export function mutate(_typePrimary: General, _typeSecondary?: General): ((_value: unknown, _context: ClassPropertyDecoratorContext) => void) {
     return mutateFactory(_typePrimary, _typeSecondary, false);
   }
@@ -56,6 +59,9 @@ namespace FudgeCore {
    */
   export function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
   export function mutateFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
+
+  // reject untyped array
+  export function mutateFunction(_type: typeof Array): never;
 
   export function mutateFunction(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return mutateFactory(_typePrimary, _typeSecondary, true);

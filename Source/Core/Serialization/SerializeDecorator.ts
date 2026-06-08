@@ -78,6 +78,9 @@ namespace FudgeCore {
   // enum type array
   export function serialize<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
 
+  // reject untyped array
+  export function serialize(_type: typeof Array): never;
+
   export function serialize(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext<General, General>) => void {
     return serializeFactory(_typePrimary, _typeSecondary, false);
   }
@@ -108,6 +111,9 @@ namespace FudgeCore {
    */
   export function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
   export function serializeFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
+
+  // reject untyped array
+  export function serializeFunction(_type: typeof Array): never;
 
   export function serializeFunction(_typePrimary: General, _typeSecondary?: General): (_value: unknown, _context: ClassPropertyDecoratorContext) => void {
     return serializeFactory(_typePrimary, _typeSecondary, true);
