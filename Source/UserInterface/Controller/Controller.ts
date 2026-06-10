@@ -221,9 +221,9 @@ namespace FudgeUserInterface {
     /**
      * Copy the given property value. This performs differnt operations depending on the type of the value:
      * 
-     * - For identity objects ({@link SerializableResource}, {@link Node} and {@link Function}), the reference is returned.
+     * - For identity objects ({@link ƒ.SerializableResource}, {@link ƒ.Node} and {@link Function}), the reference is returned.
      * - For value objects:
-     *    - {@link Serializable}: a copy is created through serialization.
+     *    - {@link ƒ.Serializable}: a copy is created through serialization.
      *    - {@link Array}, {@link Set}, {@link Map}: a shallow copy is created.
      * - For primitive types, the value is returned as is.
      */
@@ -231,7 +231,7 @@ namespace FudgeUserInterface {
       if (typeof _value == "object" && _value != null) {
 
         // identity objects are returned as references
-        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource) || _value instanceof Node) 
+        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource) || _value instanceof ƒ.Node) 
           return <T>_value;
 
         // otherwise, value objects are copied
