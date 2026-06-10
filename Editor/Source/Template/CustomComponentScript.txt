@@ -5,9 +5,10 @@ namespace Script {
   export class CustomComponentScript extends ƒ.ComponentScript {
     // Register the script as component for use in the editor via drag&drop
     public static readonly iSubclass: number = ƒ.Component.registerSubclass(CustomComponentScript);
-    // Properties may be mutated by users in the editor via the automatically created user interface
-    public message: string = "CustomComponentScript added to ";
 
+    // Decorated properties (@ƒ.edit) may be mutated by users in the editor via the automatically created user interface
+    @ƒ.edit(String)
+    public message: string = "CustomComponentScript added to ";
 
     constructor() {
       super();
@@ -38,9 +39,5 @@ namespace Script {
       }
     }
 
-    // protected reduceMutator(_mutator: ƒ.Mutator): void {
-    //   // delete properties that should not be mutated
-    //   // undefined properties and private fields (#) will not be included by default
-    // }
   }
 }
