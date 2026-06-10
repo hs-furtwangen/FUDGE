@@ -50,7 +50,7 @@ namespace Fudge {
     // always clone for now. TODO: may be optimized
     public async paste(): Promise<ƒ.Node[]> {
       let objects: ƒ.Node[] = await super.paste();
-      return await this.clone(objects);
+      return objects;
     }
 
     public dragOver(_event: DragEvent): ƒui.DROPEFFECT {

@@ -196,7 +196,7 @@ namespace FudgeCore {
           if (Project.hasResource(idResource)) {
             _serialization[key] = idResource;
             break;
-          } 
+          }
         // if resource is not registered serialize nested
         case "serializable":
           if (value.constructor == descriptors[key].type) // compact serialization if non polymorphic
@@ -232,8 +232,8 @@ namespace FudgeCore {
     return _serialization;
   };
 
-  const nodeListeners: WeakSet<object> = new WeakSet();
-  const graphListeners: WeakSet<object> = new WeakSet();
+  // const nodeListeners: WeakSet<object> = new WeakSet();
+  // const graphListeners: WeakSet<object> = new WeakSet();
 
   /**
    * Deserialize the {@link serialize decorated properties} of an instance from a {@link Serialization} object.
@@ -243,7 +243,7 @@ namespace FudgeCore {
     const serializables: Metadata["serializables"] = metadata.serializables;
     const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
 
-    let nodePaths: Serialization;
+
     for (const key in serializables) {
       let value: General = _serialization[key];
       if (value == null)
@@ -273,7 +273,7 @@ namespace FudgeCore {
           break;
         case "node":
         case "nodeArray":
-          (nodePaths ??= {})[key] = value;
+          deserializeNodeReference(<Component>_instance, key, value);
           break;
         case "function":
           Reflect.set(_instance, key, Serializer.getFunction(value));
@@ -293,47 +293,68 @@ namespace FudgeCore {
       }
     }
 
-    if (nodePaths)
-      deserializeNodes(<Component>_instance, nodePaths);
-
     return _instance;
   };
 
-  function deserializeNodes(_component: Component, _paths: Serialization): void {
-    if (nodeListeners.has(_component))
-      return;
-
-    nodeListeners.add(_component);
-
+  function deserializeNodeReference(_component: Component, _key: string, _path: string | string[]): void {
     const hndNodeDeserialized: EventListenerUnified = () => {
       const node: Node = _component.node;
 
-      if (graphListeners.has(_component))
-        return;
+      // try to resolve on node deserialized, only works for descendants
+      const target: Node | Node[] = resolveNodeReference(_component, _path);
+      if (target) {
+        Reflect.set(_component, _key, target);
+      } else {
+        // try to resolve on node append, only works if all targets are available
+        const hndChildAppend: EventListenerUnified = () => {
+          const target: Node | Node[] = resolveNodeReference(_component, _path);
+          if (target) {
+            Reflect.set(_component, _key, target);
+          } else {
+            // try to resolve on graph deserialized
+            const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
+              const target: Node | Node[] = resolveNodeReference(_component, _path);
+              if (target)
+                Reflect.set(_component, _key, target);
+              else
+                Debug.error(`Could not resolve node path "${_path}" for component "${_component.constructor.name}".`, _component);
 
-      graphListeners.add(_component);
+              node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+              node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+            };
 
-      const hndGraphDeserialized: EventListenerUnified = (_event: Event) => {
-        for (const key in _paths) {
-          const pathOrPaths: string | string[] = _paths[key];
-          if (typeof pathOrPaths == "string")
-            Reflect.set(_component, key, Node.FIND(_component, pathOrPaths));
-          else
-            Reflect.set(_component, key, pathOrPaths.map((_path: string) => Node.FIND(_component, _path)));
-        }
+            node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
+            node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+          }
 
-        node.removeEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-        node.removeEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
-        graphListeners.delete(_component);
-      };
+          node.removeEventListener(EVENT.CHILD_APPEND, hndChildAppend);
+        };
 
-      node.addEventListener(EVENT.GRAPH_DESERIALIZED, hndGraphDeserialized, true);
-      node.addEventListener(EVENT.GRAPH_INSTANTIATED, hndGraphDeserialized, true);
+        node.addEventListener(EVENT.CHILD_APPEND, hndChildAppend);
+      }
 
       _component.removeEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
-      nodeListeners.delete(_component);
     };
 
     _component.addEventListener(EVENT.NODE_DESERIALIZED, hndNodeDeserialized);
+  }
+
+  function resolveNodeReference(_component: Component, _path: string | string[]): Node | Node[] {
+    if (typeof _path == "string")
+      return Node.FIND(_component, _path);
+    else if (Array.isArray(_path)) {
+      const nodes: Node[] = new Array(_path.length);
+      for (let i: number = 0; i < _path.length; i++) {
+        const node: Node = Node.FIND(_component, _path[i]);
+        if (!node)
+          return null;
+
+        nodes[i] = node;
+      }
+
+      return nodes;
+    }
+
+    return null;
   }
 }

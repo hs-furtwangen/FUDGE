@@ -764,6 +764,7 @@ declare namespace FudgeCore {
     function mutate<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
     function mutate<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function mutate(_type: typeof Array): never;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation.
      * See {@link mutate} for additional information.
@@ -777,6 +778,7 @@ declare namespace FudgeCore {
      */
     function mutateFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function mutateFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
+    function mutateFunction(_type: typeof Array): never;
     /**
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
@@ -916,6 +918,7 @@ declare namespace FudgeCore {
     function serialize<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
     function serialize<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function serialize(_type: typeof Array): never;
     /**
      * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for serialization.
      * See {@link serialize} decorator for additional information.
@@ -942,6 +945,7 @@ declare namespace FudgeCore {
      */
     function serializeFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function serializeFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
+    function serializeFunction(_type: typeof Array): never;
     /**
      * Serialize the {@link serialize decorated properties} of an instance into a {@link Serialization} object.
      */
@@ -993,6 +997,7 @@ declare namespace FudgeCore {
     function edit<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
     function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
     function edit<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function edit(_type: typeof Array): never;
     /**
      * Decorator to mark callable properties (functions, typeof `_type`) of a class for mutation and serialization.
      * See {@link mutateFunction} and {@link serializeF} decorators for more information.
@@ -1022,6 +1027,7 @@ declare namespace FudgeCore {
      */
     function editFunction<T extends Function>(_type: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T>) => void;
     function editFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
+    function editFunction(_type: typeof Array): never;
 }
 declare namespace FudgeCore {
     /**
@@ -3697,7 +3703,6 @@ declare namespace FudgeCore {
          * Only to be used when functionality that is not added within FUDGE is needed.
         */
         getOimoJoint(): OIMO.Joint;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
         /** Tell the FudgePhysics system that this joint needs to be handled in the next frame. */
         protected dirtyStatus(): void;
@@ -3855,7 +3860,6 @@ declare namespace FudgeCore {
         get hasTransparency(): boolean;
         private get canvas();
         useRenderData(_textureUnit?: number): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
     /**
      * Texture created from a FUDGE-Sketch
@@ -4843,7 +4847,6 @@ declare namespace FudgeCore {
          * @returns the Mutator for Animation.
          */
         updateAnimation(_time: number): Mutator;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         private activateListeners;
         /**
          * Updates the Animation.
@@ -4860,11 +4863,6 @@ declare namespace FudgeCore {
          * Updates the scale of the animation if the user changes it or if the global game timer changed its scale.
          */
         private updateScale;
-    }
-    /**
-     * @deprecated Use ComponentAnimation instead of ComponentAnimator. Exists only for backwards compatibility. Will be removed in future versions.
-     */
-    class ComponentAnimator extends ComponentAnimation {
     }
 }
 declare namespace FudgeCore {
@@ -5133,7 +5131,6 @@ declare namespace FudgeCore {
         getWorldToPixelScale(_posWorld: Vector3): number;
         drawGizmos(): void;
         drawGizmosSelected(): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -5234,7 +5231,6 @@ declare namespace FudgeCore {
         intensity: number;
         mtxPivot: Matrix4x4;
         constructor(_lightType?: LIGHT_TYPE, _color?: Color, _intensity?: number);
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         drawGizmos(): void;
         drawGizmosSelected(): void;
     }
@@ -5252,7 +5248,6 @@ declare namespace FudgeCore {
         /** Support sorting of objects with transparency when rendering, render objects in the back first. When this component is used as a part of a {@link ParticleSystem}, try enabling this when disabling {@link ComponentParticleSystem.depthMask} */
         sortForAlpha: boolean;
         constructor(_material?: Material, _color?: Color, _sortForAlpha?: boolean);
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -5322,7 +5317,6 @@ declare namespace FudgeCore {
         set time(_time: number);
         get timeScale(): number;
         set timeScale(_scale: number);
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         private hndEvent;
         private update;
         private updateTimeScale;
@@ -5405,7 +5399,6 @@ declare namespace FudgeCore {
          * Applies the given transformation relative to the selected base (SELF, PARENT, WORLD) or a particular other node (NODE)
          */
         transform(_mtxTransform: Matrix4x4, _base?: BASE, _node?: Node): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): void;
     }
 }
@@ -6625,7 +6618,6 @@ declare namespace FudgeCore {
         texture: Texture;
         constructor(_color?: Color, _texture?: Texture);
         useRenderData(): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -6650,7 +6642,6 @@ declare namespace FudgeCore {
         normalMap: Texture;
         constructor(_color?: Color, _texture?: Texture, _normalMap?: Texture, _diffuse?: number, _specular?: number, _intensity?: number, _metallic?: number);
         useRenderData(): void;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
 }
 declare namespace FudgeCore {
@@ -7317,7 +7308,6 @@ declare namespace FudgeCore {
         get texture(): TextureImage;
         set texture(_texture: TextureImage);
         serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         mutate(_mutator: Mutator): Promise<void>;
         getMutator(_extendable?: boolean): Mutator;
     }
@@ -7816,7 +7806,6 @@ declare namespace FudgeCore {
          * returning info about the hit. Provides the same functionality and information a regular raycast does but the ray is only testing against this specific body.
          */
         raycastThisBody(_origin: Vector3, _direction: Vector3, _length: number, _debugDraw?: boolean): RayHitInfo;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
         /** Change properties by an associative array */
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): Promise<void>;
         private hndEvent;
