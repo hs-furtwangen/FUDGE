@@ -72,12 +72,7 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      // add meta property descriptor to metadata
-      const descriptors: MetaPropertyDescriptors = getMetaPropertyDescriptors(metadata);
-      descriptors[key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
-
-      const keys: string[] = getOwnProperty(metadata, "mutatorKeys") ?? (metadata.mutatorKeys = metadata.mutatorKeys ? [...metadata.mutatorKeys] : []);
-      keys.push(key);
+      Metadata.defineMutateProperty(metadata, key, _typePrimary, _typeSecondary, _function);
     };
   }
   //#endregion
@@ -142,7 +137,7 @@ namespace FudgeCore {
       if (typeof key === "symbol") return;
 
       const metadata: Metadata = _context.metadata;
-      const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+      const descriptors: MetaPropertyDescriptors = Metadata.ensureMetaPropertyDescriptors(metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[key];
       if (!descriptor)
         throw new Error(`@create requires an existing meta property descriptor for property for '${key}'. Add @mutate/@edit before @create.`);
@@ -203,7 +198,7 @@ namespace FudgeCore {
         return;
 
       const metadata: Metadata = _context.metadata;
-      const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+      const descriptors: MetaPropertyDescriptors = Metadata.ensureMetaPropertyDescriptors(metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[key];
       if (!descriptor)
         throw new Error(`@assign requires an existing meta property descriptor for property '${key}'. Add @mutate/@edit before @assign.`);
@@ -228,7 +223,7 @@ namespace FudgeCore {
       return;
 
     const metadata: Metadata = _context.metadata;
-    const descriptors: MetaPropertyDescriptors = getOwnProperty(metadata, "propertyDescriptors") ?? (metadata.propertyDescriptors = { ...metadata.propertyDescriptors });
+    const descriptors: MetaPropertyDescriptors = Metadata.ensureMetaPropertyDescriptors(metadata);
     const descriptor: MetaPropertyDescriptor = descriptors[key];
     if (!descriptor)
       throw new Error(`@clearable requires an existing meta property descriptor for property '${key}'. Add @mutate/@edit before @clearable.`);

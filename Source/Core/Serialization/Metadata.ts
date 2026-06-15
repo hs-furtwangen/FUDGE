@@ -46,12 +46,12 @@ namespace FudgeCore {
   export type PropertyAssignOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
 
   /**
-   * Metadata for classes. Metadata needs to be explicitly specified using decorators.
+   * Metadata for classes or objects. Class metadata needs to be explicitly specified using decorators (e.g. {@link edit}).
    * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
    */
-  export interface Metadata extends DecoratorMetadata {
+  export interface Metadata {
     /**
-     * Keys of properties to be included in the class's {@link Mutator}.
+     * Keys of properties to be included in the objects {@link Mutator}.
      * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
      */
     mutatorKeys?: string[];
@@ -59,7 +59,7 @@ namespace FudgeCore {
     propertyDescriptors?: MetaPropertyDescriptors;
 
     /**
-     * A map from property keys to their specified order in the class's {@link Mutator}.
+     * A map from property keys to their specified order in the objects {@link Mutator}.
      * Use the {@link order} decorator to add to this map.
      */
     mutatorOrder?: Record<string, number>;
@@ -72,14 +72,6 @@ namespace FudgeCore {
   }
 
   export namespace Metadata {
-    const emptyKeys: readonly string[] = Object.freeze([] as string[]);
-
-    /**
-     * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
-     */
-    export function mutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[] {
-      return <readonly K[]>(getMetadata(_from).mutatorKeys ?? emptyKeys);
-    }
 
     /**
      * Returns an object describing the meta configuration of a specific property on a given object.
@@ -95,20 +87,154 @@ namespace FudgeCore {
       return getMetadata(_from).propertyDescriptors;
     }
 
+    /**
+     * Define metadata on an object/instance. The metadata of the object inherits from the metadata of its class/constructor.
+     * Allows 
+     */
+    export function defineMetadata<T extends object>(_object: T extends Function ? never : T): void {
+      if (Object.hasOwn(_object, Symbol.metadata))
+        throw new Error(`Metadata already defined on object ${_object}`);
+
+      const superMetadata: Metadata = _object.constructor[Symbol.metadata] ?? null;
+      const metadata: Metadata = Object.create(superMetadata);
+      Object.defineProperty(_object, Symbol.metadata, { value: metadata, configurable: true });
+    }
+
+    /**
+     * Define a property of an object as mutable within its metadata.
+     */
+    export function defineMutateProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+      // add meta property descriptor to metadata
+      const descriptors: MetaPropertyDescriptors = ensureMetaPropertyDescriptors(_metadata);
+      descriptors[_key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
+
+      const keys: string[] = getOwnProperty(_metadata, "mutatorKeys") ?? (_metadata.mutatorKeys = _metadata.mutatorKeys ? [..._metadata.mutatorKeys] : []);
+      keys.push(_key);
+    }
+
+    /**
+     * Define a property of an object as serializable within its metadata.
+     */
+    export function defineSerializeProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+      // add meta property descriptor to metadata
+      const descriptors: MetaPropertyDescriptors = ensureMetaPropertyDescriptors(_metadata);
+      descriptors[_key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
+
+      // determine serialization type
+      let strategy: Metadata["serializables"][string];
+
+      const type: Function | Record<string, unknown> = _typeSecondary ?? _typePrimary;
+      switch (type) {
+        case Boolean: case Number: case String: case Object:
+          strategy = "primitive";
+          break;
+        case Node:
+          strategy = "node";
+          break;
+        default:
+          if (_function)
+            strategy = "function";
+          else if (isSerializableResource(type.prototype))
+            strategy = "resource";
+          else if (isSerializable(type.prototype))
+            strategy = "serializable";
+          else if (typeof type == "object")
+            strategy = "primitive";
+          break;
+      }
+
+      if (_typeSecondary)
+        strategy += _typePrimary.name;
+
+      if (!strategy)
+        return;
+
+      // add serialization type to metadata
+      const serializables: Metadata["serializables"] = getOwnProperty(_metadata, "serializables") ?? (_metadata.serializables = { ..._metadata.serializables });
+      serializables[_key] = strategy;
+    }
+
+    /**
+     * Define a property of an object as mutable and serializable, and add meta configuration for it.
+     */
+    export function defineEditProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+      defineMutateProperty(_metadata, _key, _typePrimary, _typeSecondary, _function);
+      defineSerializeProperty(_metadata, _key, _typePrimary, _typeSecondary, _function);
+    }
+
+    /**
+     * @internal Return the own meta property descriptors of a metadata object. Initializes them if unavailable.
+     */
+    export function ensureMetaPropertyDescriptors(_metadata: Metadata): Readonly<MetaPropertyDescriptors> {
+      let descriptors: MetaPropertyDescriptors = getOwnProperty(_metadata, "propertyDescriptors");
+      if (!descriptors)
+        _metadata.propertyDescriptors = descriptors = Object.create(_metadata.propertyDescriptors ?? null);
+
+      return descriptors;
+    }
+
+    /**
+     * Return a new meta property descriptor.
+     */
+    export function createMetaPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
+      const descriptor: MetaPropertyDescriptor = Object.create(null);
+      descriptor.type = _typePrimary;
+
+      switch (_typePrimary) {
+        case Boolean: case Number: case String:
+          descriptor.kind = "primitive";
+          break;
+        case Array: case Set: case Map:
+          descriptor.kind = "collection";
+          break;
+        default:
+          if (_function && !_typeSecondary)
+            descriptor.kind = "function";
+          else if (typeof _typePrimary == "object")
+            descriptor.kind = "enum";
+          else
+            descriptor.kind = "object";
+          break;
+      }
+
+      if (!_function) {
+        let getCreateOptions: PropertyCreateOptionsGetter;
+        if ((<General>_typePrimary).subclasses)
+          getCreateOptions = getSubclassOptions;
+
+        if (getCreateOptions)
+          descriptor.getCreateOptions = getCreateOptions;
+      }
+
+      let getAssignOptions: PropertyAssignOptionsGetter | undefined;
+      if (_function && (<General>_typePrimary).subclasses)
+        getAssignOptions = getSubclassOptions;
+      else if (_typePrimary === Node)
+        getAssignOptions = getNodeOptions;
+      else if (isSerializableResource(_typePrimary.prototype))
+        getAssignOptions = getResourceOptions;
+
+      if (getAssignOptions)
+        descriptor.getAssignOptions = getAssignOptions;
+
+
+      if (_typeSecondary)
+        descriptor.valueDescriptor = createMetaPropertyDescriptor(_typeSecondary, undefined, _function);
+
+      return descriptor;
+    }
   }
 
-  const emptyMetadata: Metadata = Object.freeze({});
+  const emptyMetadata: Metadata = Object.freeze(Object.create(null));
   /**
-   * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
+   * Retrieves the {@link Metadata} of an instance or class. Instance metadata takes precedence over class metadata.
+   * If none is found, empty metadata is returned.
    */
   export function getMetadata(_from: Object): Readonly<Metadata> {
     if (_from == null)
       return emptyMetadata;
 
-    if (typeof _from != "function")
-      _from = _from.constructor;
-
-    return (<Function>_from)[Symbol.metadata] ?? emptyMetadata;
+    return (<Function>_from)[Symbol.metadata] ?? _from.constructor?.[Symbol.metadata] ?? emptyMetadata;
   }
 
   /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
@@ -122,68 +248,6 @@ namespace FudgeCore {
       return _object[_ownKey];
 
     return undefined;
-  }
-
-  /**
-   * @internal Return the meta property descriptors of a metadata object.
-   */
-  export function getMetaPropertyDescriptors(_metadata: Metadata): MetaPropertyDescriptors {
-    let descriptors: MetaPropertyDescriptors = getOwnProperty(_metadata, "propertyDescriptors");
-    if (!descriptors)
-      _metadata.propertyDescriptors = descriptors = Object.create(_metadata.propertyDescriptors ?? null);
-
-    return descriptors;
-  }
-
-  /**
-   * @internal Return a new meta property descriptor.
-   */
-  export function createMetaPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
-    const descriptor: MetaPropertyDescriptor = Object.create(null);
-    descriptor.type = _typePrimary;
-
-    switch (_typePrimary) {
-      case Boolean: case Number: case String:
-        descriptor.kind = "primitive";
-        break;
-      case Array: case Set: case Map:
-        descriptor.kind = "collection";
-        break;
-      default:
-        if (_function && !_typeSecondary)
-          descriptor.kind = "function";
-        else if (typeof _typePrimary == "object")
-          descriptor.kind = "enum";
-        else
-          descriptor.kind = "object";
-        break;
-    }
-
-    if (!_function) {
-      let getCreateOptions: PropertyCreateOptionsGetter;
-      if ((<General>_typePrimary).subclasses)
-        getCreateOptions = getSubclassOptions;
-
-      if (getCreateOptions)
-        descriptor.getCreateOptions = getCreateOptions;
-    }
-
-    let getAssignOptions: PropertyAssignOptionsGetter | undefined;
-    if (_function && (<General>_typePrimary).subclasses)
-      getAssignOptions = getSubclassOptions;
-    else if (_typePrimary === Node)
-      getAssignOptions = getNodeOptions;
-    else if (isSerializableResource(_typePrimary.prototype))
-      getAssignOptions = getResourceOptions;
-
-    if (getAssignOptions)
-      descriptor.getAssignOptions = getAssignOptions;
-
-
-    if (_typeSecondary)
-      descriptor.valueDescriptor = createMetaPropertyDescriptor(_typeSecondary, undefined, _function);
-
-    return descriptor;
   }
 
   function getSubclassOptions(this: object, _key: string): Record<string, () => General> {

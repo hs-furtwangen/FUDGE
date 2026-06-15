@@ -127,42 +127,7 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      // add meta property descriptor to metadata
-      const descriptors: MetaPropertyDescriptors = getMetaPropertyDescriptors(metadata);
-      descriptors[key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
-
-      // determine serialization type
-      let strategy: Metadata["serializables"][string];
-
-      const type: Function | Record<string, unknown> = _typeSecondary ?? _typePrimary;
-      switch (type) {
-        case Boolean: case Number: case String: case Object:
-          strategy = "primitive";
-          break;
-        case Node:
-          strategy = "node";
-          break;
-        default:
-          if (_function)
-            strategy = "function";
-          else if (isSerializableResource(type.prototype))
-            strategy = "resource";
-          else if (isSerializable(type.prototype))
-            strategy = "serializable";
-          else if (typeof type == "object")
-            strategy = "primitive";
-          break;
-      }
-
-      if (_typeSecondary)
-        strategy += _typePrimary.name;
-
-      if (!strategy)
-        return;
-
-      // add serialization type to metadata
-      const serializables: Metadata["serializables"] = getOwnProperty(metadata, "serializables") ?? (metadata.serializables = { ...metadata.serializables });
-      serializables[key] = strategy;
+      Metadata.defineSerializeProperty(metadata, key, _typePrimary, _typeSecondary, _function);
     };
 
   }

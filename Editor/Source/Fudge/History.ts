@@ -2,7 +2,7 @@ namespace Fudge {
   import ƒ = FudgeCore;
   import ƒui = FudgeUserInterface;
 
-  export type historySource = ƒ.Mutable | ƒ.Node | typeof ƒ.Project;
+  export type historySource = object | ƒ.Node | typeof ƒ.Project;
   export type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | ƒui.PropertyChangeRecord;
   export enum HISTORY { MUTATE, ADD, REMOVE, CHANGE_PROPERTY };
   type historyStep = [HISTORY, historySource, historyTarget];
@@ -58,7 +58,7 @@ namespace Fudge {
         History.processNode(DO.RE, action, source, target);
       else if (source == ƒ.Project)
         History.processProject(DO.RE, action, <typeof ƒ.Project>source, target);
-      else if (source instanceof ƒ.Mutable)
+      else if (typeof source === "object")
         History.processMutable(DO.RE, step, source, target);
 
       History.#pointer++;
@@ -86,7 +86,7 @@ namespace Fudge {
           History.processNode(DO.UN, action, source, target);
         else if (source == ƒ.Project)
           History.processProject(DO.UN, action, <typeof ƒ.Project>source, target);
-        else if (source instanceof ƒ.Mutable)
+        else if (typeof source === "object")
           History.processMutable(DO.UN, step, source, target);
 
       } catch (_a) {
@@ -137,16 +137,13 @@ namespace Fudge {
      * Process direct property changes on {@link ƒ.Mutable}s by using a stored {@link ƒui.PropertyChangeRecord}.
      * Each time, a property change gets processed, the property at the given path is set to either a copy (via {@link ƒui.Controller.copyValue}) of the `from` or `to` value depending on undo or redo.
      */
-    private static async processMutable(_do: DO, _step: historyStep, _source: ƒ.Mutable, _target: ƒ.Mutator | ƒui.PropertyChangeRecord): Promise<void> {
+    private static async processMutable(_do: DO, _step: historyStep, _source: object, _target: ƒ.Mutator | ƒui.PropertyChangeRecord): Promise<void> {
       let current: ƒ.Mutator;
 
       switch (_step[0]) {
         case HISTORY.MUTATE:
-          if (!(_source instanceof ƒ.Mutable))
-            return;
-
           current = ƒ.Mutable.updateMutator(_source, ƒ.Mutable.cloneMutator(_target)); // cache the current state
-          await _source.mutate(_target);
+          await ƒ.Mutable.mutate(_source, _target);
           _step[2] = current;
           break;
         case HISTORY.CHANGE_PROPERTY:
