@@ -506,11 +506,11 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    export enum MODE {
+    enum MODE {
         EDITOR = 0,
         RUNTIME = 1
     }
-    export enum RESOURCE_STATUS {
+    enum RESOURCE_STATUS {
         PENDING = 0,
         READY = 1,
         ERROR = 2
@@ -518,7 +518,7 @@ declare namespace FudgeCore {
     /**
      * A serializable implementing an id and a name so it can be managed by the {@link Project}.
      */
-    export interface SerializableResource extends Serializable {
+    interface SerializableResource extends Serializable {
         name: string;
         idResource: string;
         readonly type: string;
@@ -528,40 +528,36 @@ declare namespace FudgeCore {
          */
         get isResource(): true;
     }
-    export function isSerializableResource(_object: Object): _object is SerializableResource;
+    function isSerializableResource(_object: Object): _object is SerializableResource;
     /** A serializable resource that is loaded from an external source (e.g. from a glTF-file) */
-    export interface SerializableResourceExternal extends SerializableResource {
+    interface SerializableResourceExternal extends SerializableResource {
         url: RequestInfo;
         status: RESOURCE_STATUS;
         load(): Promise<SerializableResourceExternal>;
     }
-    export interface Resources {
+    interface Resources {
         [idResource: string]: SerializableResource;
     }
-    export interface SerializationOfResources {
+    interface SerializationOfResources {
         [idResource: string]: Serialization;
     }
-    export interface ScriptNamespaces {
+    interface ScriptNamespaces {
         [name: string]: Object;
     }
-    export interface ComponentScripts {
+    interface ComponentScripts {
         [namespace: string]: ComponentScript[];
-    }
-    interface GraphInstancesToResync {
-        [idResource: string]: GraphInstance[];
     }
     /**
      * Static class handling the resources used with the current FUDGE-instance.
      * Keeps a list of the resources and generates ids to retrieve them.
      * Resources are objects referenced multiple times but supposed to be stored only once
      */
-    export abstract class Project extends EventTargetStatic {
+    abstract class Project extends EventTargetStatic {
         static resources: Resources;
         static serialization: SerializationOfResources;
         static scriptNamespaces: ScriptNamespaces;
         static baseURL: URL;
         static mode: MODE;
-        static graphInstancesToResync: GraphInstancesToResync;
         /**
          * Registers the resource and generates an id for it by default.
          * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
@@ -615,14 +611,6 @@ declare namespace FudgeCore {
          */
         static createGraphInstance(_graph: Graph): Promise<GraphInstance>;
         /**
-         * Register the given {@link GraphInstance} to be resynced
-         */
-        static registerGraphInstanceForResync(_instance: GraphInstance): void;
-        /**
-         * Resync all {@link GraphInstance} registered to the given {@link Graph}
-         */
-        static resyncGraphInstances(_graph: Graph): Promise<void>;
-        /**
          * Register the given namespace to the list of script-namespaces.
          */
         static registerScriptNamespace(_namespace: Object): void;
@@ -658,7 +646,6 @@ declare namespace FudgeCore {
         private static deserializeResource;
         private static reregister;
     }
-    export {};
 }
 declare namespace FudgeCore {
     /** A record of property keys and property descriptors of an object. */

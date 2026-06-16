@@ -61,8 +61,6 @@ namespace FudgeCore {
         serialization.deserializeFromSource = true;
       }
 
-
-
       serialization.idSource = this.#idSource;
       return serialization;
     }
@@ -79,13 +77,9 @@ namespace FudgeCore {
         this.#deserializeFromSource = false;
       }
 
-      let graph: Graph = this.get();
-      if (graph)
+      if (await Project.getResource(this.#idSource))
         await this.connectToGraph(); // otherwise just connect
-      else {
-        Debug.log("Register for resync", _serialization.name, this.name);
-        Project.registerGraphInstanceForResync(this);
-      }
+
       return this;
     }
 
