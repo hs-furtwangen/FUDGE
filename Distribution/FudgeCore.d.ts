@@ -207,7 +207,9 @@ declare namespace FudgeCore {
         /** dispatched to {@link ComponentWalker} and {@link ComponentWaypoint} when a {@link ComponentWalker} reaches a {@link Waypoint} or {@link ComponentWaypoint} */
         WAYPOINT_REACHED = "waypointReached",
         /** dispatched to {@link ComponentWalker} when the final {@link Waypoint} in the current path has been reached */
-        PATHING_CONCLUDED = "pathingConcluded"
+        PATHING_CONCLUDED = "pathingConcluded",
+        /** dispatched to {@link ProjectSettings} when a setting changed */
+        SETTINGS_CHANGED = "settingsChanged"
     }
     /** Union type of other event types serving as annotation for listeners and handlers */
     type EventUnified = Event | CustomEvent | EventPhysics;
@@ -297,6 +299,10 @@ declare namespace FudgeCore {
          * Emptys all depots, leaving all events to the garbage collector.
          */
         static dumpAll(): void;
+        /**
+         * Fetches an event of the requested type and initialization from the depot, dispatches it on the given target and stores it again in the depot for reuse.
+         */
+        static dispatchTo(_target: EventTargetUnified, _type: string, _bubbles?: boolean, _cancelable?: boolean): void;
         static [Symbol.hasInstance](_instance: unknown): boolean;
         /**
          * Flag for fast type checking.
@@ -780,18 +786,18 @@ declare namespace FudgeCore {
      */
     type PropertyAssignOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
     /**
-     * Metadata for classes. Metadata needs to be explicitly specified using decorators.
+     * Metadata for classes or objects. Class metadata needs to be explicitly specified using decorators (e.g. {@link edit}).
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
      */
-    interface Metadata extends DecoratorMetadata {
+    interface Metadata {
         /**
-         * Keys of properties to be included in the class's {@link Mutator}.
+         * Keys of properties to be included in the objects {@link Mutator}.
          * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
          */
         mutatorKeys?: string[];
         propertyDescriptors?: MetaPropertyDescriptors;
         /**
-         * A map from property keys to their specified order in the class's {@link Mutator}.
+         * A map from property keys to their specified order in the objects {@link Mutator}.
          * Use the {@link order} decorator to add to this map.
          */
         mutatorOrder?: Record<string, number>;
@@ -803,10 +809,6 @@ declare namespace FudgeCore {
     }
     namespace Metadata {
         /**
-         * Returns the decorated {@link Metadata.mutatorKeys property keys} that will be included in the {@link Mutator} of the given instance or class. Returns an empty set if no keys are decorated.
-         */
-        function mutatorKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): readonly K[];
-        /**
          * Returns an object describing the meta configuration of a specific property on a given object.
          */
         function getPropertyDescriptor(_object: Object, _key: string): MetaPropertyDescriptor;
@@ -814,9 +816,31 @@ declare namespace FudgeCore {
          * Returns all meta property descriptors of a given object.
          */
         function getPropertyDescriptors(_from: Object): MetaPropertyDescriptors;
+        /**
+         * Define metadata on an object/instance. The metadata of the object inherits from the metadata of its class/constructor.
+         * Allows
+         */
+        function defineMetadata<T extends object>(_object: T extends Function ? never : T): void;
+        /**
+         * Define a property of an object as mutable within its metadata.
+         */
+        function defineMutateProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        /**
+         * Define a property of an object as serializable within its metadata.
+         */
+        function defineSerializeProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        /**
+         * Define a property of an object as mutable and serializable, and add meta configuration for it.
+         */
+        function defineEditProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        /**
+         * Return a new meta property descriptor.
+         */
+        function createMetaPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor;
     }
     /**
-     * Retrieves the {@link Metadata} of an instance or constructor. For primitives, plain objects or null, empty metadata is returned.
+     * Retrieves the {@link Metadata} of an instance or class. Instance metadata takes precedence over class metadata.
+     * If none is found, empty metadata is returned.
      */
     function getMetadata(_from: Object): Readonly<Metadata>;
     /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
@@ -1258,6 +1282,28 @@ declare namespace FudgeCore {
          */
         updateMutator(_mutator: Mutator): void;
     }
+}
+declare namespace FudgeCore {
+    interface Settings {
+        [key: string]: General;
+    }
+    export abstract class ProjectSettings extends EventTargetStatic {
+        #private;
+        static define(_key: string, _value: General, _type: Function | Record<string, unknown>): void;
+        static set(_key: string, _value: General): void;
+        static get<T extends General>(_key: string): T;
+        static has(_key: string): boolean;
+        static getSettings(): Readonly<Settings>;
+    }
+    export enum SHADOW_FILTER_QUALITY {
+        OFF = "off",
+        MINIMAL = "minimal",
+        LOW = "low",
+        MEDIUM = "medium",
+        HIGH = "high",
+        MAXIMAL = "maximal"
+    }
+    export {};
 }
 declare namespace FudgeCore {
     /**

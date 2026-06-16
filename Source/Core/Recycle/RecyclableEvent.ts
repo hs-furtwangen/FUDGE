@@ -71,6 +71,15 @@ namespace FudgeCore {
       RecyclableEvent.#depot = {};
     }
 
+    /**
+     * Fetches an event of the requested type and initialization from the depot, dispatches it on the given target and stores it again in the depot for reuse.
+     */
+    public static dispatchTo(_target: EventTargetUnified, _type: string, _bubbles: boolean = false, _cancelable: boolean = false): void {
+      const event: RecyclableEvent = RecyclableEvent.get(_type, _bubbles, _cancelable);
+      _target.dispatchEvent(event);
+      RecyclableEvent.store(event);
+    }
+
     public static [Symbol.hasInstance](_instance: unknown): boolean { // much faster than default instanceof
       return (<RecyclableEvent>_instance).isRecyclableEvent;
     }

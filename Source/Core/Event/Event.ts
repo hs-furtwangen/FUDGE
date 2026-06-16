@@ -68,7 +68,9 @@ namespace FudgeCore {
     /** dispatched to {@link ComponentWalker} and {@link ComponentWaypoint} when a {@link ComponentWalker} reaches a {@link Waypoint} or {@link ComponentWaypoint} */
     WAYPOINT_REACHED = "waypointReached",
     /** dispatched to {@link ComponentWalker} when the final {@link Waypoint} in the current path has been reached */
-    PATHING_CONCLUDED = "pathingConcluded"
+    PATHING_CONCLUDED = "pathingConcluded",
+    /** dispatched to {@link ProjectSettings} when a setting changed */
+    SETTINGS_CHANGED = "settingsChanged"
   }
 
   /** Union type of other event types serving as annotation for listeners and handlers */

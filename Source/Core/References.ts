@@ -16,6 +16,7 @@
 /// <reference path="Serialization/EditDecorator.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
 /// <reference path="Serialization/MutableArray.ts"/>
+/// <reference path="Serialization/ProjectSettings.ts"/>
 
 /// <reference path="Math/Vector2.ts"/>
 /// <reference path="Math/Vector3.ts"/>
