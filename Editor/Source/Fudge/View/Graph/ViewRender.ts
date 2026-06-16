@@ -354,6 +354,9 @@ namespace Fudge {
         case ƒ.KEYBOARD_CODE.G:
           this.contextMenu.getMenuItemById(this.transformator.space == TRANSFORM.LOCAL ? TRANSFORM.WORLD : TRANSFORM.LOCAL).click();
           break;
+        case ƒ.KEYBOARD_CODE.F:
+          this.dispatch(EVENT_EDITOR.FOCUS, { bubbles: false, detail: { node: this.node } });
+          break;
         // case ƒ.KEYBOARD_CODE.Y:
         //   if (_event.ctrlKey) {
         //     this.transformator.undo();
