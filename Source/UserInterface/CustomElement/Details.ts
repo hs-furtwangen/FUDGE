@@ -14,9 +14,9 @@ namespace FudgeUserInterface {
       this.open = true;
 
       this.summary = document.createElement("summary");
-      const span: HTMLSpanElement = document.createElement("span");
-      span.textContent = _legend;
-      this.summary.appendChild(span);
+      const label: HTMLLabelElement = document.createElement("label");
+      label.textContent = _legend;
+      this.summary.appendChild(label);
       this.appendChild(this.summary);
 
       this.content = document.createElement("div");
@@ -33,6 +33,15 @@ namespace FudgeUserInterface {
     public setContent(_content: HTMLDivElement): void {
       this.replaceChild(_content, this.content);
       this.content = _content;
+    }
+
+    public setLabel(_label: string): void {
+      let label: HTMLLabelElement = this.querySelector("label");
+      if (label)
+        label.textContent = _label;
+
+      if (this.hasAttribute("label"))
+        this.setAttribute("label", _label);
     }
 
     public expand(_expand: boolean): void {

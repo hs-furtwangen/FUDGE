@@ -105,6 +105,9 @@ namespace FudgeUserInterface {
       let label: HTMLLabelElement = this.querySelector("label");
       if (label)
         label.textContent = _label;
+      
+      if (this.hasAttribute("label"))
+        this.setAttribute("label", _label);
     }
 
     /**

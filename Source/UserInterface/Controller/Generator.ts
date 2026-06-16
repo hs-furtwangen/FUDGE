@@ -7,7 +7,7 @@ namespace FudgeUserInterface {
   export class Generator {
 
     /**
-     * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
+     * Create extendable details for the {@link FudgeCore.Mutator} or the {@link FudgeCore.Mutable}.
      */
     public static createDetailsFromMutable(_mutable: ƒ.Mutable, _name?: string, _mutator?: ƒ.Mutator): Details {
       if (!(_mutable instanceof ƒ.Mutable))
@@ -18,11 +18,10 @@ namespace FudgeUserInterface {
       const details: Details = new Details(name, _mutable.type);
       details.setContent(Generator.createInterfaceFromMutable(_mutable, mutator));
 
-      Controller.signatures.set(details, Controller.createSignature(mutator));
+      Controller.signatures.set(details, Controller.createSignature(mutator)); // TODO: register signatures for details.content as to allow the content to be rebuild
 
       return details;
     }
-
 
     public static createDetailsFromArray(_mutable: Array<unknown>, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray {
       if (!Array.isArray(_mutable))
@@ -38,7 +37,7 @@ namespace FudgeUserInterface {
     }
 
     /**
-     * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
+     * Create a div-Elements containing the interface for the {@link FudgeCore.Mutator} or the {@link FudgeCore.Mutable}.
      */
     public static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
@@ -70,6 +69,49 @@ namespace FudgeUserInterface {
 
         div.appendChild(element);
       }
+      return div;
+    }
+
+    /**
+     * Creates a div element containing the (hierarchical) interface for a {@link FudgeCore.Mutator} or {@link FudgeCore.Mutable}. 
+     * Keys are expected to be slash-delimited paths e.g. `{ "key/x/y": value }`. 
+     * The generated interface displays those paths as a sectioned hierarchy.
+     */
+    public static createInterfaceFromFlatMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
+      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
+      const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
+      const descriptors: ƒ.MetaPropertyDescriptors = ƒ.Metadata.getPropertyDescriptors(_mutable);
+      const div: HTMLDivElement = document.createElement("div");
+
+      for (const key in mutator) {
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptors[key]);
+        if (!element)
+          continue;
+
+        const path: string[] = key.split("/");
+        let section: HTMLElement = div;
+        for (let i: number = 0; i < path.length - 1; i++) {
+          const part: string = path[i];
+          let next: HTMLElement = <HTMLElement>section.querySelector(`[section="${part}"]`);
+          if (!next) {
+            next = document.createElement("details");
+            next.setAttribute("section", part);
+            const summary: HTMLElement = document.createElement("summary");
+            summary.textContent = part;
+            next.appendChild(summary);
+            const div: HTMLDivElement = document.createElement("div");
+            next.appendChild(div);
+            section.appendChild(next);
+          }
+          section = <HTMLElement>next.querySelector("div");
+        }
+
+        if (element instanceof CustomElement || element instanceof Details) 
+          element.setLabel(path[path.length - 1]);
+
+        section.appendChild(element);
+      }
+
       return div;
     }
 

@@ -80,6 +80,7 @@ declare namespace Fudge {
         PROPERTIES = "ViewProperties",
         PREVIEW = "ViewPreview",
         SCRIPT = "ViewScript",
+        PROJECT_SETTINGS = "ViewProjectSettings",
         PARTICLE_SYSTEM = "ViewParticleSystem"
     }
     enum TRANSFORM {
@@ -178,7 +179,7 @@ declare namespace Fudge {
 declare namespace Fudge {
     import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
-    type historySource = ƒ.Mutable | ƒ.Node | typeof ƒ.Project;
+    type historySource = object | ƒ.Node | typeof ƒ.Project;
     type historyTarget = ƒ.Mutator | ƒ.Node | ƒ.Component | ƒ.SerializableResource | ƒui.PropertyChangeRecord;
     enum HISTORY {
         MUTATE = 0,
@@ -917,6 +918,16 @@ declare namespace Fudge {
         private resetCamera;
         private redraw;
         private defer;
+    }
+}
+declare namespace Fudge {
+    /**
+     * List the scripts loaded
+     * @author Jonas Plotzky, HFU, 2026
+     */
+    class ViewProjectSettings extends View {
+        private settings;
+        constructor(_container: ComponentContainer, _state: ViewState);
     }
 }
 declare namespace Fudge {

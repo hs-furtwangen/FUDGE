@@ -67,6 +67,7 @@ declare namespace Fudge {
         PROPERTIES = "ViewProperties",
         PREVIEW = "ViewPreview",
         SCRIPT = "ViewScript",
+        SETTINGS = "ViewSettings",
         PARTICLE_SYSTEM = "ViewParticleSystem"
     }
     enum TRANSFORM {

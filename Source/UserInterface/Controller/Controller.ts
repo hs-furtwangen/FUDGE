@@ -5,7 +5,7 @@ namespace FudgeUserInterface {
    * Describes a single property change at a path within a mutable.
    * Stores both the value before application of the change (`from`) and the target value (`to`).
    */
-  export interface PropertyChangeRecord<T = unknown> {
+  export interface PropertyChangeRecord<T = unknown> { // TODO: rename!
     path: string[];
     from: T;
     to: T;

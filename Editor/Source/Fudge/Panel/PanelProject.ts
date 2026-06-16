@@ -14,7 +14,8 @@ namespace Fudge {
         [VIEW.EXTERNAL]: ViewExternal,
         [VIEW.PROPERTIES]: ViewProperties,
         [VIEW.PREVIEW]: ViewPreview,
-        [VIEW.SCRIPT]: ViewScript
+        [VIEW.SCRIPT]: ViewScript,
+        [VIEW.PROJECT_SETTINGS]: ViewProjectSettings
       };
 
       const config: RowOrColumnItemConfig = {
@@ -39,9 +40,16 @@ namespace Fudge {
               componentType: VIEW.EXTERNAL,
               title: "External"
             }, {
-              type: "component",
-              componentType: VIEW.SCRIPT,
-              title: "Script"
+              type: "stack",
+              content: [{
+                type: "component",
+                componentType: VIEW.SCRIPT,
+                title: "Script"
+              }, {
+                type: "component",
+                componentType: VIEW.PROJECT_SETTINGS,
+                title: "Settings"
+              }]
             }]
           }, {
             type: "stack",

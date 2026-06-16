@@ -73,6 +73,7 @@ namespace Fudge {
     PROPERTIES = "ViewProperties",
     PREVIEW = "ViewPreview",
     SCRIPT = "ViewScript",
+    PROJECT_SETTINGS = "ViewProjectSettings",
     PARTICLE_SYSTEM = "ViewParticleSystem"
     // SKETCH = ViewSketch,
     // MESH = ViewMesh,

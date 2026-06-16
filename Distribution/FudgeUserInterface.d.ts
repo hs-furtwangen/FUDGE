@@ -123,15 +123,21 @@ declare namespace FudgeUserInterface {
      */
     class Generator {
         /**
-         * Create extendable details for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
+         * Create extendable details for the {@link FudgeCore.Mutator} or the {@link FudgeCore.Mutable}.
          */
         static createDetailsFromMutable(_mutable: ƒ.Mutable, _name?: string, _mutator?: ƒ.Mutator): Details;
         static createDetailsFromArray(_mutable: Array<unknown>, _name: string, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): DetailsArray;
         /**
-         * Create a div-Elements containing the interface for the [[FudgeCore.Mutator]] or the [[FudgeCore.Mutable]]
+         * Create a div-Elements containing the interface for the {@link FudgeCore.Mutator} or the {@link FudgeCore.Mutable}.
          */
         static createInterfaceFromMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement;
+        /**
+         * Creates a div element containing the (hierarchical) interface for a {@link FudgeCore.Mutator} or {@link FudgeCore.Mutable}.
+         * Keys are expected to be slash-delimited paths e.g. `{ "key/x/y": value }`.
+         * The generated interface displays those paths as a sectioned hierarchy.
+         */
+        static createInterfaceFromFlatMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
         static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _descriptor?: ƒ.MetaPropertyDescriptor, _parentMutable?: object, _parentKey?: string): HTMLElement;
         static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean): Menu;
         /**
@@ -569,6 +575,7 @@ declare namespace FudgeUserInterface {
         content: HTMLDivElement;
         constructor(_legend: string, _type: string);
         setContent(_content: HTMLDivElement): void;
+        setLabel(_label: string): void;
         expand(_expand: boolean): void;
         private hndToggle;
         private hndFocus;
