@@ -1297,11 +1297,11 @@ declare namespace FudgeCore {
     }
     export enum SHADOW_FILTER_QUALITY {
         OFF = "off",
-        MINIMAL = "minimal",
+        MIN = "min",
         LOW = "low",
         MEDIUM = "medium",
         HIGH = "high",
-        MAXIMAL = "maximal"
+        MAX = "max"
     }
     export {};
 }
@@ -5346,6 +5346,7 @@ declare namespace FudgeCore {
         shadowNormalBias: number;
         shadowBlur: number;
         shadowMaxDistance: number;
+        shadowFadeDistance: number;
         readonly mtxWorld: Matrix4x4;
         constructor(_lightType?: LIGHT_TYPE, _color?: Color, _intensity?: number);
         drawGizmos(): void;

@@ -800,8 +800,9 @@ layout(location = 2) out vec4 vctFragNormal;
   struct Shadow {
     float bias;
     float normalBias;
-    float blur;
-    float padding;
+    float filterScale; // scales the shadow kernel for blurrier shadows
+    float maxDistance;
+    float fadeDistance;
   };
 
   layout(std140) uniform Shadows {
@@ -921,7 +922,7 @@ layout(location = 2) out vec4 vctFragNormal;
 
     float avg = 0.0;
     for (uint i = 0u; i < u_iShadowSampleCount; i++) 
-      avg += texture(_sampler, vec4(shadowCoord.xy + u_fShadowTexelSize * _shadowParameters.blur * (diskRotation * u_fShadowKernel[i].xy), float(_layer), shadowCoord.z));
+      avg += texture(_sampler, vec4(shadowCoord.xy + u_fShadowTexelSize * _shadowParameters.filterScale * (diskRotation * u_fShadowKernel[i].xy), float(_layer), shadowCoord.z));
 
     return avg / float(u_iShadowSampleCount);
   }
@@ -973,6 +974,8 @@ void main() {
     vec3 vctDiffuse = vec3(0, 0, 0);
     vec3 vctSpecular = vec3(0, 0, 0);
 
+    float fDistance = length(vctPosition - u_vctCamera); // TODO: euclidian depth is also used in getFog, try computing it only once.
+
     // directional lights
     for(uint i = 0u; i < u_nLightsDirectional; i++) {
       vec3 vctLightDirection = normalize(-u_directional[i].mtxShape[2].xyz); // directional light direction is the inverted forward vector of the light's transform
@@ -983,7 +986,10 @@ void main() {
 
         int iShadow = int(u_directional[i].fShadowLayer);
         if (iShadow > -1) {
-          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
+          if (fDistance < u_shadows[iShadow].maxDistance) {
+            fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
+            fAttenuation = mix(fAttenuation, 1.0, smoothstep(u_shadows[iShadow].fadeDistance, u_shadows[iShadow].maxDistance, fDistance));
+          }
         }
 
       #endif
@@ -1096,8 +1102,10 @@ void main() {
   #endif
 
   // discard pixel alltogether when transparent: don't show in Z-Buffer
-  if(vctFrag.a < u_fAlphaClip)
-    discard;
+  // ⚠️ NOTE: The presence of "discard" in shader code has adverse effects on the Early-Z culling rate, 
+  // because the GPU must defer depth writes until after the fragment shader has executed.
+  if(vctFrag.a < u_fAlphaClip) 
+    discard; 
 
   if (u_bFogActive) {
     float fFog = getFog(v_vctPosition);

@@ -85,6 +85,9 @@ namespace FudgeCore {
     @edit(Number)
     public shadowMaxDistance: number = 50;
 
+    @edit(Number)
+    public shadowFadeDistance: number = 0.8;
+
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
     public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {

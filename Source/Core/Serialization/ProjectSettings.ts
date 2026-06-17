@@ -49,11 +49,11 @@ namespace FudgeCore {
 
   export enum SHADOW_FILTER_QUALITY {
     OFF = "off",
-    MINIMAL = "minimal",
+    MIN = "min",
     LOW = "low",
     MEDIUM = "medium",
     HIGH = "high",
-    MAXIMAL = "maximal"
+    MAX = "max"
   }
 
   // default settings
