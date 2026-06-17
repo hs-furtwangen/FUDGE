@@ -88,7 +88,7 @@ layout(location = 2) out vec4 vctFragNormal;
     vec4 vctColor;
     mat4 mtxShape;
     mat4 mtxShapeInverse;
-    float fShadowLayer; // -1 = no shadow, otherwise index in shadow array
+    float fShadowIndex; // -1 = no shadow, otherwise index in shadow array
   };
 
   #define MAX_LIGHTS_DIRECTIONAL 15u
@@ -294,7 +294,7 @@ void main() {
 
       #if defined(SHADOW)
 
-        int iShadow = int(u_directional[i].fShadowLayer);
+        int iShadow = int(u_directional[i].fShadowIndex);
         if (iShadow > -1) {
           if (fDistance < u_shadows[iShadow].maxDistance) {
             fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
@@ -319,7 +319,7 @@ void main() {
 
       #if defined(SHADOW)
 
-        int iShadowBase = int(u_point[i].fShadowLayer);
+        int iShadowBase = int(u_point[i].fShadowIndex);
         if (iShadowBase > -1) {
           int iShadow = iShadowBase + getCubeFace(-vctLight);
           fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadowBase], v_vctPosition, v_vctNormal, vctLightDirection);
@@ -349,7 +349,7 @@ void main() {
 
       #if defined(SHADOW)
 
-        int iShadow = int(u_spot[i].fShadowLayer);
+        int iShadow = int(u_spot[i].fShadowIndex);
         if (iShadow > -1) {
           fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
         }
