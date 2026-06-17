@@ -65,6 +65,8 @@ namespace FudgeCore {
     static #shadowMaterial: Material;
     static #shadowMaterialSkin: Material;
 
+    static #SHADOW_STRUCT_SPACE: number = 8;
+
     static {
       this.initialize();
     }
@@ -107,15 +109,15 @@ namespace FudgeCore {
 
 
       const SHADOW_HEADER_SPACE: number = 4; // float shadowTexelSize, float shadowFilterSampleCount, z+w padding,
-      const SHADOW_STRUCT_SPACE: number = 8;
-      let shadowsBlockSize: number = (SHADOW_HEADER_SPACE + RenderWebGLComponentLight.#MAX_SHADOW_FILTER_SAMPLE_COUNT * VEC4_FLOATS + RenderWebGLComponentLight.#MAX_SHADOW_COUNT * MATRIX4_FLOATS + RenderWebGLComponentLight.#MAX_SHADOW_COUNT * SHADOW_STRUCT_SPACE) * 4;
+
+      let shadowsBlockSize: number = (SHADOW_HEADER_SPACE + RenderWebGLComponentLight.#MAX_SHADOW_FILTER_SAMPLE_COUNT * VEC4_FLOATS + RenderWebGLComponentLight.#MAX_SHADOW_COUNT * MATRIX4_FLOATS + RenderWebGLComponentLight.#MAX_SHADOW_COUNT * this.#SHADOW_STRUCT_SPACE) * 4;
       shadowsBlockSize = Math.ceil(shadowsBlockSize / 16) * 16; // std140 alignment
 
       RenderWebGLComponentLight.#dataShadows = new Float32Array(new ArrayBuffer(shadowsBlockSize));
       RenderWebGLComponentLight.#dataShadowHeader = new DataView(RenderWebGLComponentLight.#dataShadows.buffer, 0, SHADOW_HEADER_SPACE * 4);
       RenderWebGLComponentLight.#dataShadowKernel = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowHeader.byteOffset + RenderWebGLComponentLight.#dataShadowHeader.byteLength, RenderWebGLComponentLight.#MAX_SHADOW_FILTER_SAMPLE_COUNT * VEC4_FLOATS);
       RenderWebGLComponentLight.#dataShadowMatrices = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowKernel.byteOffset + RenderWebGLComponentLight.#dataShadowKernel.byteLength, RenderWebGLComponentLight.#MAX_SHADOW_COUNT * MATRIX4_FLOATS);
-      RenderWebGLComponentLight.#dataShadowParameters = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowMatrices.byteOffset + RenderWebGLComponentLight.#dataShadowMatrices.byteLength, RenderWebGLComponentLight.#MAX_SHADOW_COUNT * SHADOW_STRUCT_SPACE);
+      RenderWebGLComponentLight.#dataShadowParameters = new Float32Array(RenderWebGLComponentLight.#dataShadows.buffer, RenderWebGLComponentLight.#dataShadowMatrices.byteOffset + RenderWebGLComponentLight.#dataShadowMatrices.byteLength, RenderWebGLComponentLight.#MAX_SHADOW_COUNT * this.#SHADOW_STRUCT_SPACE);
 
       RenderWebGLComponentLight.#bufferShadows = RenderWebGL.assert(crc3.createBuffer());
       crc3.bindBuffer(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#bufferShadows);
@@ -306,7 +308,7 @@ namespace FudgeCore {
         mtxView.translation = translation;
         mtxView.invert();
 
-        // adjust normal bias by world space texel size
+        // adjust shadow parameters that are camera dependant
         const shadowTexelSizeWorld: number = radius * 2 / RenderWebGLComponentLight.#shadowSize;
         const iShadowParameter: number = (<General>cmpLight)[SHADOW_INDEX] * 4;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = cmpLight.shadowNormalBias * shadowTexelSizeWorld;
@@ -537,8 +539,7 @@ namespace FudgeCore {
 
     private static uploadShadowParameters(_offset: number, _length: number): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
-      const FLOATS_PER_VECTOR: number = 4;
-      crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#dataShadowParameters.byteOffset + _offset * FLOATS_PER_VECTOR * RenderWebGLComponentLight.#dataShadowParameters.BYTES_PER_ELEMENT, RenderWebGLComponentLight.#dataShadowParameters, _offset * FLOATS_PER_VECTOR, _length * FLOATS_PER_VECTOR);
+      crc3.bufferSubData(WebGL2RenderingContext.UNIFORM_BUFFER, RenderWebGLComponentLight.#dataShadowParameters.byteOffset + _offset * this.#SHADOW_STRUCT_SPACE * RenderWebGLComponentLight.#dataShadowParameters.BYTES_PER_ELEMENT, RenderWebGLComponentLight.#dataShadowParameters, _offset * this.#SHADOW_STRUCT_SPACE, _length * this.#SHADOW_STRUCT_SPACE);
     }
 
     private static getVogelDisk(_kernel: { [index: number]: number }, _sampleCount: number): void {
