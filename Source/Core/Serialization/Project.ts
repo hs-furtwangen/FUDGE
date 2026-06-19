@@ -140,7 +140,6 @@ namespace FudgeCore {
       return found;
     }
 
-
     /**
      * Generate a user readable and unique id using the type of the resource, the date and random numbers
      * @param _resource
@@ -329,13 +328,41 @@ namespace FudgeCore {
     /**
      * Load all resources from the {@link document.head}
      */
-    public static async loadResourcesFromHTML(): Promise<void> {
-      const head: HTMLHeadElement = document.head;
-      let links: NodeListOf<HTMLLinkElement> = head.querySelectorAll("link[type=resources]");
+    public static async loadResourcesFromHTML(_document: HTMLDocument = document, _baseURL: string | URL = Project.baseURL): Promise<void> {
+      const head: HTMLHeadElement = _document.head;
+      const links: NodeListOf<HTMLLinkElement> = head.querySelectorAll("link[type=resources]");
       for (let link of links) {
-        let url: RequestInfo = link.getAttribute("src");
+        const url: RequestInfo = new URL(link.getAttribute("src"), _baseURL).toString();
         await Project.loadResources(url);
       }
+    }
+
+    /**
+     * Load the project settings from the {@link document.head}.
+     *
+     * The document head must contain a link element in the following form:
+     *
+     * ```html
+     * <link type="projectsettings" src="ProjectSettings.json" />
+     * ```
+     */
+    public static async loadSettingsFromHTML(_document: HTMLDocument = document, _baseURL: string | URL = Project.baseURL): Promise<void> {
+      const head: HTMLHeadElement = _document.head;
+      const link: Element = head.querySelector("link[type=projectsettings]");
+      if (link instanceof HTMLLinkElement) {
+        const url: RequestInfo = new URL(link.getAttribute("src"), _baseURL).toString();
+        await ProjectSettings.load(url);
+      } else {
+        throw new Error(`No project settings found in document head.`);
+      }
+    }
+
+    /**
+     * Load the project from the {@link document.head}. 
+     */
+    public static async loadFromHTML(_document: HTMLDocument = document, _baseURL: string | URL = Project.baseURL): Promise<void> {
+      await Project.loadResourcesFromHTML(_document, _baseURL);
+      await Project.loadSettingsFromHTML(_document, _baseURL);
     }
 
     /**

@@ -734,7 +734,21 @@ declare namespace FudgeCore {
         /**
          * Load all resources from the {@link document.head}
          */
-        static loadResourcesFromHTML(): Promise<void>;
+        static loadResourcesFromHTML(_document?: HTMLDocument, _baseURL?: string | URL): Promise<void>;
+        /**
+         * Load the project settings from the {@link document.head}.
+         *
+         * The document head must contain a link element in the following form:
+         *
+         * ```html
+         * <link type="projectsettings" src="ProjectSettings.json" />
+         * ```
+         */
+        static loadSettingsFromHTML(_document?: HTMLDocument, _baseURL?: string | URL): Promise<void>;
+        /**
+         * Load the project from the {@link document.head}.
+         */
+        static loadFromHTML(_document?: HTMLDocument, _baseURL?: string | URL): Promise<void>;
         /**
          * Serialize all resources
          */
@@ -1284,18 +1298,40 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
-    interface Settings {
-        [key: string]: General;
-    }
-    export abstract class ProjectSettings extends EventTargetStatic {
+    class Settings extends EventTarget implements Serializable {
         #private;
-        static define(_key: string, _value: General, _type: Function | Record<string, unknown>): void;
-        static set(_key: string, _value: General): void;
-        static get<T extends General>(_key: string): T;
-        static has(_key: string): boolean;
-        static getSettings(): Readonly<Settings>;
+        constructor();
+        /**
+         * Define a new setting.
+         */
+        define(_key: string, _value: General, _type: Function | Record<string, unknown>): void;
+        /**
+         * Set an existing setting to the given value.
+         */
+        set(_key: string, _value: General): void;
+        /**
+         * Get the value of the given setting.
+         */
+        get<T extends General>(_key: string): T;
+        /**
+         * Returns a boolean indicating whether the specified setting exists or not.
+         */
+        has(_key: string): boolean;
+        /**
+         * Returns the internal map-like object. Used by the editor.
+         * Use {@link define}, {@link set}, {@link get}, and {@link has}
+         * to access and modify settings safely.
+         */
+        getMutable(): Record<string, General>;
+        /**
+         * Loads the settings from the given url.
+         */
+        load(_url: RequestInfo): Promise<Settings>;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
     }
-    export enum SHADOW_FILTER_QUALITY {
+    const ProjectSettings: Settings;
+    enum SHADOW_FILTER_QUALITY {
         OFF = "off",
         MIN = "min",
         LOW = "low",
@@ -1303,7 +1339,6 @@ declare namespace FudgeCore {
         HIGH = "high",
         MAX = "max"
     }
-    export {};
 }
 declare namespace FudgeCore {
     /**

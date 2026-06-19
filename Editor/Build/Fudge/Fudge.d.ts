@@ -284,6 +284,7 @@ declare namespace Fudge {
         fileInternalFolder: string;
         fileScript: string;
         fileSettings: string;
+        fileProjectSettings: string;
         fileStyles: string;
         private graphAutoView;
         constructor(_base: URL);
@@ -294,11 +295,14 @@ declare namespace Fudge {
         getProjectJSON(): string;
         getResourceFolderJSON(): string;
         getSettingsJSON(): string;
+        getProjectSettingsJSON(): string;
         getProjectCSS(): string;
         getProjectHTML(_title: string): string;
         serialize(): ƒ.Serialization;
         deserialize(_serialization: ƒ.Serialization): Promise<ƒ.Serializable>;
         private createProjectHTML;
+        private appendProjectSettings;
+        private createTag;
         private settingsStringify;
         private stringifyHTML;
         private loadFonts;

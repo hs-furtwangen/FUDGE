@@ -1,51 +1,93 @@
 namespace FudgeCore {
 
-  interface Settings {
-    [key: string]: General;
-  }
+  export class Settings extends EventTarget implements Serializable {
+    #mutable: Record<string, General>;
 
-  export abstract class ProjectSettings extends EventTargetStatic {
-    static #settings: Settings;
-
-    static {
-      this.#settings = new Proxy({}, {
-        set(_target: Settings, _key: string, _value: unknown): boolean {
-          const value: General = _target[_key];
-          _target[_key] = _value;
-          if (value !== _value) 
-            RecyclableEvent.dispatchTo(ProjectSettings, EVENT.SETTINGS_CHANGED);
-          
-          return true;
-        }
+    public constructor() {
+      super();
+      this.#mutable = new Proxy({}, {
+        set: this.#setDataProperty
       });
-      
-      Metadata.defineMetadata(this.#settings);
+
+      Metadata.defineMetadata(this.#mutable);
     }
 
-    public static define(_key: string, _value: General, _type: Function | Record<string, unknown>): void {
-      if (_key in this.#settings)
+    /**
+     * Define a new setting.
+     */
+    public define(_key: string, _value: General, _type: Function | Record<string, unknown>): void {
+      if (_key in this.#mutable)
         throw new Error(`The project setting "${_key}" is already defined.`);
 
-      Metadata.defineEditProperty(getMetadata(this.#settings), _key, _type);
-      this.#settings[_key] = _value;
+      Metadata.defineEditProperty(getMetadata(this.#mutable), _key, _type);
+      this.#mutable[_key] = _value;
     }
 
-    public static set(_key: string, _value: General): void {
-      this.#settings[_key] = _value;
+    /**
+     * Set an existing setting to the given value.
+     */
+    public set(_key: string, _value: General): void {
+      if (!this.has(_key))
+        throw new Error(`The project setting "${_key}" does not exist.`);
+
+      this.#mutable[_key] = _value;
     }
 
-    public static get<T extends General>(_key: string): T {
-      return this.#settings[_key] as T;
+    /**
+     * Get the value of the given setting.
+     */
+    public get<T extends General>(_key: string): T {
+      return this.#mutable[_key] as T;
     }
 
-    public static has(_key: string): boolean {
-      return _key in this.#settings;
+    /**
+     * Returns a boolean indicating whether the specified setting exists or not.
+     */
+    public has(_key: string): boolean {
+      return _key in this.#mutable;
     }
 
-    public static getSettings(): Readonly<Settings> {
-      return this.#settings;
+    /**
+     * Returns the internal map-like object. Used by the editor.
+     * Use {@link define}, {@link set}, {@link get}, and {@link has}
+     * to access and modify settings safely.
+     */
+    public getMutable(): Record<string, General> {
+      return this.#mutable;
     }
+
+    /**
+     * Loads the settings from the given url.
+     */
+    public async load(_url: RequestInfo): Promise<Settings> {
+      const response: Response = await fetch(_url);
+      const content: string = await response.text();
+      const serialization: Serialization = Serializer.parse(content);
+
+      return <Promise<Settings>>this.deserialize(serialization);
+    }
+
+    public serialize(): Serialization {
+      return serializeDecorations(this.#mutable);
+    }
+
+    public async deserialize(_serialization: Serialization): Promise<Serializable> {
+      await deserializeDecorations(this.#mutable, _serialization);
+      return this;
+    }
+
+    #setDataProperty = (_target: Record<string, General>, _key: string, _value: unknown): boolean => {
+      const value: General = _target[_key];
+      _target[_key] = _value;
+      if (value !== _value)
+        RecyclableEvent.dispatchTo(this, EVENT.SETTINGS_CHANGED);
+
+      return true;
+    };
   }
+
+  // eslint-disable-next-line
+  export const ProjectSettings: Settings = new Settings();
 
   export enum SHADOW_FILTER_QUALITY {
     OFF = "off",

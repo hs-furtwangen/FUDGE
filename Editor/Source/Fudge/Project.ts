@@ -16,6 +16,8 @@ namespace Fudge {
     public fileInternalFolder: string = "InternalFolder.json";
     public fileScript: string = "Script/Build/Script.js";
     public fileSettings: string = "settings.json";
+    public fileProjectSettings: string = "ProjectSettings.json";
+
     public fileStyles: string = "styles.css";
 
     @ƒ.edit(ƒ.Graph)
@@ -80,12 +82,20 @@ namespace Fudge {
           ƒ.Debug.log("Script Namespaces", ƒ.Project.scriptNamespaces);
         }
       }
-
+      
       const resourceLink: HTMLLinkElement = head.querySelector("link[type=resources]");
       let resourceFile: string = resourceLink.getAttribute("src");
       project.fileInternal = resourceFile;
       ƒ.Project.baseURL = this.base;
       let reconstruction: ƒ.Resources = await ƒ.Project.loadResources(new URL(resourceFile, this.base).toString());
+
+      try {
+        await ƒ.Project.loadSettingsFromHTML(this.#document, this.base);
+      } catch (_error) {
+        ƒ.Debug.warn(`Failed to load project settings.`, _error);
+        if (!head.querySelector("link[type=projectsettings]"))
+          this.appendProjectSettings(this.#document);
+      }
 
       ƒ.Debug.groupCollapsed("Deserialized");
       ƒ.Debug.info(reconstruction);
@@ -136,6 +146,11 @@ namespace Fudge {
       return ƒ.Serializer.stringify(settings);
     }
 
+    public getProjectSettingsJSON(): string {
+      const settings: ƒ.Serialization = ƒ.ProjectSettings.serialize();
+      return ƒ.Serializer.stringify(settings);
+    }
+
     public getProjectCSS(): string {
       let content: string = "";
 
@@ -181,59 +196,67 @@ namespace Fudge {
     private createProjectHTML(_title: string): string {
       let html: Document = document.implementation.createHTMLDocument(_title);
 
-      html.head.appendChild(createTag("meta", { charset: "utf-8" }));
-      html.head.appendChild(createTag("link", { rel: "stylesheet", href: this.fileStyles }));
+      html.head.appendChild(this.createTag("meta", { charset: "utf-8" }));
+      html.head.appendChild(this.createTag("link", { rel: "stylesheet", href: this.fileStyles }));
       html.head.appendChild(html.createComment("CRLF"));
 
       html.head.appendChild(html.createComment("Editor settings of this project"));
-      html.head.appendChild(createTag("meta", {
+      html.head.appendChild(this.createTag("meta", {
         type: "settings", autoview: this.graphAutoView?.idResource ?? "", project: this.settingsStringify()
       }));
       html.head.appendChild(html.createComment("CRLF"));
+
+      this.appendProjectSettings(html);
 
       html.head.appendChild(html.createComment("Activate the following line to include the FUDGE-version of Oimo-Physics. You may want to download a local copy to work offline and be independent from future changes!"));
       html.head.appendChild(html.createComment(`<script type="text/javascript" src="https://hs-furtwangen.github.io/FUDGE/Distribution/OimoPhysics.js"></script>`));
       html.head.appendChild(html.createComment("CRLF"));
 
       html.head.appendChild(html.createComment("Load FUDGE. You may want to download local copies to work offline and be independent from future changes! Developers working on FUDGE itself may want to create symlinks"));
-      html.head.appendChild(createTag("script", { type: "text/javascript", src: "https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeCore.js" }));
-      html.head.appendChild(createTag("script", { type: "text/javascript", src: "https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeAid.js" }));
+      html.head.appendChild(this.createTag("script", { type: "text/javascript", src: "https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeCore.js" }));
+      html.head.appendChild(this.createTag("script", { type: "text/javascript", src: "https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeAid.js" }));
       html.head.appendChild(html.createComment("CRLF"));
 
       html.head.appendChild(html.createComment("Link internal resources. The editor only loads the first, but at runtime, multiple files can contribute"));
-      html.head.appendChild(createTag("link", { type: "resources", src: this.fileInternal }));
+      html.head.appendChild(this.createTag("link", { type: "resources", src: this.fileInternal }));
       html.head.appendChild(html.createComment("CRLF"));
 
       html.head.appendChild(html.createComment("Load custom scripts"));
-      html.head.appendChild(createTag("script", { type: "text/javascript", src: this.fileScript, editor: "true" }));
+      html.head.appendChild(this.createTag("script", { type: "text/javascript", src: this.fileScript, editor: "true" }));
       html.head.appendChild(html.createComment("CRLF"));
 
       // if (this.includeAutoViewScript)
       //   html.head.appendChild(this.getAutoViewScript());
       html.head.appendChild(html.createComment("Load Autoview script"));
-      html.head.appendChild(createTag("script", { type: "text/javascript", src: "Autoview.js" }));
+      html.head.appendChild(this.createTag("script", { type: "text/javascript", src: "Autoview.js" }));
       html.head.appendChild(html.createComment("CRLF"));
 
       html.body.appendChild(html.createComment("Dialog shown at startup only"));
-      let dialog: HTMLElement = createTag("dialog");
-      dialog.appendChild(createTag("p", {}, "FUDGE Autoview"));
-      dialog.appendChild(createTag("h1", {}, "Title (will be replaced by Autoview)"));
-      dialog.appendChild(createTag("p", {}, "click to start"));
+      let dialog: HTMLElement = this.createTag("dialog");
+      dialog.appendChild(this.createTag("p", {}, "FUDGE Autoview"));
+      dialog.appendChild(this.createTag("h1", {}, "Title (will be replaced by Autoview)"));
+      dialog.appendChild(this.createTag("p", {}, "click to start"));
       html.body.appendChild(dialog);
 
       html.body.appendChild(html.createComment("Canvas for FUDGE to render to"));
-      html.body.appendChild(createTag("canvas", { class: "fullscreen" }));
-
-      function createTag(_tag: string, _attributes: { [key: string]: string } = {}, _content?: string): HTMLElement {
-        let element: HTMLElement = document.createElement(_tag);
-        for (let attribute in _attributes)
-          element.setAttribute(attribute, _attributes[attribute]);
-        if (_content)
-          element.innerHTML = _content;
-        return element;
-      }
+      html.body.appendChild(this.createTag("canvas", { class: "fullscreen" }));
 
       return this.stringifyHTML(html);
+    }
+
+    private appendProjectSettings(_document: Document) {
+      _document.head.appendChild(_document.createComment("Project settings of this project"));
+      _document.head.appendChild(this.createTag("link", { type: "projectsettings", src: this.fileProjectSettings }));
+      _document.head.appendChild(_document.createComment("CRLF"));
+    }
+
+    private createTag(_tag: string, _attributes: { [key: string]: string } = {}, _content?: string): HTMLElement {
+      let element: HTMLElement = document.createElement(_tag);
+      for (let attribute in _attributes)
+        element.setAttribute(attribute, _attributes[attribute]);
+      if (_content)
+        element.innerHTML = _content;
+      return element;
     }
 
     private settingsStringify(): string {

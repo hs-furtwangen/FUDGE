@@ -33,8 +33,8 @@ function init(_event)/* : void */ {
 
 // setup and start interactive viewport
 async function startInteractiveViewport(_graphId)/* : void */ {
-  // load resources referenced in the link-tag
-  await ƒ.Project.loadResourcesFromHTML();
+  // load resources and settings referenced in the link-tags
+  await ƒ.Project.loadFromHTML();
   ƒ.Debug.log("Project:", ƒ.Project.resources);
 
   // get the graph to show from loaded resources
