@@ -15,7 +15,7 @@ namespace Fudge {
     public fileInternal: string = "Internal.json";
     public fileInternalFolder: string = "InternalFolder.json";
     public fileScript: string = "Script/Build/Script.js";
-    public fileSettings: string = "settings.json";
+    public fileEditorSettings: string = "EditorSettings.json";
     public fileProjectSettings: string = "ProjectSettings.json";
 
     public fileStyles: string = "styles.css";
@@ -119,11 +119,11 @@ namespace Fudge {
 
       let config: LayoutConfig;
       try {
-        const settingsContent: string = await (await fetch(new URL(this.fileSettings, this.base).toString())).text();
+        const settingsContent: string = await (await fetch(new URL(this.fileEditorSettings, this.base).toString())).text();
         const panelSettings: ƒ.Serialization = ƒ.Serializer.parse(settingsContent);
         config = Page.goldenLayoutModule.LayoutConfig.fromResolved(panelSettings.layout);
       } catch (_error) {
-        ƒ.Debug.warn(`Failed to load '${this.fileSettings}'. A new settings file was created and will be saved.`, _error);
+        ƒ.Debug.warn(`Failed to load '${this.fileEditorSettings}'. A new settings file was created and will be saved.`, _error);
       }
 
       Page.loadLayout(config);
@@ -139,7 +139,7 @@ namespace Fudge {
       return ƒ.Serializer.stringify(ƒ.Serializer.serialize(this.resourceFolder));
     }
 
-    public getSettingsJSON(): string {
+    public getEditorSettingsJSON(): string {
       let settings: ƒ.Serialization = {};
       settings.layout = Page.getLayout();
 

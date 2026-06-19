@@ -283,7 +283,7 @@ declare namespace Fudge {
         fileInternal: string;
         fileInternalFolder: string;
         fileScript: string;
-        fileSettings: string;
+        fileEditorSettings: string;
         fileProjectSettings: string;
         fileStyles: string;
         private graphAutoView;
@@ -294,7 +294,7 @@ declare namespace Fudge {
         load(_htmlContent: string): Promise<void>;
         getProjectJSON(): string;
         getResourceFolderJSON(): string;
-        getSettingsJSON(): string;
+        getEditorSettingsJSON(): string;
         getProjectSettingsJSON(): string;
         getProjectCSS(): string;
         getProjectHTML(_title: string): string;

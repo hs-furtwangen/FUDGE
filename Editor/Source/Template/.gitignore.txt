@@ -1,2 +1,2 @@
 *.tsbuildinfo
-settings.json
+EditorSettings.json

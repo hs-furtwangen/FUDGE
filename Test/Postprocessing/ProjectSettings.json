@@ -1,0 +1,4 @@
+{
+  "rendering/lightsAndShadows/shadowSize": 200,
+  "rendering/lightsAndShadows/shadowFilterQuality": "off"
+}

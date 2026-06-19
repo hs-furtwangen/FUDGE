@@ -80,8 +80,8 @@ namespace Fudge {
     jsonFileName = new URL(project.fileInternalFolder, base);
     fs.writeFileSync(jsonFileName, project.getResourceFolderJSON());
 
-    jsonFileName = new URL(project.fileSettings, base);
-    fs.writeFileSync(jsonFileName, project.getSettingsJSON());
+    jsonFileName = new URL(project.fileEditorSettings, base);
+    fs.writeFileSync(jsonFileName, project.getEditorSettingsJSON());
 
     jsonFileName = new URL(project.fileProjectSettings, base);
     fs.writeFileSync(jsonFileName, project.getProjectSettingsJSON());
