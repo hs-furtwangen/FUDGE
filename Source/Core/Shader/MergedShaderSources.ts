@@ -797,12 +797,12 @@ layout(location = 2) out vec4 vctFragNormal;
     Light u_spot[MAX_LIGHTS_SPOT];
   };
 
-  struct Shadow {
-    float bias;
-    float normalBias;
-    float filterScale; // scales the shadow kernel for blurrier shadows
-    float maxDistance;
-    float fadeDistance;
+  struct ShadowParameters {
+    float fBias;
+    float fNormalBias;
+    float fFilterScale; // scales the shadow kernel for blurrier shadows
+    float fMaxDistance;
+    float fFadeDistance;
   };
 
   layout(std140) uniform Shadows {
@@ -811,7 +811,7 @@ layout(location = 2) out vec4 vctFragNormal;
     vec4 u_fShadowKernel[32];
 
     mat4 u_mtxShadows[MAX_SHADOW_SLOTS]; // light space view projection matrices
-    Shadow u_shadows[MAX_SHADOW_SLOTS];
+    ShadowParameters u_shadowParameters[MAX_SHADOW_SLOTS];
   };
 
   /**
@@ -820,7 +820,7 @@ layout(location = 2) out vec4 vctFragNormal;
    * _vctNormal: surface normal at position
    * _vctColor: color of the light
    */
-  void illuminateDirected(vec3 _vctLightDirection, vec3 _vctViewDirection, vec3 _vctNormal, vec3 _vctColor, float _attenuation, inout vec3 _vctDiffuse, inout vec3 _vctSpecular) {
+  void illuminateDirected(vec3 _vctLightDirection, vec3 _vctViewDirection, vec3 _vctNormal, vec3 _vctColor, float _fAttenuation, inout vec3 _vctDiffuse, inout vec3 _vctSpecular) {
     float fDiffuse = dot(_vctNormal, _vctLightDirection);
 
     if(fDiffuse > 0.0) {
@@ -831,7 +831,7 @@ layout(location = 2) out vec4 vctFragNormal;
 
       #endif
 
-      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor * _attenuation;
+      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor * _fAttenuation;
 
       if(u_fSpecular <= 0.0 || u_fIntensity <= 0.0)
         return;
@@ -849,7 +849,7 @@ layout(location = 2) out vec4 vctFragNormal;
 
       #endif
 
-      _vctSpecular += fSpecular * u_fIntensity * _vctColor * _attenuation;
+      _vctSpecular += fSpecular * u_fIntensity * _vctColor * _fAttenuation;
     }
   }
 
@@ -886,45 +886,39 @@ layout(location = 2) out vec4 vctFragNormal;
     return _dirFromLight.z > 0.0 ? 4 : 5;   // +Z, -Z
   }
 
-  // float offsetLookup(mediump sampler2DArrayShadow _sampler, int _layer, float _texelSize, vec3 _shadowCoord, vec2 offset) {
-  //   return texture(_sampler, vec4(_shadowCoord.xy + offset * _texelSize, float(_layer), _shadowCoord.z));
-  // }
-
   float quickHash(vec2 _pos) {
 	  const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
 	  return fract(magic.z * fract(dot(_pos, magic.xy)));
   }
 
-  float sampleShadow(mediump sampler2DArrayShadow _sampler, int _layer, mat4 _mtxShadow, Shadow _shadowParameters, vec3 _position, vec3 _normal, vec3 _lightDirection) { // TODO: the biasing in this function might only be applicable to directional lights, check point and spot shadows
+  float sampleShadow(mediump sampler2DArrayShadow _sampler, int _iShadowIndex, mat4 _mtxShadow, ShadowParameters _shadowParameters, vec3 _vctPosition, vec3 _vctNormal, vec3 _vctLightDirection) { // TODO: the biasing in this function might only be applicable to directional lights, check point and spot shadows
     // biasing from godot directional shadow
-    // vec3 baseNormalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal)));
-    // vec3 normalBias = _normal * (1.0 - max(0.0, -dot(_lightDirection, _normal))) * _shadowParameters.normalBias;
 
-    vec3 bias = _normal * _shadowParameters.normalBias; // calculate normal bias
-    bias -= _lightDirection * dot(_lightDirection, bias); // remove component of normal bias in the direction of the light
-    bias += _lightDirection * _shadowParameters.bias; // add constant bias in the direction to the light
+    vec3 fBias = _vctNormal * _shadowParameters.fNormalBias; // calculate normal bias
+    fBias -= _vctLightDirection * dot(_vctLightDirection, fBias); // remove component of normal bias in the direction of the light
+    fBias += _vctLightDirection * _shadowParameters.fBias; // add constant bias in the direction to the light
 
-    vec4 position = _mtxShadow * vec4(_position + bias, 1.0);
-    vec3 shadowCoord = position.xyz / position.w;
+    vec4 vctPosition = _mtxShadow * vec4(_vctPosition + fBias, 1.0);
+    vec3 vctShadowCoord = vctPosition.xyz / vctPosition.w;
 
     // filtering from godot shadow
 
     if (u_iShadowSampleCount == 0u) 
-      return texture(_sampler, vec4(shadowCoord.xy, float(_layer), shadowCoord.z));
+      return texture(_sampler, vec4(vctShadowCoord.xy, float(_iShadowIndex), vctShadowCoord.z));
 
-    mat2 diskRotation;
+    mat2 mtxDiskRotation;
     {
       float r = quickHash(gl_FragCoord.xy) * 2.0 * 3.14159265; // random rotation based on screen position to reduce banding artifacts
       float sr = sin(r);
       float cr = cos(r);
-      diskRotation = mat2(vec2(cr, -sr), vec2(sr, cr));
+      mtxDiskRotation = mat2(vec2(cr, -sr), vec2(sr, cr));
     }
 
-    float avg = 0.0;
+    float fAverage = 0.0;
     for (uint i = 0u; i < u_iShadowSampleCount; i++) 
-      avg += texture(_sampler, vec4(shadowCoord.xy + u_fShadowTexelSize * _shadowParameters.filterScale * (diskRotation * u_fShadowKernel[i].xy), float(_layer), shadowCoord.z));
+      fAverage += texture(_sampler, vec4(vctShadowCoord.xy + u_fShadowTexelSize * _shadowParameters.fFilterScale * (mtxDiskRotation * u_fShadowKernel[i].xy), float(_iShadowIndex), vctShadowCoord.z));
 
-    return avg / float(u_iShadowSampleCount);
+    return fAverage / float(u_iShadowSampleCount);
   }
 
 #endif
@@ -986,9 +980,9 @@ void main() {
 
         int iShadow = int(u_directional[i].fShadowIndex);
         if (iShadow > -1) {
-          if (fDistance < u_shadows[iShadow].maxDistance) {
-            fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
-            fAttenuation = mix(fAttenuation, 1.0, smoothstep(u_shadows[iShadow].fadeDistance, u_shadows[iShadow].maxDistance, fDistance));
+          if (fDistance < u_shadowParameters[iShadow].fMaxDistance) {
+            fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
+            fAttenuation = mix(fAttenuation, 1.0, smoothstep(u_shadowParameters[iShadow].fFadeDistance, u_shadowParameters[iShadow].fMaxDistance, fDistance));
           }
         }
 
@@ -1012,7 +1006,7 @@ void main() {
         int iShadowBase = int(u_point[i].fShadowIndex);
         if (iShadowBase > -1) {
           int iShadow = iShadowBase + getCubeFace(-vctLight);
-          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadowBase], v_vctPosition, v_vctNormal, vctLightDirection);
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadowBase], v_vctPosition, v_vctNormal, vctLightDirection);
         }
         
       #endif
@@ -1041,7 +1035,7 @@ void main() {
 
         int iShadow = int(u_spot[i].fShadowIndex);
         if (iShadow > -1) {
-          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadows[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
         }
 
       #endif
