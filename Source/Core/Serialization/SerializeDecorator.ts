@@ -127,7 +127,7 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      Metadata.defineSerializeProperty(metadata, key, _typePrimary, _typeSecondary, _function);
+      Metadata.definePropertySerializable(metadata, key, _typePrimary, _typeSecondary, _function);
     };
 
   }

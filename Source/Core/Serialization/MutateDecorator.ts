@@ -72,7 +72,7 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      Metadata.defineMutateProperty(metadata, key, _typePrimary, _typeSecondary, _function);
+      Metadata.definePropertyMutable(metadata, key, _typePrimary, _typeSecondary, _function);
     };
   }
   //#endregion
@@ -137,7 +137,7 @@ namespace FudgeCore {
       if (typeof key === "symbol") return;
 
       const metadata: Metadata = _context.metadata;
-      const descriptors: MetaPropertyDescriptors = Metadata.ensureMetaPropertyDescriptors(metadata);
+      const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[key];
       if (!descriptor)
         throw new Error(`@create requires an existing meta property descriptor for property for '${key}'. Add @mutate/@edit before @create.`);
@@ -198,7 +198,7 @@ namespace FudgeCore {
         return;
 
       const metadata: Metadata = _context.metadata;
-      const descriptors: MetaPropertyDescriptors = Metadata.ensureMetaPropertyDescriptors(metadata);
+      const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[key];
       if (!descriptor)
         throw new Error(`@assign requires an existing meta property descriptor for property '${key}'. Add @mutate/@edit before @assign.`);
@@ -223,12 +223,8 @@ namespace FudgeCore {
       return;
 
     const metadata: Metadata = _context.metadata;
-    const descriptors: MetaPropertyDescriptors = Metadata.ensureMetaPropertyDescriptors(metadata);
-    const descriptor: MetaPropertyDescriptor = descriptors[key];
-    if (!descriptor)
-      throw new Error(`@clearable requires an existing meta property descriptor for property '${key}'. Add @mutate/@edit before @clearable.`);
 
-    descriptor.clearable = true;
+    Metadata.definePropertyClearable(metadata, key);
   }
   //#endregion
 

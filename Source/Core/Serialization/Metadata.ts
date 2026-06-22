@@ -103,10 +103,10 @@ namespace FudgeCore {
     /**
      * Define a property of an object as mutable within its metadata.
      */
-    export function defineMutateProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+    export function definePropertyMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
       // add meta property descriptor to metadata
-      const descriptors: MetaPropertyDescriptors = ensureMetaPropertyDescriptors(_metadata);
-      descriptors[_key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
+      const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
+      descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
 
       const keys: string[] = getOwnProperty(_metadata, "mutatorKeys") ?? (_metadata.mutatorKeys = _metadata.mutatorKeys ? [..._metadata.mutatorKeys] : []);
       keys.push(_key);
@@ -115,10 +115,10 @@ namespace FudgeCore {
     /**
      * Define a property of an object as serializable within its metadata.
      */
-    export function defineSerializeProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+    export function definePropertySerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
       // add meta property descriptor to metadata
-      const descriptors: MetaPropertyDescriptors = ensureMetaPropertyDescriptors(_metadata);
-      descriptors[_key] ??= createMetaPropertyDescriptor(_typePrimary, _typeSecondary, _function);
+      const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
+      descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
 
       // determine serialization type
       let strategy: Metadata["serializables"][string];
@@ -157,15 +157,27 @@ namespace FudgeCore {
     /**
      * Define a property of an object as mutable and serializable, and add meta configuration for it.
      */
-    export function defineEditProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
-      defineMutateProperty(_metadata, _key, _typePrimary, _typeSecondary, _function);
-      defineSerializeProperty(_metadata, _key, _typePrimary, _typeSecondary, _function);
+    export function definePropertyEditable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+      definePropertyMutable(_metadata, _key, _typePrimary, _typeSecondary, _function);
+      definePropertySerializable(_metadata, _key, _typePrimary, _typeSecondary, _function);
+    }
+
+    /**
+     * Define a mutable property of an object as clearable, and add meta configuration for it.
+     */
+    export function definePropertyClearable(_metadata: Metadata, _key: string): void {
+      const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
+      const descriptor: MetaPropertyDescriptor = descriptors[_key];
+      if (!descriptor)
+        throw new Error(`@clearable requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @clearable.`);
+
+      descriptor.clearable = true;
     }
 
     /**
      * @internal Return the own meta property descriptors of a metadata object. Initializes them if unavailable.
      */
-    export function ensureMetaPropertyDescriptors(_metadata: Metadata): Readonly<MetaPropertyDescriptors> {
+    export function ensurePropertyDescriptors(_metadata: Metadata): Readonly<MetaPropertyDescriptors> {
       let descriptors: MetaPropertyDescriptors = getOwnProperty(_metadata, "propertyDescriptors");
       if (!descriptors)
         _metadata.propertyDescriptors = descriptors = Object.create(_metadata.propertyDescriptors ?? null);
@@ -176,7 +188,7 @@ namespace FudgeCore {
     /**
      * Return a new meta property descriptor.
      */
-    export function createMetaPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
+    export function createPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor {
       const descriptor: MetaPropertyDescriptor = Object.create(null);
       descriptor.type = _typePrimary;
 
@@ -219,7 +231,7 @@ namespace FudgeCore {
 
 
       if (_typeSecondary)
-        descriptor.valueDescriptor = createMetaPropertyDescriptor(_typeSecondary, undefined, _function);
+        descriptor.valueDescriptor = createPropertyDescriptor(_typeSecondary, undefined, _function);
 
       return descriptor;
     }

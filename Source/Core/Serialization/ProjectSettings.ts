@@ -15,11 +15,17 @@ namespace FudgeCore {
     /**
      * Define a new setting.
      */
-    public define(_key: string, _value: General, _type: Function | Record<string, unknown>): void {
+    public define(_key: string, _value: General, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
       if (_key in this.#mutable)
         throw new Error(`The project setting "${_key}" is already defined.`);
 
-      Metadata.defineEditProperty(getMetadata(this.#mutable), _key, _type);
+      const metadata: Metadata = getMetadata(this.#mutable);
+
+      Metadata.definePropertyEditable(metadata, _key, _type);
+
+      if (_options?.clearable)
+        Metadata.definePropertyClearable(metadata, _key);
+
       this.#mutable[_key] = _value;
     }
 
