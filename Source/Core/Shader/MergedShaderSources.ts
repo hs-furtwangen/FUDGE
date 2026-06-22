@@ -981,7 +981,7 @@ void main() {
         int iShadow = int(u_directional[i].fShadowIndex);
         if (iShadow > -1) {
           if (fDistance < u_shadowParameters[iShadow].fMaxDistance) {
-            fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
+            fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, vctNormal, vctLightDirection);
             fAttenuation = mix(fAttenuation, 1.0, smoothstep(u_shadowParameters[iShadow].fFadeDistance, u_shadowParameters[iShadow].fMaxDistance, fDistance));
           }
         }
@@ -1006,7 +1006,7 @@ void main() {
         int iShadowBase = int(u_point[i].fShadowIndex);
         if (iShadowBase > -1) {
           int iShadow = iShadowBase + getCubeFace(-vctLight);
-          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadowBase], v_vctPosition, v_vctNormal, vctLightDirection);
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadowBase], v_vctPosition, vctNormal, vctLightDirection);
         }
         
       #endif
@@ -1035,7 +1035,7 @@ void main() {
 
         int iShadow = int(u_spot[i].fShadowIndex);
         if (iShadow > -1) {
-          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, v_vctNormal, vctLightDirection);
+          fAttenuation *= sampleShadow(u_texShadowMap, iShadow, u_mtxShadows[iShadow], u_shadowParameters[iShadow], v_vctPosition, vctNormal, vctLightDirection);
         }
 
       #endif

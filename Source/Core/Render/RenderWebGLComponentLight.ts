@@ -177,7 +177,7 @@ namespace FudgeCore {
           RenderWebGLComponentLight.#shadowFilterRadius = 1.0;
           break;
         case SHADOW_FILTER_QUALITY.MIN:
-          RenderWebGLComponentLight.#shadowFilterSampleCount = 2;
+          RenderWebGLComponentLight.#shadowFilterSampleCount = 1;
           RenderWebGLComponentLight.#shadowFilterRadius = 1.5;
           break;
         case SHADOW_FILTER_QUALITY.LOW:
@@ -307,9 +307,16 @@ namespace FudgeCore {
         mtxView.invert();
 
         // adjust shadow parameters that are camera dependant
-        const shadowTexelSizeWorld: number = radius * 2 / RenderWebGLComponentLight.#shadowSize;
         const iShadowParameter: number = (<General>cmpLight)[SHADOW_INDEX] * RenderWebGLComponentLight.#SHADOW_STRUCT_SIZE;
+
+        const shadowFilterScale: number = cmpLight.shadowBlur * RenderWebGLComponentLight.#shadowFilterRadius;
+        const depthRangeFactor: number = 0.01; // magic scalar from godot
+        const biasScale: number = (zMax - zMin) * depthRangeFactor * shadowFilterScale;
+        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = cmpLight.shadowBias * biasScale;
+        
+        const shadowTexelSizeWorld: number = radius * 2 / RenderWebGLComponentLight.#shadowSize;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = cmpLight.shadowNormalBias * shadowTexelSizeWorld;
+
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 3] = maxDistance;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 4] = maxDistance * Math.min(cmpLight.shadowFadeDistance, 0.9999); //using 1.0 could break smoothstep
 
