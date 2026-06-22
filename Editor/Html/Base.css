@@ -469,6 +469,7 @@ button:active {
   user-select: text;
   padding: 0;
   margin-right: 1.5ch;
+  min-width: 3ch;
 }
 
 .fudge-element>.content {
