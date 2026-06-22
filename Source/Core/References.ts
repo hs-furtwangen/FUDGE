@@ -8,15 +8,15 @@
 /// <reference path="Recycle/RecycableArray.ts"/>
 /// <reference path="Recycle/Recycler.ts"/>
 
-/// <reference path="Serialization/Serializer.ts"/>
-/// <reference path="Serialization/Project.ts"/>
 /// <reference path="Serialization/Metadata.ts"/>
+/// <reference path="Serialization/Serializer.ts"/>
+/// <reference path="Serialization/Settings.ts"/>
+/// <reference path="Serialization/Project.ts"/>
 /// <reference path="Serialization/MutateDecorator.ts"/>
 /// <reference path="Serialization/SerializeDecorator.ts"/>
 /// <reference path="Serialization/EditDecorator.ts"/>
 /// <reference path="Serialization/Mutable.ts"/>
 /// <reference path="Serialization/MutableArray.ts"/>
-/// <reference path="Serialization/ProjectSettings.ts"/>
 
 /// <reference path="Math/Vector2.ts"/>
 /// <reference path="Math/Vector3.ts"/>

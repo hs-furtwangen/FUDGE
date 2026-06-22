@@ -53,6 +53,14 @@ namespace FudgeCore {
     [idResource: string]: GraphInstance[];
   }
 
+  /** 
+   * The project settings store globally accessible configuration values in a {@link Settings} object.
+   * 
+   * Settings are identified by full path strings (e.g. "application/name" for the project name).
+   */
+  // eslint-disable-next-line
+  export const ProjectSettings: Settings = new Settings();
+
   /**
    * Static class handling the resources used with the current FUDGE-instance.  
    * Keeps a list of the resources and generates ids to retrieve them.  
