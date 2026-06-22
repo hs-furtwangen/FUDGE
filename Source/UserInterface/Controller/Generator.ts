@@ -46,7 +46,7 @@ namespace FudgeUserInterface {
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptors[key]);
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptors?.[key]);
         if (!element)
           continue;
 
@@ -59,7 +59,7 @@ namespace FudgeUserInterface {
     public static createInterfaceFromArray(_mutable: object, _mutator: ƒ.Mutator, _parentMutable: object, _parentKey: string): HTMLDivElement {
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
       const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
-      const descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(_parentMutable, _parentKey).valueDescriptor;
+      const descriptor: ƒ.MetaPropertyDescriptor = ƒ.Metadata.getPropertyDescriptor(_parentMutable, _parentKey)?.valueDescriptor;
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in mutator) {
@@ -77,14 +77,14 @@ namespace FudgeUserInterface {
      * Keys are expected to be slash-delimited paths e.g. `{ "key/x/y": value }`. 
      * The generated interface displays those paths as a sectioned hierarchy.
      */
-    public static createInterfaceFromFlatMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement {
-      const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
+    public static createInterfaceFromFlatMutable(_mutable: object): HTMLDivElement {
+      const mutator: ƒ.Mutator = ƒ.Mutable.getMutator(_mutable);
       const types: ƒ.MutatorAttributeTypes = ƒ.Mutable.getMutatorTypes(_mutable, mutator);
       const descriptors: ƒ.MetaPropertyDescriptors = ƒ.Metadata.getPropertyDescriptors(_mutable);
       const div: HTMLDivElement = document.createElement("div");
 
       for (const key in mutator) {
-        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptors[key]);
+        const element: HTMLElement = Generator.createInterfaceElement(_mutable, mutator, key, types[key], descriptors?.[key]);
         if (!element)
           continue;
 
@@ -132,17 +132,17 @@ namespace FudgeUserInterface {
       if (!element)
         element = Generator.createDetailsFromMutable(<ƒ.Mutable>mutant, _key, <ƒ.Mutator>value);
 
-      if (!element && _descriptor.getAssignOptions && !_descriptor.getCreateOptions) {
+      if (!element && _descriptor && _descriptor.getAssignOptions && !_descriptor.getCreateOptions) {
         element = new CustomElementComboSelect({ key: _key, label: _key, type: typeName, action: "assign", placeholder: `${typeName}...` }, value, _descriptor.getAssignOptions.call(_parentMutable ?? _mutable, _parentKey ?? _key));
       }
 
-      if (!element && mutant == null)
+      if (!element &&_descriptor && mutant == null)
         element = new CustomElementInitializer({ key: _key, label: _key, type: typeName }, _descriptor);
 
       if (!element)
         element = new CustomElementOutput({ key: _key, label: _key, type: typeName, value: value?.toString() });
 
-      if (element) {
+      if (element && _descriptor) {
         element.classList.add("property");
 
         const creatable: boolean = mutant == null && _descriptor.kind != "function";
