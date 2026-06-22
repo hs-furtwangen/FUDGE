@@ -14,7 +14,7 @@ namespace Fudge {
 
       this.settings = ƒ.ProjectSettings.getMutable();
       const domElement: HTMLDivElement = ƒui.Generator.createInterfaceFromFlatMutable(this.settings);
-      new ControllerDetail(<ƒ.Mutable>this.settings, domElement, this);
+      new ControllerDetail(this.settings, domElement, this);
 
       this.dom.appendChild(domElement);
     }

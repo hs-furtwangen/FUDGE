@@ -25,7 +25,7 @@ namespace Fudge {
   export class ControllerDetail extends ƒui.Controller {
     #view: View;
 
-    public constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View) {
+    public constructor(_mutable: object, _domElement: HTMLElement, _view: View) {
       super(_mutable, _domElement);
       this.#view = _view;
       this.domElement.addEventListener(ƒui.EVENT.DRAG_OVER, this.hndDragOver);

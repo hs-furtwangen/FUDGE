@@ -23,11 +23,11 @@ namespace FudgeUserInterface {
     public domElement: HTMLElement;
     public openStates: Map<string, boolean> = new Map();
     protected timeUpdate: number = 190;
-    protected mutable: ƒ.Mutable;
+    protected mutable: object;
 
     private idInterval: number;
 
-    public constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement) {
+    public constructor(_mutable: object, _domElement: HTMLElement) {
       this.domElement = _domElement;
       this.setMutable(_mutable);
       // TODO: examine, if this should register to one common interval, instead of each installing its own.
@@ -294,11 +294,11 @@ namespace FudgeUserInterface {
       Controller.updateUserInterface(this.mutable, this.domElement);
     }
 
-    public getMutable(): ƒ.Mutable {
+    public getMutable(): object {
       return this.mutable;
     }
 
-    public setMutable(_mutable: ƒ.Mutable): void {
+    public setMutable(_mutable: object): void {
       this.mutable = _mutable;
     }
 
