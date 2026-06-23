@@ -24,17 +24,19 @@ namespace FudgeCore {
 
     /**
      * Define a new setting.
+     * @param _defaultValue the (initial) value to which the property can be reset.
      */
-    public define(_key: string, _value: General, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
+    public define<T extends B, B>(_key: string, _defaultValue: Extract<T, CloneableValue>, _type: abstract new (...args: General[]) => B): void;
+    public define<E extends Record<keyof E, P>, P extends Number | String>(_key: string, _value: P, _type: E): void;
+    public define(_key: string, _value: CloneableValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
       if (_key in this.#mutable)
         throw new Error(`The project setting "${_key}" is already defined.`);
 
       const metadata: Metadata = getMetadata(this.#mutable);
 
       Metadata.definePropertyEditable(metadata, _key, _type);
-
-      if (_options?.clearable)
-        Metadata.definePropertyClearable(metadata, _key);
+      Metadata.setPropertyDefaultValue(metadata, _key, _value);
+      Metadata.setPropertyClearable(metadata, _key, !!_options?.clearable);
 
       this.#mutable[_key] = _value;
     }
@@ -53,7 +55,7 @@ namespace FudgeCore {
      * Get the value of the given setting.
      */
     public get<T extends General>(_key: string): T {
-      return this.#mutable[_key] as T;
+      return <T>this.#mutable[_key];
     }
 
     /**
@@ -61,6 +63,13 @@ namespace FudgeCore {
      */
     public has(_key: string): boolean {
       return _key in this.#mutable;
+    }
+
+    public reset(): void {
+      const descriptors: MetaPropertyDescriptors = Metadata.getPropertyDescriptors(this.#mutable);
+
+      for (const key in descriptors)
+        this.#mutable[key] = clone(descriptors[key].defaultValue);
     }
 
     /**

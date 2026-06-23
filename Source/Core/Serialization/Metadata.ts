@@ -13,8 +13,11 @@ namespace FudgeCore {
     /** The kind of the property. */
     kind: "primitive" | "collection" | "object" | "enum" | "function";
 
-    /** Whether the property can be set to `undefined` via the editor */
+    /** Whether the property can be set to `undefined` via the editor. */
     clearable?: boolean;
+
+    /** The default value to which the property can be reset to. */
+    defaultValue?: CloneableValue;
 
     /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
     keyDescriptor?: MetaPropertyDescriptor;
@@ -163,16 +166,28 @@ namespace FudgeCore {
     }
 
     /**
-     * Define a mutable property of an object as clearable, and add meta configuration for it.
+     * Set a mutable property of an object as clearable, and add meta configuration for it.
      */
-    export function definePropertyClearable(_metadata: Metadata, _key: string): void {
+    export function setPropertyClearable(_metadata: Metadata, _key: string, _value: boolean): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[_key];
       if (!descriptor)
         throw new Error(`@clearable requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @clearable.`);
 
-      descriptor.clearable = true;
+      descriptor.clearable = _value;
     }
+
+    /**
+     * Set the default value of a mutable property of an object, and add meta configuration for it.
+     */
+    export function setPropertyDefaultValue(_metadata: Metadata, _key: string, _value: CloneableValue): void  {
+      const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
+      const descriptor: MetaPropertyDescriptor = descriptors[_key];
+      if (!descriptor)
+        throw new Error(`@reset requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @reset.`);
+
+      descriptor.defaultValue = _value;
+    };
 
     /**
      * @internal Return the own meta property descriptors of a metadata object. Initializes them if unavailable.

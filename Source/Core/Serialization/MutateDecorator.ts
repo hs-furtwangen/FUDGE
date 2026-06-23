@@ -224,7 +224,7 @@ namespace FudgeCore {
 
     const metadata: Metadata = _context.metadata;
 
-    Metadata.definePropertyClearable(metadata, key);
+    Metadata.setPropertyClearable(metadata, key, true);
   }
   //#endregion
 
