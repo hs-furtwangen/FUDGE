@@ -24,21 +24,21 @@ namespace FudgeCore {
 
     /**
      * Define a new setting.
-     * @param _defaultValue the (initial) value to which the property can be reset.
+     * @param _defaultValue the (initial) value to which the property can be reset to.
      */
-    public define<T extends B, B>(_key: string, _defaultValue: Extract<T, CloneableValue>, _type: abstract new (...args: General[]) => B): void;
-    public define<E extends Record<keyof E, P>, P extends Number | String>(_key: string, _value: P, _type: E): void;
-    public define(_key: string, _value: CloneableValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
+    public define<T extends B, B extends CloneableValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B): void;
+    public define<T extends Number | String, E extends Record<keyof E, T>>(_key: string, _defaultValue: T, _type: E): void;
+    public define(_key: string, _defaultValue: CloneableValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
       if (_key in this.#mutable)
         throw new Error(`The project setting "${_key}" is already defined.`);
 
       const metadata: Metadata = getMetadata(this.#mutable);
 
       Metadata.definePropertyEditable(metadata, _key, _type);
-      Metadata.setPropertyDefaultValue(metadata, _key, _value);
+      Metadata.setPropertyDefaultValue(metadata, _key, _defaultValue);
       Metadata.setPropertyClearable(metadata, _key, !!_options?.clearable);
 
-      this.#mutable[_key] = _value;
+      this.#mutable[_key] = _defaultValue;
     }
 
     /**

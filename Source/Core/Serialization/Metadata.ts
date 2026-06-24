@@ -186,7 +186,7 @@ namespace FudgeCore {
       if (!descriptor)
         throw new Error(`@reset requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @reset.`);
 
-      descriptor.defaultValue = _value;
+      descriptor.defaultValue = clone(_value);
     };
 
     /**
