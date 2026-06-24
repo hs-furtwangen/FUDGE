@@ -25,22 +25,19 @@ function init(_event)/* : void */ {
   dialog.querySelector("h1").textContent = document.title;
   dialog.addEventListener("click", function (_event) {
     dialog.close();
-    let graphId/* : string */ = document.head.querySelector("meta[autoView]").getAttribute("autoView")
-    startInteractiveViewport(graphId);
+    startInteractiveViewport();
   });
   dialog.showModal();
 }
 
 // setup and start interactive viewport
-async function startInteractiveViewport(_graphId)/* : void */ {
+async function startInteractiveViewport()/* : void */ {
   // load resources and settings referenced in the link-tags
-  await ƒ.Project.loadFromHTML();
+  const mainGraph/* : ƒ.Graph */ = await ƒ.Project.loadFromHTML();
   ƒ.Debug.log("Project:", ƒ.Project.resources);
 
-  // get the graph to show from loaded resources
-  let graph/* : ƒ.Graph */ = ƒ.Project.resources[_graphId];
-  ƒ.Debug.log("Graph:", graph);
-  if (!graph) {
+  ƒ.Debug.log("Graph:", mainGraph);
+  if (!mainGraph) {
     alert("Nothing to render. Create a graph with at least a mesh, material and probably some light");
     return;
   }
@@ -49,7 +46,7 @@ async function startInteractiveViewport(_graphId)/* : void */ {
   let cmpCamera/* : ƒ.ComponentCamera */ = new ƒ.ComponentCamera();
   let canvas/* : HTMLCanvasElement */ = document.querySelector("canvas");
   let viewport/* : ƒ.Viewport */ = new ƒ.Viewport();
-  viewport.initialize("InteractiveViewport", graph, cmpCamera, canvas);
+  viewport.initialize("InteractiveViewport", mainGraph, cmpCamera, canvas);
   ƒ.Debug.log("Viewport:", viewport);  
   // make the camera interactive (complex method in FudgeAid)
   let cameraOrbit/* : ƒ.Node */ = ƒAid.Viewport.expandCameraToInteractiveOrbit(viewport);
@@ -62,7 +59,7 @@ async function startInteractiveViewport(_graphId)/* : void */ {
   let cmpListener/* : ƒ.ComponentAudioListener */ = new ƒ.ComponentAudioListener();
   cmpCamera.node.addComponent(cmpListener);
   ƒ.AudioManager.default.listenWith(cmpListener);
-  ƒ.AudioManager.default.listenTo(graph);
+  ƒ.AudioManager.default.listenTo(mainGraph);
   ƒ.Debug.log("Audio:", ƒ.AudioManager.default);
 
   // draw viewport once for immediate feedback

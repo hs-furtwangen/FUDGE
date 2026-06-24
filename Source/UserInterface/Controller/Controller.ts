@@ -115,7 +115,7 @@ namespace FudgeUserInterface {
         // check equality with default value
         const btnRevert: HTMLButtonElement = element.querySelector(`button[name="revert"]`);
         if (btnRevert)
-          btnRevert.disabled = ƒ.equals(value, ƒ.Metadata.getPropertyDescriptor(_mutable, key).defaultValue);
+          btnRevert.disabled = ƒ.equals(mutant, ƒ.Metadata.getPropertyDescriptor(_mutable, key).defaultValue);
       }
     }
 

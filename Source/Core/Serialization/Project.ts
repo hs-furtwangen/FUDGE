@@ -75,6 +75,17 @@ namespace FudgeCore {
     public static graphInstancesToResync: GraphInstancesToResync = {};
 
     /**
+     * The main graph (`"application/mainGraph"`) specified in the {@link ProjectSettings}.
+     */
+    public static get mainGraph(): Graph {
+      return ProjectSettings.get("application/mainGraph");
+    }
+
+    public static set mainGraph(_value: Graph) {
+      ProjectSettings.set("application/mainGraph", _value);
+    }
+
+    /**
      * Registers the resource and generates an id for it by default.  
      * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
      * It's possible to pass an id, but should not be done except by the Serializer.
@@ -193,14 +204,14 @@ namespace FudgeCore {
       return <Promise<T>>Project.deserializeResource(serialization);
     }
 
-    public static async cloneResource(_resource: SerializableResource): Promise<SerializableResource> {
+    public static async cloneResource<T extends SerializableResource>(_resource: T): Promise<T> {
       if (!_resource)
         return null;
 
       let serialization: Serialization = Serializer.serialize(_resource);
       let type: string = <string>Reflect.ownKeys(serialization)[0];
       delete (serialization[type].idResource);
-      let clone: typeof _resource = await Project.deserializeResource(serialization);
+      let clone: typeof _resource = <T>await Project.deserializeResource(serialization);
       Project.register(clone);
       clone.name += "_clone";
       return clone;
@@ -366,11 +377,13 @@ namespace FudgeCore {
     }
 
     /**
-     * Load the project from the {@link document.head}. 
+     * Load the project from the {@link document.head}.
+     * @returns The {@link mainGraph}.
      */
-    public static async loadFromHTML(_document: HTMLDocument = document, _baseURL: string | URL = Project.baseURL): Promise<void> {
+    public static async loadFromHTML(_document: HTMLDocument = document, _baseURL: string | URL = Project.baseURL): Promise<Graph | null> {
       await Project.loadResourcesFromHTML(_document, _baseURL);
       await Project.loadSettingsFromHTML(_document, _baseURL);
+      return this.mainGraph;
     }
 
     /**

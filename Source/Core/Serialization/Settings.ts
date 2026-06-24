@@ -65,6 +65,9 @@ namespace FudgeCore {
       return _key in this.#mutable;
     }
 
+    /**
+     * Reset all settings to their default values.
+     */
     public reset(): void {
       const descriptors: MetaPropertyDescriptors = Metadata.getPropertyDescriptors(this.#mutable);
 

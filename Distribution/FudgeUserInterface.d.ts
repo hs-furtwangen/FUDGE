@@ -36,9 +36,9 @@ declare namespace FudgeUserInterface {
         domElement: HTMLElement;
         openStates: Map<string, boolean>;
         protected timeUpdate: number;
-        protected mutable: ƒ.Mutable;
+        protected mutable: object;
         private idInterval;
-        constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement);
+        constructor(_mutable: object, _domElement: HTMLElement);
         /**
          * Recursive method taking an existing mutator as a template
          * and updating its values with those found in the given UI-domElement.
@@ -101,8 +101,8 @@ declare namespace FudgeUserInterface {
         get isRefreshing(): boolean;
         getMutator(_mutator?: ƒ.Mutator, _types?: ƒ.Mutator): ƒ.Mutator;
         updateUserInterface(): void;
-        getMutable(): ƒ.Mutable;
-        setMutable(_mutable: ƒ.Mutable): void;
+        getMutable(): object;
+        setMutable(_mutable: object): void;
         startRefresh(): void;
         protected mutateOnInput: (_event: Event) => Promise<void>;
         protected rearrangeArray: (_event: Event) => Promise<void>;
@@ -137,9 +137,9 @@ declare namespace FudgeUserInterface {
          * Keys are expected to be slash-delimited paths e.g. `{ "key/x/y": value }`.
          * The generated interface displays those paths as a sectioned hierarchy.
          */
-        static createInterfaceFromFlatMutable(_mutable: object, _mutator?: ƒ.Mutator): HTMLDivElement;
+        static createInterfaceFromFlatMutable(_mutable: object): HTMLDivElement;
         static createInterfaceElement(_mutable: object, _mutator: ƒ.Mutator, _key: string, _type: Function | Record<string, unknown>, _descriptor?: ƒ.MetaPropertyDescriptor, _parentMutable?: object, _parentKey?: string): HTMLElement;
-        static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean): Menu;
+        static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean, _revertable?: boolean, _defaultValue?: ƒ.CloneableValue): Menu;
         /**
          * Create a div-Element containing the interface for the [[FudgeCore.Mutator]]
          * Does not support nested mutators!

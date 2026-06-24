@@ -275,10 +275,9 @@ declare namespace Fudge {
 }
 declare namespace Fudge {
     import ƒ = FudgeCore;
-    class Project extends ƒ.Mutable implements ƒ.Serializable {
+    class Project {
         #private;
         base: URL;
-        name: string;
         fileIndex: string;
         fileInternal: string;
         fileInternalFolder: string;
@@ -286,11 +285,10 @@ declare namespace Fudge {
         fileEditorSettings: string;
         fileProjectSettings: string;
         fileStyles: string;
-        private graphAutoView;
         constructor(_base: URL);
+        get name(): string;
+        set name(_value: string);
         get resourceFolder(): ResourceFolder;
-        openDialog(): Promise<boolean>;
-        hndChange: (_event: Event) => void;
         load(_htmlContent: string): Promise<void>;
         getProjectJSON(): string;
         getResourceFolderJSON(): string;
@@ -303,7 +301,6 @@ declare namespace Fudge {
         private createProjectHTML;
         private appendProjectSettings;
         private createTag;
-        private settingsStringify;
         private stringifyHTML;
         private loadFonts;
     }
@@ -412,11 +409,10 @@ declare namespace Fudge {
     }
 }
 declare namespace Fudge {
-    import ƒ = FudgeCore;
     import ƒui = FudgeUserInterface;
     class ControllerDetail extends ƒui.Controller {
         #private;
-        constructor(_mutable: ƒ.Mutable, _domElement: HTMLElement, _view: View);
+        constructor(_mutable: object, _domElement: HTMLElement, _view: View);
         private hndKey;
         private hndDragOver;
         private hndDrop;

@@ -417,6 +417,118 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /** A record of property keys and property descriptors of an object. */
+    interface MetaPropertyDescriptors {
+        [key: string]: MetaPropertyDescriptor;
+    }
+    /** An object describing the configuration of a specific property. */
+    interface MetaPropertyDescriptor {
+        /** The type of the property. */
+        type: Function | Record<string, unknown>;
+        /** The kind of the property. */
+        kind: "primitive" | "collection" | "object" | "enum" | "function";
+        /** Whether the property can be set to `undefined` via the editor. */
+        clearable?: boolean;
+        /** The default value to which the property can be reset to. */
+        defaultValue?: MetaDefaultValue;
+        /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
+        keyDescriptor?: MetaPropertyDescriptor;
+        /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
+        valueDescriptor?: MetaPropertyDescriptor;
+        /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
+        getCreateOptions?: PropertyCreateOptionsGetter;
+        /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
+        getAssignOptions?: PropertyAssignOptionsGetter;
+    }
+    /**
+     * Default values must be {@link CloneableValue}s.
+     * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
+     */
+    type MetaDefaultValue = CloneableValue;
+    /**
+     * A function that returns a record of available creation options for a property.
+     * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
+     * @param this The instance that owns the property.
+     * @param _key The property key for which creation options are requested.
+     */
+    type PropertyCreateOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, (new () => V) | (() => V)>;
+    /**
+     * A function that returns a record of available assignment options for a property.
+     * Each entry maps an option name to a value that can be assigned to the property.
+     * @param this The instance that owns the property.
+     * @param _key The property key for which assignment options are requested.
+     */
+    type PropertyAssignOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
+    /**
+     * Metadata for classes or objects. Class metadata needs to be explicitly specified using decorators (e.g. {@link edit}).
+     * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
+     */
+    interface Metadata {
+        /**
+         * Keys of properties to be included in the objects {@link Mutator}.
+         * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
+         */
+        mutatorKeys?: string[];
+        propertyDescriptors?: MetaPropertyDescriptors;
+        /**
+         * A map from property keys to their specified order in the objects {@link Mutator}.
+         * Use the {@link order} decorator to add to this map.
+         */
+        mutatorOrder?: Record<string, number>;
+        /**
+         * A map of property keys to their serialization strategy.
+         * Use the {@link serialize} decorator to add to this map.
+         */
+        serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
+    }
+    namespace Metadata {
+        /**
+         * Returns an object describing the meta configuration of a specific property on a given object.
+         */
+        function getPropertyDescriptor(_object: Object, _key: string): MetaPropertyDescriptor;
+        /**
+         * Returns all meta property descriptors of a given object.
+         */
+        function getPropertyDescriptors(_from: Object): MetaPropertyDescriptors;
+        /**
+         * Define metadata on an object/instance. The metadata of the object inherits from the metadata of its class/constructor.
+         * Allows
+         */
+        function defineMetadata<T extends object>(_object: T extends Function ? never : T): void;
+        /**
+         * Define a property of an object as mutable within its metadata.
+         */
+        function definePropertyMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        /**
+         * Define a property of an object as serializable within its metadata.
+         */
+        function definePropertySerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        /**
+         * Define a property of an object as mutable and serializable, and add meta configuration for it.
+         */
+        function definePropertyEditable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        /**
+         * Set a mutable property of an object as clearable, and add meta configuration for it.
+         */
+        function setPropertyClearable(_metadata: Metadata, _key: string, _value: boolean): void;
+        /**
+         * Set the default value of a mutable property of an object, and add meta configuration for it.
+         */
+        function setPropertyDefaultValue(_metadata: Metadata, _key: string, _value: MetaDefaultValue): void;
+        /**
+         * Return a new meta property descriptor.
+         */
+        function createPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor;
+    }
+    /**
+     * Retrieves the {@link Metadata} of an instance or class. Instance metadata takes precedence over class metadata.
+     * If none is found, empty metadata is returned.
+     */
+    function getMetadata(_from: Object): Readonly<Metadata>;
+    /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
+    type ClassPropertyDecoratorContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
+}
+declare namespace FudgeCore {
     type General = any;
     /**
      * Holds information needed to recreate an object identical to the one it originated from.
@@ -445,7 +557,7 @@ declare namespace FudgeCore {
          */
         deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
     }
-    function isSerializable(_object: Object): _object is Serializable;
+    function isSerializable(_object: General): _object is Serializable;
     /**
      * Handles the external serialization and deserialization of {@link Serializable} objects. The internal process is handled by the objects themselves.
      * A {@link Serialization} object can be created from a {@link Serializable} object and a JSON-String may be created from that.
@@ -595,6 +707,60 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * A map-like collection to store and access configuration variables.
+     *
+     * Keys use slash-delimited paths (e.g. `"key/x/y"`) to represent hierarchical relationships.
+     *
+     * The user interface (editor) displays paths as a sectioned hierarchy.
+     *
+     * - Use {@link get}/{@link set}/{@link has} to access existing settings.
+     * - Use {@link define} to register new settings.
+     */
+    class Settings extends EventTarget implements Serializable {
+        #private;
+        constructor();
+        /**
+         * Define a new setting.
+         * @param _defaultValue the (initial) value to which the property can be reset to.
+         */
+        define<T extends B, B extends MetaDefaultValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B, _options?: {
+            clearable?: boolean;
+        }): void;
+        define<T extends Number | String, E extends Record<keyof E, T>>(_key: string, _defaultValue: T, _type: E, _options?: {
+            clearable?: boolean;
+        }): void;
+        /**
+         * Set an existing setting to the given value.
+         */
+        set(_key: string, _value: General): void;
+        /**
+         * Get the value of the given setting.
+         */
+        get<T extends General>(_key: string): T;
+        /**
+         * Returns a boolean indicating whether the specified setting exists or not.
+         */
+        has(_key: string): boolean;
+        /**
+         * Reset all settings to their default values.
+         */
+        reset(): void;
+        /**
+         * Returns the internal map-like object. Used by the editor.
+         * Use {@link define}, {@link set}, {@link get}, and {@link has}
+         * to access and modify settings safely.
+         */
+        getMutable(): Record<string, General>;
+        /**
+         * Loads the settings from the given url.
+         */
+        load(_url: RequestInfo): Promise<Settings>;
+        serialize(): Serialization;
+        deserialize(_serialization: Serialization): Promise<Serializable>;
+    }
+}
+declare namespace FudgeCore {
     export enum MODE {
         EDITOR = 0,
         RUNTIME = 1
@@ -640,6 +806,12 @@ declare namespace FudgeCore {
         [idResource: string]: GraphInstance[];
     }
     /**
+     * The project settings store globally accessible configuration values in a {@link Settings} object.
+     *
+     * Settings are identified by full path strings (e.g. "application/name" for the project name).
+     */
+    export const ProjectSettings: Settings;
+    /**
      * Static class handling the resources used with the current FUDGE-instance.
      * Keeps a list of the resources and generates ids to retrieve them.
      * Resources are objects referenced multiple times but supposed to be stored only once
@@ -651,6 +823,11 @@ declare namespace FudgeCore {
         static baseURL: URL;
         static mode: MODE;
         static graphInstancesToResync: GraphInstancesToResync;
+        /**
+         * The main graph (`"application/mainGraph"`) specified in the {@link ProjectSettings}.
+         */
+        static get mainGraph(): Graph;
+        static set mainGraph(_value: Graph);
         /**
          * Registers the resource and generates an id for it by default.
          * If the resource already has an id, thus having been registered, its deleted from the list and registered anew.
@@ -691,7 +868,7 @@ declare namespace FudgeCore {
          * Retrieves the resource stored with the given id.
          */
         static getResource<T extends SerializableResource>(_idResource: string): Promise<T> | T;
-        static cloneResource(_resource: SerializableResource): Promise<SerializableResource>;
+        static cloneResource<T extends SerializableResource>(_resource: T): Promise<T>;
         /**
          * Creates and registers a resource from a {@link Node}, copying the complete graph starting with it
          * @param _node A node to create the resource from
@@ -747,8 +924,9 @@ declare namespace FudgeCore {
         static loadSettingsFromHTML(_document?: HTMLDocument, _baseURL?: string | URL): Promise<void>;
         /**
          * Load the project from the {@link document.head}.
+         * @returns The {@link mainGraph}.
          */
-        static loadFromHTML(_document?: HTMLDocument, _baseURL?: string | URL): Promise<void>;
+        static loadFromHTML(_document?: HTMLDocument, _baseURL?: string | URL): Promise<Graph | null>;
         /**
          * Serialize all resources
          */
@@ -762,103 +940,6 @@ declare namespace FudgeCore {
         private static reregister;
     }
     export {};
-}
-declare namespace FudgeCore {
-    /** A record of property keys and property descriptors of an object. */
-    interface MetaPropertyDescriptors {
-        [key: string]: MetaPropertyDescriptor;
-    }
-    /** An object describing the configuration of a specific property. */
-    interface MetaPropertyDescriptor {
-        /** The type of the property. */
-        type: Function | Record<string, unknown>;
-        /** The kind of the property. */
-        kind: "primitive" | "collection" | "object" | "enum" | "function";
-        /** Whether the property can be set to `undefined` via the editor */
-        clearable?: boolean;
-        /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
-        keyDescriptor?: MetaPropertyDescriptor;
-        /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
-        valueDescriptor?: MetaPropertyDescriptor;
-        /** Options for creation (constructors/factory functions). Use the {@link create} decorator to add create options. */
-        getCreateOptions?: PropertyCreateOptionsGetter;
-        /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
-        getAssignOptions?: PropertyAssignOptionsGetter;
-    }
-    /**
-     * A function that returns a record of available creation options for a property.
-     * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
-     * @param this The instance that owns the property.
-     * @param _key The property key for which creation options are requested.
-     */
-    type PropertyCreateOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, (new () => V) | (() => V)>;
-    /**
-     * A function that returns a record of available assignment options for a property.
-     * Each entry maps an option name to a value that can be assigned to the property.
-     * @param this The instance that owns the property.
-     * @param _key The property key for which assignment options are requested.
-     */
-    type PropertyAssignOptionsGetter<T = General, V = General> = (this: T, _key: string) => Record<string, V>;
-    /**
-     * Metadata for classes or objects. Class metadata needs to be explicitly specified using decorators (e.g. {@link edit}).
-     * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
-     */
-    interface Metadata {
-        /**
-         * Keys of properties to be included in the objects {@link Mutator}.
-         * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
-         */
-        mutatorKeys?: string[];
-        propertyDescriptors?: MetaPropertyDescriptors;
-        /**
-         * A map from property keys to their specified order in the objects {@link Mutator}.
-         * Use the {@link order} decorator to add to this map.
-         */
-        mutatorOrder?: Record<string, number>;
-        /**
-         * A map of property keys to their serialization strategy.
-         * Use the {@link serialize} decorator to add to this map.
-         */
-        serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
-    }
-    namespace Metadata {
-        /**
-         * Returns an object describing the meta configuration of a specific property on a given object.
-         */
-        function getPropertyDescriptor(_object: Object, _key: string): MetaPropertyDescriptor;
-        /**
-         * Returns all meta property descriptors of a given object.
-         */
-        function getPropertyDescriptors(_from: Object): MetaPropertyDescriptors;
-        /**
-         * Define metadata on an object/instance. The metadata of the object inherits from the metadata of its class/constructor.
-         * Allows
-         */
-        function defineMetadata<T extends object>(_object: T extends Function ? never : T): void;
-        /**
-         * Define a property of an object as mutable within its metadata.
-         */
-        function defineMutateProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
-        /**
-         * Define a property of an object as serializable within its metadata.
-         */
-        function defineSerializeProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
-        /**
-         * Define a property of an object as mutable and serializable, and add meta configuration for it.
-         */
-        function defineEditProperty(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
-        /**
-         * Return a new meta property descriptor.
-         */
-        function createMetaPropertyDescriptor(_typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): MetaPropertyDescriptor;
-    }
-    /**
-     * Retrieves the {@link Metadata} of an instance or class. Instance metadata takes precedence over class metadata.
-     * If none is found, empty metadata is returned.
-     */
-    function getMetadata(_from: Object): Readonly<Metadata>;
-    /** {@link ClassFieldDecoratorContext} or {@link ClassGetterDecoratorContext} or {@link ClassAccessorDecoratorContext} */
-    type ClassPropertyDecoratorContext<This = unknown, Value = unknown> = ClassFieldDecoratorContext<This, Value> | ClassGetterDecoratorContext<This, Value> | ClassAccessorDecoratorContext<This, Value>;
 }
 declare namespace FudgeCore {
     /**
@@ -1295,49 +1376,6 @@ declare namespace FudgeCore {
          * Updates the values of the given mutator according to the current state of the instance
          */
         updateMutator(_mutator: Mutator): void;
-    }
-}
-declare namespace FudgeCore {
-    class Settings extends EventTarget implements Serializable {
-        #private;
-        constructor();
-        /**
-         * Define a new setting.
-         */
-        define(_key: string, _value: General, _type: Function | Record<string, unknown>): void;
-        /**
-         * Set an existing setting to the given value.
-         */
-        set(_key: string, _value: General): void;
-        /**
-         * Get the value of the given setting.
-         */
-        get<T extends General>(_key: string): T;
-        /**
-         * Returns a boolean indicating whether the specified setting exists or not.
-         */
-        has(_key: string): boolean;
-        /**
-         * Returns the internal map-like object. Used by the editor.
-         * Use {@link define}, {@link set}, {@link get}, and {@link has}
-         * to access and modify settings safely.
-         */
-        getMutable(): Record<string, General>;
-        /**
-         * Loads the settings from the given url.
-         */
-        load(_url: RequestInfo): Promise<Settings>;
-        serialize(): Serialization;
-        deserialize(_serialization: Serialization): Promise<Serializable>;
-    }
-    const ProjectSettings: Settings;
-    enum SHADOW_FILTER_QUALITY {
-        OFF = "off",
-        MIN = "min",
-        LOW = "low",
-        MEDIUM = "medium",
-        HIGH = "high",
-        MAX = "max"
     }
 }
 declare namespace FudgeCore {
@@ -9099,6 +9137,51 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    /**
+     * Values that can participate in a {@link clone} operation. Objects types must implement {@link Cloneable}.
+     */
+    type CloneableValue = String | Number | Boolean | Cloneable | Array<CloneableValue> | Set<CloneableValue> | Map<CloneableValue, CloneableValue> | null | undefined;
+    /**
+     * An object that can create clones of itself.
+     */
+    interface Cloneable {
+        /**
+         * Returns a clone of this object.
+         */
+        get clone(): Cloneable;
+    }
+    function isCloneable(_object: Object): _object is Cloneable;
+    /**
+     * Creates a clone of the given value. This performs different operations depending on the type of the value:
+     *
+     * - Primitive: returned as-is.
+     * - {@link Cloneable}: cloned via its {@link Cloneable.clone | clone} getter.
+     * - {@link Array}, {@link Set}, {@link Map}: a deep clone is created recursively, invoking clone on each element.
+     */
+    function clone<T extends CloneableValue>(_value: T): T;
+}
+declare namespace FudgeCore {
+    /**
+     * An object that can be compared to objects of the same type.
+     */
+    interface Comparable {
+        /**
+         * Returns true if this and _compare are considered identical. False otherwise.
+         */
+        equals(_compare: this): boolean;
+    }
+    function isComparable(_object: General): _object is Comparable;
+    /**
+     * Returns true if _a and _b are considered identical.
+     * The comparison strategy depends on the value type:
+     *
+     * - All values: strict equality (`_a === _b`)
+     * - {@link Comparable}: via {@link Comparable.equals}
+     * - {@link Array}: deep recursive equality of elements
+     */
+    function equals(_a: General, _b: General): boolean;
+}
+declare namespace FudgeCore {
     interface MapFilenameToContent {
         [filename: string]: string;
     }
@@ -9121,6 +9204,16 @@ declare namespace FudgeCore {
          */
         static loadFiles(_fileList: FileList, _loaded: MapFilenameToContent): Promise<void>;
         private static handleFileSelect;
+    }
+}
+declare namespace FudgeCore {
+    enum SHADOW_FILTER_QUALITY {
+        OFF = "off",
+        MIN = "min",
+        LOW = "low",
+        MEDIUM = "medium",
+        HIGH = "high",
+        MAX = "max"
     }
 }
 declare namespace FBX {

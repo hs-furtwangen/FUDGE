@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   export type General = any;
 
   /**
@@ -31,8 +31,8 @@ namespace FudgeCore {
     deserialize(_serialization: Serialization): Promise<Serializable> | Serializable;
   }
 
-  export function isSerializable(_object: Object): _object is Serializable {
-    return (_object && Reflect.has(_object, "serialize") && Reflect.has(_object, "deserialize"));
+  export function isSerializable(_object: General): _object is Serializable {
+    return (_object != null && typeof _object === "object" && typeof _object.serialize == "function" && typeof _object.deserialize == "function");
   }
 
   interface NamespaceRegister {

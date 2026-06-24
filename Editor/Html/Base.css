@@ -354,6 +354,11 @@ button:active {
   border: 1px inset var(--color-medium);
 }
 
+button:disabled {
+  color: var(--color-medium);
+  pointer-events: none;
+}
+
 .buttonPlayback {
   min-width: 30px;
   width: 60px;

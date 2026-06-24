@@ -4,12 +4,8 @@ namespace Fudge {
 
   ƒ.Serializer.registerNamespace(Fudge);
 
-  export class Project extends ƒ.Mutable implements ƒ.Serializable {
-    // public title: string = "NewProject";
+  export class Project {
     public base: URL;
-
-    @ƒ.edit(String)
-    public name: string;
 
     public fileIndex: string = "index.html";
     public fileInternal: string = "Internal.json";
@@ -17,18 +13,14 @@ namespace Fudge {
     public fileScript: string = "Script/Build/Script.js";
     public fileEditorSettings: string = "EditorSettings.json";
     public fileProjectSettings: string = "ProjectSettings.json";
-
     public fileStyles: string = "styles.css";
-
-    @ƒ.edit(ƒ.Graph)
-    private graphAutoView: ƒ.Graph;
-    // private includeAutoViewScript: boolean = true;
 
     #resourceFolder: ResourceFolder;
     #document: Document;
 
     public constructor(_base: URL) {
-      super();
+      ƒ.ProjectSettings.reset();
+
       this.base = _base;
       this.name = _base.toString().split("/").slice(-2, -1)[0];
       this.fileIndex = _base.toString().split("/").pop() || this.fileIndex;
@@ -40,29 +32,19 @@ namespace Fudge {
       );
     }
 
+    public get name(): string {
+      return ƒ.ProjectSettings.get("application/name");
+    }
+
+    public set name(_value: string) {
+      ƒ.ProjectSettings.set("application/name", _value);
+    }
+
     public get resourceFolder(): ResourceFolder {
       if (!this.#resourceFolder)
         this.#resourceFolder = new ResourceFolder("Resources");
       return this.#resourceFolder;
     }
-
-    public async openDialog(): Promise<boolean> {
-      let promise: Promise<boolean> = ƒui.Dialog.prompt(project, false, "Review project settings", "Adjust settings and press OK", "OK", "Cancel");
-
-      ƒui.Dialog.dom.addEventListener(ƒui.EVENT.CHANGE, this.hndChange);
-
-      if (await promise) {
-        let mutator: ƒ.Mutator = ƒui.Controller.getMutator(this, ƒui.Dialog.dom, this.getMutator());
-        this.mutate(mutator);
-        return true;
-      } else
-        return false;
-    }
-
-    public hndChange = (_event: Event): void => {
-      let mutator: ƒ.Mutator = ƒui.Controller.getMutator(this, ƒui.Dialog.dom, this.getMutator());
-      ƒ.Debug.fudge(mutator, this);
-    };
 
     public async load(_htmlContent: string): Promise<void> {
       ƒ.Physics.activeInstance = new ƒ.Physics();
@@ -82,7 +64,7 @@ namespace Fudge {
           ƒ.Debug.log("Script Namespaces", ƒ.Project.scriptNamespaces);
         }
       }
-      
+
       const resourceLink: HTMLLinkElement = head.querySelector("link[type=resources]");
       let resourceFile: string = resourceLink.getAttribute("src");
       project.fileInternal = resourceFile;
@@ -112,10 +94,22 @@ namespace Fudge {
         ƒ.Debug.warn(`Failed to load '${this.fileInternalFolder}'. A new resource folder was created and will be saved.`, _error);
       }
 
-      let settings: HTMLMetaElement = head.querySelector("meta[type=settings]");
-      let projectSettings: string = settings?.getAttribute("project");
-      projectSettings = projectSettings?.replace(/'/g, "\"");
-      await project.deserialize(ƒ.Serializer.parse(projectSettings || "{}"));
+      try { // TODO: backwards compatability, remove in future
+        let settings: HTMLMetaElement = head.querySelector("meta[type=settings]");
+        let projectSettingsString: string = settings?.getAttribute("project");
+        projectSettingsString = projectSettingsString?.replace(/'/g, "\"");
+        let projectSettings: ƒ.Serialization = ƒ.Serializer.parse(projectSettingsString || "{}");
+        const projectName: string = projectSettings.name;
+        if (projectName != null)
+          this.name = projectName;
+
+        const graphAutoView: ƒ.Graph = await ƒ.Project.getResource(projectSettings.graphAutoView);
+        if (graphAutoView != null)
+          ƒ.Project.mainGraph = graphAutoView;
+
+      } catch (_error) {
+        ƒ.Debug.log(`Failed to load legacy "graphAutoView".`, _error);
+      }
 
       let config: LayoutConfig;
       try {
@@ -167,21 +161,6 @@ namespace Fudge {
 
       this.#document.title = _title;
 
-      let settings: HTMLElement = document.createElement("meta");
-      settings.setAttribute("type", "settings");
-      settings.setAttribute("autoview", this.graphAutoView?.idResource ?? "");
-      settings.setAttribute("project", this.settingsStringify());
-      this.#document.head.querySelector("meta[type=settings]").replaceWith(settings);
-
-      // let autoViewScript: HTMLScriptElement = this.#document.querySelector("script[name=autoView]");
-      // if (this.includeAutoViewScript) {
-      //   if (!autoViewScript)
-      //     this.#document.head.appendChild(this.getAutoViewScript());
-      // }
-      // else
-      //   if (autoViewScript)
-      //     this.#document.head.removeChild(autoViewScript);
-
       return this.stringifyHTML(this.#document);
     }
 
@@ -200,14 +179,6 @@ namespace Fudge {
       html.head.appendChild(this.createTag("link", { rel: "stylesheet", href: this.fileStyles }));
       html.head.appendChild(html.createComment("CRLF"));
 
-      html.head.appendChild(html.createComment("Editor settings of this project"));
-      html.head.appendChild(this.createTag("meta", {
-        type: "settings", autoview: this.graphAutoView?.idResource ?? "", project: this.settingsStringify()
-      }));
-      html.head.appendChild(html.createComment("CRLF"));
-
-      this.appendProjectSettings(html);
-
       html.head.appendChild(html.createComment("Activate the following line to include the FUDGE-version of Oimo-Physics. You may want to download a local copy to work offline and be independent from future changes!"));
       html.head.appendChild(html.createComment(`<script type="text/javascript" src="https://hs-furtwangen.github.io/FUDGE/Distribution/OimoPhysics.js"></script>`));
       html.head.appendChild(html.createComment("CRLF"));
@@ -216,6 +187,8 @@ namespace Fudge {
       html.head.appendChild(this.createTag("script", { type: "text/javascript", src: "https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeCore.js" }));
       html.head.appendChild(this.createTag("script", { type: "text/javascript", src: "https://hs-furtwangen.github.io/FUDGE/Distribution/FudgeAid.js" }));
       html.head.appendChild(html.createComment("CRLF"));
+
+      this.appendProjectSettings(html);
 
       html.head.appendChild(html.createComment("Link internal resources. The editor only loads the first, but at runtime, multiple files can contribute"));
       html.head.appendChild(this.createTag("link", { type: "resources", src: this.fileInternal }));
@@ -244,7 +217,7 @@ namespace Fudge {
       return this.stringifyHTML(html);
     }
 
-    private appendProjectSettings(_document: Document) {
+    private appendProjectSettings(_document: Document): void {
       _document.head.appendChild(_document.createComment("Project settings of this project"));
       _document.head.appendChild(this.createTag("link", { type: "projectsettings", src: this.fileProjectSettings }));
       _document.head.appendChild(_document.createComment("CRLF"));
@@ -257,13 +230,6 @@ namespace Fudge {
       if (_content)
         element.innerHTML = _content;
       return element;
-    }
-
-    private settingsStringify(): string {
-      let serialization: ƒ.Serialization = project.serialize();
-      let settings: string = ƒ.Serializer.stringify(serialization);
-      settings = settings.replace(/"/g, "'");
-      return settings;
     }
 
     private stringifyHTML(_html: Document): string {

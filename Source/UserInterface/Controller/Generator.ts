@@ -234,7 +234,7 @@ namespace FudgeUserInterface {
         const btnRevert: HTMLButtonElement = document.createElement("button");
         btnRevert.classList.add("menu-item", "icon", "revert", "before");
         btnRevert.innerText = "Revert";
-        btnRevert.title = `Set to default value`;
+        btnRevert.title = `Revert to default value`;
         btnRevert.name = "revert";
         menu.addItem(btnRevert);
 

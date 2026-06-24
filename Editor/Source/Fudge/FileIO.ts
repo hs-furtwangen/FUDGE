@@ -58,9 +58,6 @@ namespace Fudge {
     if (!project)
       return false;
 
-    if (!await project.openDialog())
-      return false;
-
     unwatchFolder();
 
     let base: URL = project.base;
