@@ -109,10 +109,13 @@ namespace FudgeUserInterface {
 
         if (element instanceof CustomElement)
           element.setMutatorValue(value);
-        else {
-          if (mutant instanceof ƒ.Mutable || Array.isArray(mutant))
-            this.updateUserInterface(mutant, element, mutator[key], _mutable, key);
-        }
+        else if (mutant instanceof ƒ.Mutable || Array.isArray(mutant))
+          this.updateUserInterface(mutant, element, mutator[key], _mutable, key);
+
+        // check equality with default value
+        const btnRevert: HTMLButtonElement = element.querySelector(`button[name="revert"]`);
+        if (btnRevert)
+          btnRevert.disabled = ƒ.equals(value, ƒ.Metadata.getPropertyDescriptor(_mutable, key).defaultValue);
       }
     }
 
@@ -231,7 +234,7 @@ namespace FudgeUserInterface {
       if (typeof _value == "object" && _value != null) {
 
         // identity objects are returned as references
-        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource) || _value instanceof Node) 
+        if (ƒ.isSerializableResource(_value) && ƒ.Project.hasResource(_value.idResource) || _value instanceof Node)
           return <T>_value;
 
         // otherwise, value objects are copied
@@ -392,7 +395,7 @@ namespace FudgeUserInterface {
         const incoming: unknown[] = current.toSpliced(parseInt(key), 1);
 
         this.domElement.dispatchEvent(new CustomEvent(EVENT.SAVE_HISTORY, { bubbles: true, detail: { history: 3, mutable: this.mutable, mutator: <PropertyChangeRecord>{ path: parentPath, from: await Controller.copyValue(current), to: await Controller.copyValue(incoming) } } }));
-        
+
         ƒ.Mutable.setValue(this.mutable, parentPath, incoming);
       }
     };

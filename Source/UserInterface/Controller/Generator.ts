@@ -148,8 +148,10 @@ namespace FudgeUserInterface {
         const creatable: boolean = mutant == null && _descriptor.kind != "function";
         const clearable: boolean = mutant != null && _descriptor.clearable;
         const deletable: boolean = !!_parentMutable;
+        const revertable: boolean = Reflect.has(_descriptor, "defaultValue");
+        const defaultValue: ƒ.CloneableValue = _descriptor.defaultValue;
 
-        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, creatable, clearable, deletable);
+        const menu: Menu = Generator.createInterfaceElementMenu(typeName, !!_descriptor.getCreateOptions, !!_descriptor.getAssignOptions, creatable, clearable, deletable, revertable, defaultValue);
         if (menu.items.length > 0) {
           if (element instanceof Details || element instanceof DetailsArray)
             element.summary.appendChild(menu);
@@ -161,7 +163,7 @@ namespace FudgeUserInterface {
       return element;
     }
 
-    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean): Menu {
+    public static createInterfaceElementMenu(_type: string, _createOptions: boolean, _assignOptions: boolean, _creatable: boolean, _clearable: boolean, _deletable: boolean, _revertable?: boolean, _defaultValue?: ƒ.CloneableValue): Menu {
       const menu: Menu = new Menu("");
       menu.classList.add("property-menu");
       menu.btnToggle.classList.add("btn-subtle", "icon", "actions", "before");
@@ -224,6 +226,20 @@ namespace FudgeUserInterface {
 
         btnClear.addEventListener(EVENT.CLICK, _event => {
           btnClear.dispatchEvent(new CustomEvent(EVENT.ASSIGN, { bubbles: true, detail: { value: undefined } }));
+          menu.close();
+        });
+      }
+
+      if (_revertable) {
+        const btnRevert: HTMLButtonElement = document.createElement("button");
+        btnRevert.classList.add("menu-item", "icon", "revert", "before");
+        btnRevert.innerText = "Revert";
+        btnRevert.title = `Set to default value`;
+        btnRevert.name = "revert";
+        menu.addItem(btnRevert);
+
+        btnRevert.addEventListener(EVENT.CLICK, _event => {
+          btnRevert.dispatchEvent(new CustomEvent(EVENT.ASSIGN, { bubbles: true, detail: { value: ƒ.clone(_defaultValue) } }));
           menu.close();
         });
       }
