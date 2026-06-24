@@ -1,9 +1,9 @@
 namespace FudgeCore {
 
   /**
-   * Values that can participate in a {@link clone} operation.
+   * Values that can participate in a {@link clone} operation. Objects types must implement {@link Cloneable}.
    */
-  export type CloneableValue = boolean | number | string | Cloneable | Array<CloneableValue> | Set<CloneableValue> | Map<CloneableValue, CloneableValue> | null | undefined;
+  export type CloneableValue = String | Number | Boolean | Cloneable | Array<CloneableValue> | Set<CloneableValue> | Map<CloneableValue, CloneableValue> | null | undefined;
 
   /**
    * An object that can create clones of itself.
@@ -26,33 +26,33 @@ namespace FudgeCore {
    * - {@link Cloneable}: cloned via its {@link Cloneable.clone | clone} getter.
    * - {@link Array}, {@link Set}, {@link Map}: a deep clone is created recursively, invoking clone on each element.
    */
-  export function clone<T extends string | number | boolean | Cloneable | Array<T> | Set<T> | Map<T, T>>(_value: T): Promise<T> | T {
+  export function clone<T extends CloneableValue>(_value: T): T {
     if (typeof _value != "object" || _value == null)
       return <T>_value;
 
     if (isCloneable(_value))
       return <T>_value.clone;
 
-    let out: Array<T> | Set<T> | Map<T, T>;
+    let out: Array<CloneableValue> | Set<CloneableValue> | Map<CloneableValue, CloneableValue>;
 
     if (Array.isArray(_value)) {
       out = new Array(_value.length);
 
       for (const i of _value.keys())
-        out[i] = <T>clone(_value);
+        out[i] = clone(_value);
     }
 
     if (_value instanceof Set) {
       out = new Set();
 
       for (const value of _value.values())
-        out.add(<T>clone(value));
+        out.add(clone(value));
     }
 
     if (_value instanceof Map) {
       out = new Map();
       for (const key of _value.keys())
-        out.set(<T>clone(key), <T>clone(_value.get(key)));
+        out.set(clone(key), clone(_value.get(key)));
     }
 
     return <T>out;

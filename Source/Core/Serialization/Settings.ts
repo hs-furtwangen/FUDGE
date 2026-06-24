@@ -26,9 +26,9 @@ namespace FudgeCore {
      * Define a new setting.
      * @param _defaultValue the (initial) value to which the property can be reset to.
      */
-    public define<T extends B, B extends CloneableValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B): void;
-    public define<T extends Number | String, E extends Record<keyof E, T>>(_key: string, _defaultValue: T, _type: E): void;
-    public define(_key: string, _defaultValue: CloneableValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
+    public define<T extends B, B extends MetaDefaultValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B, _options?: { clearable?: boolean }): void;
+    public define<T extends Number | String, E extends Record<keyof E, T>>(_key: string, _defaultValue: T, _type: E, _options?: { clearable?: boolean }): void;
+    public define(_key: string, _defaultValue: MetaDefaultValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
       if (_key in this.#mutable)
         throw new Error(`The project setting "${_key}" is already defined.`);
 

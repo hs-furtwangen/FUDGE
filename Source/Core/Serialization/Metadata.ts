@@ -17,7 +17,7 @@ namespace FudgeCore {
     clearable?: boolean;
 
     /** The default value to which the property can be reset to. */
-    defaultValue?: CloneableValue;
+    defaultValue?: MetaDefaultValue;
 
     /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
     keyDescriptor?: MetaPropertyDescriptor;
@@ -31,6 +31,12 @@ namespace FudgeCore {
     /** Options for assignment (selectable values/instances). Use the {@link assign} decorator to add assign options. */
     getAssignOptions?: PropertyAssignOptionsGetter;
   }
+
+  /**
+   * Default values must be {@link CloneableValue}s.
+   * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
+   */
+  export type MetaDefaultValue = CloneableValue;
 
   /**
    * A function that returns a record of available creation options for a property.
@@ -180,7 +186,7 @@ namespace FudgeCore {
     /**
      * Set the default value of a mutable property of an object, and add meta configuration for it.
      */
-    export function setPropertyDefaultValue(_metadata: Metadata, _key: string, _value: CloneableValue): void  {
+    export function setPropertyDefaultValue(_metadata: Metadata, _key: string, _value: MetaDefaultValue): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[_key];
       if (!descriptor)
