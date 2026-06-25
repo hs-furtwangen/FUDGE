@@ -19,10 +19,13 @@ namespace FudgeCore {
     /** The order number of the property. See {@link order} decorator. */
     order?: number;
 
+    /**
+     * The strategy used to serialize the property. See {@link serializeDecorations} and {@link deserializeDecorations}.
+     */
     serializationStrategy?: PropertySerializationStrategy;
-
+    
     /** The default value to which the property can be reset to. */
-    defaultValue?: MetaDefaultValue;
+    defaultValue?: PropertyDefaultValue;
 
     /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
     keyDescriptor?: MetaPropertyDescriptor;
@@ -41,7 +44,7 @@ namespace FudgeCore {
    * Default values must be {@link CloneableValue}s.
    * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
    */
-  export type MetaDefaultValue = CloneableValue;
+  export type PropertyDefaultValue = CloneableValue;
 
   /**
    * Default values must be {@link CloneableValue}s.
@@ -190,7 +193,7 @@ namespace FudgeCore {
     /**
      * Set the default value of a mutable property of an object, and add meta configuration for it.
      */
-    export function setDefaultValue(_metadata: Metadata, _key: string, _value: MetaDefaultValue): void {
+    export function setDefaultValue(_metadata: Metadata, _key: string, _value: PropertyDefaultValue): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[_key];
       if (!descriptor)
