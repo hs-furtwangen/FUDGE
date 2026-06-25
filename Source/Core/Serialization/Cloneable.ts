@@ -39,7 +39,7 @@ namespace FudgeCore {
       out = new Array(_value.length);
 
       for (const i of _value.keys())
-        out[i] = clone(_value);
+        out[i] = clone(_value[i]);
     }
 
     if (_value instanceof Set) {
