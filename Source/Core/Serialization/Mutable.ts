@@ -193,7 +193,7 @@ namespace FudgeCore {
      * - Returns an empty iterable otherwise.
      */
     public static getKeys<T extends Object, K extends Extract<keyof T, string>>(_from: T): Iterable<K> {
-      const mutatorKeys: string[] = getMetadata(_from).mutatorKeys;
+      const mutatorKeys: string[] = getMetadata(_from).mutableKeys;
       if (mutatorKeys)
         return <Iterable<K>>mutatorKeys;
 

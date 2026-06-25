@@ -112,9 +112,9 @@ namespace FudgeCore {
     if (!order)
       throw new Error("No mutator order specified. Use the @order decorator to specify an order for mutator keys.");
 
-    const keys: string[] = getOwnProperty(metadata, "mutatorKeys");
+    const keys: string[] = getOwnProperty(metadata, "mutableKeys");
     if (!keys)
-      throw new Error("No mutator keys specified. Use the @mutate decorator to specify mutator keys.");
+      throw new Error("No mutable keys specified. Use the @mutate decorator to specify mutator keys.");
 
     keys.sort((_a, _b) => {
       const orderA: number = order[_a] ?? Number.POSITIVE_INFINITY;

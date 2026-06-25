@@ -63,7 +63,7 @@ namespace FudgeCore {
      * Keys of properties to be included in the objects {@link Mutator}.
      * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
      */
-    mutatorKeys?: string[];
+    mutableKeys?: string[];
 
     propertyDescriptors?: MetaPropertyDescriptors;
 
@@ -117,7 +117,7 @@ namespace FudgeCore {
       const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
       descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
 
-      const keys: string[] = getOwnProperty(_metadata, "mutatorKeys") ?? (_metadata.mutatorKeys = _metadata.mutatorKeys ? [..._metadata.mutatorKeys] : []);
+      const keys: string[] = getOwnProperty(_metadata, "mutableKeys") ?? (_metadata.mutableKeys = _metadata.mutableKeys ? [..._metadata.mutableKeys] : []);
       keys.push(_key);
     }
 
