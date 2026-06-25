@@ -26,17 +26,19 @@ namespace FudgeCore {
      * Define a new setting.
      * @param _defaultValue the (initial) value to which the property can be reset to.
      */
+    // public define<T extends B & MetaDefaultValue, B>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B, _options?: { clearable?: boolean }): void;
+    // public define<T extends B, B extends MetaDefaultValue>(_key: string, _defaultValue: T[], _type: typeof Array, _options: { clearable?: boolean; valueType: abstract new (...args: General[]) => B }): void;
     public define<T extends B, B extends MetaDefaultValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B, _options?: { clearable?: boolean }): void;
     public define<T extends Number | String, E extends Record<keyof E, T>>(_key: string, _defaultValue: T, _type: E, _options?: { clearable?: boolean }): void;
-    public define(_key: string, _defaultValue: MetaDefaultValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean }): void {
+    public define(_key: string, _defaultValue: MetaDefaultValue, _type: Function | Record<string, unknown>, _options?: { clearable?: boolean; valueType?: Function | Record<string, unknown> }): void {
       if (_key in this.#mutable)
         throw new Error(`The project setting "${_key}" is already defined.`);
 
       const metadata: Metadata = getMetadata(this.#mutable);
 
-      Metadata.definePropertyEditable(metadata, _key, _type);
-      Metadata.setPropertyDefaultValue(metadata, _key, _defaultValue);
-      Metadata.setPropertyClearable(metadata, _key, !!_options?.clearable);
+      Metadata.setEditable(metadata, _key, _type, _options?.valueType);
+      Metadata.setDefaultValue(metadata, _key, _defaultValue);
+      Metadata.setClearable(metadata, _key, !!_options?.clearable);
 
       this.#mutable[_key] = _defaultValue;
     }

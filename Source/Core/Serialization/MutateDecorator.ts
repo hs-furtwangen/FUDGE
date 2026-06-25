@@ -72,7 +72,7 @@ namespace FudgeCore {
 
       const metadata: Metadata = _context.metadata;
 
-      Metadata.definePropertyMutable(metadata, key, _typePrimary, _typeSecondary, _function);
+      Metadata.setMutable(metadata, key, _typePrimary, _typeSecondary, _function);
     };
   }
   //#endregion
@@ -224,7 +224,7 @@ namespace FudgeCore {
 
     const metadata: Metadata = _context.metadata;
 
-    Metadata.setPropertyClearable(metadata, key, true);
+    Metadata.setClearable(metadata, key, true);
   }
   //#endregion
 

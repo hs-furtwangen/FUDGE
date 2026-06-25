@@ -112,7 +112,7 @@ namespace FudgeCore {
     /**
      * Define a property of an object as mutable within its metadata.
      */
-    export function definePropertyMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+    export function setMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
       // add meta property descriptor to metadata
       const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
       descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
@@ -124,7 +124,7 @@ namespace FudgeCore {
     /**
      * Define a property of an object as serializable within its metadata.
      */
-    export function definePropertySerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+    export function setSerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
       // add meta property descriptor to metadata
       const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
       descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
@@ -166,15 +166,15 @@ namespace FudgeCore {
     /**
      * Define a property of an object as mutable and serializable, and add meta configuration for it.
      */
-    export function definePropertyEditable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
-      definePropertyMutable(_metadata, _key, _typePrimary, _typeSecondary, _function);
-      definePropertySerializable(_metadata, _key, _typePrimary, _typeSecondary, _function);
+    export function setEditable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
+      setMutable(_metadata, _key, _typePrimary, _typeSecondary, _function);
+      setSerializable(_metadata, _key, _typePrimary, _typeSecondary, _function);
     }
 
     /**
      * Set a mutable property of an object as clearable, and add meta configuration for it.
      */
-    export function setPropertyClearable(_metadata: Metadata, _key: string, _value: boolean): void {
+    export function setClearable(_metadata: Metadata, _key: string, _value: boolean): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[_key];
       if (!descriptor)
@@ -186,7 +186,7 @@ namespace FudgeCore {
     /**
      * Set the default value of a mutable property of an object, and add meta configuration for it.
      */
-    export function setPropertyDefaultValue(_metadata: Metadata, _key: string, _value: MetaDefaultValue): void {
+    export function setDefaultValue(_metadata: Metadata, _key: string, _value: MetaDefaultValue): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[_key];
       if (!descriptor)
