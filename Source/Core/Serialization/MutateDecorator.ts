@@ -96,8 +96,8 @@ namespace FudgeCore {
         throw new Error("@order decorator can't order symbol-named properties");
 
       const metadata: Metadata = _context.metadata;
-      const order: Record<string, number> = getOwnProperty(metadata, "mutatorOrder") ?? (metadata.mutatorOrder = { ...metadata.mutatorOrder });
-      order[key] = _order;
+      
+      Metadata.setOrder(metadata, key, _order);
     };
   }
 
@@ -108,17 +108,17 @@ namespace FudgeCore {
    */
   export function orderFlat(_class: unknown, _context: ClassDecoratorContext): void {
     const metadata: Metadata = _context.metadata;
-    const order: Record<string, number> = getOwnProperty(metadata, "mutatorOrder");
-    if (!order)
-      throw new Error("No mutator order specified. Use the @order decorator to specify an order for mutator keys.");
+    const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
+    if  (!descriptors)
+      return;
 
     const keys: string[] = getOwnProperty(metadata, "mutableKeys");
     if (!keys)
       throw new Error("No mutable keys specified. Use the @mutate decorator to specify mutator keys.");
 
     keys.sort((_a, _b) => {
-      const orderA: number = order[_a] ?? Number.POSITIVE_INFINITY;
-      const orderB: number = order[_b] ?? Number.POSITIVE_INFINITY;
+      const orderA: number = descriptors[_a].order ?? Number.POSITIVE_INFINITY;
+      const orderB: number = descriptors[_b].order ?? Number.POSITIVE_INFINITY;
       return orderA - orderB;
     });
   }

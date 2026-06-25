@@ -16,6 +16,9 @@ namespace FudgeCore {
     /** Whether the property can be set to `undefined` via the editor. */
     clearable?: boolean;
 
+    /** The order number of the property. See {@link order} decorator. */
+    order: number;
+
     /** The default value to which the property can be reset to. */
     defaultValue?: MetaDefaultValue;
 
@@ -66,12 +69,6 @@ namespace FudgeCore {
     mutableKeys?: string[];
 
     propertyDescriptors?: MetaPropertyDescriptors;
-
-    /**
-     * A map from property keys to their specified order in the objects {@link Mutator}.
-     * Use the {@link order} decorator to add to this map.
-     */
-    mutatorOrder?: Record<string, number>;
 
     /**
      * A map of property keys to their serialization strategy.
@@ -194,6 +191,15 @@ namespace FudgeCore {
 
       descriptor.defaultValue = clone(_value);
     };
+
+    export function setOrder(_metadata: Metadata, _key: string, _value: number): void {
+      const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
+      const descriptor: MetaPropertyDescriptor = descriptors[_key];
+      if (!descriptor)
+        throw new Error(`@order requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @order.`);
+
+      descriptor.order = _value;
+    }
 
     /**
      * @internal Return the own meta property descriptors of a metadata object. Initializes them if unavailable.
