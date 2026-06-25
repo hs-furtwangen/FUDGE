@@ -282,7 +282,6 @@ namespace FudgeCore {
     /**
      * Updates the attribute values of the instance according to the state of the mutator.
      * The the event dispatching may be suppressed.
-     * Uses {@link Mutator.mutateDecorations}.
      */
     public mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>; // allow sync or async overrides
     public async mutate(_mutator: Mutator, _dispatchMutate: boolean = true): Promise<void> {

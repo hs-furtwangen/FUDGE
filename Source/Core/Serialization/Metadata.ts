@@ -3,7 +3,7 @@ namespace FudgeCore {
   Symbol.metadata ??= Symbol("Symbol.metadata");
 
   /** A record of property keys and property descriptors of an object. */
-  export interface MetaPropertyDescriptors { [key: string]: MetaPropertyDescriptor }
+  export type MetaPropertyDescriptors = Record<string, MetaPropertyDescriptor>;
 
   /** An object describing the configuration of a specific property. */
   export interface MetaPropertyDescriptor {
@@ -17,7 +17,9 @@ namespace FudgeCore {
     clearable?: boolean;
 
     /** The order number of the property. See {@link order} decorator. */
-    order: number;
+    order?: number;
+
+    serializationStrategy?: PropertySerializationStrategy;
 
     /** The default value to which the property can be reset to. */
     defaultValue?: MetaDefaultValue;
@@ -42,6 +44,12 @@ namespace FudgeCore {
   export type MetaDefaultValue = CloneableValue;
 
   /**
+   * Default values must be {@link CloneableValue}s.
+   * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
+   */
+  export type PropertySerializationStrategy = "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray";
+
+  /**
    * A function that returns a record of available creation options for a property.
    * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
    * @param this The instance that owns the property.
@@ -62,19 +70,19 @@ namespace FudgeCore {
    * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
    */
   export interface Metadata {
+    propertyDescriptors?: MetaPropertyDescriptors;
+
     /**
      * Keys of properties to be included in the objects {@link Mutator}.
      * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
      */
     mutableKeys?: string[];
 
-    propertyDescriptors?: MetaPropertyDescriptors;
-
     /**
-     * A map of property keys to their serialization strategy.
-     * Use the {@link serialize} decorator to add to this map.
+     * Keys of properties to be included in the objects {@link Serialization}.
+     * Use the {@link edit} or {@link serialize} decorator to add keys to this list.
      */
-    serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
+    serializableKeys?: string[];
   }
 
   export namespace Metadata {
@@ -110,7 +118,6 @@ namespace FudgeCore {
      * Define a property of an object as mutable within its metadata.
      */
     export function setMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
-      // add meta property descriptor to metadata
       const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
       descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
 
@@ -122,12 +129,11 @@ namespace FudgeCore {
      * Define a property of an object as serializable within its metadata.
      */
     export function setSerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void {
-      // add meta property descriptor to metadata
       const descriptors: MetaPropertyDescriptors = ensurePropertyDescriptors(_metadata);
-      descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
+      const descriptor: MetaPropertyDescriptor = descriptors[_key] ??= createPropertyDescriptor(_typePrimary, _typeSecondary, _function);
 
-      // determine serialization type
-      let strategy: Metadata["serializables"][string];
+      // determine serialization strategy
+      let strategy: PropertySerializationStrategy;
 
       const type: Function | Record<string, unknown> = _typeSecondary ?? _typePrimary;
       switch (type) {
@@ -155,9 +161,10 @@ namespace FudgeCore {
       if (!strategy)
         return;
 
-      // add serialization type to metadata
-      const serializables: Metadata["serializables"] = getOwnProperty(_metadata, "serializables") ?? (_metadata.serializables = { ..._metadata.serializables });
-      serializables[_key] = strategy;
+      descriptor.serializationStrategy = strategy;
+
+      const keys: string[] = getOwnProperty(_metadata, "serializableKeys") ?? (_metadata.serializableKeys = _metadata.serializableKeys ? [..._metadata.serializableKeys] : []);
+      keys.push(_key);
     }
 
     /**

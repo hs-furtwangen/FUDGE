@@ -137,15 +137,15 @@ namespace FudgeCore {
    */
   export function serializeDecorations(_instance: object, _serialization: Serialization = {}): Serialization {
     const metadata: Metadata = getMetadata(_instance);
-    const serializables: Metadata["serializables"] = metadata.serializables;
+    const keys: string[] = metadata.serializableKeys;
     const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
 
-    for (const key in serializables) {
+    for (const key of keys) {
       const value: unknown = Reflect.get(_instance, key);
       if (value == null)
         continue;
 
-      let strategy: Metadata["serializables"][string] = serializables[key];
+      let strategy: PropertySerializationStrategy = descriptors[key].serializationStrategy;
       switch (strategy) {
         case "primitive":
           _serialization[key] = value;
@@ -199,16 +199,16 @@ namespace FudgeCore {
    */
   export async function deserializeDecorations<T extends object>(_instance: T, _serialization: Serialization): Promise<T> {
     const metadata: Metadata = getMetadata(_instance);
-    const serializables: Metadata["serializables"] = metadata.serializables;
+    const keys: string[] = metadata.serializableKeys;
     const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
 
     let nodePaths: Serialization;
-    for (const key in serializables) {
+    for (const key of keys) {
       let value: General = _serialization[key];
       if (value == null)
         continue;
 
-      let strategy: Metadata["serializables"][string] = serializables[key];
+      let strategy: PropertySerializationStrategy = descriptors[key].serializationStrategy;
       switch (strategy) {
         case "primitive":
           Reflect.set(_instance, key, value);
