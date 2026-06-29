@@ -98,19 +98,19 @@ namespace FudgeCore {
       this.intensity = _intensity;
     }
 
-    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    /** @internal reroute to {@link RenderWebGLComponentLight} */
     @RenderWebGLComponentLight.decorate
     public static processLights(_lights: MapLightTypeToLightList): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    /** @internal reroute to {@link RenderWebGLComponentLight} */
     @RenderWebGLComponentLight.decorate
     public static processShadowsDirectional(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void { /* injected */ };
 
-    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    /** @internal reroute to {@link RenderWebGLComponentLight} */
     @RenderWebGLComponentLight.decorate
     public static processShadowsSpot(_nodes: Iterable<Node>): void { /* injected */ };
     
-    /** @internal reroute to {@link RenderWebGLComponentLight.processLighting} */
+    /** @internal reroute to {@link RenderWebGLComponentLight} */
     @RenderWebGLComponentLight.decorate
     public static processShadowsPoint(_nodes: Iterable<Node>): void { /* injected */ };
 

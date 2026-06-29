@@ -313,7 +313,7 @@ namespace FudgeCore {
         const depthRangeFactor: number = 0.01; // magic scalar from godot
         const biasScale: number = (zMax - zMin) * depthRangeFactor * shadowFilterScale;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = cmpLight.shadowBias * biasScale;
-        
+
         const shadowTexelSizeWorld: number = radius * 2 / RenderWebGLComponentLight.#shadowSize;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = cmpLight.shadowNormalBias * shadowTexelSizeWorld;
 

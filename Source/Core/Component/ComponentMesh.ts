@@ -13,7 +13,12 @@ namespace FudgeCore {
     @clearable
     @edit(Mesh)
     public mesh: Mesh;
+
     public skeleton: ComponentSkeleton;
+
+    @order(3)
+    @edit(Boolean)
+    public castShadows: boolean = true;
 
     #mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 

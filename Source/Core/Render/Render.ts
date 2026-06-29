@@ -1,11 +1,11 @@
 namespace FudgeCore {
   export type MapLightTypeToLightList = Map<LIGHT_TYPE, RecycableArray<ComponentLight>>;
 
-  const SHADER_ID: unique symbol = Symbol("shaderId");
+  const SORT_KEY: unique symbol = Symbol("sortKey");
   const Z_CAMERA: unique symbol = Symbol("zCamera");
 
   type NodeSortable = Node & {
-    [SHADER_ID]: number;
+    [SORT_KEY]: number;
     [Z_CAMERA]: number;
   };
 
@@ -22,12 +22,12 @@ namespace FudgeCore {
     public static readonly nodesPhysics: RecycableArray<Node> = new RecycableArray();
     public static readonly componentsPick: RecycableArray<ComponentPick> = new RecycableArray();
     public static readonly lights: MapLightTypeToLightList = new Map();
+
     private static readonly nodesOpaque: RecycableArray<Node> = new RecycableArray();
     private static readonly nodesAlpha: RecycableArray<Node> = new RecycableArray();
-    private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
+    private static readonly nodesShadow: RecycableArray<Node> = new RecycableArray();
 
-    private static readonly mapShaderToSortId: WeakMap<ShaderInterface, number> = new WeakMap(); // TODO: maybe find a better way to assign shaders a unique id for sorting
-    private static nextShaderSortId: number = 1;
+    private static readonly componentsSkeleton: RecycableArray<ComponentSkeleton> = new RecycableArray();
 
     private static timestampUpdate: number;
 
@@ -52,6 +52,8 @@ namespace FudgeCore {
       Render.timestampUpdate = performance.now();
       Render.nodesOpaque.reset();
       Render.nodesAlpha.reset();
+      Render.nodesShadow.reset();
+
       Render.nodesPhysics.reset();
       Render.componentsPick.reset();
       Render.componentsSkeleton.reset();
@@ -72,9 +74,11 @@ namespace FudgeCore {
       Coat.updateRenderbuffer();
 
       (<RecycableArray<NodeSortable>>Render.nodesOpaque).sort(Render.compareOpaqueNodes);
+      (<RecycableArray<NodeSortable>>Render.nodesShadow).sort(Render.compareOpaqueNodes);
+
       ComponentLight.processLights(Render.lights);
-      ComponentLight.processShadowsSpot(Render.nodesOpaque);
-      ComponentLight.processShadowsPoint(Render.nodesOpaque);
+      ComponentLight.processShadowsSpot(Render.nodesShadow);
+      ComponentLight.processShadowsPoint(Render.nodesShadow);
     }
 
     public static addLight(_cmpLight: ComponentLight): void {
@@ -96,7 +100,7 @@ namespace FudgeCore {
 
       (<RecycableArray<NodeSortable>>Render.nodesAlpha).sort(Render.compareAlphaNodes);
 
-      ComponentLight.processShadowsDirectional(Render.nodesOpaque, _cmpCamera);
+      ComponentLight.processShadowsDirectional(Render.nodesShadow, _cmpCamera);
       Render.drawNodes(Render.nodesOpaque, Render.nodesAlpha, _cmpCamera);
     }
 
@@ -157,7 +161,6 @@ namespace FudgeCore {
       const cmpMesh: ComponentMesh = _branch.getComponent(ComponentMesh);
       const cmpMaterial: ComponentMaterial = _branch.getComponent(ComponentMaterial);
 
-
       if (cmpMesh?.active && cmpMesh.mesh && cmpMaterial?.active && cmpMaterial.material) {
 
         if (cmpMesh.mtxPivot.modified || _recalculate) {
@@ -175,7 +178,7 @@ namespace FudgeCore {
           ? cmpParticleSystem.particleSystem.getShaderFrom(material.getShader())
           : material.getShader();
 
-        (<NodeSortable>_branch)[SHADER_ID] = Render.getSortIdForShader(shader); // cache shader sort id directly on the node for faster access during sorting
+        (<NodeSortable>_branch)[SORT_KEY] = Render.getSortKey(shader, material); // cache sort key directly on the node for faster access during sorting
 
         _branch.radius = cmpMesh.radius;
 
@@ -184,6 +187,9 @@ namespace FudgeCore {
             Render.nodesAlpha.push(_branch); // add this node to render list
           else
             Render.nodesOpaque.push(_branch); // add this node to render list
+
+        if (cmpMesh.castShadows)
+          Render.nodesShadow.push(_branch);
 
         if (material?.timestampUpdate < Render.timestampUpdate) {
           material.timestampUpdate = Render.timestampUpdate;
@@ -249,7 +255,7 @@ namespace FudgeCore {
 
     // use direct symbol access, much faster than Reflect.set/get or weakmap lookups during sorting
     private static compareOpaqueNodes(_a: NodeSortable, _b: NodeSortable): number {
-      return _a[SHADER_ID] - _b[SHADER_ID];
+      return _a[SORT_KEY] - _b[SORT_KEY];
     }
 
     private static compareAlphaNodes(_a: NodeSortable, _b: NodeSortable): number {
@@ -257,16 +263,23 @@ namespace FudgeCore {
       if (zDifference != 0)
         return zDifference;
 
-      return _a[SHADER_ID] - _b[SHADER_ID];
+      return _a[SORT_KEY] - _b[SORT_KEY];
     }
 
-    private static getSortIdForShader(_shader: ShaderInterface): number {
-      let id: number = Render.mapShaderToSortId.get(_shader);
-      if (!id) {
-        id = Render.nextShaderSortId++;
-        Render.mapShaderToSortId.set(_shader, id);
-      }
-      return id;
+    private static getSortKey(_shader: ShaderInterface, _material: Material): number {
+      const shaderID: number = (<WithEntityID<ShaderInterface>>_shader)[ENTITY_ID] ??= nextShaderId++;
+      return shaderID;
+
+      // const materialID: number =  (<WithEntityID<Material>>_material)[ENTITY_ID] ??= nextMaterialId++;
+      // return (shaderID << 16) | materialID;
     }
   }
+
+  const ENTITY_ID: unique symbol = Symbol("ENTITY_ID");
+
+  type WithEntityID<T> = T & { [ENTITY_ID]: number };
+
+  let nextShaderId: number = 0;
+  // let nextMaterialId: number = 0;
+
 }

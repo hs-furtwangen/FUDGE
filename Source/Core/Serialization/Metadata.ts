@@ -11,7 +11,7 @@ namespace FudgeCore {
     type: Function | Record<string, unknown>;
 
     /** The kind of the property. */
-    kind: "primitive" | "collection" | "object" | "enum" | "function";
+    kind: "primitive" | "collection" | "object" | "enum" | "function"; // TODO: this might be redundant, maybe a simple isFunction or isGlobal would suffice.
 
     /** Whether the property can be set to `undefined` via the editor. */
     clearable?: boolean;

@@ -418,9 +418,7 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /** A record of property keys and property descriptors of an object. */
-    interface MetaPropertyDescriptors {
-        [key: string]: MetaPropertyDescriptor;
-    }
+    type MetaPropertyDescriptors = Record<string, MetaPropertyDescriptor>;
     /** An object describing the configuration of a specific property. */
     interface MetaPropertyDescriptor {
         /** The type of the property. */
@@ -429,8 +427,14 @@ declare namespace FudgeCore {
         kind: "primitive" | "collection" | "object" | "enum" | "function";
         /** Whether the property can be set to `undefined` via the editor. */
         clearable?: boolean;
+        /** The order number of the property. See {@link order} decorator. */
+        order?: number;
+        /**
+         * The strategy used to serialize the property. See {@link serializeDecorations} and {@link deserializeDecorations}.
+         */
+        serializationStrategy?: PropertySerializationStrategy;
         /** The default value to which the property can be reset to. */
-        defaultValue?: MetaDefaultValue;
+        defaultValue?: PropertyDefaultValue;
         /** Descriptor for a collection's key type (only relevant for `type` {@link Map}). */
         keyDescriptor?: MetaPropertyDescriptor;
         /** Descriptor for a collection's value type (only relevant for `type` {@link Array}, {@link Set} or {@link Map}). */
@@ -444,7 +448,12 @@ declare namespace FudgeCore {
      * Default values must be {@link CloneableValue}s.
      * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
      */
-    type MetaDefaultValue = CloneableValue;
+    type PropertyDefaultValue = CloneableValue;
+    /**
+     * Default values must be {@link CloneableValue}s.
+     * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
+     */
+    type PropertySerializationStrategy = "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray";
     /**
      * A function that returns a record of available creation options for a property.
      * Each entry maps an option name to either a constructor or a factory function that can be used to create a value for the property.
@@ -464,22 +473,17 @@ declare namespace FudgeCore {
      * @see {@link https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-2.html#decorator-metadata | type script 5.2 feature "decorator metadata"} for additional information.
      */
     interface Metadata {
+        propertyDescriptors?: MetaPropertyDescriptors;
         /**
          * Keys of properties to be included in the objects {@link Mutator}.
          * Use the {@link edit} or {@link mutate} decorator to add keys to this list.
          */
-        mutatorKeys?: string[];
-        propertyDescriptors?: MetaPropertyDescriptors;
+        mutableKeys?: string[];
         /**
-         * A map from property keys to their specified order in the objects {@link Mutator}.
-         * Use the {@link order} decorator to add to this map.
+         * Keys of properties to be included in the objects {@link Serialization}.
+         * Use the {@link edit} or {@link serialize} decorator to add keys to this list.
          */
-        mutatorOrder?: Record<string, number>;
-        /**
-         * A map of property keys to their serialization strategy.
-         * Use the {@link serialize} decorator to add to this map.
-         */
-        serializables?: Record<PropertyKey, "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray">;
+        serializableKeys?: string[];
     }
     namespace Metadata {
         /**
@@ -498,23 +502,24 @@ declare namespace FudgeCore {
         /**
          * Define a property of an object as mutable within its metadata.
          */
-        function definePropertyMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        function setMutable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
         /**
          * Define a property of an object as serializable within its metadata.
          */
-        function definePropertySerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        function setSerializable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
         /**
          * Define a property of an object as mutable and serializable, and add meta configuration for it.
          */
-        function definePropertyEditable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
+        function setEditable(_metadata: Metadata, _key: string, _typePrimary: Function | Record<string, unknown> | typeof Array, _typeSecondary?: Function | Record<string, unknown>, _function?: boolean): void;
         /**
          * Set a mutable property of an object as clearable, and add meta configuration for it.
          */
-        function setPropertyClearable(_metadata: Metadata, _key: string, _value: boolean): void;
+        function setClearable(_metadata: Metadata, _key: string, _value: boolean): void;
         /**
          * Set the default value of a mutable property of an object, and add meta configuration for it.
          */
-        function setPropertyDefaultValue(_metadata: Metadata, _key: string, _value: MetaDefaultValue): void;
+        function setDefaultValue(_metadata: Metadata, _key: string, _value: PropertyDefaultValue): void;
+        function setOrder(_metadata: Metadata, _key: string, _value: number): void;
         /**
          * Return a new meta property descriptor.
          */
@@ -724,7 +729,7 @@ declare namespace FudgeCore {
          * Define a new setting.
          * @param _defaultValue the (initial) value to which the property can be reset to.
          */
-        define<T extends B, B extends MetaDefaultValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B, _options?: {
+        define<T extends B, B extends PropertyDefaultValue>(_key: string, _defaultValue: T, _type: abstract new (...args: General[]) => B, _options?: {
             clearable?: boolean;
         }): void;
         define<T extends Number | String, E extends Record<keyof E, T>>(_key: string, _defaultValue: T, _type: E, _options?: {
@@ -1341,7 +1346,6 @@ declare namespace FudgeCore {
         /**
          * Updates the attribute values of the instance according to the state of the mutator.
          * The the event dispatching may be suppressed.
-         * Uses {@link Mutator.mutateDecorations}.
          */
         mutate(_mutator: Mutator, _dispatchMutate?: boolean): void | Promise<void>;
         /**
@@ -5452,6 +5456,7 @@ declare namespace FudgeCore {
         readonly mtxWorld: Matrix4x4;
         mesh: Mesh;
         skeleton: ComponentSkeleton;
+        castShadows: boolean;
         constructor(_mesh?: Mesh, _skeleton?: ComponentSkeleton);
         get mtxPivot(): Matrix4x4;
         set mtxPivot(_mtx: Matrix4x4);
@@ -8864,9 +8869,8 @@ declare namespace FudgeCore {
         static readonly lights: MapLightTypeToLightList;
         private static readonly nodesOpaque;
         private static readonly nodesAlpha;
+        private static readonly nodesShadow;
         private static readonly componentsSkeleton;
-        private static readonly mapShaderToSortId;
-        private static nextShaderSortId;
         private static timestampUpdate;
         /**
          * Recursively iterates over the branch starting with the node given, recalculates all world transforms,
@@ -8884,7 +8888,7 @@ declare namespace FudgeCore {
         private static transformByPhysics;
         private static compareOpaqueNodes;
         private static compareAlphaNodes;
-        private static getSortIdForShader;
+        private static getSortKey;
     }
 }
 declare namespace FudgeCore {
