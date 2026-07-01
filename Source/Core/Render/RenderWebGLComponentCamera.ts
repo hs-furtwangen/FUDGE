@@ -34,9 +34,9 @@ namespace FudgeCore {
      * Buffer the camera data to the uniform buffer.
      */
     public static useRenderbuffer(_cmpCamera: ComponentCamera): void {
-      const mtxView: Matrix4x4 = _cmpCamera.mtxCameraInverse;
+      const mtxView: Matrix4x4 = _cmpCamera.mtxView;
       const mtxProjection: Matrix4x4 = _cmpCamera.mtxProjection;
-      const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxWorldToView;
+      const mtxViewProjection: Matrix4x4 = _cmpCamera.mtxViewProjection;
       const vctPosition: Vector3 = _cmpCamera.mtxWorld.translation;
 
       RenderWebGLComponentCamera.updateViewBuffer(mtxView, mtxProjection, mtxViewProjection, vctPosition);

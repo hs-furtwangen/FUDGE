@@ -74,7 +74,7 @@ namespace FudgeCore {
       crc3.readPixels(0, 0, size, size, WebGL2RenderingContext.RGBA_INTEGER, WebGL2RenderingContext.INT, data);
 
       const picked: Pick[] = [];
-      const mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxWorldToView);
+      const mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(_cmpCamera.mtxViewProjection);
       for (let i: number = 0; i < picks.length; i++) {
         let zBuffer: number = data[4 * i + 0] + data[4 * i + 1] / 256;
         if (zBuffer == 0) // discard misses 

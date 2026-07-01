@@ -120,7 +120,7 @@ namespace FudgeCore {
           this.setControllerConfigs(_xrFrame);
 
         this.camera.mtxProjection.fromArray(view.projectionMatrix);
-        this.camera.mtxCameraInverse.fromArray(view.transform.inverse.matrix);
+        this.camera.mtxView.fromArray(view.transform.inverse.matrix);
 
         if (this.physicsDebugMode != PHYSICS_DEBUGMODE.PHYSIC_OBJECTS_ONLY) 
           Render.draw(this.camera);

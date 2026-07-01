@@ -56,35 +56,47 @@ namespace FudgeCore {
 
     #projectionDirty: boolean = true;
 
-    readonly #mtxWorldToView: Matrix4x4 = Matrix4x4.IDENTITY();
-    readonly #mtxCameraInverse: Matrix4x4 = Matrix4x4.IDENTITY();
+    readonly #mtxViewProjection: Matrix4x4 = Matrix4x4.IDENTITY();
+    readonly #mtxView: Matrix4x4 = Matrix4x4.IDENTITY();
     readonly #mtxProjection: Matrix4x4 = Matrix4x4.IDENTITY();
 
     /**
-     * Returns {@link mtxProjection} * {@link mtxCameraInverse} yielding the worldspace to viewspace matrix.
-     * Otherwise known as the viewprojection matrix, which transforms points from worldspace directly to clipspace.
+     * @deprecated use {@link mtxViewProjection}.
      */
     public get mtxWorldToView(): Matrix4x4 {
-      if (this.#mtxProjection.modified || this.mtxCameraInverse.modified) {
-        Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxCameraInverse, this.#mtxWorldToView);
-        this.#mtxProjection.modified = false;
-        this.mtxCameraInverse.modified = false;
-      }
-
-      return this.#mtxWorldToView;
+      return this.mtxViewProjection;
     }
 
     /**
-     * Returns the inversion of this cameras worldtransformation.
-     * Otherwise known as the view matrix, which transforms points from worldspace to camera space.
+     * @deprecated use {@link mtxView}.
      */
     public get mtxCameraInverse(): Matrix4x4 {
+      return this.mtxView;
+    }
+
+    /**
+     * Returns {@link mtxProjection} * {@link mtxView} yielding the world space to clip space matrix.
+     */
+    public get mtxViewProjection(): Matrix4x4 {
+      if (this.#mtxProjection.modified || this.mtxView.modified) {
+        Matrix4x4.PRODUCT(this.#mtxProjection, this.mtxView, this.#mtxViewProjection);
+        this.#mtxProjection.modified = false;
+        this.mtxView.modified = false;
+      }
+
+      return this.#mtxViewProjection;
+    }
+
+    /**
+     * Returns the inverse of this cameras world transformation.
+     */
+    public get mtxView(): Matrix4x4 {
       if (this.mtxWorld.modified) {
-        Matrix4x4.INVERSE(this.mtxWorld, this.#mtxCameraInverse);
+        Matrix4x4.INVERSE(this.mtxWorld, this.#mtxView);
         this.mtxWorld.modified = false;
       }
 
-      return this.#mtxCameraInverse;
+      return this.#mtxView;
     }
 
     /**
@@ -331,10 +343,10 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public pointWorldToClip(_pointInWorldSpace: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      const m: ArrayLike<number> = this.mtxWorldToView.getArray();
+      const m: ArrayLike<number> = this.mtxViewProjection.getArray();
       const w: number = m[3] * _pointInWorldSpace.x + m[7] * _pointInWorldSpace.y + m[11] * _pointInWorldSpace.z + m[15];
 
-      return Vector3.TRANSFORMATION(_pointInWorldSpace, this.mtxWorldToView, true, _out).scale(1 / w);
+      return Vector3.TRANSFORMATION(_pointInWorldSpace, this.mtxViewProjection, true, _out).scale(1 / w);
     }
 
     /**
@@ -342,7 +354,7 @@ namespace FudgeCore {
      * @param _out Optional vector to store the result in.
      */
     public pointClipToWorld(_pointInClipSpace: Vector3, _out: Vector3 = Recycler.reuse(Vector3)): Vector3 {
-      const mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(this.mtxWorldToView);
+      const mtxViewToWorld: Matrix4x4 = Matrix4x4.INVERSE(this.mtxViewProjection);
       const m: ArrayLike<number> = mtxViewToWorld.getArray();
       const w: number = m[3] * _pointInClipSpace.x + m[7] * _pointInClipSpace.y + m[11] * _pointInClipSpace.z + m[15];
       Recycler.store(mtxViewToWorld);
@@ -362,7 +374,7 @@ namespace FudgeCore {
       switch (this.#projection) {
         case PROJECTION.ORTHOGRAPHIC:
         case PROJECTION.CENTRAL:
-          const posCamera: Vector3 = Vector3.TRANSFORMATION(_posWorld, this.mtxCameraInverse, true);
+          const posCamera: Vector3 = Vector3.TRANSFORMATION(_posWorld, this.mtxView, true);
           const depth: number = Math.abs(posCamera.z);
           const pixelsPerUnit: number = Matrix4x4.PIXELS_PER_UNIT(this.mtxProjection, width, depth);
 
