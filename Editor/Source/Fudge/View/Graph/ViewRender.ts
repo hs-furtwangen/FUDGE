@@ -225,7 +225,7 @@ namespace Fudge {
       this.viewport.physicsDebugMode = ƒ.PHYSICS_DEBUGMODE.JOINTS_AND_COLLIDER;
       this.viewport.addEventListener(ƒ.EVENT.RENDER_PREPARE_START, this.hndPrepare);
 
-      this.cmpOutline = new ƒ.ComponentOutline([], ƒ.Color.CSS("DeepPink"), ƒ.Color.CSS("DeepPink", 0.3));
+      this.cmpOutline = new ƒ.ComponentOutline([], ƒ.Color.CSS("Gold"), ƒ.Color.CSS("Gold", 0.3));
       this.cmpOutline.selection = this.#selection;
       cmpCamera.node.addComponent(this.cmpOutline);
 
