@@ -4,7 +4,8 @@ namespace FudgeCore {
 
     public static define: string[] = [
       "PHONG",
-      "TOON"
+      "TOON",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatToon; }
@@ -16,7 +17,8 @@ namespace FudgeCore {
     public static define: string[] = [
       "PHONG",
       "TOON",
-      "SKIN"
+      "SKIN",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatToon; }
@@ -28,7 +30,8 @@ namespace FudgeCore {
     public static define: string[] = [
       "PHONG",
       "TOON",
-      "TEXTURE"
+      "TEXTURE",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatToonTextured; }
@@ -41,7 +44,8 @@ namespace FudgeCore {
       "PHONG",
       "TOON",
       "TEXTURE",
-      "SKIN"
+      "SKIN",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatToonTextured; }
