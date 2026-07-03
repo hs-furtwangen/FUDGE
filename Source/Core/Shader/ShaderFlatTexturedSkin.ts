@@ -5,7 +5,8 @@ namespace FudgeCore {
     public static define: string[] = [
       "FLAT",
       "TEXTURE",
-      "SKIN"
+      "SKIN",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatRemissiveTextured; }

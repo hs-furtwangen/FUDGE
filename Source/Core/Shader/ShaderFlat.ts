@@ -3,7 +3,8 @@ namespace FudgeCore {
     public static readonly iSubclass: number = Shader.registerSubclass(ShaderFlat);
 
     public static define: string[] = [
-      "FLAT"
+      "FLAT",
+      "SHADOW"
     ];
 
     public static getCoat(): typeof Coat { return CoatRemissive; }
