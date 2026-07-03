@@ -966,11 +966,11 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2024-2025
      */
     function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
-    function mutate<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+    function mutate<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void) : never;
     function mutate<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
-    function mutate<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function mutate<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void;
     function mutate<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
-    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function mutate<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a class for mutation.
      * See {@link mutate} for additional information.
@@ -1118,11 +1118,11 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2024-2025
      */
     function serialize<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
-    function serialize<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+    function serialize<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void) : never;
     function serialize<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
-    function serialize<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function serialize<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void;
     function serialize<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
-    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function serialize<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void;
     /**
      * Decorator to mark function properties (typeof `_type`) of a {@link Serializable} for serialization.
      * See {@link serialize} decorator for additional information.
@@ -1195,11 +1195,11 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2025
      */
     function edit<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
-    function edit<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void) : never;
+    function edit<T extends String | Number | Boolean, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void) : never;
     function edit<T extends P, P>(_type: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
-    function edit<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function edit<T extends P, P>(_collectionType: typeof Array, _valueType: abstract new (...args: General[]) => T): (_value: unknown, _contex: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void;
     function edit<E extends Record<keyof E, P>, P extends Number | String>(_type: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void;
-    function edit<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, P[]>) => void;
+    function edit<E extends Record<keyof E, P>, P extends Number | String>(_collectionType: typeof Array, _valueType: E): (_value: unknown, _context: ClassPropertyDecoratorContext<object, Array<P> | ArrayLike<P> | Iterable<P>>) => void;
     /**
      * Decorator to mark callable properties (functions, typeof `_type`) of a class for mutation and serialization.
      * See {@link mutateFunction} and {@link serializeF} decorators for more information.
@@ -5240,15 +5240,21 @@ declare namespace FudgeCore {
         clrBackground: Color;
         backgroundEnabled: boolean;
         /**
-         * Returns {@link mtxProjection} * {@link mtxCameraInverse} yielding the worldspace to viewspace matrix.
-         * Otherwise known as the viewprojection matrix, which transforms points from worldspace directly to clipspace.
+         * @deprecated use {@link mtxViewProjection}.
          */
         get mtxWorldToView(): Matrix4x4;
         /**
-         * Returns the inversion of this cameras worldtransformation.
-         * Otherwise known as the view matrix, which transforms points from worldspace to camera space.
+         * @deprecated use {@link mtxView}.
          */
         get mtxCameraInverse(): Matrix4x4;
+        /**
+         * Returns {@link mtxProjection} * {@link mtxView} yielding the world space to clip space matrix.
+         */
+        get mtxViewProjection(): Matrix4x4;
+        /**
+         * Returns the inverse of this cameras world transformation.
+         */
+        get mtxView(): Matrix4x4;
         /**
          * Returns the projection matrix of this camera.
          */
@@ -5424,9 +5430,22 @@ declare namespace FudgeCore {
         shadowBlur: number;
         shadowMaxDistance: number;
         shadowFadeDistance: number;
+        /**
+         * Pulls back the light-space near plane, increasing the depth range covered by the shadow map.
+         * Use this to reduce artifacts induced by shadow pancaking.
+         *
+         * During shadow map rendering, any shadow-caster vertex that would go beyond the light frustum near plane is not clipped away.
+         * Instead, its depth is clamped to the near plane, so part of the geometry gets squashed flat onto that plane, like a pancake.
+         * This avoids losing shadow casters beyond the near boundary while allowing a tighter light-space depth range, increasing depth precision and reducing shadow acne.
+         *
+         * However, pancaking can introduce artifacts when large triangles intersect the near plane, since they are incorrectly deformed, which may result in visible shadow errors.
+         *
+         * Keep this value as low as possible to avoid shadow acne, but high enough to prevent pancaking artifacts.
+         */
+        shadowPancakeOffset: number;
         readonly mtxWorld: Matrix4x4;
         constructor(_lightType?: LIGHT_TYPE, _color?: Color, _intensity?: number);
-        drawGizmos(): void;
+        drawGizmos(_cmpCamera: ComponentCamera): void;
         drawGizmosSelected(): void;
     }
 }
@@ -5472,6 +5491,7 @@ declare namespace FudgeCore {
      * @authors Jonas Plotzky, HFU, 2025
      */
     class ComponentOutline extends Component {
+        static readonly iSubclass: number;
         color: Color;
         colorOccluded: Color;
         selection: Iterable<Node>;
@@ -10391,6 +10411,16 @@ declare namespace FudgeCore {
 declare namespace FudgeCore {
     abstract class ShaderLit extends Shader {
         static readonly iSubclass: number;
+        static define: string[];
+    }
+}
+declare namespace FudgeCore {
+    abstract class ShaderLitShadowPancake extends Shader {
+        static define: string[];
+    }
+}
+declare namespace FudgeCore {
+    abstract class ShaderLitShadowPancakeSkin extends Shader {
         static define: string[];
     }
 }

@@ -62,8 +62,7 @@ namespace FudgeCore {
     static #dataShadowMatrices: Float32Array;
     static #dataShadowParameters: Float32Array;
 
-    static #shadowMaterial: Material;
-    static #shadowMaterialSkin: Material;
+    static #shadowMaterials: Map<typeof Shader, Material> = new Map();
 
     static readonly #VECTOR4_SIZE: number = 4;
     static readonly #MATRIX4_SIZE: number = 16;
@@ -77,6 +76,10 @@ namespace FudgeCore {
 
     public static get shadowTexelSize(): number {
       return 1 / RenderWebGLComponentLight.#shadowSize;
+    }
+
+    public static get shadowSize(): number {
+      return RenderWebGLComponentLight.#shadowSize;
     }
 
     /**
@@ -238,7 +241,7 @@ namespace FudgeCore {
       RenderWebGLComponentLight.uploadShadowParameters(0, nShadows); // TODO: Maybe only spot and point light parameters need to be updated here, as directional shadow parameters are adjusted in the shadow rendering pass based on the shadow casters bounding volumes
     }
 
-    public static processShadowsDirectional(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void { // TODO: fix for orthographic camera
+    public static processShadowsDirectional(_nodes: Iterable<Node>, _cmpCamera: ComponentCamera): void {
       const crc3: WebGL2RenderingContext = RenderWebGL.getRenderingContext();
       crc3.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, RenderWebGLComponentLight.fboShadowMap);
       crc3.viewport(0, 0, RenderWebGLComponentLight.#shadowSize, RenderWebGLComponentLight.#shadowSize);
@@ -290,13 +293,15 @@ namespace FudgeCore {
         const xMax: number = Calc.snap(xCenter + radius, unit);
         const yMin: number = Calc.snap(yCenter - radius, unit);
         const yMax: number = Calc.snap(yCenter + radius, unit);
-        const zMin: number = zCenter - radius;
+
+        const zMin: number = zCenter - radius - cmpLight.shadowPancakeOffset;
         const zMax: number = zCenter + radius;
 
         const halfX: number = (xMax - xMin) * 0.5;
         const halfY: number = (yMax - yMin) * 0.5;
+        const depthRange: number = zMax - zMin;
 
-        Matrix4x4.PROJECTION_ORTHOGRAPHIC(-halfX, halfX, -halfY, halfY, 0, zMax - zMin, mtxProjection);
+        Matrix4x4.PROJECTION_ORTHOGRAPHIC(-halfX, halfX, -halfY, halfY, 0, depthRange, mtxProjection);
         const mtxView: Matrix4x4 = cmpLight.mtxWorld.clone;
 
         const translation: Vector3 = mtxView.translation.set(0, 0, 0);
@@ -311,12 +316,11 @@ namespace FudgeCore {
 
         const shadowFilterScale: number = cmpLight.shadowBlur * RenderWebGLComponentLight.#shadowFilterRadius;
         const depthRangeFactor: number = 0.01; // magic scalar from godot
-        const biasScale: number = (zMax - zMin) * depthRangeFactor * shadowFilterScale;
+        const biasScale: number = depthRange * depthRangeFactor * shadowFilterScale;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = cmpLight.shadowBias * biasScale;
 
         const shadowTexelSizeWorld: number = radius * 2 / RenderWebGLComponentLight.#shadowSize;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = cmpLight.shadowNormalBias * shadowTexelSizeWorld;
-
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 3] = maxDistance;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 4] = maxDistance * Math.min(cmpLight.shadowFadeDistance, 0.9999); //using 1.0 could break smoothstep
 
@@ -492,20 +496,22 @@ namespace FudgeCore {
       crc3.framebufferTextureLayer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, RenderWebGLComponentLight.texShadowMap, 0, _iShadow);
       crc3.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
 
-      if (!this.#shadowMaterial) {
-        this.#shadowMaterial = new Material("MaterialShadow", ShaderLit, new CoatColored(Color.CSS("white")));
-        Project.deregister(this.#shadowMaterial);
-      }
+      let shadowMaterial: Material;
+      let shadowMaterialSkin: Material;
 
-      if (!this.#shadowMaterialSkin) {
-        this.#shadowMaterialSkin = new Material("MaterialShadowSkin", ShaderLitSkin, new CoatColored(Color.CSS("white")));
-        Project.deregister(this.#shadowMaterialSkin);
+      const usePancake: boolean = _cmpLight.lightType == LIGHT_TYPE.DIRECTIONAL;
+      if (usePancake) {
+        shadowMaterial = this.getShadowMaterial(ShaderLitShadowPancake);
+        shadowMaterialSkin = this.getShadowMaterial(ShaderLitShadowPancakeSkin);
+      } else {
+        shadowMaterial = this.getShadowMaterial(ShaderLit);
+        shadowMaterialSkin = this.getShadowMaterial(ShaderLitSkin);
       }
 
       for (let node of _nodes) {
         const cmpMesh: ComponentMesh = node.getComponent(ComponentMesh);
-        const shadowMaterial: Material = cmpMesh?.skeleton?.active ? this.#shadowMaterialSkin : this.#shadowMaterial;
-        RenderWebGL.drawNode(node, null, shadowMaterial);
+        const material: Material = cmpMesh?.skeleton?.active ? shadowMaterialSkin : shadowMaterial;
+        RenderWebGL.drawNode(node, null, material);
       }
     }
 
@@ -568,6 +574,17 @@ namespace FudgeCore {
         default:
           return 0;
       }
+    }
+
+    private static getShadowMaterial(_shader: typeof Shader): Material {
+      let material: Material = this.#shadowMaterials.get(_shader);
+      if (!material) {
+        material = new Material("Material" + Shader.name, _shader);
+        Project.deregister(material);
+        this.#shadowMaterials.set(_shader, material);
+      }
+
+      return material;
     }
 
     private static hndEvent(_event: Event): void {

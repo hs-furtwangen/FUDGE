@@ -226,6 +226,13 @@ void main() {
   v_vctColor = a_vctColor;
   v_vctPosition = vctPosition.xyz;
 
+  #if defined(SHADOW_PANCAKE)
+
+    if (gl_Position.z <= -0.9999)
+      gl_Position.z = -0.9999;
+
+  #endif
+
   #if defined(PARTICLE_COLOR)
 
     v_vctColor *= /*$color*/;

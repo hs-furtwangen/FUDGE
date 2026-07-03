@@ -88,6 +88,21 @@ namespace FudgeCore {
     @edit(Number)
     public shadowFadeDistance: number = 0.8;
 
+    /**
+     * Pulls back the light-space near plane, increasing the depth range covered by the shadow map.
+     * Use this to reduce artifacts induced by shadow pancaking.
+     *
+     * During shadow map rendering, any shadow-caster vertex that would go beyond the light frustum near plane is not clipped away.
+     * Instead, its depth is clamped to the near plane, so part of the geometry gets squashed flat onto that plane, like a pancake.
+     * This avoids losing shadow casters beyond the near boundary while allowing a tighter light-space depth range, increasing depth precision and reducing shadow acne.
+     *
+     * However, pancaking can introduce artifacts when large triangles intersect the near plane, since they are incorrectly deformed, which may result in visible shadow errors.
+     *
+     * Keep this value as low as possible to avoid shadow acne, but high enough to prevent pancaking artifacts.
+     */
+    @edit(Number)
+    public shadowPancakeOffset: number = 10;
+
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
     public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
@@ -109,12 +124,12 @@ namespace FudgeCore {
     /** @internal reroute to {@link RenderWebGLComponentLight} */
     @RenderWebGLComponentLight.decorate
     public static processShadowsSpot(_nodes: Iterable<Node>): void { /* injected */ };
-    
+
     /** @internal reroute to {@link RenderWebGLComponentLight} */
     @RenderWebGLComponentLight.decorate
     public static processShadowsPoint(_nodes: Iterable<Node>): void { /* injected */ };
 
-    public drawGizmos(): void {
+    public drawGizmos(_cmpCamera: ComponentCamera): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);
       Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.color);
