@@ -825,15 +825,13 @@ layout(location = 2) out vec4 vctFragNormal;
 
     if(fDiffuse > 0.0) {
 
-      fDiffuse *= _fAttenuation;
-
       #if defined(TOON)
       
         fDiffuse = texture(u_texToon, vec2(fDiffuse, 0)).r;
 
       #endif
 
-      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor;
+      _vctDiffuse += u_fDiffuse * fDiffuse * _vctColor * _fAttenuation;
 
       if(u_fSpecular <= 0.0 || u_fIntensity <= 0.0)
         return;
@@ -845,15 +843,13 @@ layout(location = 2) out vec4 vctFragNormal;
 
       float fSpecular = pow(max(dot(_vctNormal, halfwayDir), 0.0), exp2(u_fSpecular * 5.0)) * factor; // TODO: remove magic numbers?
 
-      fSpecular *= _fAttenuation;
-
       #if defined(TOON)
         
         fSpecular = texture(u_texToon, vec2(fSpecular, 0.0)).g * fDiffuse;
 
       #endif
 
-      _vctSpecular += fSpecular * u_fIntensity * _vctColor;
+      _vctSpecular += fSpecular * u_fIntensity * _vctColor * _fAttenuation;
     }
   }
 
