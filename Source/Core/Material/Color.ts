@@ -169,7 +169,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static SUM(_clrA: Color, _clrB: Color, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.setClamped(_clrA.r + _clrB.r, _clrA.g + _clrB.g, _clrA.b + _clrB.b, _clrA.a + _clrB.a);
+      return _out.set(_clrA.r + _clrB.r, _clrA.g + _clrB.g, _clrA.b + _clrB.b, _clrA.a + _clrB.a);
     }
 
     /**
@@ -177,7 +177,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static DIFFERENCE(_clrA: Color, _clrB: Color, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.setClamped(_clrA.r - _clrB.r, _clrA.g - _clrB.g, _clrA.b - _clrB.b, _clrA.a - _clrB.a);
+      return _out.set(_clrA.r - _clrB.r, _clrA.g - _clrB.g, _clrA.b - _clrB.b, _clrA.a - _clrB.a);
     }
 
     /**
@@ -185,7 +185,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static PRODUCT(_clrA: Color, _clrB: Color, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.setClamped(_clrA.r * _clrB.r, _clrA.g * _clrB.g, _clrA.b * _clrB.b, _clrA.a * _clrB.a);
+      return _out.set(_clrA.r * _clrB.r, _clrA.g * _clrB.g, _clrA.b * _clrB.b, _clrA.a * _clrB.a);
     }
 
     /**
@@ -193,7 +193,7 @@ namespace FudgeCore {
      * @param _out Optional color to store the result in.
      */
     public static SCALE(_vector: Color, _scaling: number, _out: Color = Recycler.reuse(Color)): Color {
-      return _out.setClamped(_vector.r * _scaling, _vector.g * _scaling, _vector.b * _scaling, _vector.a * _scaling);
+      return _out.set(_vector.r * _scaling, _vector.g * _scaling, _vector.b * _scaling, _vector.a * _scaling);
     }
 
     static #f(_n: number, _hue: number, _saturation: number, _light: number): number {
@@ -217,6 +217,18 @@ namespace FudgeCore {
     //#endregion
 
     //#region Instance
+    /**
+     * Clamp the color channels of this color between 0 and 1.
+     */
+    public clamp(): Color {
+      return this.set(
+        Calc.clamp(this.r, 0, 1), 
+        Calc.clamp(this.g, 0, 1), 
+        Calc.clamp(this.b, 0, 1), 
+        Calc.clamp(this.a, 0, 1)
+      );
+    }
+
     /**
      * Copies the color channels of the given color into this color and returns it.
      * @returns A reference to this color.
@@ -329,7 +341,7 @@ namespace FudgeCore {
      * Adds the given color to this.
      */
     public add(_color: Color): Color {
-      this.setClamped(
+      this.set(
         this.r + _color.r,
         this.g + _color.g,
         this.b + _color.b,
@@ -343,7 +355,7 @@ namespace FudgeCore {
      * Adds the given color to this.
      */
     public subtract(_color: Color): Color {
-      this.setClamped(
+      this.set(
         this.r - _color.r,
         this.g - _color.g,
         this.b - _color.b,
@@ -357,7 +369,7 @@ namespace FudgeCore {
      * Multiplies this with the given color.
      */
     public multiply(_color: Color): Color {
-      this.setClamped(
+      this.set(
         this.r * _color.r,
         this.g * _color.g,
         this.b * _color.b,
@@ -371,7 +383,7 @@ namespace FudgeCore {
      * Scales this color by the given factor.
      */
     public scale(_scaling: number): Color {
-      this.setClamped(
+      this.set(
         this.r * _scaling,
         this.g * _scaling,
         this.b * _scaling,
