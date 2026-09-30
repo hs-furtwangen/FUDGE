@@ -64,11 +64,11 @@ namespace SkeletonTest {
     // console.log(loader.fbx);
 
     // setup light
-    const cmpLightDirectional: ƒ.ComponentLight = new ƒ.ComponentLight(ƒ.LIGHT_TYPE.DIRECTIONAL, new ƒ.Color(0.5, 0.5, 0.5));
+    const cmpLightDirectional: ƒ.ComponentLight = new f.ComponentLight(new f.LightDirectional(new ƒ.Color(0.5, 0.5, 0.5)));
     // cmpLightDirectional.mtxPivot.rotateY(180);
     graph.addComponent(cmpLightDirectional);
 
-    const cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(ƒ.LIGHT_TYPE.AMBIENT, new ƒ.Color(0.5, 0.5, 0.5));
+    const cmpLightAmbient: ƒ.ComponentLight =  new f.ComponentLight(new f.LightAmbient(new ƒ.Color(0.5, 0.5, 0.5)));
     graph.addComponent(cmpLightAmbient);
 
     const viewport: ƒ.Viewport = new ƒ.Viewport();

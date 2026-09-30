@@ -7,19 +7,15 @@ namespace PostprocessingTest {
   let viewport: ƒ.Viewport;
 
   async function init(): Promise<void> {
-    let graphId: string = document.head.querySelector("meta[autoView]").getAttribute("autoView");
-    // load resources referenced in the link-tag
-    await ƒ.Project.loadResourcesFromHTML();
+    let graph: ƒ.Graph = await ƒ.Project.loadFromHTML();
     ƒ.Debug.log("Project:", ƒ.Project.resources);
-    // pick the graph to show
-    let graph: ƒ.Graph = <ƒ.Graph>ƒ.Project.resources[graphId];
     ƒ.Debug.log("Graph:", graph);
     if (!graph) {
       alert("Nothing to render. Create a graph with at least a mesh, material and probably some light");
       return;
     }
     // setup the viewport
-    let cmpCamera: ƒ.ComponentCamera = new ƒ.ComponentCamera();
+    let cmpCamera: ƒ.ComponentCamera = graph.getChildByName("Camera")?.getComponent(ƒ.ComponentCamera) ?? new ƒ.ComponentCamera();
 
     let canvas: HTMLCanvasElement = document.querySelector("canvas");
     viewport = new ƒ.Viewport();

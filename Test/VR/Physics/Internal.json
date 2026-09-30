@@ -96,26 +96,41 @@
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightPoint",
-                    "color": "[0, 1, 0.16470588235294117, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[10, 20, 0]",
                       "rotation": "[-1390, 350, 350]",
                       "scaling": "[219, 489, 189]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightPoint",
+                      "color": "[0, 1, 0.16470588235294117, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[0.9019607843137255, 0, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 3, 0]",
                       "rotation": "[40, 15100, 0]",
                       "scaling": "[25, 25, 25]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[0.9019607843137255, 0, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 }
@@ -138,7 +153,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[5, 0.4999999701976776, 70]"
                     },
-                    "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                    "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                    "castShadows": true
                   }
                 }
               ],
@@ -250,7 +266,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 6, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -299,7 +316,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -348,7 +366,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 2.4000000953674316, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -419,7 +438,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 6, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -468,7 +488,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -517,7 +538,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 6, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -588,7 +610,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 6, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -637,7 +660,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3.8999996185302734, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -686,7 +710,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3.59999942779541, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -735,7 +760,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3.8999998569488525, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -806,7 +832,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 6, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -855,7 +882,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -904,7 +932,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -953,7 +982,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1002,7 +1032,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 4, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1073,7 +1104,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 6, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1122,7 +1154,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1171,7 +1204,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1220,7 +1254,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 3, 2]"
                                 },
-                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+                                "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1288,6 +1323,11 @@
                     "fieldOfView": 45,
                     "near": 1,
                     "far": 2000,
+                    "left": -1,
+                    "right": 1,
+                    "bottom": -1,
+                    "top": 1,
+                    "size": 10,
                     "mtxPivot": {
                       "translation": "[0, 1, 0]",
                       "rotation": "[0, 0, 0]",
@@ -1316,7 +1356,8 @@
                       "rotation": "[90, 0, 0]",
                       "scaling": "[0.04999995231628418, 1, 0.04999999701976776]"
                     },
-                    "mesh": "MeshRotation|2022-12-07T15:04:14.573Z|72156"
+                    "mesh": "MeshRotation|2022-12-07T15:04:14.573Z|72156",
+                    "castShadows": true
                   }
                 }
               ],
@@ -1354,7 +1395,7 @@
                     "typeBody": 2,
                     "typeCollider": 3,
                     "collisionGroup": 1,
-                    "mass": 50,
+                    "mass": 1,
                     "dampTranslation": 0.1,
                     "dampRotation": 0.1,
                     "effectRotation": "[1, 1, 1]",
@@ -1397,7 +1438,8 @@
                       "rotation": "[90, 0, 0]",
                       "scaling": "[0.04999995231628418, 1, 0.05000000074505806]"
                     },
-                    "mesh": "MeshRotation|2022-12-07T15:04:14.573Z|72156"
+                    "mesh": "MeshRotation|2022-12-07T15:04:14.573Z|72156",
+                    "castShadows": true
                   }
                 }
               ],
@@ -1435,7 +1477,7 @@
                     "typeBody": 2,
                     "typeCollider": 3,
                     "collisionGroup": 1,
-                    "mass": 50,
+                    "mass": 1,
                     "dampTranslation": 0.1,
                     "dampRotation": 0.1,
                     "effectRotation": "[1, 1, 1]",
@@ -1496,6 +1538,10 @@
         "@type": "ƒ.CoatRemissiveTextured",
         "alphaClip": 0.01,
         "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        },
         "metallic": 0,
         "diffuse": 1,
         "specular": 0,
@@ -1532,7 +1578,8 @@
                 "rotation": "[0, 0, 0]",
                 "scaling": "[0.5, 0.5, 0.5]"
               },
-              "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755"
+              "mesh": "MeshCube|2022-10-16T12:29:56.867Z|62755",
+              "castShadows": true
             }
           }
         ],

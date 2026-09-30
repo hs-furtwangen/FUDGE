@@ -103,10 +103,10 @@ namespace ScreenToRayToScreen {
     root.addChild(new ƒAid.NodeCoordinateSystem());
 
     // set lights
-    let cmpLight: ƒ.ComponentLight = new ƒ.ComponentLight(f.LIGHT_TYPE.DIRECTIONAL, f.Color.CSS("WHITE"));
+    let cmpLight: ƒ.ComponentLight = new ƒ.ComponentLight(new f.LightDirectional());
     cmpLight.mtxPivot.lookAt(new ƒ.Vector3(-1, -3, -2));
     root.addComponent(cmpLight);
-    let cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(f.LIGHT_TYPE.AMBIENT, f.Color.CSS("GREY"));
+    let cmpLightAmbient: ƒ.ComponentLight = new ƒ.ComponentLight(new f.LightAmbient(f.Color.CSS("GREY")));
     root.addComponent(cmpLightAmbient);
 
     // setup orbiting camera

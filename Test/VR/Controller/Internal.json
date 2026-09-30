@@ -83,39 +83,63 @@
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightPoint",
-                    "color": "[1, 1, 1, 0.39]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightPoint",
+                      "color": "[1, 1, 1, 0.39]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[34, 180, 40]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 }
@@ -151,6 +175,11 @@
                     "fieldOfView": 45,
                     "near": 1,
                     "far": 2000,
+                    "left": -1,
+                    "right": 1,
+                    "bottom": -1,
+                    "top": 1,
+                    "size": 10,
                     "mtxPivot": {
                       "translation": "[0, 0, 7]",
                       "rotation": "[0, 0, 0]",
@@ -191,7 +220,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[0.029999999329447746, 0.030000001192092896, 0.029999999329447746]"
                     },
-                    "mesh": "MeshObj|2022-12-12T11:38:39.086Z|59631"
+                    "mesh": "MeshObj|2022-12-12T11:38:39.086Z|59631",
+                    "castShadows": true
                   }
                 }
               ],
@@ -253,7 +283,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.019999999552965164, 0.020000001415610313, 0.01999998465180397]"
                           },
-                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052"
+                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -302,7 +333,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.020000003278255463, 0.019999999552965164, 0.01999998465180397]"
                           },
-                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052"
+                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -351,7 +383,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.01000000350177288, 0.03999998793005943, 0.010000004433095455]"
                           },
-                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446"
+                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -419,7 +452,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[0.014999995008111, 0.015000002458691597, 0.014999997802078724]"
                                 },
-                                "mesh": "MeshObj|2022-12-13T09:30:33.828Z|84475"
+                                "mesh": "MeshObj|2022-12-13T09:30:33.828Z|84475",
+                                "castShadows": true
                               }
                             }
                           ]
@@ -471,7 +505,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.01000000350177288, 0.03999999165534973, 0.01000000350177288]"
                           },
-                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446"
+                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -508,7 +543,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[0.030000001192092896, 0.030000001192092896, 0.030000001192092896]"
                     },
-                    "mesh": "MeshObj|2022-12-12T11:36:32.933Z|22290"
+                    "mesh": "MeshObj|2022-12-12T11:36:32.933Z|22290",
+                    "castShadows": true
                   }
                 }
               ],
@@ -570,7 +606,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.020000003278255463, 0.020000001415610313, 0.01999998651444912]"
                           },
-                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052"
+                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -619,7 +656,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.01000000350177288, 0.03999999165534973, 0.01000000350177288]"
                           },
-                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446"
+                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -668,7 +706,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.020000005140900612, 0.020000001415610313, 0.01999998651444912]"
                           },
-                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052"
+                          "mesh": "MeshSphere|2022-12-12T10:59:25.475Z|98052",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -717,7 +756,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.010000004433095455, 0.03999998793005943, 0.01000000536441803]"
                           },
-                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446"
+                          "mesh": "MeshObj|2022-12-12T11:05:32.406Z|14446",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -785,7 +825,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[0.014999995008111, 0.015000002458691597, 0.014999997802078724]"
                                 },
-                                "mesh": "MeshObj|2022-12-13T09:30:33.828Z|84475"
+                                "mesh": "MeshObj|2022-12-13T09:30:33.828Z|84475",
+                                "castShadows": true
                               }
                             }
                           ]

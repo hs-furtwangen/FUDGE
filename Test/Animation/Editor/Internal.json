@@ -105,9 +105,9 @@
         "specular": 0.5,
         "intensity": 0.7
       },
-      "name": "ShaderGouraud",
+      "name": "ShaderPhong",
       "idResource": "Material|2022-07-26T11:16:48.004Z|52569",
-      "shader": "ƒ.ShaderGouraud"
+      "shader": "ƒ.ShaderPhong"
     }
   },
   "Graph|2022-07-26T11:15:51.957Z|22410": {
@@ -145,7 +145,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[4, 4, 4]"
                     },
-                    "mesh": "MeshSphere|2022-07-26T11:17:05.670Z|78370"
+                    "mesh": "MeshSphere|2022-07-26T11:17:05.670Z|78370",
+                    "castShadows": true
                   }
                 }
               ],
@@ -165,13 +166,19 @@
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightPoint",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 90, 0]",
                       "scaling": "[15, 15, 15]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightPoint",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": true,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1
                     }
                   }
                 }
@@ -220,7 +227,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2022-07-26T11:17:05.670Z|78370"
+                          "mesh": "MeshSphere|2022-07-26T11:17:05.670Z|78370",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -267,7 +275,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[0.49999991059303284, 0.49999991059303284, 0.5]"
                                 },
-                                "mesh": "MeshSphere|2022-07-26T11:17:05.670Z|78370"
+                                "mesh": "MeshSphere|2022-07-26T11:17:05.670Z|78370",
+                                "castShadows": true
                               }
                             }
                           ],

@@ -783,7 +783,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1.0000001192092896, 1, 1]"
                     },
-                    "mesh": "MeshQuad|2022-10-12T15:19:01.992Z|13651"
+                    "mesh": "MeshQuad|2022-10-12T15:19:01.992Z|13651",
+                    "castShadows": true
                   }
                 }
               ],
@@ -861,7 +862,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshQuad|2022-10-12T15:19:01.992Z|13651"
+                          "mesh": "MeshQuad|2022-10-12T15:19:01.992Z|13651",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -918,7 +920,8 @@
                     "ParticleSystemController": [
                       {
                         "ParticleSystemTest.ParticleSystemController": {
-                          "active": true
+                          "active": true,
+                          "dependencies": []
                         }
                       }
                     ]
@@ -940,7 +943,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2022-10-12T16:59:52.193Z|43654"
+                          "mesh": "MeshSphere|2022-10-12T16:59:52.193Z|43654",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -975,13 +979,19 @@
                       {
                         "ƒ.ComponentLight": {
                           "active": true,
-                          "lightType": "LightPoint",
-                          "color": "[1, 1, 1, 1]",
-                          "intensity": 1,
                           "mtxPivot": {
                             "translation": "[0, 0, 0]",
                             "rotation": "[0, 0, 0]",
                             "scaling": "[9.999999046325684, 10, 10]"
+                          },
+                          "light": {
+                            "@type": "ƒ.LightPoint",
+                            "color": "[1, 1, 1, 1]",
+                            "intensity": 1,
+                            "shadowEnabled": false,
+                            "shadowBias": 0.1,
+                            "shadowNormalBias": 2,
+                            "shadowBlur": 1
                           }
                         }
                       }
@@ -1002,7 +1012,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 1, 1]"
                                 },
-                                "mesh": "MeshSphere|2022-10-27T16:57:58.549Z|09916"
+                                "mesh": "MeshSphere|2022-10-27T16:57:58.549Z|09916",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1049,7 +1060,10 @@
                           "ParticleSystemController": [
                             {
                               "ParticleSystemTest.ParticleSystemController": {
-                                "active": true
+                                "active": true,
+                                "dependencies": [
+                                  "node/parent"
+                                ]
                               }
                             }
                           ]
@@ -1104,14 +1118,15 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "mesh": "MeshQuad|2022-10-12T15:19:01.992Z|13651"
+                    "mesh": "MeshQuad|2022-10-12T15:19:01.992Z|13651",
+                    "castShadows": true
                   }
                 }
               ],
               "ComponentParticleSystem": [
                 {
                   "ƒ.ComponentParticleSystem": {
-                    "active": true,
+                    "active": false,
                     "size": 110,
                     "particleSystem": "ParticleSystem|2023-04-13T07:59:42.001Z|13329",
                     "depthMask": false,
@@ -1134,7 +1149,8 @@
               "ParticleSystemController": [
                 {
                   "ParticleSystemTest.ParticleSystemController": {
-                    "active": true
+                    "active": true,
+                    "dependencies": []
                   }
                 }
               ]
@@ -1183,7 +1199,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "mesh": "MeshSphere|2024-08-01T09:47:52.244Z|94143"
+                    "mesh": "MeshSphere|2024-08-01T09:47:52.244Z|94143",
+                    "castShadows": true
                   }
                 }
               ],
@@ -1203,7 +1220,8 @@
               "ParticleSystemController": [
                 {
                   "ParticleSystemTest.ParticleSystemController": {
-                    "active": true
+                    "active": true,
+                    "dependencies": []
                   }
                 }
               ]

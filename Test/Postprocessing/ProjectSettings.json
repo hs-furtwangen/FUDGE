@@ -1,4 +1,6 @@
 {
-  "rendering/lightsAndShadows/shadowSize": 200,
-  "rendering/lightsAndShadows/shadowFilterQuality": "off"
+  "application/name": "Postprocessing",
+  "application/mainGraph": "Graph|2023-11-13T11:42:50.294Z|18191",
+  "rendering/lightsAndShadows/shadowSize": 2048,
+  "rendering/lightsAndShadows/shadowFilterQuality": "low"
 }

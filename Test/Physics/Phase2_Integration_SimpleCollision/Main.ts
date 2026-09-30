@@ -131,7 +131,7 @@ namespace FudgePhysics_Communication {
 
 
     //Rest initialization
-    let cmpLight: f.ComponentLight = new f.ComponentLight(f.LIGHT_TYPE.DIRECTIONAL, f.Color.CSS("WHITE"));
+    let cmpLight: f.ComponentLight = new f.ComponentLight(new f.LightDirectional());
     cmpLight.mtxPivot.lookAt(new f.Vector3(0.5, -1, -0.8));
     hierarchy.addComponent(cmpLight);
 

@@ -66,7 +66,7 @@ namespace FudgePhysics_Communication {
     bodies[4].mtxLocal.scale(new f.Vector3(0.3, 0.3, 2));
     bodies[3].appendChild(bodies[4]);
 
-    let cmpLight: f.ComponentLight = new f.ComponentLight(f.LIGHT_TYPE.DIRECTIONAL,f.Color.CSS("WHITE"));
+    let cmpLight: f.ComponentLight = new f.ComponentLight(new f.LightDirectional());
     cmpLight.mtxPivot.lookAt(new f.Vector3(0.5, -1, -0.8));
     hierarchy.addComponent(cmpLight);
 

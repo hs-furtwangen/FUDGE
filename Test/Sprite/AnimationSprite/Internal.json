@@ -145,7 +145,8 @@
                 "rotation": "[0, 0, 0]",
                 "scaling": "[1, 1.5, 1]"
               },
-              "mesh": "MeshSprite|2023-01-08T11:22:54.261Z|98107"
+              "mesh": "MeshSprite|2023-01-08T11:22:54.261Z|98107",
+              "castShadows": true
             }
           }
         ],
@@ -241,7 +242,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "mesh": "MeshCube|2023-01-25T18:52:17.765Z|10476"
+                    "mesh": "MeshCube|2023-01-25T18:52:17.765Z|10476",
+                    "castShadows": true
                   }
                 }
               ],

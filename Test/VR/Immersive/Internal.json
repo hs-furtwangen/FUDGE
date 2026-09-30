@@ -141,6 +141,10 @@
         "@type": "ƒ.CoatRemissiveTextured",
         "alphaClip": 0.01,
         "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        },
         "metallic": 0,
         "diffuse": 1,
         "specular": 0,
@@ -711,52 +715,88 @@
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[75, 0, 289]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[-92, 0, -90]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[310, 0, -509]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[1, 1, 1, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[220, 0, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[1, 1, 1, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 }
@@ -825,7 +865,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|19233"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|19233",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -874,7 +915,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|81090"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|81090",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -923,7 +965,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.30000001192092896, 0.30000001192092896, 0.30000001192092896]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.150Z|59657"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.150Z|59657",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -972,7 +1015,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.150Z|21206"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.150Z|21206",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1021,7 +1065,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.151Z|20749"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.151Z|20749",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1070,7 +1115,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.152Z|43348"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.152Z|43348",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1119,7 +1165,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1168,7 +1215,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|57538"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|57538",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1188,7 +1236,8 @@
                                   "rotation": "[0, -180, 0]",
                                   "scaling": "[1, 1, 1]"
                                 },
-                                "mesh": "MeshQuad|2022-12-06T13:10:19.182Z|26075"
+                                "mesh": "MeshQuad|2022-12-06T13:10:19.182Z|26075",
+                                "castShadows": true
                               }
                             }
                           ],
@@ -1267,7 +1316,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.5, 0.5, 0.5]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.154Z|81543"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.154Z|81543",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1316,7 +1366,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:47:44.602Z|75216"
+                          "mesh": "MeshOBJ|2022-11-29T08:47:44.602Z|75216",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1365,7 +1416,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783"
+                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1414,7 +1466,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:51:20.045Z|75128"
+                          "mesh": "MeshOBJ|2022-11-29T08:51:20.045Z|75128",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1463,7 +1516,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:57:39.794Z|02727"
+                          "mesh": "MeshOBJ|2022-11-29T08:57:39.794Z|02727",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1512,7 +1566,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:00:42.254Z|78108"
+                          "mesh": "MeshOBJ|2022-11-29T09:00:42.254Z|78108",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1561,7 +1616,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:02:49.211Z|53790"
+                          "mesh": "MeshOBJ|2022-11-29T09:02:49.211Z|53790",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1610,7 +1666,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:05:59.249Z|33773"
+                          "mesh": "MeshOBJ|2022-11-29T09:05:59.249Z|33773",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1659,7 +1716,8 @@
                             "rotation": "[0, 180, 0]",
                             "scaling": "[0.3999999761581421, 0.4000000059604645, 0.30000001192092896]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:47:05.308Z|51663"
+                          "mesh": "MeshOBJ|2022-11-29T09:47:05.308Z|51663",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1708,7 +1766,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[2.609999656677246, 2.6999998092651367, 2.000000476837158]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:58:36.888Z|09564"
+                          "mesh": "MeshOBJ|2022-11-29T09:58:36.888Z|09564",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1757,7 +1816,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T10:01:52.289Z|37393"
+                          "mesh": "MeshOBJ|2022-11-29T10:01:52.289Z|37393",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1806,7 +1866,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[2.3899991512298584, 2.700000047683716, 2.40000057220459]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T10:16:48.218Z|62813"
+                          "mesh": "MeshOBJ|2022-11-29T10:16:48.218Z|62813",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1855,7 +1916,8 @@
                             "rotation": "[0, -40, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|19233"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|19233",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1904,7 +1966,8 @@
                             "rotation": "[0, 200, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|19233"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.149Z|19233",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -1938,7 +2001,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.5999999046325684, 0.009999999776482582, 0.8999999761581421]"
                           },
-                          "mesh": "MeshCube|2022-11-29T10:58:13.749Z|48274"
+                          "mesh": "MeshCube|2022-11-29T10:58:13.749Z|48274",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -1987,7 +2051,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.9999998807907104, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T12:50:20.197Z|73863"
+                          "mesh": "MeshOBJ|2022-11-29T12:50:20.197Z|73863",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -2036,7 +2101,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.9999998807907104, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T12:52:49.155Z|25966"
+                          "mesh": "MeshOBJ|2022-11-29T12:52:49.155Z|25966",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -2085,7 +2151,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1.8000000715255737, 0.009999999776482582, 2.700000286102295]"
                           },
-                          "mesh": "MeshCube|2022-11-29T10:58:13.749Z|48274"
+                          "mesh": "MeshCube|2022-11-29T10:58:13.749Z|48274",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -2149,7 +2216,8 @@
                             "rotation": "[0, 90, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.151Z|20749"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.151Z|20749",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2198,7 +2266,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:11:22.163Z|97222"
+                          "mesh": "MeshOBJ|2022-11-29T13:11:22.163Z|97222",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2245,7 +2314,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 1, 1]"
                                 },
-                                "mesh": "MeshOBJ|2022-11-29T13:11:22.163Z|97222"
+                                "mesh": "MeshOBJ|2022-11-29T13:11:22.163Z|97222",
+                                "castShadows": true
                               }
                             }
                           ]
@@ -2294,7 +2364,8 @@
                                   "rotation": "[0, 0, 0]",
                                   "scaling": "[1, 1, 1]"
                                 },
-                                "mesh": "MeshOBJ|2022-11-29T13:11:22.163Z|97222"
+                                "mesh": "MeshOBJ|2022-11-29T13:11:22.163Z|97222",
+                                "castShadows": true
                               }
                             }
                           ]
@@ -2346,7 +2417,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:20:57.844Z|47808"
+                          "mesh": "MeshOBJ|2022-11-29T13:20:57.844Z|47808",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2395,7 +2467,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:21:46.499Z|65302"
+                          "mesh": "MeshOBJ|2022-11-29T13:21:46.499Z|65302",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2444,7 +2517,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.152Z|43348"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.152Z|43348",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2493,7 +2567,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:30:56.683Z|85792"
+                          "mesh": "MeshOBJ|2022-11-29T13:30:56.683Z|85792",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2542,7 +2617,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783"
+                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2591,7 +2667,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783"
+                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2640,7 +2717,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1.5999999046325684]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783"
+                          "mesh": "MeshOBJ|2022-11-29T08:50:05.953Z|51783",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2689,7 +2767,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2738,7 +2817,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2787,7 +2867,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2836,7 +2917,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2885,7 +2967,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.153Z|39311",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2934,7 +3017,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519"
+                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -2983,7 +3067,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519"
+                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3032,7 +3117,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519"
+                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3081,7 +3167,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519"
+                          "mesh": "MeshOBJ|2022-11-29T13:49:30.957Z|06519",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3130,7 +3217,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.30000001192092896, 0.30000001192092896, 0.30000001192092896]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T08:27:28.150Z|59657"
+                          "mesh": "MeshOBJ|2022-11-29T08:27:28.150Z|59657",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3179,7 +3267,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[0.30000001192092896, 0.30000001192092896, 0.30000001192092896]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T13:55:53.778Z|73434"
+                          "mesh": "MeshOBJ|2022-11-29T13:55:53.778Z|73434",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3228,7 +3317,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:05:59.249Z|33773"
+                          "mesh": "MeshOBJ|2022-11-29T09:05:59.249Z|33773",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3277,7 +3367,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:05:59.249Z|33773"
+                          "mesh": "MeshOBJ|2022-11-29T09:05:59.249Z|33773",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3326,7 +3417,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T09:00:42.254Z|78108"
+                          "mesh": "MeshOBJ|2022-11-29T09:00:42.254Z|78108",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3375,7 +3467,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T14:04:27.940Z|82033"
+                          "mesh": "MeshOBJ|2022-11-29T14:04:27.940Z|82033",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3424,7 +3517,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T14:04:27.940Z|82033"
+                          "mesh": "MeshOBJ|2022-11-29T14:04:27.940Z|82033",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3473,7 +3567,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2022-11-29T14:04:27.940Z|82033"
+                          "mesh": "MeshOBJ|2022-11-29T14:04:27.940Z|82033",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -3511,6 +3606,11 @@
                     "fieldOfView": 45,
                     "near": 1,
                     "far": 2000,
+                    "left": -1,
+                    "right": 1,
+                    "bottom": -1,
+                    "top": 1,
+                    "size": 10,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",

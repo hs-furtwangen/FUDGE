@@ -35,7 +35,8 @@ namespace ParticleSystemTest {
   export class ParticleSystemController extends ƒ.ComponentScript {
     public static readonly iSubclass: number = ƒ.Component.registerSubclass(ParticleSystemController);
 
-    public dependencyNames: string = "";
+    @ƒ.edit(Array, ƒ.Node)
+    public dependencies: ƒ.Node[] = [];
     #cmpParticleSystem: ƒ.ComponentParticleSystem;
 
     public constructor() {
@@ -49,28 +50,6 @@ namespace ParticleSystemTest {
       this.addEventListener(ƒ.EVENT.COMPONENT_ADD, this.hndEvent);
       this.addEventListener(ƒ.EVENT.COMPONENT_REMOVE, this.hndEvent);
       this.addEventListener(ƒ.EVENT.NODE_DESERIALIZED, this.hndEvent);
-    }
-
-    public get dependencies(): ƒ.Node[] {
-      let dependencies: ƒ.Node[] = [];
-      let root: ƒ.Node = this.node?.getAncestor();
-      if (!root)
-        return dependencies;
-
-      for (let name of this.dependencyNames.split(", ")) {
-        let dependency: ƒ.Node;
-        for (let descendant of root) {
-          if (descendant.name == name) {
-            dependency = descendant;
-            break;
-          }
-        }
-
-        if (dependency)
-          dependencies.push(dependency);
-      }
-
-      return dependencies;
     }
 
     // Activate the functions of this component as response to events

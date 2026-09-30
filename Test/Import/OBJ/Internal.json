@@ -120,26 +120,37 @@
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightAmbient",
-                    "color": "[0.3215686274509804, 0.3215686274509804, 0.3215686274509804, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightAmbient",
+                      "color": "[0.3215686274509804, 0.3215686274509804, 0.3215686274509804, 1]",
+                      "intensity": 1
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 180, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 }
@@ -181,7 +192,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:14.683Z|37989"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:14.683Z|37989",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -230,7 +242,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:16.123Z|75380"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:16.123Z|75380",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -279,7 +292,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:17.274Z|05163"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:17.274Z|05163",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -328,7 +342,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:18.333Z|36610"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:18.333Z|36610",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -399,7 +414,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:20.015Z|86022"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:20.015Z|86022",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -448,7 +464,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:21.002Z|53003"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:21.002Z|53003",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -497,7 +514,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:21.973Z|32015"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:21.973Z|32015",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -546,7 +564,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshOBJ|2023-10-13T07:18:22.735Z|36572"
+                          "mesh": "MeshOBJ|2023-10-13T07:18:22.735Z|36572",
+                          "castShadows": true
                         }
                       }
                     ],

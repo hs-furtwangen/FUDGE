@@ -12,7 +12,11 @@
       "coat": {
         "@type": "ƒ.CoatTextured",
         "alphaClip": 0.01,
-        "color": "[1, 1, 1, 1]"
+        "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        }
       },
       "name": "ShaderMatCap",
       "idResource": "Material|2023-11-30T11:08:43.223Z|83335",
@@ -84,7 +88,11 @@
       "coat": {
         "@type": "ƒ.CoatTextured",
         "alphaClip": 0.01,
-        "color": "[1, 1, 1, 1]"
+        "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        }
       },
       "name": "ShaderLitTextured",
       "idResource": "Material|2023-11-30T11:26:25.215Z|68094",
@@ -97,6 +105,10 @@
         "@type": "ƒ.CoatRemissiveTextured",
         "alphaClip": 0.01,
         "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        },
         "metallic": 0,
         "diffuse": 1,
         "specular": 0.9999999999999999,
@@ -113,6 +125,10 @@
         "@type": "ƒ.CoatRemissiveTextured",
         "alphaClip": 0.01,
         "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        },
         "metallic": 0,
         "diffuse": 1,
         "specular": 0.9999999999999999,
@@ -129,6 +145,10 @@
         "@type": "ƒ.CoatRemissiveTextured",
         "alphaClip": 0.01,
         "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        },
         "metallic": 0,
         "diffuse": 1,
         "specular": 0.9999999999999999,
@@ -148,7 +168,11 @@
         "metallic": 0,
         "diffuse": 1,
         "specular": 1.2,
-        "intensity": 0.7
+        "intensity": 0.7,
+        "texToon": {
+          "@type": "ƒ.TextureDefault",
+          "id": "toon"
+        }
       },
       "name": "ShaderToon",
       "idResource": "Material|2024-07-04T13:33:59.064Z|51500",
@@ -161,10 +185,18 @@
         "@type": "ƒ.CoatToonTextured",
         "alphaClip": 0.01,
         "color": "[1, 1, 1, 1]",
+        "texture": {
+          "@type": "ƒ.TextureDefault",
+          "id": "color"
+        },
         "metallic": 0,
         "diffuse": 1,
         "specular": 1.2,
-        "intensity": 0.7
+        "intensity": 0.7,
+        "texToon": {
+          "@type": "ƒ.TextureDefault",
+          "id": "toon"
+        }
       },
       "name": "ShaderToonTextured",
       "idResource": "Material|2024-07-04T13:34:02.331Z|39660",
@@ -203,7 +235,8 @@
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
-                    "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                    "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                    "castShadows": true
                   }
                 }
               ],
@@ -235,26 +268,37 @@
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightAmbient",
-                    "color": "[0.12941176470588237, 0.12941176470588237, 0.12941176470588237, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightAmbient",
+                      "color": "[0.12941176470588237, 0.12941176470588237, 0.12941176470588237, 1]",
+                      "intensity": 1
                     }
                   }
                 },
                 {
                   "ƒ.ComponentLight": {
                     "active": true,
-                    "lightType": "LightDirectional",
-                    "color": "[0.5294117647058824, 0.5294117647058824, 0.5294117647058824, 1]",
-                    "intensity": 1,
                     "mtxPivot": {
                       "translation": "[0, 0, 0]",
                       "rotation": "[0, 120, 0]",
                       "scaling": "[1, 1, 1]"
+                    },
+                    "light": {
+                      "@type": "ƒ.LightDirectional",
+                      "color": "[0.5294117647058824, 0.5294117647058824, 0.5294117647058824, 1]",
+                      "intensity": 1,
+                      "shadowEnabled": false,
+                      "shadowBias": 0.1,
+                      "shadowNormalBias": 2,
+                      "shadowBlur": 1,
+                      "shadowMaxDistance": 50,
+                      "shadowFadeDistance": 45,
+                      "shadowPancakeOffset": 10
                     }
                   }
                 }
@@ -323,7 +367,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -357,7 +402,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -406,7 +452,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -455,7 +502,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -504,7 +552,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -590,7 +639,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ]
@@ -624,7 +674,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -673,7 +724,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -722,7 +774,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
@@ -771,7 +824,8 @@
                             "rotation": "[0, 0, 0]",
                             "scaling": "[1, 1, 1]"
                           },
-                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162"
+                          "mesh": "MeshSphere|2023-11-30T11:16:08.267Z|33162",
+                          "castShadows": true
                         }
                       }
                     ],
