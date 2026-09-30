@@ -1,5 +1,5 @@
 namespace FudgeCore {
-  export type MapLightTypeToLightList = Map<LIGHT_TYPE, RecycableArray<ComponentLight>>;
+  export type MapLightTypeToLightList = Map<TypeOfLight, RecycableArray<ComponentLight>>;
 
   const SORT_KEY: unique symbol = Symbol("sortKey");
   const Z_CAMERA: unique symbol = Symbol("zCamera");
@@ -82,7 +82,7 @@ namespace FudgeCore {
     }
 
     public static addLight(_cmpLight: ComponentLight): void {
-      let type: LIGHT_TYPE = _cmpLight.lightType;
+      let type: TypeOfLight = _cmpLight.light.getType();
       let lightsOfType: RecycableArray<ComponentLight> = Render.lights.get(type);
       if (!lightsOfType) {
         lightsOfType = new RecycableArray<ComponentLight>();
@@ -182,7 +182,7 @@ namespace FudgeCore {
 
         _branch.radius = cmpMesh.radius;
 
-        if (!cmpParticleSystem || (cmpParticleSystem.active && cmpParticleSystem.particleSystem))
+        if (!cmpParticleSystem || (cmpParticleSystem.active && cmpParticleSystem.particleSystem)) // TODO: use "isParticleSystem" and only opaque nodes cast shadow
           if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
             Render.nodesAlpha.push(_branch); // add this node to render list
           else

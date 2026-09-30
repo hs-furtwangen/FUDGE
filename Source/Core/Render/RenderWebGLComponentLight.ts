@@ -206,12 +206,12 @@ namespace FudgeCore {
     }
 
     public static processLights(_lights: MapLightTypeToLightList): void {
-      const cmpLightsAmbient: RecycableArray<ComponentLight> = _lights.get(LIGHT_TYPE.AMBIENT);
+      const cmpLightsAmbient: RecycableArray<ComponentLight> = _lights.get(LightAmbient);
       RenderWebGLComponentLight.prepareAmbient(cmpLightsAmbient);
 
-      const cmpLightsDirectional: RecycableArray<ComponentLight> = _lights.get(LIGHT_TYPE.DIRECTIONAL);
-      const cmpLightsPoint: RecycableArray<ComponentLight> = _lights.get(LIGHT_TYPE.POINT);
-      const cmpLightsSpot: RecycableArray<ComponentLight> = _lights.get(LIGHT_TYPE.SPOT);
+      const cmpLightsDirectional: RecycableArray<ComponentLight> = _lights.get(LightDirectional);
+      const cmpLightsPoint: RecycableArray<ComponentLight> = _lights.get(LightPoint);
+      const cmpLightsSpot: RecycableArray<ComponentLight> = _lights.get(LightSpot);
 
       const nDirectional: number = cmpLightsDirectional?.length ?? 0;
       const nPoint: number = cmpLightsPoint?.length ?? 0;
@@ -247,9 +247,11 @@ namespace FudgeCore {
       crc3.viewport(0, 0, RenderWebGLComponentLight.#shadowSize, RenderWebGLComponentLight.#shadowSize);
 
       for (const cmpLight of RenderWebGLComponentLight.#shadowLightsDirectional) {
-        // adjusted from godot
+        const light: LightDirectional = <LightDirectional>cmpLight.light;
+
+        // directional shadow code adjusted from godot
         let maxDistance: number = _cmpCamera.projection == PROJECTION.CENTRAL ?
-          Math.min(_cmpCamera.far, Math.max(cmpLight.shadowMaxDistance, 0)) : // max distance only for perspective cameras
+          Math.min(_cmpCamera.far, Math.max(light.shadowMaxDistance, 0)) : // max distance only for perspective cameras
           _cmpCamera.far;
 
         maxDistance = Math.max(maxDistance, _cmpCamera.near + 1e-3);
@@ -294,7 +296,7 @@ namespace FudgeCore {
         const yMin: number = Calc.snap(yCenter - radius, unit);
         const yMax: number = Calc.snap(yCenter + radius, unit);
 
-        const zMin: number = zCenter - radius - cmpLight.shadowPancakeOffset;
+        const zMin: number = zCenter - radius - light.shadowPancakeOffset;
         const zMax: number = zCenter + radius;
 
         const halfX: number = (xMax - xMin) * 0.5;
@@ -314,15 +316,15 @@ namespace FudgeCore {
         // adjust shadow parameters that are camera dependant
         const iShadowParameter: number = (<General>cmpLight)[SHADOW_INDEX] * RenderWebGLComponentLight.#SHADOW_STRUCT_SIZE;
 
-        const shadowFilterScale: number = cmpLight.shadowBlur * RenderWebGLComponentLight.#shadowFilterRadius;
+        const shadowFilterScale: number = light.shadowBlur * RenderWebGLComponentLight.#shadowFilterRadius;
         const depthRangeFactor: number = 0.01; // magic scalar from godot
         const biasScale: number = depthRange * depthRangeFactor * shadowFilterScale;
-        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = cmpLight.shadowBias * biasScale;
+        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = light.shadowBias * biasScale;
 
         const shadowTexelSizeWorld: number = radius * 2 / RenderWebGLComponentLight.#shadowSize;
-        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = cmpLight.shadowNormalBias * shadowTexelSizeWorld;
+        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = light.shadowNormalBias * shadowTexelSizeWorld;
         RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 3] = maxDistance;
-        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 4] = maxDistance * Math.min(cmpLight.shadowFadeDistance, 0.9999); //using 1.0 could break smoothstep
+        RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 4] = Calc.clamp(light.shadowFadeDistance, 0, maxDistance - 1e-4); // smoothstep results in shader are undefined if fadeDistance ≥ maxDistance
 
         RenderWebGLComponentLight.processShadows(_nodes, cmpLight, mtxView, mtxProjection, (<General>cmpLight)[SHADOW_INDEX]);
 
@@ -412,7 +414,7 @@ namespace FudgeCore {
       crc3.viewport(rectViewport.x, rectViewport.y, rectViewport.width, rectViewport.height);
 
       RenderWebGLComponentLight.bindShadowBuffer();
-      RenderWebGLComponentLight.uploadShadowMatrices(RenderWebGLComponentLight.#shadowLightsDirectional.length + RenderWebGLComponentLight.#shadowLightsSpot.length, RenderWebGLComponentLight.#shadowLightsPoint.length * RenderWebGLComponentLight.getLayerCount(LIGHT_TYPE.POINT));
+      RenderWebGLComponentLight.uploadShadowMatrices(RenderWebGLComponentLight.#shadowLightsDirectional.length + RenderWebGLComponentLight.#shadowLightsSpot.length, RenderWebGLComponentLight.#shadowLightsPoint.length * RenderWebGLComponentLight.getLayerCount(LightPoint));
     }
 
     private static prepareAmbient(_cmpLights: RecycableArray<ComponentLight>): void {
@@ -421,7 +423,7 @@ namespace FudgeCore {
       if (_cmpLights?.length > 0) {
         const clrCurrent: Color = Recycler.get(Color);
         for (let cmpLight of _cmpLights)
-          Color.SUM(clrOut, Color.SCALE(cmpLight.color, cmpLight.intensity, clrCurrent), clrOut);
+          Color.SUM(clrOut, Color.SCALE(cmpLight.light.color, cmpLight.light.intensity, clrCurrent), clrOut);
         Recycler.store(clrCurrent);
       }
 
@@ -430,8 +432,8 @@ namespace FudgeCore {
       Recycler.store(clrOut);
     }
 
-    private static prepareLights(_lights: RecycableArray<ComponentLight>, _data: Float32Array, _shadowLights: RecycableArray<ComponentLight>, _nShadows: number): number {
-      if (!_lights)
+    private static prepareLights(_cmpLights: RecycableArray<ComponentLight>, _data: Float32Array, _shadowLights: RecycableArray<ComponentLight>, _nShadows: number): number {
+      if (!_cmpLights)
         return _nShadows;
 
       const clrOut: Color = Recycler.get(Color);
@@ -439,32 +441,31 @@ namespace FudgeCore {
 
       let iLight: number = 0;
 
-      for (let cmpLight of _lights) {
-        // set vctColor
-        Color.SCALE(cmpLight.color, cmpLight.intensity, clrOut).toArray(_data, iLight);
+      for (let cmpLight of _cmpLights) {
+        const light: Light = cmpLight.light;
+        const isDirectional: boolean = light instanceof LightDirectional;
 
-        // set mtxShape
+        Color.SCALE(light.color, light.intensity, clrOut).toArray(_data, iLight);
+
         mtxOut.copy(cmpLight.mtxWorld);
-        if (cmpLight.lightType == LIGHT_TYPE.DIRECTIONAL)
+        if (isDirectional)
           mtxOut.translation = mtxOut.translation.set(0, 0, 0);
         mtxOut.toArray(_data, iLight + 4);
 
-        // set mtxShapeInverse
-        if (cmpLight.lightType != LIGHT_TYPE.DIRECTIONAL)
+        if (!isDirectional)
           Matrix4x4.INVERSE(mtxOut, mtxOut).toArray(_data, iLight + 20);
 
-        // set shadow data
-        if (cmpLight.shadowEnabled) {
-          const nShadowLayersRequired: number = RenderWebGLComponentLight.getLayerCount(cmpLight.lightType);
+        if (light instanceof LightShadowCasting && light.shadowEnabled) {
+          const nShadowLayersRequired: number = RenderWebGLComponentLight.getLayerCount(light.getType());
           if (_nShadows + nShadowLayersRequired > RenderWebGLComponentLight.#MAX_SHADOW_COUNT)
             continue;
 
           _shadowLights.push(cmpLight); // collect shadow casting lights for shadow rendering pass
 
           const iShadowParameter: number = _nShadows * RenderWebGLComponentLight.#SHADOW_STRUCT_SIZE;
-          RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = cmpLight.shadowBias;
-          RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = cmpLight.shadowNormalBias * RenderWebGLComponentLight.shadowTexelSize; // TODO: inspect this scaling
-          RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 2] = cmpLight.shadowBlur * RenderWebGLComponentLight.#shadowFilterRadius;
+          RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 0] = light.shadowBias;
+          RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 1] = light.shadowNormalBias * RenderWebGLComponentLight.shadowTexelSize; // TODO: inspect this scaling
+          RenderWebGLComponentLight.#dataShadowParameters[iShadowParameter + 2] = light.shadowBlur * RenderWebGLComponentLight.#shadowFilterRadius;
 
           _data[iLight + 36] = (<General>cmpLight)[SHADOW_INDEX] = _nShadows;
 
@@ -499,7 +500,7 @@ namespace FudgeCore {
       let shadowMaterial: Material;
       let shadowMaterialSkin: Material;
 
-      const usePancake: boolean = _cmpLight.lightType == LIGHT_TYPE.DIRECTIONAL;
+      const usePancake: boolean = _cmpLight.light instanceof LightDirectional;
       if (usePancake) {
         shadowMaterial = this.getShadowMaterial(ShaderLitShadowPancake);
         shadowMaterialSkin = this.getShadowMaterial(ShaderLitShadowPancakeSkin);
@@ -563,13 +564,13 @@ namespace FudgeCore {
       }
     }
 
-    private static getLayerCount(_lightType: LIGHT_TYPE): number {
+    private static getLayerCount(_lightType: new () => Light): number {
       switch (_lightType) {
-        case LIGHT_TYPE.DIRECTIONAL:
+        case LightDirectional:
           return 1;
-        case LIGHT_TYPE.POINT:
+        case LightPoint:
           return 6;
-        case LIGHT_TYPE.SPOT:
+        case LightSpot:
           return 1;
         default:
           return 0;

@@ -1,54 +1,7 @@
+/// <reference path="../Light/Light.ts"/>
 /// <reference path="../Render/RenderWebGLComponentLight.ts"/>
 
 namespace FudgeCore {
-
-  /**
-   * The different types of lights.
-   */
-  export enum LIGHT_TYPE {
-    /**
-     * Ambient light, coming from all directions, illuminating everything with its color independent of position and orientation (like a foggy day or in the shades)  
-     * Attached to a node by {@link ComponentLight}, the pivot matrix is ignored.
-     * ```text
-     * ~ ~ ~  
-     *  ~ ~ ~  
-     * ```
-     */
-    AMBIENT = "LightAmbient",
-    /**
-     * Directional light, illuminating everything from a specified direction with its color (like standing in bright sunlight)  
-     * Attached to a node by {@link ComponentLight}, the pivot matrix specifies the direction of the light only.
-     * ```text
-     * --->  
-     * --->  
-     * --->  
-     * ```
-     */
-    DIRECTIONAL = "LightDirectional",
-    /**
-     * Omnidirectional light emitting from its position, illuminating objects depending on their position and distance with its color (like a colored light bulb)  
-     * Attached to a node by {@link ComponentLight}, the pivot matrix specifies the position of the light, it's shape and rotation. 
-     * So with uneven scaling, other shapes than a perfect sphere, such as an oval or a disc, are possible, which creates a visible effect of the rotation too. 
-     * The intensity of the light drops linearly from 1 in the center to 0 at the perimeter of the shape.
-     * ```text
-     *         .\|/.
-     *        -- o --
-     *         ´/|\`
-     * ```
-     */
-    POINT = "LightPoint",
-    /**
-     * Spot light emitting within a specified angle from its position, illuminating objects depending on their position and distance with its color  
-     * Attached to a node by {@link ComponentLight}, the pivot matrix specifies the position of the light, the direction and the size and angles of the cone.
-     * The intensity of the light drops linearly from 1 in the center to 0 at the outer limits of the cone.
-     * ```text
-     *          o  
-     *         /|\  
-     *        / | \ 
-     * ```   
-     */
-    SPOT = "LightSpot"
-  }
 
   /**
     * Attaches a light to the node.
@@ -58,59 +11,20 @@ namespace FudgeCore {
   export class ComponentLight extends Component {
     public static readonly iSubclass: number = Component.registerSubclass(ComponentLight);
 
-    @edit(LIGHT_TYPE)
-    public lightType: LIGHT_TYPE;
-
-    @edit(Color)
-    public color: Color;
-
-    @edit(Number)
-    public intensity: number;
+    private static gizmoLines: Vector3[];
 
     @edit(Matrix4x4)
     public mtxPivot: Matrix4x4 = Matrix4x4.IDENTITY();
 
-    @edit(Boolean)
-    public shadowEnabled: boolean = false;
-
-    @edit(Number)
-    public shadowBias: number = 0.1;
-
-    @edit(Number)
-    public shadowNormalBias: number = 2;
-
-    @edit(Number)
-    public shadowBlur: number = 1;
-
-    @edit(Number)
-    public shadowMaxDistance: number = 50;
-
-    @edit(Number)
-    public shadowFadeDistance: number = 0.8;
-
-    /**
-     * Pulls back the light-space near plane, increasing the depth range covered by the shadow map.
-     * Use this to reduce artifacts induced by shadow pancaking.
-     *
-     * During shadow map rendering, any shadow-caster vertex that would go beyond the light frustum near plane is not clipped away.
-     * Instead, its depth is clamped to the near plane, so part of the geometry gets squashed flat onto that plane, like a pancake.
-     * This avoids losing shadow casters beyond the near boundary while allowing a tighter light-space depth range, increasing depth precision and reducing shadow acne.
-     *
-     * However, pancaking can introduce artifacts when large triangles intersect the near plane, since they are incorrectly deformed, which may result in visible shadow errors.
-     *
-     * Keep this value as low as possible to avoid shadow acne, but high enough to prevent pancaking artifacts.
-     */
-    @edit(Number)
-    public shadowPancakeOffset: number = 10;
+    @edit(Light)
+    public light: Light;
 
     public readonly mtxWorld: Matrix4x4 = Matrix4x4.IDENTITY();
 
-    public constructor(_lightType: LIGHT_TYPE = LIGHT_TYPE.AMBIENT, _color: Color = new Color(1, 1, 1, 1), _intensity: number = 1) {
+    public constructor(_light: Light = null) {
       super();
       this.singleton = false;
-      this.lightType = _lightType;
-      this.color = _color;
-      this.intensity = _intensity;
+      this.light = _light;
     }
 
     /** @internal reroute to {@link RenderWebGLComponentLight} */
@@ -132,7 +46,7 @@ namespace FudgeCore {
     public drawGizmos(_cmpCamera: ComponentCamera): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);
-      Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.color);
+      Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.light.color);
       Recycler.store(mtxShape);
     };
 
@@ -140,24 +54,23 @@ namespace FudgeCore {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       let color: Color = Color.CSS("yellow");
 
-      switch (this.lightType) {
-        case LIGHT_TYPE.DIRECTIONAL:
+      switch (this.light.getType()) {
+        case LightDirectional:
           const radius: number = 0.5;
           Gizmos.drawWireCircle(mtxShape, color);
-          const lines: Vector3[] = new Array(10).fill(null).map(() => Recycler.get(Vector3));
+          const lines: Vector3[] = ComponentLight.gizmoLines ??= new Array(10).fill(null).map(() => Recycler.get(Vector3));
           lines[0].set(0, 0, 0); lines[1].set(0, 0, 1);
           lines[2].set(0, radius, 0); lines[3].set(0, radius, 1);
           lines[6].set(0, -radius, 0); lines[7].set(0, -radius, 1);
           lines[4].set(radius, 0, 0); lines[5].set(radius, 0, 1);
           lines[8].set(-radius, 0, 0); lines[9].set(-radius, 0, 1);
           Gizmos.drawLines(lines, mtxShape, color);
-          Recycler.store(lines);
           break;
-        case LIGHT_TYPE.POINT:
+        case LightPoint:
           mtxShape.scale(new Vector3(2, 2, 2));
           Gizmos.drawWireSphere(mtxShape, color);
           break;
-        case LIGHT_TYPE.SPOT:
+        case LightSpot:
           Gizmos.drawWireCone(mtxShape, color);
           break;
       }

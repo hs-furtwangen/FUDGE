@@ -75,24 +75,39 @@ namespace FudgeMigrate {
   });
 
   register(ƒ.ComponentLight, (_serialization: Serialization): Serialization => {
-    if (_serialization.pivot != undefined && _serialization.mtxPivot == undefined)
+    if (_serialization.pivot != undefined && _serialization.mtxPivot == undefined) {
       _serialization.mtxPivot = _serialization.pivot;
+      delete _serialization.pivot;
+    }
+
+    if (_serialization.lightType != undefined) {
+      const light: Serialization = _serialization.light = {};
+      light["@type"] = "ƒ." + _serialization.lightType;
+      if (_serialization.color != undefined) {
+        light.color = _serialization.color;
+        delete _serialization.color;
+      }
+
+      if (_serialization.intensity != undefined) {
+        light.intensity = _serialization.intensity;
+        delete _serialization.intensity;
+      }
+    };
 
     const light: Serialization = _serialization.light;
     if (light != undefined) {
-      for (const path in light) {
-        const lightSerialization: Serialization = light[path];
-        if (_serialization.lightType == undefined)
-          _serialization.lightType = path.substring(path.lastIndexOf(".") + 1);
-        if (_serialization.color == undefined && lightSerialization.color != undefined)
-          _serialization.color = lightSerialization.color;
-        if (_serialization.intensity == undefined && lightSerialization.intensity != undefined)
-          _serialization.intensity = lightSerialization.intensity;
+      const keys: string[] = Object.keys(light);
+      const path: string = keys[0];
+      if (keys.length == 1 && path.includes("ƒ.")) {
+        const legacyLight: Serialization = light[path];
+        if (legacyLight.color != undefined)
+          light.color = legacyLight.color;
+        if (legacyLight.intensity != undefined)
+          light.intensity = legacyLight.intensity;
+        delete light[path];
       }
     }
 
-    delete _serialization.pivot;
-    delete _serialization.light;
     return _serialization;
   });
 
@@ -230,14 +245,14 @@ namespace FudgeMigrate {
   });
 
   register(ƒ.TextureImage, function (this: ƒ.Serializable, _serialization: Serialization): Serialization {
-    if (_serialization.Texture != undefined) 
+    if (_serialization.Texture != undefined)
       ƒ.Project.register(<ƒ.SerializableResource>this, _serialization.Texture.idResource);
 
     return _serialization;
   });
 
   register(ƒ.TextureText, function (this: ƒ.Serializable, _serialization: Serialization): Serialization {
-    if (_serialization.Texture != undefined) 
+    if (_serialization.Texture != undefined)
       ƒ.Project.register(<ƒ.SerializableResource>this, _serialization.Texture.idResource);
 
     return _serialization;

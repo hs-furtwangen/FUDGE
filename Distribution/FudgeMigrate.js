@@ -89,22 +89,36 @@ var FudgeMigrate;
         return _serialization;
     });
     register(ƒ.ComponentLight, (_serialization) => {
-        if (_serialization.pivot != undefined && _serialization.mtxPivot == undefined)
+        if (_serialization.pivot != undefined && _serialization.mtxPivot == undefined) {
             _serialization.mtxPivot = _serialization.pivot;
-        const light = _serialization.light;
-        if (light != undefined) {
-            for (const path in light) {
-                const lightSerialization = light[path];
-                if (_serialization.lightType == undefined)
-                    _serialization.lightType = path.substring(path.lastIndexOf(".") + 1);
-                if (_serialization.color == undefined && lightSerialization.color != undefined)
-                    _serialization.color = lightSerialization.color;
-                if (_serialization.intensity == undefined && lightSerialization.intensity != undefined)
-                    _serialization.intensity = lightSerialization.intensity;
+            delete _serialization.pivot;
+        }
+        if (_serialization.lightType != undefined) {
+            const light = _serialization.light = {};
+            light["@type"] = "ƒ." + _serialization.lightType;
+            if (_serialization.color != undefined) {
+                light.color = _serialization.color;
+                delete _serialization.color;
+            }
+            if (_serialization.intensity != undefined) {
+                light.intensity = _serialization.intensity;
+                delete _serialization.intensity;
             }
         }
-        delete _serialization.pivot;
-        delete _serialization.light;
+        ;
+        const light = _serialization.light;
+        if (light != undefined) {
+            const keys = Object.keys(light);
+            const path = keys[0];
+            if (keys.length == 1 && path.includes("ƒ.")) {
+                const legacyLight = light[path];
+                if (legacyLight.color != undefined)
+                    light.color = legacyLight.color;
+                if (legacyLight.intensity != undefined)
+                    light.intensity = legacyLight.intensity;
+                delete light[path];
+            }
+        }
         return _serialization;
     });
     register(ƒ.ComponentMaterial, (_serialization) => {
