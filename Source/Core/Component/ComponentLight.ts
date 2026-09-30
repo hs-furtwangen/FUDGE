@@ -46,7 +46,7 @@ namespace FudgeCore {
     public drawGizmos(_cmpCamera: ComponentCamera): void {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       mtxShape.scaling = new Vector3(0.5, 0.5, 0.5);
-      Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.light.color);
+      Gizmos.drawIcon(TextureDefault.iconLight, mtxShape, this.light?.color ?? Color.CSS("WHITE"));
       Recycler.store(mtxShape);
     };
 
@@ -54,7 +54,7 @@ namespace FudgeCore {
       let mtxShape: Matrix4x4 = Matrix4x4.PRODUCT(this.node.mtxWorld, this.mtxPivot);
       let color: Color = Color.CSS("yellow");
 
-      switch (this.light.getType()) {
+      switch (this.light?.getType()) {
         case LightDirectional:
           const radius: number = 0.5;
           Gizmos.drawWireCircle(mtxShape, color);

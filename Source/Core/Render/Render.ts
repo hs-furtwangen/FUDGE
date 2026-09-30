@@ -147,7 +147,7 @@ namespace FudgeCore {
       const cmpLights: readonly ComponentLight[] = _branch.getComponents(ComponentLight);
       for (let iLight: number = 0; iLight < cmpLights.length; iLight++) {
         const cmpLight: ComponentLight = cmpLights[iLight];
-        if (!cmpLight.active)
+        if (!cmpLight.active || !cmpLight.light)
           continue;
 
         if ((cmpLight.mtxPivot.modified || _recalculate)) {
