@@ -182,14 +182,14 @@ namespace FudgeCore {
 
         _branch.radius = cmpMesh.radius;
 
-        if (!cmpParticleSystem || (cmpParticleSystem.active && cmpParticleSystem.particleSystem)) // TODO: use "isParticleSystem" and only opaque nodes cast shadow
-          if (cmpMaterial.sortForAlpha || _branch.getComponent(ComponentText)) // always sort text for alpha
+        if (!cmpParticleSystem || isParticleSystem)
+          if (cmpMaterial.sortForAlpha) {
             Render.nodesAlpha.push(_branch); // add this node to render list
-          else
+          } else {
             Render.nodesOpaque.push(_branch); // add this node to render list
-
-        if (cmpMesh.castShadows)
-          Render.nodesShadow.push(_branch);
+            if (cmpMesh.castShadows)
+              Render.nodesShadow.push(_branch);
+          }
 
         if (material?.timestampUpdate < Render.timestampUpdate) {
           material.timestampUpdate = Render.timestampUpdate;
