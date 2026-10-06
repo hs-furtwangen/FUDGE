@@ -9,13 +9,18 @@ details>summary::after,
 div[view=ViewAnimation] fudge-stepper>label::after,
 .buttonIcon::before,
 fudge-boolean input[type="checkbox"]::before {
-  width: 16px;
-  height: 16px;
+  width: 1lh;
+  height: 1lh;
   content: "";
   background: var(--color-text);
   display: inline-block;
   margin-right: 5px;
   vertical-align: inherit;
+
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+
 }
 
 /* Checkbox */
@@ -148,7 +153,7 @@ div.lm_tab[title^="External"]::before {
 
 div.lm_tab[title^="Preview"]::before,
 div.lm_tab[title^="Render"]::before {
-  mask-image: url(../Html/Icon/Camera.svg);
+  mask-image: url(../Html/Icon/CameraVintage.svg);
 }
 
 div.lm_tab[title^="PREVIEW"]::before,
@@ -252,7 +257,7 @@ details[key^=Joint]>summary::after {
 
 details[type^=ComponentCamera]>summary::after,
 details[type^=ComponentVRDevice]>summary::after {
-  mask-image: url(../Html/Icon/Camera.svg);
+  mask-image: url(../Html/Icon/CameraVintage.svg);
 }
 
 details[key^=shape]>summary::after {

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="Camera"
+   viewBox="0 0 16 16"
+   version="1.1"
+   width="16"
+   height="16"
+   sodipodi:docname="CameraVintage.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="128"
+     inkscape:cx="9.5859375"
+     inkscape:cy="6.03125"
+     inkscape:window-width="3840"
+     inkscape:window-height="2131"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="Camera"
+     showguides="true"
+     showgrid="false">
+    <inkscape:grid
+       id="grid9"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14902"
+       empspacing="5"
+       enabled="true"
+       visible="false" />
+  </sodipodi:namedview>
+  <style
+     id="style1">.s{fill:#fff;stroke:#000;stroke-width:.1px;} </style>
+  <path
+     class="s"
+     d="M 15.348781,6.8480131 11.959209,8.3508253 V 6.0465133 H 10.331635 C 10.579024,5.517428 10.733424,5.2874561 10.733424,4.5970215 10.733424,3.0879173 9.5055628,1.775605 7.9257169,1.7893157 6.0963625,1.8051917 4.8258682,3.3417588 5.1715884,5.4337721 4.4418125,5.2013454 4.047724,5.1143045 3.586587,5.1143045 c -1.5032285,0 -2.93536844,1.194968 -2.93536844,2.933996 0,1.8115876 1.46876154,2.9339965 2.93549304,2.9339965 l -3.857e-4,3.228494 h 8.3724971 l -0.0032,-2.854341 3.393094,1.502812 z"
+     id="path1"
+     style="fill:#ffffff;fill-opacity:0;stroke-width:1.3;stroke-linejoin:round;stroke-dasharray:none"
+     sodipodi:nodetypes="ccccssccscccccc" />
+  <ellipse
+     style="display:none;fill:#000000;fill-opacity:0;stroke:#0000ff;stroke-width:1.33;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.495812"
+     id="path5"
+     cx="3.5948756"
+     cy="8.2935057"
+     rx="2.9298756"
+     ry="2.9285057" />
+  <ellipse
+     style="display:none;fill:#000000;fill-opacity:0;stroke:#0000ff;stroke-width:1.33;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.495812"
+     id="path5-8"
+     cx="7.9255943"
+     cy="4.8332839"
+     rx="2.7865942"
+     ry="2.7870507" />
+</svg>
