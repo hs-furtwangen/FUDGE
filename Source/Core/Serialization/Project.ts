@@ -1,4 +1,5 @@
 namespace FudgeCore {
+
   export enum MODE {
     EDITOR, RUNTIME
   }
@@ -71,7 +72,7 @@ namespace FudgeCore {
     public static serialization: SerializationOfResources = {};
     public static scriptNamespaces: ScriptNamespaces = {};
     public static baseURL: URL = new URL(location.toString());
-    public static mode: MODE = MODE.RUNTIME;
+    public static mode: MODE = Reflect.get(globalThis, "@isFudge") ? MODE.EDITOR : MODE.RUNTIME; // "@isFudge" is defined in editor html file. Allows environment to be known before the editor script is loaded.
     public static graphInstancesToResync: GraphInstancesToResync = {};
 
     /**

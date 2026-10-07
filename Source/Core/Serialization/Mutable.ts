@@ -241,6 +241,18 @@ namespace FudgeCore {
     };
 
     /**
+     * Used by the editor to create a temporary instance of this class in order to capture its default property values. 
+     * Can be overridden to avoid constructor side effects, such as automatic resource registration, that would prevent the temporary instance from being garbage collected after use.
+     */
+    public static createDefaultInstance(): Mutable {
+      const instance: General = new (<General>this)();
+      if (isSerializableResource(instance))
+        Project.deregister(instance);
+
+      return instance;
+    }
+
+    /**
      * Creates and returns an empty mutator for the given value.
      * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.
      */

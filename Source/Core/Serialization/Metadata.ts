@@ -19,11 +19,9 @@ namespace FudgeCore {
     /** The order number of the property. See {@link order} decorator. */
     order?: number;
 
-    /**
-     * The strategy used to serialize the property. See {@link serializeDecorations} and {@link deserializeDecorations}.
-     */
+    /** The strategy used to serialize the property. See {@link serializeDecorations} and {@link deserializeDecorations}. */
     serializationStrategy?: PropertySerializationStrategy;
-    
+
     /** The default value to which the property can be reset to. */
     defaultValue?: PropertyDefaultValue;
 
@@ -46,10 +44,7 @@ namespace FudgeCore {
    */
   export type PropertyDefaultValue = CloneableValue;
 
-  /**
-   * Default values must be {@link CloneableValue}s.
-   * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
-   */
+  /** The strategy used to serialize the property. */
   export type PropertySerializationStrategy = "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray";
 
   /**
@@ -89,6 +84,8 @@ namespace FudgeCore {
   }
 
   export namespace Metadata {
+
+    let defaultValueConstructors: Set<abstract new (..._args: General[]) => General>;
 
     /**
      * Returns an object describing the meta configuration of a specific property on a given object.
@@ -195,13 +192,16 @@ namespace FudgeCore {
      */
     export function setDefaultValue(_metadata: Metadata, _key: string, _value: PropertyDefaultValue): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
-      const descriptor: MetaPropertyDescriptor = descriptors[_key];
+      const descriptor: MetaPropertyDescriptor = Metadata.ensurePropertyDescriptor(descriptors, _key);
       if (!descriptor)
         throw new Error(`@reset requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @reset.`);
 
       descriptor.defaultValue = clone(_value);
     };
 
+    /**
+     * Set the order of a mutable property of an object, and add meta configuration. 
+     */
     export function setOrder(_metadata: Metadata, _key: string, _value: number): void {
       const descriptors: MetaPropertyDescriptors = Metadata.ensurePropertyDescriptors(_metadata);
       const descriptor: MetaPropertyDescriptor = descriptors[_key];
@@ -209,6 +209,52 @@ namespace FudgeCore {
         throw new Error(`@order requires an existing meta property descriptor for property '${_key}'. Add @mutate/@edit before @order.`);
 
       descriptor.order = _value;
+    }
+
+    /**
+     * Capture all pending default property values for registered classes and clear the registration list.
+     */
+    export function updatePropertyDefaultValues(): void {
+      if (!defaultValueConstructors)
+        return;
+      
+      for (const constructor of defaultValueConstructors)
+        capturePropertyDefaultValues(constructor);
+
+      defaultValueConstructors.clear();
+    }
+
+    /**
+     * Register a class for property default value capture. 
+     */
+    export function registerPropertyDefaultValueCapture(_value: abstract new (...args: General[]) => General): void {
+      defaultValueConstructors ??= new Set();
+      defaultValueConstructors.add(_value);
+    }
+
+    /**
+     * Capture the {@link MetaPropertyDescriptor.defaultValue property default values} of the given class and store them in the metadata. A temporary instance of the class is created during the process. 
+     * 
+     * Pass an instance creation function or implement it on the constructor to customize the default instance creation and to avoid constructor side effects, 
+     * such as automatic resource registration, that would prevent the temporary instance from being garbage collected after use.
+     */
+    export function capturePropertyDefaultValues(_constructor: { createDefaultInstance?(): General } & (abstract new (...args: General[]) => General), _createDefaultInstance?: () => General): void {
+      if (!Object.hasOwn(_constructor, Symbol.metadata)) 
+        _constructor[Symbol.metadata] = Object.create(_constructor[Symbol.metadata]); // extend metadata
+
+      const metadata: Metadata = _constructor[Symbol.metadata];
+
+      let instance: General;
+
+      if (_createDefaultInstance != undefined)
+        instance = _createDefaultInstance();
+      else if (_constructor.createDefaultInstance != undefined)
+        instance = _constructor.createDefaultInstance();
+      else
+        instance = new (<new (...args: General[]) => General>_constructor)();
+
+      for (const key of metadata.mutableKeys) 
+        Metadata.setDefaultValue(metadata, key, instance[key]);
     }
 
     /**
@@ -220,6 +266,17 @@ namespace FudgeCore {
         _metadata.propertyDescriptors = descriptors = Object.create(_metadata.propertyDescriptors ?? null);
 
       return descriptors;
+    }
+
+    /**
+     * @internal Return the own meta property descriptors of a metadata object. Initializes them if unavailable.
+     */
+    export function ensurePropertyDescriptor(_descriptors: MetaPropertyDescriptors, _key: string): Readonly<MetaPropertyDescriptor> {
+      let descriptor: MetaPropertyDescriptor = getOwnProperty(_descriptors, _key);
+      if (!descriptor)
+        _descriptors[_key] = descriptor = Object.create(_descriptors[_key] ?? null);
+
+      return descriptor;
     }
 
     /**

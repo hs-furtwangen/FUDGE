@@ -48,6 +48,4 @@ namespace FudgeCore {
 
     return false;
   }
-
-  equals(Object.create(null), Object.create(null))
 }

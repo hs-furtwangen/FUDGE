@@ -48,6 +48,7 @@ namespace Fudge {
 
     public async load(_htmlContent: string): Promise<void> {
       ƒ.Physics.activeInstance = new ƒ.Physics();
+
       const parser: DOMParser = new DOMParser();
       this.#document = parser.parseFromString(_htmlContent, "text/html");
       const head: HTMLHeadElement = this.#document.querySelector("head");
@@ -64,6 +65,8 @@ namespace Fudge {
           ƒ.Debug.log("Script Namespaces", ƒ.Project.scriptNamespaces);
         }
       }
+
+      ƒ.Metadata.updatePropertyDefaultValues();
 
       const resourceLink: HTMLLinkElement = head.querySelector("link[type=resources]");
       let resourceFile: string = resourceLink.getAttribute("src");

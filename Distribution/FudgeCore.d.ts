@@ -429,9 +429,7 @@ declare namespace FudgeCore {
         clearable?: boolean;
         /** The order number of the property. See {@link order} decorator. */
         order?: number;
-        /**
-         * The strategy used to serialize the property. See {@link serializeDecorations} and {@link deserializeDecorations}.
-         */
+        /** The strategy used to serialize the property. See {@link serializeDecorations} and {@link deserializeDecorations}. */
         serializationStrategy?: PropertySerializationStrategy;
         /** The default value to which the property can be reset to. */
         defaultValue?: PropertyDefaultValue;
@@ -449,10 +447,7 @@ declare namespace FudgeCore {
      * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
      */
     type PropertyDefaultValue = CloneableValue;
-    /**
-     * Default values must be {@link CloneableValue}s.
-     * Object values can implement {@link Comparable} to customize how the editor compares assigned values to default values.
-     */
+    /** The strategy used to serialize the property. */
     type PropertySerializationStrategy = "primitive" | "serializable" | "resource" | "node" | "function" | "primitiveArray" | "serializableArray" | "resourceArray" | "nodeArray" | "functionArray";
     /**
      * A function that returns a record of available creation options for a property.
@@ -519,7 +514,27 @@ declare namespace FudgeCore {
          * Set the default value of a mutable property of an object, and add meta configuration for it.
          */
         function setDefaultValue(_metadata: Metadata, _key: string, _value: PropertyDefaultValue): void;
+        /**
+         * Set the order of a mutable property of an object, and add meta configuration.
+         */
         function setOrder(_metadata: Metadata, _key: string, _value: number): void;
+        /**
+         * Capture all pending default property values for registered classes and clear the registration list.
+         */
+        function updatePropertyDefaultValues(): void;
+        /**
+         * Register a class for property default value capture.
+         */
+        function registerPropertyDefaultValueCapture(_value: abstract new (...args: General[]) => General): void;
+        /**
+         * Capture the {@link MetaPropertyDescriptor.defaultValue property default values} of the given class and store them in the metadata. A temporary instance of the class is created during the process.
+         *
+         * Pass an instance creation function or implement it on the constructor to customize the default instance creation and to avoid constructor side effects,
+         * such as automatic resource registration, that would prevent the temporary instance from being garbage collected after use.
+         */
+        function capturePropertyDefaultValues(_constructor: {
+            createDefaultInstance?(): General;
+        } & (abstract new (...args: General[]) => General), _createDefaultInstance?: () => General): void;
         /**
          * Return a new meta property descriptor.
          */
@@ -963,6 +978,8 @@ declare namespace FudgeCore {
      *
      * To establish a property order (in the editor), use the {@link order} decorator.
      *
+     * To enable capturing default values for properties, apply the {@link mutable} class decorator.
+     *
      * @author Jonas Plotzky, HFU, 2024-2025
      */
     function mutate<T extends String | Number | Boolean, P>(_type: abstract new (...args: General[]) => T): WrapperToPrimitve<T> extends P ? ((_value: unknown, _context: ClassPropertyDecoratorContext<object, P>) => void) : never;
@@ -986,19 +1003,15 @@ declare namespace FudgeCore {
     function mutateFunction<T extends Function>(_collectionType: typeof Array, _valueType: T): (_value: unknown, _context: ClassPropertyDecoratorContext<object, T[]>) => void;
     /**
      * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor.
+     *
      * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
-     * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
-     * Needs to be used in conjunction with the {@link edit} or {@link mutate} decorators to take effect.
+     *
+     * Must be used together with the {@link edit} or {@link mutate} decorator.
+     * The {@link mutable} class decorator must be applied for the ordering to take effect.
      *
      * @author Jonas Plotzky, HFU, 2025
      */
     function order(_order: number): (_value: unknown, _context: ClassPropertyDecoratorContext<Mutable>) => void;
-    /**
-     * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
-     *
-     * @author Jonas Plotzky, HFU, 2025
-     */
-    function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
     /**
      * Decorator to provide a list of options for creating new instances of a property.
      * Similar to {@link assign}, but for creating new objects instead of assigning existing ones.
@@ -1053,6 +1066,24 @@ declare namespace FudgeCore {
      * @author Jonas Plotzky, HFU, 2026
      */
     function clearable(_value: unknown, _context: ClassPropertyDecoratorContext): void;
+    /**
+     * Class decorator to finish the setup of property decorations.
+     *
+     * @param _options.order Enable the property ordering established by the {@link order} decorator. Defaults to `true`.
+     * @param _options.defaults Enable capturing default values for properties decorated with {@link mutate} or {@link edit}. Defaults to `true`.
+     *
+     * @author Jonas Plotzky, HFU, 2026
+     */
+    function mutable(_options?: {
+        order?: boolean;
+        defaults?: boolean;
+    }): (_class: abstract new (...args: General) => General, _context: ClassDecoratorContext) => void;
+    /**
+     * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
+     *
+     * @author Jonas Plotzky, HFU, 2025
+     */
+    function orderFlat(_class: unknown, _context: ClassDecoratorContext): void;
 }
 declare namespace FudgeCore {
     /**
@@ -1326,6 +1357,11 @@ declare namespace FudgeCore {
          * @returns A clone of `_mutator` or null if it is not a plain object or array.
          */
         static cloneMutator(_mutator: Mutator): Mutator | null;
+        /**
+         * Used by the editor to create a temporary instance of this class in order to capture its default property values.
+         * Can be overridden to avoid constructor side effects, such as automatic resource registration, that would prevent the temporary instance from being garbage collected after use.
+         */
+        static createDefaultInstance(): Mutable;
         /**
          * Creates and returns an empty mutator for the given value.
          * @returns An empty plain object or array if the given value is a plain object or array, respectively. Null for everything else.

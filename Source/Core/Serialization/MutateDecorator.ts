@@ -1,3 +1,5 @@
+/// <reference path="Project.ts"/>
+
 namespace FudgeCore {
 
   /**
@@ -21,6 +23,8 @@ namespace FudgeCore {
    * To mutate using a function type (typeof `_type`), use the {@link mutateFunction} decorator.
    * 
    * To establish a property order (in the editor), use the {@link order} decorator.
+   * 
+   * To enable capturing default values for properties, apply the {@link mutable} class decorator.
    * 
    * @author Jonas Plotzky, HFU, 2024-2025
    */
@@ -80,9 +84,11 @@ namespace FudgeCore {
   //#region @order
   /**
    * Decorator to specify the property order in the {@link Mutator} of a class. Use to order the displayed properties within the editor. 
+   * 
    * Properties with lower order values are displayed first. Properties without an order value are displayed after those with an order value, in the order they were decorated.
-   * To take effect, the class needs to be decorated with the {@link orderFlat} decorator.
-   * Needs to be used in conjunction with the {@link edit} or {@link mutate} decorators to take effect.
+   * 
+   * Must be used together with the {@link edit} or {@link mutate} decorator.
+   * The {@link mutable} class decorator must be applied for the ordering to take effect. 
    *
    * @author Jonas Plotzky, HFU, 2025
    */
@@ -96,31 +102,9 @@ namespace FudgeCore {
         throw new Error("@order decorator can't order symbol-named properties");
 
       const metadata: Metadata = _context.metadata;
-      
+
       Metadata.setOrder(metadata, key, _order);
     };
-  }
-
-  /**
-   * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
-   *
-   * @author Jonas Plotzky, HFU, 2025
-   */
-  export function orderFlat(_class: unknown, _context: ClassDecoratorContext): void {
-    const metadata: Metadata = _context.metadata;
-    const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
-    if  (!descriptors)
-      return;
-
-    const keys: string[] = getOwnProperty(metadata, "mutableKeys");
-    if (!keys)
-      throw new Error("No mutable keys specified. Use the @mutate decorator to specify mutator keys.");
-
-    keys.sort((_a, _b) => {
-      const orderA: number = descriptors[_a].order ?? Number.POSITIVE_INFINITY;
-      const orderB: number = descriptors[_b].order ?? Number.POSITIVE_INFINITY;
-      return orderA - orderB;
-    });
   }
   //#endregion
 
@@ -225,6 +209,68 @@ namespace FudgeCore {
     const metadata: Metadata = _context.metadata;
 
     Metadata.setClearable(metadata, key, true);
+  }
+  //#endregion
+
+  //#region @mutable
+  /**
+   * Class decorator to finish the setup of property decorations.
+   *
+   * @param _options.order Enable the property ordering established by the {@link order} decorator. Defaults to `true`.
+   * @param _options.defaults Enable capturing default values for properties decorated with {@link mutate} or {@link edit}. Defaults to `true`.
+   *
+   * @author Jonas Plotzky, HFU, 2026
+   */
+  export function mutable(_options?: { order?: boolean; defaults?: boolean }): (_class: abstract new (...args: General) => General, _context: ClassDecoratorContext) => void {
+    return (_class: abstract new (...args: General) => General, _context: ClassDecoratorContext): void => {
+      const metadata: Metadata = _context.metadata;
+
+      if ((_options?.order ?? true) === true) {
+        const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
+        if (!descriptors)
+          return;
+
+        const keys: string[] = getOwnProperty(metadata, "mutableKeys");
+        if (!keys)
+          throw new Error("No mutable keys specified. Use the @mutate decorator to specify mutator keys.");
+
+        keys.sort((_a, _b) => {
+          const orderA: number = descriptors[_a].order ?? Number.POSITIVE_INFINITY;
+          const orderB: number = descriptors[_b].order ?? Number.POSITIVE_INFINITY;
+          return orderA - orderB;
+        });
+      }
+
+      if ((_options?.defaults ?? true) === true) {
+        if (Project.mode == MODE.RUNTIME)
+          return;
+
+        Metadata.registerPropertyDefaultValueCapture(_class);
+      }
+    };
+  }
+
+
+  /**
+   * Decorator to sort properties in the {@link Mutator} of a class according to their specified order (via the {@link order} decorator). Use on the class to order its properties.
+   *
+   * @author Jonas Plotzky, HFU, 2025
+   */
+  export function orderFlat(_class: unknown, _context: ClassDecoratorContext): void {
+    const metadata: Metadata = _context.metadata;
+    const descriptors: MetaPropertyDescriptors = metadata.propertyDescriptors;
+    if (!descriptors)
+      return;
+
+    const keys: string[] = getOwnProperty(metadata, "mutableKeys");
+    if (!keys)
+      throw new Error("No mutable keys specified. Use the @mutate decorator to specify mutator keys.");
+
+    keys.sort((_a, _b) => {
+      const orderA: number = descriptors[_a].order ?? Number.POSITIVE_INFINITY;
+      const orderB: number = descriptors[_b].order ?? Number.POSITIVE_INFINITY;
+      return orderA - orderB;
+    });
   }
   //#endregion
 

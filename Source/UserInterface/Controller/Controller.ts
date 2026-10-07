@@ -95,6 +95,7 @@ namespace FudgeUserInterface {
      */
     public static updateUserInterface(_mutable: object, _domElement: HTMLElement, _mutator?: ƒ.Mutator, _parentMutable?: object, _parentKey?: string): void {
       const mutator: ƒ.Mutator = _mutator ?? ƒ.Mutable.getMutator(_mutable);
+      const propertyDescriptors: ƒ.MetaPropertyDescriptors = ƒ.Metadata.getPropertyDescriptors(_mutable);
 
       if ((_domElement instanceof Details))
         Controller.updateUserInterfaceStructure(_mutable, _domElement, mutator, _parentMutable, _parentKey);
@@ -113,9 +114,13 @@ namespace FudgeUserInterface {
           this.updateUserInterface(mutant, element, mutator[key], _mutable, key);
 
         // check equality with default value
+        const propertyDescriptor: ƒ.MetaPropertyDescriptor = propertyDescriptors?.[key];
+        if (!Reflect.has(propertyDescriptor, "defaultValue"))
+          continue;
+
         const btnRevert: HTMLButtonElement = element.querySelector(`button[name="revert"]`);
         if (btnRevert)
-          btnRevert.disabled = ƒ.equals(mutant, ƒ.Metadata.getPropertyDescriptor(_mutable, key).defaultValue);
+          btnRevert.disabled = ƒ.equals(mutant, propertyDescriptor.defaultValue);
       }
     }
 
